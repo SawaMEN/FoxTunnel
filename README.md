@@ -58,4 +58,42 @@ Local TCP applications can use `SOCKS5` at `127.0.0.1:1080` (remote DNS resoluti
 4. Evaluate HTTP/2 and HTTP/3 fingerprints, transport overhead, downtime, performance and censor behavior with reproducible benchmarks.
 5. After API stabilization: adapter for sing-box and lifecycle integration in 3x-ui.
 
+## Firefox TLS fingerprint research (second milestone)
+
+`ft-fingerprint` **does not implement Firefox TLS**. It extracts non-secret
+ClientHello metadata to establish measured differences against a real Firefox
+reference trace. No SNI hostname, session ID, client random, or key share bytes
+are persisted. JA3 is informational only and is not an anonymity or security score.
+
+Build the tool and generate a **Go TLS** baseline locally:
+
+```sh
+go build -o ft-fingerprint ./cmd/ft-fingerprint
+./ft-fingerprint --sample-go --out go.json
+```
+
+Capture a **real Firefox ClientHello** on the same computer (separate terminal):
+
+```sh
+./ft-fingerprint --listen 127.0.0.1:9443 --out firefox.json
+```
+
+Open `https://127.0.0.1:9443/` in Firefox. The browser will report a connection
+failure; **this is expected** because the probe only reads ClientHello and never
+performs a TLS handshake. For meaningful browser vs client comparisons, use a
+consistent host/SNI, OS and network environment, and record Firefox version,
+proxy configuration, HTTP settings and whether ECH is enabled.
+
+Compare the two samples:
+
+```sh
+./ft-fingerprint --input go.json --compare firefox.json --strict
+```
+
+The command reports differences in cipher suites, extension ordering, supported
+versions, key shares, ALPN, and legacy JA3 fingerprint. `--strict` exits nonzero
+when any compared field differs. The JSON represents a *single handshake only*.
+This does not test HTTP/2 SETTINGS, timing, certificate validation, payload
+patterns or Firefox Necko behavior. No claim of fingerprint parity is made.
+
 See [architecture](docs/ARCHITECTURE.md) and [project milestones](docs/ROADMAP.md).
