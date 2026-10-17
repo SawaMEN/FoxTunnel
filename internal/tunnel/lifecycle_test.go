@@ -182,9 +182,14 @@ func TestParallelStreams(t *testing.T) {
 
 // Persistent stream echo measures both upload and download on loopback. It is
 // not an Internet/DPI benchmark. The payload size is counted once (roundtrip).
-func BenchmarkTunnelRoundTrip(b *testing.B) {
+func BenchmarkTunnelRoundTrip(b *testing.B) { benchmarkTunnelRoundTrip(b, "go") }
+
+func benchmarkTunnelRoundTrip(b *testing.B, backend string) {
 	target := testDestination(b, func(c net.Conn) { _, _ = io.Copy(c, c) })
-	_, addr := testClient(b, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+	client, addr := testClient(b, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+	if err := client.SetTLSBackend(backend); err != nil {
+		b.Fatal(err)
+	}
 	for _, size := range []int{64, 1 << 20} {
 		b.Run(stringSize(size), func(b *testing.B) {
 			conn, code := connectSOCKS(b, addr, target)

@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"io"
 	"net"
 	"net/http"
@@ -19,7 +20,7 @@ import (
 )
 
 // Client exposes a local SOCKS5 CONNECT listener backed by HTTP/2 CONNECT.
-// TLS uses the standard Go TLS implementation, not Firefox NSS.
+// Go TLS is the default; tagged Linux builds can opt into experimental NSS.
 type Client struct {
 	ServerURL  *url.URL
 	Username   string
@@ -28,7 +29,11 @@ type Client struct {
 	// ConnectTimeout bounds setup only, never the lifetime of an open stream.
 	// Set before calling Serve; zero uses 15 seconds.
 	ConnectTimeout time.Duration
-	transport      *http.Transport
+	transport      interface {
+		http.RoundTripper
+		CloseIdleConnections()
+	}
+	tlsConfig *tls.Config
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {
@@ -53,17 +58,41 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 		}
 	}
 	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile}
-	c.transport = &http.Transport{
-		TLSClientConfig:     &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ClientSessionCache: tls.NewLRUClientSessionCache(32)},
-		DialContext:         (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
-		ForceAttemptHTTP2:   true,
-		DisableCompression:  true,
-		MaxIdleConns:        64,
-		MaxIdleConnsPerHost: 16,
-		IdleConnTimeout:     90 * time.Second,
-		TLSHandshakeTimeout: 10 * time.Second,
-	}
+	c.tlsConfig = &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ClientSessionCache: tls.NewLRUClientSessionCache(32)}
+	c.transport = newGoTransport(c.tlsConfig)
+
 	return c, nil
+}
+
+func newGoTransport(config *tls.Config) *http.Transport {
+	return &http.Transport{
+		TLSClientConfig:   config.Clone(),
+		DialContext:       (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+		ForceAttemptHTTP2: true, DisableCompression: true,
+		MaxIdleConns: 64, MaxIdleConnsPerHost: 16,
+		IdleConnTimeout: 90 * time.Second, TLSHandshakeTimeout: 10 * time.Second,
+	}
+}
+
+// SetTLSBackend selects a backend before Serve starts. It never falls back
+// silently: an unavailable NSS build returns an error.
+func (c *Client) SetTLSBackend(name string) error {
+	switch name {
+	case "go":
+		c.transport.CloseIdleConnections()
+		c.transport = newGoTransport(c.tlsConfig)
+		return nil
+	case "nss":
+		transport, err := nsstls.NewTransport(c.tlsConfig)
+		if err != nil {
+			return err
+		}
+		c.transport.CloseIdleConnections()
+		c.transport = transport
+		return nil
+	default:
+		return fmt.Errorf("unknown TLS backend %q (choose go or nss)", name)
+	}
 }
 
 func (c *Client) Close() { c.transport.CloseIdleConnections() }

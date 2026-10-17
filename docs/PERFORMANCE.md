@@ -62,3 +62,30 @@ steady-state speed improvement. The intended gains are faster family fallback,
 TLS resumption on reconnects and resource release on aborts. Those behaviors
 have separate regression tests. Internet throughput and TSPU behavior remain
 unmeasured.
+
+## NSS adapter observation (Go 1.26.9, Linux amd64, NSS 3.98)
+
+A separate run in one tagged binary, with both backends measured sequentially,
+three 500-ms repetitions per case on the same shared AMD EPYC runner:
+
+| Backend | 64-byte roundtrip | 1-MiB echo payload rate |
+| --- | --- | --- |
+| Go TLS | 54.4–58.6 microseconds | 316.3–380.4 MB/s |
+| NSS TLS + Go H2 | 95.7–98.2 microseconds | 301.9–336.5 MB/s |
+
+The initial NSS adapter does not show a speed advantage here. Native/Go callback
+crossings and a different H2 implementation add work, especially for small
+messages. These loopback samples are diagnostic, not Internet predictions or
+statistically established regressions. No packet-loss, real-route, Firefox,
+NaiveProxy or TSPU comparison has been run.
+
+```sh
+go test -tags nss ./internal/tunnel -run '^$' \
+  -bench 'Benchmark(NSS)?TunnelRoundTrip' -benchmem -benchtime=500ms -count=3
+```
+
+Validation for the adapter also passed with Go's race detector, vet, ordinary
+and tagged builds, CGO-disabled baseline tests, strict native compiler warnings,
+and AddressSanitizer. The AddressSanitizer run used `detect_leaks=0` because this
+runner cannot enumerate `/proc` threads for LeakSanitizer; no memory-leak scan
+result is claimed.

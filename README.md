@@ -2,11 +2,11 @@
 
 An experimental encrypted tunneling project. The first milestone provides an **authenticated HTTP/2 CONNECT baseline** with a local SOCKS5 client and a TLS server. The longer-term research goal is to test Mozilla NSS and Neqo against this baseline, then assess whether Firefox-like networking behavior offers any measurable benefit.
 
-> **Status: experimental prototype; not ready for production.** The current client uses **Go's crypto/tls, not Firefox's NSS or Neqo**. It does not reproduce Firefox TLS or HTTP/2 fingerprints and has no custom padding, HTTP/3, UDP, censorship-resistance guarantees or 3x-ui integration. Do not market it as superior to NaïveProxy.
+> **Status: experimental prototype; not ready for production.** The default client uses **Go crypto/tls**; Linux tagged builds can opt into an **experimental NSS TLS backend**. Neither is a complete Firefox stack. It does not reproduce Firefox TLS or HTTP/2 fingerprints and has no custom padding, HTTP/3, UDP, censorship-resistance guarantees or 3x-ui integration. Do not market it as superior to NaïveProxy.
 
 ## Build and test
 
-Requires Go 1.23+.
+Requires Go 1.26+.
 
 ```sh
 go test ./... -race
@@ -77,10 +77,30 @@ destination socket, while normal TCP half-close keeps the response readable.
 See [performance methodology](docs/PERFORMANCE.md) for reproducible local tests
 and the measurements still needed on real networks.
 
+## Experimental Mozilla NSS data transport
+
+Linux builds can now use NSS for the complete TLS 1.3 data connection:
+
+```sh
+go build -tags nss -o foxtunnel ./cmd/foxtunnel
+./foxtunnel client --tls-backend nss --server https://your-server.example
+```
+
+Requires NSS/NSPR headers, pkg-config and a C compiler. Credentials are still
+supplied by `FOXTUNNEL_USER` / `FOXTUNNEL_PASSWORD`; `--ca-cert` is supported.
+The backend verifies certificates and requires h2 ALPN. It does not fall back
+silently if unavailable. H2 is still Go x/net/http2, and certificate verification
+is Go x509; NSS alone does **not** make this a Firefox-equivalent client.
+NSS session resumption is disabled in this first adapter; the Go backend keeps
+its existing session cache.
+
+See [NSS build, lifecycle and limits](internal/nsstls/README.md) and the
+[transport strategy based on NaiveProxy, mieru, Hysteria 2, XHTTP and DNSTT](docs/TRANSPORT-STRATEGY.md).
+
 ## Roadmap
 
 1. Validate HTTP/2 baseline against packet captures, test HTTPS CONNECT behavior and error handling.
-2. Build an **independent NSS-based TLS adapter** and prove differences using packet-level capture and Firefox versioned reference traces.
+2. Stabilize the experimental **NSS TLS adapter** and prove differences using packet-level capture and Firefox versioned reference traces.
 3. Integrate **Neqo** for experimental QUIC/HTTP/3, with fallback to HTTP/2. Do not deploy Neqo's experimental server in production.
 4. Evaluate HTTP/2 and HTTP/3 fingerprints, transport overhead, downtime, performance and censor behavior with reproducible benchmarks.
 5. After API stabilization: adapter for sing-box and lifecycle integration in 3x-ui.

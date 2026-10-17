@@ -57,6 +57,7 @@ func main() {
 		fs := flag.NewFlagSet("client", flag.ExitOnError)
 		listen := fs.String("listen", "127.0.0.1:1080", "local SOCKS5 listening address")
 		server := fs.String("server", "", "remote HTTPS proxy URL")
+		tlsBackend := fs.String("tls-backend", "go", "TLS backend: go or experimental nss (requires -tags nss build)")
 		connectTimeout := fs.Duration("connect-timeout", 15*time.Second, "maximum CONNECT setup time (does not limit stream lifetime)")
 		ca := fs.String("ca-cert", "", "additional trusted certificate PEM")
 		_ = fs.Parse(os.Args[2:])
@@ -65,6 +66,9 @@ func main() {
 		}
 		client, err := tunnel.NewClient(*server, user, password, *ca)
 		if err != nil {
+			log.Fatal(err)
+		}
+		if err := client.SetTLSBackend(*tlsBackend); err != nil {
 			log.Fatal(err)
 		}
 		client.ConnectTimeout = *connectTimeout

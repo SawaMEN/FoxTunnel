@@ -36,3 +36,9 @@ jobs:
           assert 'h2' in profile['alpn'], profile
           print('Captured NSS TLS ClientHello: ALPN', profile['alpn'])
           PY
+      - name: Test NSS data transport with race detector
+        run: go test -race -tags nss ./... -count=1 -timeout=60s
+      - name: Vet NSS adapter
+        run: go vet -tags nss ./...
+      - name: Build NSS client
+        run: go build -tags nss -o /tmp/foxtunnel-nss ./cmd/foxtunnel
