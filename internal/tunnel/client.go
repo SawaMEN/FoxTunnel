@@ -25,7 +25,10 @@ type Client struct {
 	Username   string
 	Password   string
 	CACertFile string
-	transport  *http.Transport
+	// ConnectTimeout bounds setup only, never the lifetime of an open stream.
+	// Set before calling Serve; zero uses 15 seconds.
+	ConnectTimeout time.Duration
+	transport      *http.Transport
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {
@@ -33,8 +36,8 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
 		return nil, errors.New("server must be an https://host[:port] URL")
 	}
-	if user == "" || password == "" {
-		return nil, errors.New("username and password are required")
+	if user == "" || password == "" || strings.Contains(user, ":") {
+		return nil, errors.New("nonempty credentials and a username without colon are required")
 	}
 	roots, err := x509.SystemCertPool()
 	if err != nil {
@@ -51,7 +54,8 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 	}
 	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile}
 	c.transport = &http.Transport{
-		TLSClientConfig:     &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots},
+		TLSClientConfig:     &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ClientSessionCache: tls.NewLRUClientSessionCache(32)},
+		DialContext:         (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
 		ForceAttemptHTTP2:   true,
 		DisableCompression:  true,
 		MaxIdleConns:        64,
@@ -99,15 +103,24 @@ func (c *Client) handle(conn net.Conn) {
 		_ = socks5Reply(conn, 0x01)
 		return
 	}
+	// An explicit setup timer also covers a server that never answers CONNECT.
+	// ResponseHeaderTimeout alone need not cover a streaming request body.
+	timeout := c.ConnectTimeout
+	if timeout <= 0 {
+		timeout = 15 * time.Second
+	}
+	setupTimer := time.AfterFunc(timeout, cancel)
+	defer setupTimer.Stop()
 	req.Host = target
 	req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
 	resp, err := c.transport.RoundTrip(req)
+	setupOK := setupTimer.Stop()
 	if err != nil {
 		_ = socks5Reply(conn, 0x05)
 		return
 	}
 	defer resp.Body.Close()
-	if resp.ProtoMajor != 2 || resp.StatusCode != http.StatusOK {
+	if !setupOK || resp.ProtoMajor != 2 || resp.StatusCode != http.StatusOK {
 		_ = socks5Reply(conn, 0x05)
 		return
 	}
@@ -115,11 +128,16 @@ func (c *Client) handle(conn net.Conn) {
 		return
 	}
 
+	_ = conn.SetWriteDeadline(time.Time{})
+
 	uploadDone := make(chan struct{})
 	go func() {
 		defer close(uploadDone)
 		_, err := io.Copy(writer, conn)
 		_ = writer.CloseWithError(err)
+		if err != nil {
+			cancel()
+		}
 	}()
 	_, _ = io.Copy(conn, resp.Body)
 	cancel()
@@ -204,6 +222,9 @@ func socks5Handshake(conn net.Conn) (string, error) {
 }
 
 func socks5Reply(w io.Writer, code byte) error {
+	if conn, ok := w.(net.Conn); ok {
+		_ = conn.SetWriteDeadline(time.Now().Add(time.Second))
+	}
 	_, err := w.Write([]byte{5, code, 0, 1, 0, 0, 0, 0, 0, 0})
 	return err
 }

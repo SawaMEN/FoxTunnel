@@ -41,7 +41,7 @@ Local TCP applications can use `SOCKS5` at `127.0.0.1:1080` (remote DNS resoluti
 
 ## Security properties and limits
 
-- All proxy CONNECT requests require HTTP Basic proxy authorization **inside TLS**. Empty credentials are rejected, and unauthenticated probes see `404`.
+- All proxy CONNECT requests require HTTP Basic proxy authorization **inside TLS**. Empty credentials and usernames containing `:` are rejected. Ordinary requests and rejected probes use the public website handler (plain `404` by default).
 - The server requires HTTP/2 CONNECT, TLS 1.3 and a TLS certificate; no plaintext tunnel endpoint is exposed by the CLI.
 - The client validates the server hostname and certificate; `--ca-cert` adds a trusted CA/certificate without disabling verification.
 - The server resolves destination IPs before dialing, and rejects private, loopback, link-local, shared, and selected special-use addresses unless `--allow-private` is explicitly set.
@@ -49,6 +49,33 @@ Local TCP applications can use `SOCKS5` at `127.0.0.1:1080` (remote DNS resoluti
 - Credentials are supplied via environment variables, not command-line arguments; protect process environment and deployment secrets accordingly.
 - No UDP support, HTTP/3, padding, traffic shaping, domain fronting, browser fingerprint parity, or active-scanning proof is implemented.
 - This prototype has not had an external security review. Do not use it as an anonymity solution.
+
+## Public website and connection behavior
+
+Serve your own public static website on the same HTTPS listener:
+
+```sh
+./foxtunnel server --listen :443 --cert server.crt --key server.key --web-root /srv/public-site
+```
+
+Put an `index.html` and only public assets in that directory. Dotfiles and
+unindexed directory listings are rejected; symlinks must also point to public
+assets. Requests without valid tunnel authentication go to the website handler,
+with proxy credentials removed. Without `--web-root`, the listener returns a
+plain 404 instead of a product-branded placeholder. This removes one obvious
+identifier; it is **not proof of resistance to active probing**. TLS and HTTP/2
+still use Go and retain their network fingerprints.
+
+The client reuses HTTP/2 connections and caches up to 32 TLS sessions in memory
+for reconnects. No TLS 0-RTT or certificate-verification bypass is enabled.
+`--connect-timeout 15s` limits CONNECT setup only, including an unresponsive
+server; established streams can last longer. The server races the alternative
+IP family after 250 ms (immediately on first-family failure), using only resolved
+addresses that passed its destination policy. Stream cancellation releases the
+destination socket, while normal TCP half-close keeps the response readable.
+
+See [performance methodology](docs/PERFORMANCE.md) for reproducible local tests
+and the measurements still needed on real networks.
 
 ## Roadmap
 

@@ -24,18 +24,21 @@ type Server struct {
 	AllowPrivate bool
 	Resolver     *net.Resolver
 	DialTimeout  time.Duration
+	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
+	Cover http.Handler
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodConnect {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		_, _ = io.WriteString(w, "<!doctype html><html><head><title>FoxTunnel</title></head><body><h1>Welcome</h1></body></html>\n")
-		return
-	}
-	// HTTP/1.1 hijacking is deliberately not implemented. Require multiplexed h2.
-	if r.ProtoMajor != 2 || !s.authorized(r) {
-		http.NotFound(w, r)
+	// Select the tunnel only after authentication; rejected requests use the
+	// same handler as the public website and never dial a destination.
+	if r.Method != http.MethodConnect || r.ProtoMajor != 2 || !s.authorized(r) {
+		if s.Cover != nil {
+			public := r.Clone(r.Context())
+			public.Header.Del("Proxy-Authorization")
+			s.Cover.ServeHTTP(w, public)
+		} else {
+			http.NotFound(w, r)
+		}
 		return
 	}
 	host, port, err := splitTarget(r.Host)
@@ -51,6 +54,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer upstream.Close()
+	// A disconnected H2 stream must release a silent destination socket too.
+	stopClose := context.AfterFunc(r.Context(), func() { _ = upstream.Close() })
+	defer stopClose()
 
 	// The server can read r.Body while streaming the response only under HTTP/2.
 	w.Header().Set("Content-Type", "application/octet-stream")
@@ -64,7 +70,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	incomingDone := make(chan struct{})
 	go func() {
 		defer close(incomingDone)
-		_, _ = io.Copy(upstream, r.Body)
+		_, err := io.Copy(upstream, r.Body)
+		if err != nil {
+			_ = upstream.Close()
+			return
+		}
 		if tcp, ok := upstream.(*net.TCPConn); ok {
 			_ = tcp.CloseWrite()
 		}
@@ -130,23 +140,20 @@ func (s *Server) dialTarget(ctx context.Context, host, port string) (net.Conn, e
 			return nil, err
 		}
 	}
-	var lastErr error
+	// Filter and pin all addresses before racing IPv4/IPv6; never re-resolve a
+	// hostname in the dialer (which would permit DNS rebinding past the filter).
+	permitted := make([]netip.Addr, 0, len(ips))
 	for _, ip := range ips {
 		ip = ip.Unmap()
-		if !s.AllowPrivate && !safePublicIP(ip) {
-			continue
+		if s.AllowPrivate || safePublicIP(ip) {
+			permitted = append(permitted, ip)
 		}
-		dialer := net.Dialer{Timeout: s.timeout(), KeepAlive: 30 * time.Second}
-		conn, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(ip.String(), port))
-		if err == nil {
-			return conn, nil
-		}
-		lastErr = err
 	}
-	if lastErr != nil {
-		return nil, lastErr
+	if len(permitted) == 0 {
+		return nil, fmt.Errorf("no permitted destination addresses")
 	}
-	return nil, fmt.Errorf("no permitted destination addresses")
+	dialer := &net.Dialer{Timeout: s.timeout(), KeepAlive: 30 * time.Second}
+	return dialFamilies(ctx, permitted, port, 250*time.Millisecond, dialer.DialContext)
 }
 
 func safePublicIP(ip netip.Addr) bool {

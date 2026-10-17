@@ -6,7 +6,9 @@
 
 The local inbound supports SOCKS5 `CONNECT` and IPv4/IPv6/domain addresses. A persistent Go `http.Transport` multiplexes HTTP/2 streams over connections. Each connection uses a CONNECT request with `:authority` equal to the target and `Proxy-Authorization` inside the encrypted tunnel. The server resolves and filters the destination IP and relays bytes in both directions, flushing responses for interactive applications. The server's default bind address and the client's local bind address are both loopback.
 
-The server answers ordinary HTTP requests with a basic page. **That is not equivalent to NaïveProxy's tested fronting or active-probing defenses**. The server is not connected to an independent reverse proxy yet.
+Ordinary requests and rejected tunnel probes use a shared `Cover` handler, with `Proxy-Authorization` removed. The CLI supports an operator-owned static site using `--web-root`, or a plain 404 if no site is configured. Dotfiles and directory listings without index.html are rejected. This removes the fixed FoxTunnel page; it does not establish active-probing resistance or hide Go TLS/HTTP2 behavior. An independent reverse proxy is not implemented.
+
+The client uses bounded dial/TLS/CONNECT setup, with an explicit setup cancellation timer for streaming CONNECT bodies. That timer is stopped after headers arrive and does not limit stream lifetime. A per-client in-memory TLS session cache enables resumption on reconnects. On the server, filtered and pinned destination IPs are partitioned by family; the second family starts after 250 ms or immediately when the primary family fails. Context cancellation closes losing dials and active destination sockets. Upload EOF is propagated with TCP CloseWrite so response-after-EOF applications remain functional.
 
 ## Mozilla/Firefox experiment (not implemented)
 
