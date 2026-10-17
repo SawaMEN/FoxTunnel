@@ -16,5 +16,7 @@ jobs:
         run: go vet ./...
       - name: Test with race detector
         run: go test -race ./... -count=1 -timeout=60s
+      - name: Fuzz padding decoder
+        run: go test ./internal/tunnel -run '^$' -fuzz FuzzPaddingDecoder -fuzztime=10s -parallel=2
       - name: Build
         run: go build ./cmd/foxtunnel

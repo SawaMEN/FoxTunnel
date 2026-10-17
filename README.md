@@ -2,7 +2,7 @@
 
 An experimental encrypted tunneling project. The first milestone provides an **authenticated HTTP/2 CONNECT baseline** with a local SOCKS5 client and a TLS server. The longer-term research goal is to test Mozilla NSS and Neqo against this baseline, then assess whether Firefox-like networking behavior offers any measurable benefit.
 
-> **Status: experimental prototype; not ready for production.** The default client uses **Go crypto/tls**; Linux tagged builds can opt into an **experimental NSS TLS backend**. Neither is a complete Firefox stack. It does not reproduce Firefox TLS or HTTP/2 fingerprints and has no custom padding, HTTP/3, UDP, censorship-resistance guarantees or 3x-ui integration. Do not market it as superior to NaïveProxy.
+> **Status: experimental prototype; not ready for production.** The default client uses **Go crypto/tls**; Linux tagged builds can opt into an **experimental NSS TLS backend**. Neither is a complete Firefox stack. It does not reproduce Firefox TLS or HTTP/2 fingerprints and offers only opt-in experimental initial padding. HTTP/3, UDP, censorship-resistance guarantees and 3x-ui integration are not implemented. Do not market it as superior to NaïveProxy.
 
 ## Build and test
 
@@ -47,7 +47,7 @@ Local TCP applications can use `SOCKS5` at `127.0.0.1:1080` (remote DNS resoluti
 - The server resolves destination IPs before dialing, and rejects private, loopback, link-local, shared, and selected special-use addresses unless `--allow-private` is explicitly set.
 - SOCKS5 is unauthenticated; its default listening address is loopback. **Never expose the SOCKS5 port publicly.**
 - Credentials are supplied via environment variables, not command-line arguments; protect process environment and deployment secrets accordingly.
-- No UDP support, HTTP/3, padding, traffic shaping, domain fronting, browser fingerprint parity, or active-scanning proof is implemented.
+- No UDP, HTTP/3, traffic shaping, domain fronting, browser fingerprint parity, or active-scanning proof is implemented. Initial-record padding is an opt-in experiment.
 - This prototype has not had an external security review. Do not use it as an anonymity solution.
 
 ## Public website and connection behavior
@@ -96,6 +96,18 @@ its existing session cache.
 
 See [NSS build, lifecycle and limits](internal/nsstls/README.md) and the
 [transport strategy based on NaiveProxy, mieru, Hysteria 2, XHTTP and DNSTT](docs/TRANSPORT-STRATEGY.md).
+
+## Experimental bounded initial padding
+
+`--padding` on both server and client enables negotiated padding for the first
+eight application-data records per direction, followed by raw streaming. The
+mode adds at most 4128 bytes per bidirectional stream (excluding H2/TLS and
+capability headers), with no artificial delays. A missing/incorrect server
+acknowledgement fails setup before application data is sent; it never silently
+retries unpadded. Both Go TLS and NSS clients are supported.
+
+This does not modify TLS/H2 fingerprints or prove resistance to DPI. See the
+[wire format, compatibility, limits and tests](docs/PADDING.md).
 
 ## Roadmap
 

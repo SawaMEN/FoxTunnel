@@ -17,13 +17,15 @@ import (
 )
 
 // Server is an authenticated HTTP/2 CONNECT forward proxy. It has no
-// Firefox fingerprinting or custom wire protocol; it is a baseline.
+// Firefox fingerprint parity. Initial-record padding is an opt-in experiment.
 type Server struct {
 	Username     string
 	Password     string
 	AllowPrivate bool
 	Resolver     *net.Resolver
 	DialTimeout  time.Duration
+	// Padding enables support for explicitly negotiated initial-v1 records.
+	Padding bool
 	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
 	Cover http.Handler
 }
@@ -35,10 +37,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if s.Cover != nil {
 			public := r.Clone(r.Context())
 			public.Header.Del("Proxy-Authorization")
+			public.Header.Del(paddingHeader)
 			s.Cover.ServeHTTP(w, public)
 		} else {
 			http.NotFound(w, r)
 		}
+		return
+	}
+	padded, err := paddingRequested(r.Header)
+	if err != nil || (padded && !s.Padding) {
+		http.Error(w, "unsupported padding mode", http.StatusBadRequest)
 		return
 	}
 	host, port, err := splitTarget(r.Host)
@@ -59,6 +67,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer stopClose()
 
 	// The server can read r.Body while streaming the response only under HTTP/2.
+	if padded {
+		w.Header().Set(paddingHeader, paddingVersion)
+	}
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusOK)
 	f, ok := w.(http.Flusher)
@@ -67,10 +78,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	f.Flush()
 
+	var incoming io.Reader = r.Body
+	var outgoing io.Writer = flushingWriter{w: w, flusher: f}
+	if padded {
+		incoming = newPaddingReader(r.Body)
+		outgoing = newPaddingWriter(outgoing)
+	}
 	incomingDone := make(chan struct{})
 	go func() {
 		defer close(incomingDone)
-		_, err := io.Copy(upstream, r.Body)
+		_, err := io.Copy(upstream, incoming)
 		if err != nil {
 			_ = upstream.Close()
 			return
@@ -81,7 +98,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Flush small chunks immediately; otherwise an interactive tunnel can stall.
-	_, _ = io.Copy(flushingWriter{w: w, flusher: f}, upstream)
+	_, _ = io.Copy(outgoing, upstream)
 	_ = upstream.Close()
 	_ = r.Body.Close()
 	<-incomingDone

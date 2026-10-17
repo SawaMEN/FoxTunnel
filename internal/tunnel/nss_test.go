@@ -113,3 +113,7 @@ func TestNSSHalfClose(t *testing.T) {
 }
 
 func BenchmarkNSSTunnelRoundTrip(b *testing.B) { benchmarkTunnelRoundTrip(b, "nss") }
+
+func TestNSSPaddingEndToEnd(t *testing.T) { testPaddingBackend(t, "nss") }
+
+func BenchmarkNSSPaddedTunnelRoundTrip(b *testing.B) { benchmarkTunnelOptions(b, "nss", true) }

@@ -58,12 +58,13 @@ func TestCoverStripsProxyCredentials(t *testing.T) {
 	called := false
 	s := &Server{Cover: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
-		if r.Header.Get("Proxy-Authorization") != "" {
+		if r.Header.Get("Proxy-Authorization") != "" || r.Header.Get(paddingHeader) != "" {
 			t.Error("leaked proxy credentials")
 		}
 	})}
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Proxy-Authorization", "private")
+	req.Header.Set(paddingHeader, paddingVersion)
 	s.ServeHTTP(httptest.NewRecorder(), req)
 	if !called || req.Header.Get("Proxy-Authorization") != "private" {
 		t.Fatal("cover not called or request mutated")

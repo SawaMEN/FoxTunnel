@@ -7,6 +7,7 @@
 - [x] Serve an operator-owned static site for ordinary requests and rejected probes.
 - [x] Bound CONNECT setup, release cancelled streams, preserve upload half-close.
 - [x] Add TLS resumption, filtered dual-stack fallback and local throughput benchmark.
+- [x] Add opt-in bounded initial-record padding with explicit negotiation, parser limits, fuzzing and Go/NSS tests.
 - [ ] Test in multiple OS configurations and behind an HTTPS frontend.
 - [ ] Add rate limiting, connection limits, observability without leaking targets/credentials, graceful shutdown and external audit.
 - [ ] Capture up-to-date Firefox reference handshake on desktop and mobile; define fingerprint conformance tests.

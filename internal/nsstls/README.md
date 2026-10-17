@@ -44,4 +44,6 @@ Record `pkg-config --modversion nss nspr` in measurements. Distro NSS versions
 may differ substantially from current Firefox. Keep production dependencies
 updated through the OS vendor and record backport versions. NSS can only change
 TLS behavior: H2 remains Go x/net/http2, and no browser-equivalent profile, H3,
-UDP, padding, DNSTT or real-network TSPU test is provided by this adapter.
+UDP, DNSTT or real-network TSPU test is provided by this adapter. Optional
+initial-record padding belongs to the tunnel layer and supports both backends;
+see [its specification](../../docs/PADDING.md).

@@ -7,7 +7,7 @@ not a list of implemented features.
 
 | Reference | Technique to evaluate | FoxTunnel decision / status |
 | --- | --- | --- |
-| NaiveProxy | Reuse browser networking, authenticated CONNECT behind a site, bounded initial padding | Highest priority. NSS TLS/H2 experiment and public website implemented; complete browser stack and padding not implemented. |
+| NaiveProxy | Reuse browser networking, authenticated CONNECT behind a site, bounded initial padding | Highest priority. NSS TLS/H2 experiment, public website and opt-in bounded initial padding implemented; complete browser stack not implemented. |
 | mieru ("meiru") | Configurable traffic patterns and bounded randomized padding | Evaluate bounded overhead against captures; do not transplant its non-TLS encryption/nonce format into HTTPS. Not implemented. |
 | Hysteria 2 | QUIC streams/datagrams, congestion-aware throughput, ordinary web behavior for rejected authentication | Evaluate Mozilla Neqo HTTP/3 and CONNECT-UDP. Do not assume aggressive rate-based congestion control is fastest or matches Firefox. Not implemented. |
 | XHTTP/VLESS ("xhttps vless") | Separate transport from proxy request semantics; streaming and separated upload/download modes | Keep a transport boundary and test HTTP streaming carriers separately. Do not add nested VLESS framing or claim CDN compatibility before testing. Not implemented. |
@@ -36,9 +36,10 @@ connection reuse and timing still need versioned Firefox reference comparisons.
   cold/resumed handshake settings; measure NSS differences.
 - Stabilize NSS cancellation, error reporting, concurrent reads/writes, trust
   validation and packaging across supported platforms.
-- Prototype bounded initial-record padding only with explicit capability
-  negotiation, strict parser limits and per-stream overhead accounting. Keep
-  an unpadded control and do not enable unmeasured traffic shaping by default.
+- Compare the implemented initial-v1 padding against an unpadded control using
+  Firefox/NaiveProxy captures and real network tests. Its explicit negotiation,
+  parser limits and overhead budget do not prove a classifier advantage. Keep
+  traffic shaping disabled by default.
 - Implement Neqo client H3 against an interoperable stable server, then compare
   loss, RTT, bandwidth/CPU and UDP availability against H2 and NaiveProxy.
 - Add carrier selection only after transports exist, with cooldowns and setup

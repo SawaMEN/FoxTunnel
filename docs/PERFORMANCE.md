@@ -89,3 +89,32 @@ and tagged builds, CGO-disabled baseline tests, strict native compiler warnings,
 and AddressSanitizer. The AddressSanitizer run used `detect_leaks=0` because this
 runner cannot enumerate `/proc` threads for LeakSanitizer; no memory-leak scan
 result is claimed.
+
+## Initial-v1 padding observation (Go 1.26.9, NSS 3.98)
+
+Three 500-ms repetitions per case on the shared Linux runner:
+
+| Backend / mode | 64-byte roundtrip | 1-MiB echo payload rate |
+| --- | --- | --- |
+| Go, plain | 53.9–59.8 microseconds | 293.9–339.8 MB/s |
+| Go, padding enabled | 59.7–63.5 microseconds | 196.3–321.7 MB/s |
+| NSS, plain | 118.9–144.2 microseconds | 257.2–297.8 MB/s |
+| NSS, padding enabled | 95.0–115.7 microseconds | 252.9–303.7 MB/s |
+
+The stream benchmarks predominantly exercise the raw phase. The wide ranges
+and even reversed plain/padded rankings show runner variance; they do not
+establish a steady-state penalty or advantage. Padding stays disabled by
+default. No Internet or classifier result is inferred from these samples.
+
+The separate `BenchmarkInitialPaddingEncoder` discards encoded output, measuring
+only CPU, wire-byte overhead and warmed-pool allocations for a new prefix:
+
+| Payload in one write | Encoder time | Mean extra bytes |
+| --- | --- | --- |
+| 64 bytes (one record) | 60.5–70.7 ns | 130.5–130.6 |
+| 16 KiB (one record) | 333.9–367.0 ns | 130.5–130.6 |
+| 128 KiB (eight records) | 2.78–2.93 microseconds | 1044 |
+
+The encoder microbenchmark reported zero allocations per operation after the
+buffer pool was warmed. It excludes decoder allocation, HTTP/2, TLS, sockets,
+setup and real network costs. See [padding format and bounds](PADDING.md).

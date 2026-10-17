@@ -185,8 +185,13 @@ func TestParallelStreams(t *testing.T) {
 func BenchmarkTunnelRoundTrip(b *testing.B) { benchmarkTunnelRoundTrip(b, "go") }
 
 func benchmarkTunnelRoundTrip(b *testing.B, backend string) {
+	benchmarkTunnelOptions(b, backend, false)
+}
+
+func benchmarkTunnelOptions(b *testing.B, backend string, padding bool) {
 	target := testDestination(b, func(c net.Conn) { _, _ = io.Copy(c, c) })
-	client, addr := testClient(b, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+	client, addr := testClient(b, &Server{Username: "alice", Password: "secret", AllowPrivate: true, Padding: padding})
+	client.Padding = padding
 	if err := client.SetTLSBackend(backend); err != nil {
 		b.Fatal(err)
 	}
@@ -253,3 +258,5 @@ func TestTLSResumptionOnReconnect(t *testing.T) {
 		client.transport.CloseIdleConnections()
 	}
 }
+
+func BenchmarkPaddedTunnelRoundTrip(b *testing.B) { benchmarkTunnelOptions(b, "go", true) }

@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 )
 
 // Client exposes a local SOCKS5 CONNECT listener backed by HTTP/2 CONNECT.
@@ -29,7 +30,9 @@ type Client struct {
 	// ConnectTimeout bounds setup only, never the lifetime of an open stream.
 	// Set before calling Serve; zero uses 15 seconds.
 	ConnectTimeout time.Duration
-	transport      interface {
+	// Padding is an opt-in experiment; configure before Serve.
+	Padding   bool
+	transport interface {
 		http.RoundTripper
 		CloseIdleConnections()
 	}
@@ -140,6 +143,9 @@ func (c *Client) handle(conn net.Conn) {
 	}
 	setupTimer := time.AfterFunc(timeout, cancel)
 	defer setupTimer.Stop()
+	if c.Padding {
+		req.Header.Set(paddingHeader, paddingVersion)
+	}
 	req.Host = target
 	req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
 	resp, err := c.transport.RoundTrip(req)
@@ -153,6 +159,17 @@ func (c *Client) handle(conn net.Conn) {
 		_ = socks5Reply(conn, 0x05)
 		return
 	}
+	negotiated, paddingErr := paddingRequested(resp.Header)
+	if paddingErr != nil || negotiated != c.Padding {
+		_ = socks5Reply(conn, 0x05)
+		return
+	}
+	var upload io.Writer = writer
+	var download io.Reader = resp.Body
+	if negotiated {
+		upload = newPaddingWriter(writer)
+		download = newPaddingReader(resp.Body)
+	}
 	if err := socks5Reply(conn, 0x00); err != nil {
 		return
 	}
@@ -162,13 +179,13 @@ func (c *Client) handle(conn net.Conn) {
 	uploadDone := make(chan struct{})
 	go func() {
 		defer close(uploadDone)
-		_, err := io.Copy(writer, conn)
+		_, err := io.Copy(upload, conn)
 		_ = writer.CloseWithError(err)
 		if err != nil {
 			cancel()
 		}
 	}()
-	_, _ = io.Copy(conn, resp.Body)
+	_, _ = io.Copy(conn, download)
 	cancel()
 	_ = conn.Close()
 	_ = writer.Close()
