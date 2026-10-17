@@ -109,6 +109,18 @@ retries unpadded. Both Go TLS and NSS clients are supported.
 This does not modify TLS/H2 fingerprints or prove resistance to DPI. See the
 [wire format, compatibility, limits and tests](docs/PADDING.md).
 
+## Bounded server capacity
+
+The server defaults to at most 256 authenticated tunnels, including destination
+lookup/dial work. `--max-tunnels 128` changes this limit. Excess authenticated
+CONNECT requests fail with HTTP 503 before destination work; they are not queued
+or retried automatically. Slots are returned on cancellation, errors and normal
+stream teardown. Website requests and rejected probes still use the public
+handler. This is a resource bound, not a complete TLS/HTTP or DDoS defense.
+
+See the [AmneziaWG 3.1 / AnyTLS / TUIC / WebTunnel / Outline review](docs/PROTOCOL-REVIEW-2026-10-18.md)
+for what can transfer to the Mozilla design and what still needs experiments.
+
 ## Roadmap
 
 1. Validate HTTP/2 baseline against packet captures, test HTTPS CONNECT behavior and error handling.

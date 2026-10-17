@@ -118,3 +118,16 @@ only CPU, wire-byte overhead and warmed-pool allocations for a new prefix:
 The encoder microbenchmark reported zero allocations per operation after the
 buffer pool was warmed. It excludes decoder allocation, HTTP/2, TLS, sockets,
 setup and real network costs. See [padding format and bounds](PADDING.md).
+
+## CI fuzz budget correction
+
+The first padding CI run passed race tests but failed after its 10-second fuzz
+budget with `context deadline exceeded`, without a saved failing input. A local
+Go 1.26.0 run did not reproduce the failure. This is consistent with a fuzz
+coordinator deadline race, but the log alone does not prove the root cause.
+
+CI now uses the latest Go 1.26 patch and a 100,000-execution fuzz budget with an
+independent 120-second process timeout. Failures remain fatal; there is no retry
+or error suppression. The same counted command passed locally. A real parser
+crash or hang must still fail the job. Longer time-based campaigns remain useful
+outside the bounded CI smoke check.

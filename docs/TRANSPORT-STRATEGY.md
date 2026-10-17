@@ -11,7 +11,14 @@ not a list of implemented features.
 | mieru ("meiru") | Configurable traffic patterns and bounded randomized padding | Evaluate bounded overhead against captures; do not transplant its non-TLS encryption/nonce format into HTTPS. Not implemented. |
 | Hysteria 2 | QUIC streams/datagrams, congestion-aware throughput, ordinary web behavior for rejected authentication | Evaluate Mozilla Neqo HTTP/3 and CONNECT-UDP. Do not assume aggressive rate-based congestion control is fastest or matches Firefox. Not implemented. |
 | XHTTP/VLESS ("xhttps vless") | Separate transport from proxy request semantics; streaming and separated upload/download modes | Keep a transport boundary and test HTTP streaming carriers separately. Do not add nested VLESS framing or claim CDN compatibility before testing. Not implemented. |
+| AmneziaWG 3.1 | Metadata protection, controlled traffic variability, under-load handling | Reviewed at tag v3.1.20260828. Keep UDP-specific obfuscation separate from Mozilla HTTPS; bounded authenticated tunnel admission implemented. See the dated review. |
+| AnyTLS | Padding profiles, session reuse and recovery | Evaluate bounded profiles/liveness without copying custom framing or insecure example defaults. Pending. |
+| TUIC v5 | QUIC streams/datagrams and migration | Evaluate via Mozilla Neqo; no 0-RTT replay of application data. Pending. |
+| WebTunnel / Outline SDK | Real HTTPS frontends and modular carrier interfaces | Reference designs for frontend tests and stream/packet separation. Not integrated. |
 | DNSTT | End-to-end security through recursive DNS and transport/session separation | Optional explicit emergency carrier requiring domain delegation and server identity verification. Not a fast primary carrier, not automatic plaintext DNS fallback. Not implemented. |
+
+See the [AmneziaWG and additional-project review](PROTOCOL-REVIEW-2026-10-18.md)
+for verified version identifiers, sources, transfer decisions and limits.
 
 ## Layer boundaries
 

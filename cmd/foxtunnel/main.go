@@ -30,9 +30,13 @@ func main() {
 		cert := fs.String("cert", "", "TLS certificate PEM")
 		key := fs.String("key", "", "TLS private key PEM")
 		padding := fs.Bool("padding", false, "enable experimental negotiated initial-record padding")
+		maxTunnels := fs.Int("max-tunnels", 256, "maximum active authenticated tunnels, including destination dialing")
 		webRoot := fs.String("web-root", "", "public website directory for ordinary requests and rejected probes")
 		allowPrivate := fs.Bool("allow-private", false, "permit private/loopback destination IPs (unsafe on public deployments)")
 		_ = fs.Parse(os.Args[2:])
+		if *maxTunnels <= 0 {
+			log.Fatal("--max-tunnels must be positive")
+		}
 		if *cert == "" || *key == "" {
 			log.Fatal("--cert and --key are required")
 		}
@@ -46,7 +50,7 @@ func main() {
 		}
 		server := &http.Server{
 			Addr:              *listen,
-			Handler:           &tunnel.Server{Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding},
+			Handler:           &tunnel.Server{Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels},
 			TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS13, NextProtos: []string{"h2", "http/1.1"}},
 			ReadHeaderTimeout: 10 * time.Second,
 			IdleTimeout:       90 * time.Second,

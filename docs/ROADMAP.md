@@ -9,7 +9,9 @@
 - [x] Add TLS resumption, filtered dual-stack fallback and local throughput benchmark.
 - [x] Add opt-in bounded initial-record padding with explicit negotiation, parser limits, fuzzing and Go/NSS tests.
 - [ ] Test in multiple OS configurations and behind an HTTPS frontend.
-- [ ] Add rate limiting, connection limits, observability without leaking targets/credentials, graceful shutdown and external audit.
+- [x] Bound authenticated destination setup and relay concurrency before DNS/dial.
+- [x] Review AmneziaWG 3.1 and additional transport designs with pinned sources.
+- [ ] Add rate limiting, HTTP/TLS connection limits, observability without leaking targets/credentials, graceful shutdown and external audit.
 - [ ] Capture up-to-date Firefox reference handshake on desktop and mobile; define fingerprint conformance tests.
 - [x] Add standalone NSS/NSPR ClientHello capture experiment (not a transport).
 - [x] Add experimental Linux NSS TLS 1.3 data adapter with certificate validation and h2 ALPN.

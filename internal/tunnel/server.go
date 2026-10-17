@@ -13,6 +13,7 @@ import (
 	"net/netip"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,6 +27,10 @@ type Server struct {
 	DialTimeout  time.Duration
 	// Padding enables support for explicitly negotiated initial-v1 records.
 	Padding bool
+	// MaxTunnels bounds authenticated dialing/relay work across this Server.
+	// Zero uses 256. Configure before serving and do not copy Server after use.
+	MaxTunnels    int
+	activeTunnels atomic.Int64
 	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
 	Cover http.Handler
 }
@@ -54,6 +59,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid CONNECT authority", http.StatusBadRequest)
 		return
 	}
+	if !s.acquireTunnel() {
+		http.Error(w, "server busy", http.StatusServiceUnavailable)
+		return
+	}
+	defer s.activeTunnels.Add(-1)
 	ctx, cancel := context.WithTimeout(r.Context(), s.timeout())
 	upstream, err := s.dialTarget(ctx, host, port)
 	cancel()
@@ -196,4 +206,20 @@ func (fw flushingWriter) Write(p []byte) (int, error) {
 	n, err := fw.w.Write(p)
 	fw.flusher.Flush()
 	return n, err
+}
+
+func (s *Server) acquireTunnel() bool {
+	limit := s.MaxTunnels
+	if limit <= 0 {
+		limit = 256
+	}
+	for {
+		active := s.activeTunnels.Load()
+		if active >= int64(limit) {
+			return false
+		}
+		if s.activeTunnels.CompareAndSwap(active, active+1) {
+			return true
+		}
+	}
 }
