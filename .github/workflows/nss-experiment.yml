@@ -1,0 +1,38 @@
+name: NSS ClientHello experiment
+on:
+  push:
+  pull_request:
+jobs:
+  nss:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install NSS and NSPR build headers
+        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
+      - name: Build native NSS probe
+        run: |
+          pkg-config --modversion nss nspr
+          cc -std=c11 -Wall -Wextra -Werror -O2 $(pkg-config --cflags nss nspr) experiments/nss-clienthello/main.c -o /tmp/nss-clienthello $(pkg-config --libs nss nspr)
+          go build -o /tmp/ft-fingerprint ./cmd/ft-fingerprint
+      - name: Capture real NSS ClientHello over loopback
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/ft-fingerprint --listen 127.0.0.1:19443 --out /tmp/nss.json &
+          capture_pid=$!
+          trap 'kill "$capture_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          /tmp/nss-clienthello 19443 example.org
+          wait "$capture_pid"
+          python3 - <<'PY'
+          import json
+          with open('/tmp/nss.json', encoding='utf-8') as file:
+              profile = json.load(file)
+          assert profile['legacy_version'] == 771, profile
+          assert 772 in profile['supported_versions'], profile
+          assert 'h2' in profile['alpn'], profile
+          print('Captured NSS TLS ClientHello: ALPN', profile['alpn'])
+          PY

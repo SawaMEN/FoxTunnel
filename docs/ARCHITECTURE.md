@@ -24,3 +24,12 @@ Important: [`mozilla/neqo`](https://github.com/mozilla/neqo) explicitly marks it
 ## Proposed comparative measurements
 
 Capture Firefox and the FoxTunnel client on the same OS for the same origin, transport and Firefox version. Compare TLS ClientHello, JA4-like features, H2 SETTINGS/HEADERS/order, ALPN, QUIC transport parameters, timing, connection lifetimes and application overhead. Evaluate rate of success after the remote IP is blocked separately from classifier accuracy. Publish both successful results and failures.
+
+## Native NSS spike (capture only)
+
+`experiments/nss-clienthello/` uses NSS and NSPR directly to generate a TLS
+1.3 ClientHello, allowing measurements with the same metadata probe. It
+connects only to loopback; the listener closes before the handshake completes.
+This experiment must not be promoted to a transport without a verified certificate
+chain and hostname, trust-store management, deadlines, concurrency design and
+HTTP/2 framing. Production NSS version pinning remains an open task.

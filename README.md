@@ -97,3 +97,11 @@ This does not test HTTP/2 SETTINGS, timing, certificate validation, payload
 patterns or Firefox Necko behavior. No claim of fingerprint parity is made.
 
 See [architecture](docs/ARCHITECTURE.md) and [project milestones](docs/ROADMAP.md).
+
+## Native Mozilla NSS experiment
+
+A **standalone NSS/NSPR ClientHello generator** is available under
+[`experiments/nss-clienthello`](experiments/nss-clienthello/). It emits a
+real NSS TLS 1.3 ClientHello to a loopback-only capture listener, but does
+not complete TLS, validate certificates, proxy traffic or integrate with the
+Go transport. See its README for build and comparison instructions.
