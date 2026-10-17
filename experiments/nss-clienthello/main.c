@@ -70,10 +70,18 @@ int main(int argc, char **argv) {
     if (SSL_SetNextProtoNego(fd, alpn, sizeof(alpn)) != SECSuccess) {
         fail("SSL_SetNextProtoNego"); goto close_socket;
     }
+    /* Imported connected descriptors need an explicit client handshake reset. */
+    if (SSL_ResetHandshake(fd, PR_FALSE) != SECSuccess) {
+        fail("SSL_ResetHandshake"); goto close_socket;
+    }
     /* The capture probe closes before a server certificate or handshake reply
      * exists. A handshake error is expected; successful ClientHello parsing is
      * checked by the CI capture process, not by this program. */
-    (void) SSL_ForceHandshakeWithTimeout(fd, PR_SecondsToInterval(5));
+    if (SSL_ForceHandshakeWithTimeout(fd, PR_SecondsToInterval(5)) != SECSuccess) {
+        PRErrorCode err = PR_GetError();
+        const char *name = PR_ErrorToName(err);
+        fprintf(stderr, "expected incomplete handshake: %s (%d)\n", name ? name : "unknown", err);
+    }
     fprintf(stderr, "NSS %s: ClientHello attempted on loopback; full TLS handshake is intentionally unavailable\n", NSS_GetVersion());
     result = 0;
 close_socket:
