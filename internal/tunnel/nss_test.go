@@ -117,3 +117,8 @@ func BenchmarkNSSTunnelRoundTrip(b *testing.B) { benchmarkTunnelRoundTrip(b, "ns
 func TestNSSPaddingEndToEnd(t *testing.T) { testPaddingBackend(t, "nss") }
 
 func BenchmarkNSSPaddedTunnelRoundTrip(b *testing.B) { benchmarkTunnelOptions(b, "nss", true) }
+
+func TestNSSProxyFallback(t *testing.T)                     { testProxyFallback(t, "nss") }
+func TestNSSFallbackStopsOnCertificateFailure(t *testing.T) { testFallbackCertificate(t, "nss") }
+
+func TestEndpointSchedulingNSS(t *testing.T) { testEndpointScheduling(t, "nss") }

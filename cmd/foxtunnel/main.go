@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
@@ -62,11 +63,18 @@ func main() {
 		fs := flag.NewFlagSet("client", flag.ExitOnError)
 		listen := fs.String("listen", "127.0.0.1:1080", "local SOCKS5 listening address")
 		server := fs.String("server", "", "remote HTTPS proxy URL")
+		var fallbacks serverURLs
+		fs.Var(&fallbacks, "fallback-server", "explicit trusted HTTPS proxy fallback (repeat up to seven times)")
+		balance := fs.String("balance", "failover", "new-stream scheduling: failover, round-robin, least-active")
+		attemptTimeout := fs.Duration("fallback-attempt-timeout", 5*time.Second, "setup time per endpoint when fallbacks are configured")
 		padding := fs.Bool("padding", false, "require experimental initial-record padding (server must enable it)")
 		tlsBackend := fs.String("tls-backend", "go", "TLS backend: go or experimental nss (requires -tags nss build)")
 		connectTimeout := fs.Duration("connect-timeout", 15*time.Second, "maximum CONNECT setup time (does not limit stream lifetime)")
 		ca := fs.String("ca-cert", "", "additional trusted certificate PEM")
 		_ = fs.Parse(os.Args[2:])
+		if *attemptTimeout <= 0 {
+			log.Fatal("--fallback-attempt-timeout must be positive")
+		}
 		if *connectTimeout <= 0 {
 			log.Fatal("--connect-timeout must be positive")
 		}
@@ -77,6 +85,13 @@ func main() {
 		if err := client.SetTLSBackend(*tlsBackend); err != nil {
 			log.Fatal(err)
 		}
+		if err := client.SetFallbackServers(fallbacks); err != nil {
+			log.Fatal(err)
+		}
+		if err := client.SetBalance(*balance); err != nil {
+			log.Fatal(err)
+		}
+		client.FallbackAttemptTimeout = *attemptTimeout
 		client.ConnectTimeout = *connectTimeout
 		client.Padding = *padding
 		defer client.Close()
@@ -96,3 +111,8 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "usage: foxtunnel <server|client> [flags] (FOXTUNNEL_USER and FOXTUNNEL_PASSWORD must be set)")
 	os.Exit(2)
 }
+
+type serverURLs []string
+
+func (s *serverURLs) String() string         { return strings.Join(*s, ",") }
+func (s *serverURLs) Set(value string) error { *s = append(*s, value); return nil }

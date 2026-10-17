@@ -21,3 +21,12 @@
 - [ ] Integrate with sing-box fork and 3x-ui only after protocols and lifecycle stabilize.
 
 **Do not ship this prototype to end users as a censorship-resistant VPN.**
+
+## Endpoint scheduling and follow-up review
+
+Trusted multi-origin setup failover, round-robin and least-active scheduling
+are implemented for both TLS backends, with bounded network-failure cooldown.
+See [configuration and limits](ENDPOINTS.md) and the
+[NaiveProxy/Sudoku review](NAIVE-SUDOKU-REVIEW.md).
+HTTP/3, bandwidth-aware scheduling, warm pools and Firefox fingerprint parity
+remain experiments rather than delivered features.

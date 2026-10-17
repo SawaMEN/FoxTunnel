@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -15,6 +14,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
@@ -31,8 +32,19 @@ type Client struct {
 	// Set before calling Serve; zero uses 15 seconds.
 	ConnectTimeout time.Duration
 	// Padding is an opt-in experiment; configure before Serve.
-	Padding   bool
-	transport interface {
+	Padding bool
+	// FallbackAttemptTimeout applies only with multiple configured endpoints.
+	// Zero uses five seconds; ConnectTimeout bounds all attempts together.
+	FallbackAttemptTimeout time.Duration
+	fallbackServers        []*url.URL
+	preferredEndpoint      atomic.Uint32
+	schedulerMu            sync.Mutex
+	balance                string
+	nextEndpoint           uint64
+	activeEndpoints        [maxProxyEndpoints]int
+	endpointFailures       [maxProxyEndpoints]uint8
+	endpointRetryAt        [maxProxyEndpoints]time.Time
+	transport              interface {
 		http.RoundTripper
 		CloseIdleConnections()
 	}
@@ -40,9 +52,9 @@ type Client struct {
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
-		return nil, errors.New("server must be an https://host[:port] URL")
+	u, err := parseServerURL(rawURL)
+	if err != nil {
+		return nil, err
 	}
 	if user == "" || password == "" || strings.Contains(user, ":") {
 		return nil, errors.New("nonempty credentials and a username without colon are required")
@@ -68,7 +80,13 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 }
 
 func newGoTransport(config *tls.Config) *http.Transport {
+	protocols := new(http.Protocols)
+	protocols.SetHTTP2(true)
 	return &http.Transport{
+		Protocols: protocols,
+		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialGoH2(ctx, network, addr, config)
+		},
 		TLSClientConfig:   config.Clone(),
 		DialContext:       (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
 		ForceAttemptHTTP2: true, DisableCompression: true,
@@ -124,49 +142,17 @@ func (c *Client) handle(conn net.Conn) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	reader, writer := io.Pipe()
-	defer reader.Close()
-	defer writer.Close()
-
-	// Host overrides the HTTP/2 :authority pseudo-header with the destination;
-	// URL.Host still selects the HTTPS proxy endpoint for the TCP/TLS connection.
-	req, err := http.NewRequestWithContext(ctx, http.MethodConnect, c.ServerURL.String(), reader)
-	if err != nil {
-		_ = socks5Reply(conn, 0x01)
-		return
-	}
-	// An explicit setup timer also covers a server that never answers CONNECT.
-	// ResponseHeaderTimeout alone need not cover a streaming request body.
-	timeout := c.ConnectTimeout
-	if timeout <= 0 {
-		timeout = 15 * time.Second
-	}
-	setupTimer := time.AfterFunc(timeout, cancel)
-	defer setupTimer.Stop()
-	if c.Padding {
-		req.Header.Set(paddingHeader, paddingVersion)
-	}
-	req.Host = target
-	req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
-	resp, err := c.transport.RoundTrip(req)
-	setupOK := setupTimer.Stop()
+	stream, err := c.openTunnel(ctx, target)
 	if err != nil {
 		_ = socks5Reply(conn, 0x05)
 		return
 	}
-	defer resp.Body.Close()
-	if !setupOK || resp.ProtoMajor != 2 || resp.StatusCode != http.StatusOK {
-		_ = socks5Reply(conn, 0x05)
-		return
-	}
-	negotiated, paddingErr := paddingRequested(resp.Header)
-	if paddingErr != nil || negotiated != c.Padding {
-		_ = socks5Reply(conn, 0x05)
-		return
-	}
+	defer stream.close()
+	writer := stream.writer
+	resp := stream.response
 	var upload io.Writer = writer
 	var download io.Reader = resp.Body
-	if negotiated {
+	if c.Padding {
 		upload = newPaddingWriter(writer)
 		download = newPaddingReader(resp.Body)
 	}

@@ -121,6 +121,24 @@ handler. This is a resource bound, not a complete TLS/HTTP or DDoS defense.
 See the [AmneziaWG 3.1 / AnyTLS / TUIC / WebTunnel / Outline review](docs/PROTOCOL-REVIEW-2026-10-18.md)
 for what can transfer to the Mozilla design and what still needs experiments.
 
+## Multiple trusted servers
+
+The client can distribute **new streams** across up to eight configured HTTPS
+origins. `--balance failover` is the default; `round-robin` and `least-active`
+enable parallel use of independent servers. Repeat `--fallback-server` to add
+origins. Network setup failures trigger bounded retries and temporary cooldown;
+established streams are never replayed. Certificate, HTTP and padding failures
+remain terminal. All origins receive the same credentials after TLS verification.
+
+```sh
+./foxtunnel client --server https://edge-a.example \
+  --fallback-server https://edge-b.example --balance least-active
+```
+
+See [selection, recovery and limits](docs/ENDPOINTS.md) and the
+[NaiveProxy/Sudoku audit](docs/NAIVE-SUDOKU-REVIEW.md). Multiple servers do not
+combine bandwidth for one stream or establish resistance to TSPU detection.
+
 ## Roadmap
 
 1. Validate HTTP/2 baseline against packet captures, test HTTPS CONNECT behavior and error handling.

@@ -68,3 +68,12 @@ connection reuse and timing still need versioned Firefox reference comparisons.
 
 These references inform independently written adapters and experiments; their
 source is not copied into FoxTunnel. Check licenses before any code reuse.
+
+## Endpoint scheduling and follow-up review
+
+Trusted multi-origin setup failover, round-robin and least-active scheduling
+are implemented for both TLS backends, with bounded network-failure cooldown.
+See [configuration and limits](ENDPOINTS.md) and the
+[NaiveProxy/Sudoku review](NAIVE-SUDOKU-REVIEW.md).
+HTTP/3, bandwidth-aware scheduling, warm pools and Firefox fingerprint parity
+remain experiments rather than delivered features.
