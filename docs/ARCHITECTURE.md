@@ -1,0 +1,26 @@
+# FoxTunnel technical design
+
+## Baseline data path (implemented)
+
+`application → SOCKS5/TCP loopback → Go HTTP/2 CONNECT client → TLS 1.3 → Go HTTP/2 CONNECT server → TCP destination`
+
+The local inbound supports SOCKS5 `CONNECT` and IPv4/IPv6/domain addresses. A persistent Go `http.Transport` multiplexes HTTP/2 streams over connections. Each connection uses a CONNECT request with `:authority` equal to the target and `Proxy-Authorization` inside the encrypted tunnel. The server resolves and filters the destination IP and relays bytes in both directions, flushing responses for interactive applications. The server's default bind address and the client's local bind address are both loopback.
+
+The server answers ordinary HTTP requests with a basic page. **That is not equivalent to NaïveProxy's tested fronting or active-probing defenses**. The server is not connected to an independent reverse proxy yet.
+
+## Mozilla/Firefox experiment (not implemented)
+
+Firefox uses NSS for TLS, Necko for networking and Neqo (Rust) for QUIC and HTTP/3. Loading NSS alone cannot guarantee Firefox-like TLS signatures: Firefox manages extension order, ALPN, HTTP/2 configuration, connection reuse and timeout behavior. Necko is not a standalone client library. Our first experiment will characterize real Firefox traces and identify a feasible NSS adapter. Neqo will be evaluated as a separate QUIC/HTTP/3 transport, not swapped into the current Go `http.Transport` without significant engineering.
+
+Important: [`mozilla/neqo`](https://github.com/mozilla/neqo) explicitly marks its server implementation as experimental and unsuitable for production. The baseline uses Go's stable HTTP/2 server instead.
+
+## Non-goals for the current milestone
+
+- Claiming undetectability, indistinguishability from Firefox or better censorship resistance.
+- Inventing new cryptographic primitives or bypassing certificate verification.
+- Exposing unauthenticated public SOCKS5 endpoints.
+- Advertising UDP support before CONNECT-UDP, fragmentation, replay and congestion behavior are implemented.
+
+## Proposed comparative measurements
+
+Capture Firefox and the FoxTunnel client on the same OS for the same origin, transport and Firefox version. Compare TLS ClientHello, JA4-like features, H2 SETTINGS/HEADERS/order, ALPN, QUIC transport parameters, timing, connection lifetimes and application overhead. Evaluate rate of success after the remote IP is blocked separately from classifier accuracy. Publish both successful results and failures.
