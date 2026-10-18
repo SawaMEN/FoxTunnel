@@ -1,0 +1,259 @@
+// Package foxtunnel embeds FoxTunnel independently of its CLI or any panel.
+// This is an experimental API; pin a reviewed commit until a versioned release.
+package foxtunnel
+
+import (
+	"context"
+	"crypto/tls"
+	"errors"
+	"net"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+)
+
+const ProtocolDraft = buildinfo.ProtocolDraft
+const HTTP2ReceiveFirefox158 = h2profile.Firefox158
+
+var ErrCapacity = errors.New("foxtunnel client connection limit reached")
+
+type Credentials struct{ Username, Password string }
+type ClientConfig struct {
+	ServerURL            string
+	Credentials          Credentials
+	CACertFile           string
+	TLSBackend           string // Empty selects go; nss requires a Linux NSS-tagged build.
+	Transport            string // Empty selects h2-connect.
+	ServerName, SPKIPin  string
+	XHTTPPath, XHTTPHost string
+	HTTP2ReceiveProfile  string
+	Padding              bool
+	ConnectTimeout       time.Duration
+	MaxConnections       int // Combined active SOCKS/direct connections and pending direct dials; 0 uses 256.
+	FallbackServers      []string
+}
+
+// Client is configured at construction and may be shared by concurrent callers.
+// Close cancels pending dials and closes its streams and owned SOCKS listeners.
+type Client struct {
+	core           *tunnel.Client
+	ctx            context.Context
+	cancel         context.CancelFunc
+	mu             sync.Mutex
+	closed         bool
+	pending, limit int
+	conns          map[*ownedConn]struct{}
+	listeners      map[net.Listener]struct{}
+}
+
+func NewClient(config ClientConfig) (*Client, error) {
+	if config.MaxConnections < 0 || config.ConnectTimeout < 0 {
+		return nil, errors.New("negative client limit or timeout")
+	}
+	core, err := tunnel.NewClient(config.ServerURL, config.Credentials.Username, config.Credentials.Password, config.CACertFile)
+	if err != nil {
+		return nil, err
+	}
+	success := false
+	defer func() {
+		if !success {
+			core.Close()
+		}
+	}()
+	backend := config.TLSBackend
+	if backend == "" {
+		backend = "go"
+	}
+	if err = core.SetTLSBackend(backend); err != nil {
+		return nil, err
+	}
+	if err = core.SetServerIdentity(config.ServerName, config.SPKIPin); err != nil {
+		return nil, err
+	}
+	if err = core.SetTransport(config.Transport); err != nil {
+		return nil, err
+	}
+	if err = core.SetHTTP2ReceiveProfile(config.HTTP2ReceiveProfile); err != nil {
+		return nil, err
+	}
+	if err = core.SetXHTTPSettings(config.XHTTPPath, config.XHTTPHost); err != nil {
+		return nil, err
+	}
+	if err = core.SetFallbackServers(config.FallbackServers); err != nil {
+		return nil, err
+	}
+	limit := config.MaxConnections
+	if limit == 0 {
+		limit = 256
+	}
+	core.MaxConnections = limit
+	core.ConnectTimeout = config.ConnectTimeout
+	core.Padding = config.Padding
+	ctx, cancel := context.WithCancel(context.Background())
+	success = true
+	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
+}
+func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	c.mu.Lock()
+	if c.closed {
+		c.mu.Unlock()
+		return nil, net.ErrClosed
+	}
+	if c.pending+len(c.conns) >= c.limit {
+		c.mu.Unlock()
+		return nil, ErrCapacity
+	}
+	c.pending++
+	c.mu.Unlock()
+	setup, cancel := context.WithCancel(ctx)
+	stop := context.AfterFunc(c.ctx, cancel)
+	raw, err := c.core.DialContext(setup, network, address)
+	stop()
+	cancel()
+	c.mu.Lock()
+	c.pending--
+	defer c.mu.Unlock()
+	if c.closed {
+		if raw != nil {
+			raw.Close()
+		}
+		return nil, net.ErrClosed
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c.ownLocked(raw), nil
+}
+func (c *Client) ownLocked(raw net.Conn) *ownedConn {
+	owned := &ownedConn{Conn: raw, owner: c}
+	c.conns[owned] = struct{}{}
+	return owned
+}
+
+// ServeSOCKS takes ownership of listener and closes it on return or Client.Close.
+// SOCKS5 exposes TCP only. No child process or panel is required.
+func (c *Client) ServeSOCKS(listener net.Listener) error {
+	c.mu.Lock()
+	if c.closed {
+		c.mu.Unlock()
+		listener.Close()
+		return net.ErrClosed
+	}
+	c.listeners[listener] = struct{}{}
+	c.mu.Unlock()
+	defer func() { listener.Close(); c.mu.Lock(); delete(c.listeners, listener); c.mu.Unlock() }()
+	return c.core.ServeContext(c.ctx, &ownedListener{Listener: listener, owner: c})
+}
+func (c *Client) Close() error {
+	c.mu.Lock()
+	if c.closed {
+		c.mu.Unlock()
+		return nil
+	}
+	c.closed = true
+	c.cancel()
+	conns := make([]*ownedConn, 0, len(c.conns))
+	for conn := range c.conns {
+		conns = append(conns, conn)
+	}
+	listeners := make([]net.Listener, 0, len(c.listeners))
+	for l := range c.listeners {
+		listeners = append(listeners, l)
+	}
+	c.mu.Unlock()
+	for _, l := range listeners {
+		l.Close()
+	}
+	for _, conn := range conns {
+		conn.Close()
+	}
+	c.core.Close()
+	return nil
+}
+
+type ownedConn struct {
+	net.Conn
+	owner *Client
+	once  sync.Once
+	err   error
+}
+
+func (c *ownedConn) Close() error {
+	c.once.Do(func() { c.err = c.Conn.Close(); c.owner.mu.Lock(); delete(c.owner.conns, c); c.owner.mu.Unlock() })
+	return c.err
+}
+func (c *ownedConn) CloseWrite() error {
+	if cw, ok := c.Conn.(interface{ CloseWrite() error }); ok {
+		return cw.CloseWrite()
+	}
+	return errors.ErrUnsupported
+}
+
+type ownedListener struct {
+	net.Listener
+	owner *Client
+}
+
+func (l *ownedListener) Accept() (net.Conn, error) {
+	for {
+		raw, err := l.Listener.Accept()
+		if err != nil {
+			return nil, err
+		}
+		l.owner.mu.Lock()
+		if l.owner.closed {
+			l.owner.mu.Unlock()
+			raw.Close()
+			return nil, net.ErrClosed
+		}
+		if l.owner.pending+len(l.owner.conns) >= l.owner.limit {
+			l.owner.mu.Unlock()
+			raw.Close()
+			continue
+		}
+		conn := l.owner.ownLocked(raw)
+		l.owner.mu.Unlock()
+		return conn, nil
+	}
+}
+
+type ServerConfig struct {
+	Credentials              Credentials
+	XHTTPPath, XHTTPHost     string
+	AllowPrivateDestinations bool // False rejects private/loopback/link-local targets.
+	MaxTunnels               int  // 0 uses 256.
+	DialTimeout              time.Duration
+	Padding                  bool
+	Cover                    http.Handler // Public site for ordinary/rejected requests; nil returns 404.
+}
+
+// Server is an http.Handler for verified TLS 1.3 with HTTP/2 enabled by the host.
+// The host owns certificates, HTTP listener lifecycle and deployment limits.
+type Server struct{ core *tunnel.Server }
+
+func NewServer(config ServerConfig) (*Server, error) {
+	if config.Credentials.Username == "" || config.Credentials.Password == "" || strings.Contains(config.Credentials.Username, ":") {
+		return nil, errors.New("server credentials required")
+	}
+	if config.MaxTunnels < 0 || config.DialTimeout < 0 {
+		return nil, errors.New("negative server limit or timeout")
+	}
+	settings, err := xhttp.Normalize(config.XHTTPPath, config.XHTTPHost)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{core: &tunnel.Server{Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
+}
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.TLS == nil || r.TLS.Version < tls.VersionTLS13 {
+		http.NotFound(w, r)
+		return
+	}
+	s.core.ServeHTTP(w, r)
+}

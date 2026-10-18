@@ -145,6 +145,13 @@ func (c *Client) SetTLSBackend(name string) error {
 func (c *Client) Close() { c.transport.CloseIdleConnections() }
 
 func (c *Client) Serve(listener net.Listener) error {
+	return c.ServeContext(context.Background(), listener)
+}
+
+// ServeContext cancels SOCKS relay requests and closes the listener on ctx end.
+func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error {
+	stop := context.AfterFunc(ctx, func() { _ = listener.Close() })
+	defer stop()
 	limit := c.MaxConnections
 	if limit <= 0 {
 		limit = 256
@@ -160,14 +167,15 @@ func (c *Client) Serve(listener net.Listener) error {
 		}
 		select {
 		case slots <- struct{}{}:
-			go func() { defer func() { <-slots }(); c.handle(conn) }()
+			go func() { defer func() { <-slots }(); c.handleContext(ctx, conn) }()
 		default:
 			_ = conn.Close()
 		}
 	}
 }
 
-func (c *Client) handle(conn net.Conn) {
+func (c *Client) handle(conn net.Conn) { c.handleContext(context.Background(), conn) }
+func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
 	target, err := socks5Handshake(conn)

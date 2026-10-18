@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
+	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
@@ -34,6 +36,19 @@ func main() {
 	password := os.Getenv("FOXTUNNEL_PASSWORD")
 
 	switch os.Args[1] {
+	case "version":
+		fs := i18n.NewFlagSet("foxtunnel version")
+		asJSON := fs.Bool("json", false, i18n.Text("print machine-readable build information"))
+		i18n.Parse(fs, os.Args[2:])
+		info := buildinfo.Current()
+		if *asJSON {
+			if err := json.NewEncoder(os.Stdout).Encode(info); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			fmt.Printf("FoxTunnel %s (%s %s/%s, %s, %s)\n", info.Version, info.Commit, info.GOOS, info.GOARCH, info.BuildFlavor, info.ProtocolDraft)
+		}
+
 	case "setup":
 		fs := i18n.NewFlagSet("foxtunnel setup")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (setup generates a random route by default)"))
@@ -351,7 +366,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <setup|server|client|share|cluster-add> [flags] (credentials: environment or vetroff link)"))
+	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add> [flags] (credentials: environment or vetroff link)"))
 	os.Exit(2)
 }
 

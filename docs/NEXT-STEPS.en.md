@@ -45,3 +45,5 @@ The [XHTTP design](https://github.com/XTLS/Xray-core/discussions/4113) informs
 transport tests; it does not establish FoxTunnel reachability in Russian networks.
 
 [A partial HTTP/2 receive profile is implemented](H2-RECEIVE-PROFILE.en.md): Firefox 158 windows and HPACK, with Go/NSS wire/credit tests. TLS, SETTINGS order and connection behavior still differ; opt-in only.
+
+Independent distribution is a separate requirement: [versioned binaries, manifest/checksums and integration by any panel](DISTRIBUTION.en.md), [optional SDK](SDK.en.md), [wire draft](WIRE-DRAFT-0.md), MIT. Development does not depend on 3x-ui; packaging CI must assemble all nine targets before tag publication.

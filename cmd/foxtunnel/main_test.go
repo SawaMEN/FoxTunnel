@@ -178,3 +178,29 @@ func TestShareXHTTPRouteCLI(t *testing.T) {
 		t.Fatal("ambiguous import accepted or leaked credentials")
 	}
 }
+
+func TestVersionMachineContract(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := helperCommand(ctx, "version", "--json")
+	cmd.Env = helperEnv(true)
+	output, err := cmd.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var info struct {
+		Schema   int    `json:"schema"`
+		Version  string `json:"version"`
+		Flavor   string `json:"build_flavor"`
+		Protocol string `json:"protocol_draft"`
+	}
+	if err = json.Unmarshal(output, &info); err != nil {
+		t.Fatal(err)
+	}
+	if info.Schema != 1 || info.Version == "" || info.Protocol != "foxtunnel-draft-0" || (info.Flavor != "go" && info.Flavor != "nss") {
+		t.Fatal("invalid version contract", string(output))
+	}
+	if strings.Contains(string(output), "example-only-password") {
+		t.Fatal("version disclosed credentials")
+	}
+}
