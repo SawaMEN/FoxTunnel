@@ -1,47 +1,88 @@
-# FoxTunnel technical design
+# Архитектура FoxTunnel
 
-## Baseline data path (implemented)
+**Русский** | [English](ARCHITECTURE.en.md)
 
-`application → SOCKS5/TCP loopback → Go HTTP/2 CONNECT client → TLS 1.3 → Go HTTP/2 CONNECT server → TCP destination`
+## Реализованный путь данных
 
-The local inbound supports SOCKS5 `CONNECT` and IPv4/IPv6/domain addresses. A persistent Go `http.Transport` multiplexes HTTP/2 streams over connections. Each connection uses a CONNECT request with `:authority` equal to the target and `Proxy-Authorization` inside the encrypted tunnel. The server resolves and filters the destination IP and relays bytes in both directions, flushing responses for interactive applications. The server's default bind address and the client's local bind address are both loopback.
+`приложение → локальный SOCKS5/TCP → HTTP/2 CONNECT → TLS 1.3 → сервер HTTP/2 → TCP назначения`
 
-Ordinary requests and rejected tunnel probes use a shared `Cover` handler, with `Proxy-Authorization` removed. The CLI supports an operator-owned static site using `--web-root`, or a plain 404 if no site is configured. Dotfiles and directory listings without index.html are rejected. This removes the fixed FoxTunnel page; it does not establish active-probing resistance or hide Go TLS/HTTP2 behavior. An independent reverse proxy is not implemented.
+SOCKS5 поддерживает CONNECT с IPv4, IPv6 и именем узла. Повторно используемый
+HTTP-транспорт мультиплексирует потоки. `:authority` содержит адрес назначения;
+`Proxy-Authorization` передаётся внутри TLS. Сервер разрешает имя, проверяет IP
+и передаёт данные в обе стороны с принудительной отправкой ответа для
+интерактивных приложений. Оба адреса прослушивания по умолчанию — loopback.
 
-The client uses bounded dial/TLS/CONNECT setup, with an explicit setup cancellation timer for streaming CONNECT bodies. That timer is stopped after headers arrive and does not limit stream lifetime. A per-client in-memory TLS session cache enables resumption on reconnects. On the server, filtered and pinned destination IPs are partitioned by family; the second family starts after 250 ms or immediately when the primary family fails. Context cancellation closes losing dials and active destination sockets. Upload EOF is propagated with TCP CloseWrite so response-after-EOF applications remain functional.
+Обычные запросы и отклонённые пробы обслуживает `Cover` без прокси-авторизации.
+`--web-root` включает собственный статический сайт; иначе возвращается 404.
+Скрытые файлы и каталоги без `index.html` не выдаются. Это не доказывает
+устойчивость к активным пробам и не скрывает поведение Go TLS/H2. Отдельный
+обратный прокси не реализован.
 
-## Initial padding experiment
+Время установки TCP/TLS/CONNECT ограничено. Таймер отмены CONNECT отключается
+после успешного ответа и не задаёт срок жизни потока. Go TLS возобновляет сессии
+из ограниченного кэша памяти. Проверенные IP назначения делятся по семействам:
+второе запускается через 250 мс или сразу после ошибки первого. Отмена закрывает
+проигравшие подключения и активные сокеты. EOF отправки передаётся через TCP
+CloseWrite: приложение может получить ответ после завершения своей отправки.
 
-`--padding` explicitly enables the authenticated `initial-v1` capability at both
-ends. Negotiation is validated before forwarding application bytes. The first
-eight bounded records per direction carry random-length padding; the remaining
-stream is raw. Failed negotiation never retries unpadded. The decoder rejects
-truncated/oversized records while preserving record-boundary EOF for half-close.
-This is application framing, not a change to Firefox/H2/TLS packet signatures.
-See [padding specification](PADDING.md).
+## Несколько серверов
 
-## Mozilla/Firefox transport experiment
+Новые потоки распределяются только между явно доверенными HTTPS-адресами.
+Поддерживаются резервирование, круговой выбор и выбор по числу активных потоков.
+Сетевые ошибки установки запускают ограниченные повторы и временную паузу для
+недоступного узла. Ошибки сертификатов и протокола остаются конечными.
+Данные установленного потока не воспроизводятся. См. [подробности](ENDPOINTS.md).
 
-Firefox uses NSS for TLS, Necko for networking and Neqo (Rust) for QUIC and HTTP/3. Loading NSS alone cannot guarantee Firefox-like TLS signatures: Firefox manages extension order, ALPN, HTTP/2 configuration, connection reuse and timeout behavior. Necko is not a standalone client library. The tagged Linux NSS adapter now provides a complete certificate-verified TLS 1.3 data path over Go-managed sockets, with Go x/net/http2 on top. Its certificate verification uses Go x509 rather than the Firefox verifier. It requires h2 ALPN and does not silently downgrade. NSS session caching is disabled in this first adapter. This is not Firefox fingerprint parity; reference captures and HTTP/2 comparison remain outstanding. See [adapter details](../internal/nsstls/README.md). Neqo will be evaluated as a separate QUIC/HTTP/3 transport, not swapped into the current Go `http.Transport` without significant engineering.
+## Дополнение первых записей
 
-Important: [`mozilla/neqo`](https://github.com/mozilla/neqo) explicitly marks its server implementation as experimental and unsuitable for production. The baseline uses Go's stable HTTP/2 server instead.
+`--padding` включает согласование `initial-v1` на обоих концах. До передачи
+данных проверяется подтверждение режима. Первые восемь ограниченных записей
+каждого направления имеют дополнение случайной длины, остальной поток — обычный.
+При ошибке согласования нет повтора без дополнения. Декодер отклоняет усечённые
+и чрезмерные записи, сохраняя полузакрытие на границе записи.
+Это формат данных приложения, а не изменение пакетов TLS/H2.
+См. [спецификацию](PADDING.md).
 
-## Non-goals for the current milestone
+## Mozilla и Firefox
 
-- Claiming undetectability, indistinguishability from Firefox or better censorship resistance.
-- Inventing new cryptographic primitives or bypassing certificate verification.
-- Exposing unauthenticated public SOCKS5 endpoints.
-- Advertising UDP support before CONNECT-UDP, fragmentation, replay and congestion behavior are implemented.
+Firefox использует NSS для TLS, Necko для сети и Neqo для QUIC/HTTP/3.
+Подключение одной NSS не воспроизводит порядок расширений, настройки H2,
+повторное использование соединений и таймеры браузера. Necko не является
+готовой отдельной клиентской библиотекой.
 
-## Proposed comparative measurements
+Экспериментальный Linux-адаптер NSS передаёт данные TLS 1.3 поверх сокетов Go;
+сверху работает Go x/net/http2. Сертификаты проверяет Go x509, а не проверяющий
+код Firefox. Обязателен h2 ALPN, скрытого понижения режима нет. Кэширование сессий
+NSS пока выключено. Нужны эталонные записи и сравнение H2.
+См. [реализацию и ограничения](../internal/nsstls/README.md).
 
-Capture Firefox and the FoxTunnel client on the same OS for the same origin, transport and Firefox version. Compare TLS ClientHello, JA4-like features, H2 SETTINGS/HEADERS/order, ALPN, QUIC transport parameters, timing, connection lifetimes and application overhead. Evaluate rate of success after the remote IP is blocked separately from classifier accuracy. Publish both successful results and failures.
+Neqo предстоит исследовать как отдельный QUIC/H3-транспорт. Его нельзя просто
+подставить вместо текущего `http.Transport`. В [mozilla/neqo](https://github.com/mozilla/neqo)
+сервер помечен экспериментальным и непригодным для производственного применения;
+текущий сервер использует стабильную реализацию H2 Go.
 
-## Native NSS spike (capture only)
+## Границы текущего этапа
 
-`experiments/nss-clienthello/` uses NSS and NSPR directly to generate a TLS
-1.3 ClientHello, allowing measurements with the same metadata probe. It
-connects only to loopback; the listener closes before the handshake completes.
-This experiment must not be promoted to a transport without a verified certificate
-chain and hostname, trust-store management, deadlines, concurrency design and
-HTTP/2 framing. Production NSS version pinning remains an open task.
+Нет доказательств необнаружимости, неотличимости от Firefox и превосходства
+при блокировках. Новая криптография и обход проверки сертификатов не вводятся.
+SOCKS5 не следует публиковать без аутентификации. UDP нельзя объявлять готовым
+до реализации CONNECT-UDP, ограничений фрагментации, повторов и перегрузки.
+
+## План сравнительных измерений
+
+Записывать Firefox и FoxTunnel на одной ОС для одного адреса, транспорта и версии
+браузера. Сравнивать ClientHello, признаки JA4, H2 SETTINGS/HEADERS и порядок,
+ALPN, параметры QUIC, время, срок жизни соединений и накладные расходы.
+Блокировку IP измерять отдельно от точности классификатора. Публиковать как
+успехи, так и отказы.
+
+`experiments/nss-clienthello` — отдельный инструмент захвата приветствия NSS/NSPR
+только через loopback. Он не завершает TLS, не проверяет сертификаты и не заменяет
+адаптер данных. Фиксация поддерживаемых версий NSS для выпуска остаётся задачей.
+
+## Эксперимент объединения путей
+
+Отдельный явный режим `--bond` передаёт блоки одного потока через несколько
+входов к общему выходу. Обычные режимы распределения целых потоков сохранены.
+См. [запуск, подтверждения, границы и проверки](BONDING.md).
+Это прототип: преимущество скорости и устойчивость к ТСПУ не доказаны.

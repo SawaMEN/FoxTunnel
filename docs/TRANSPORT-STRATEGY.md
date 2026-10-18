@@ -1,79 +1,70 @@
-# Firefox transport strategy
+# Стратегия транспорта на основе Mozilla
 
-The target is a measured, fast Mozilla-based HTTPS tunnel with optional
-alternative carriers. No protocol can promise invisibility to all classifiers,
-address blocks or traffic correlation. The following choices are a design plan,
-not a list of implemented features.
+**Русский** | [English](TRANSPORT-STRATEGY.en.md)
 
-| Reference | Technique to evaluate | FoxTunnel decision / status |
+Цель — измеряемый быстрый HTTPS-туннель с возможностью отдельных дополнительных
+транспортов. Нельзя обещать невидимость для всех классификаторов, блокировок IP и
+корреляции. Ниже различаются реализованные функции и планы.
+
+| Проект | Полезный подход | Решение FoxTunnel |
 | --- | --- | --- |
-| NaiveProxy | Reuse browser networking, authenticated CONNECT behind a site, bounded initial padding | Highest priority. NSS TLS/H2 experiment, public website and opt-in bounded initial padding implemented; complete browser stack not implemented. |
-| mieru ("meiru") | Configurable traffic patterns and bounded randomized padding | Evaluate bounded overhead against captures; do not transplant its non-TLS encryption/nonce format into HTTPS. Not implemented. |
-| Hysteria 2 | QUIC streams/datagrams, congestion-aware throughput, ordinary web behavior for rejected authentication | Evaluate Mozilla Neqo HTTP/3 and CONNECT-UDP. Do not assume aggressive rate-based congestion control is fastest or matches Firefox. Not implemented. |
-| XHTTP/VLESS ("xhttps vless") | Separate transport from proxy request semantics; streaming and separated upload/download modes | Keep a transport boundary and test HTTP streaming carriers separately. Do not add nested VLESS framing or claim CDN compatibility before testing. Not implemented. |
-| AmneziaWG 3.1 | Metadata protection, controlled traffic variability, under-load handling | Reviewed at tag v3.1.20260828. Keep UDP-specific obfuscation separate from Mozilla HTTPS; bounded authenticated tunnel admission implemented. See the dated review. |
-| AnyTLS | Padding profiles, session reuse and recovery | Evaluate bounded profiles/liveness without copying custom framing or insecure example defaults. Pending. |
-| TUIC v5 | QUIC streams/datagrams and migration | Evaluate via Mozilla Neqo; no 0-RTT replay of application data. Pending. |
-| WebTunnel / Outline SDK | Real HTTPS frontends and modular carrier interfaces | Reference designs for frontend tests and stream/packet separation. Not integrated. |
-| DNSTT | End-to-end security through recursive DNS and transport/session separation | Optional explicit emergency carrier requiring domain delegation and server identity verification. Not a fast primary carrier, not automatic plaintext DNS fallback. Not implemented. |
+| NaiveProxy | Сетевой стек браузера, авторизованный CONNECT за сайтом, ограниченное начальное дополнение | Приоритет. NSS/H2, сайт и необязательное дополнение есть; полного стека браузера нет |
+| mieru («meiru») | Настройка формы трафика и ограниченное случайное дополнение | Измерять расходы по записям; не переносить его шифрование/nonce внутрь HTTPS. Не реализовано |
+| Hysteria 2 | QUIC-потоки/датаграммы, управление перегрузкой, сайт при отказе авторизации | Исследовать Neqo H3/CONNECT-UDP. Агрессивное управление скоростью не обязательно быстрее и не повторяет Firefox. Пока нет |
+| XHTTP/VLESS («xhttps vless») | Отделение транспорта, потоковый HTTP, раздельные отправка/получение | Проверять отдельно; не добавлять вложенный VLESS и не обещать совместимость с CDN без тестов |
+| AmneziaWG 3.1 | Защита метаданных, управляемая вариативность, работа под нагрузкой | Разобран тег v3.1.20260828; UDP-обфускацию не смешивать с HTTPS. Ограничение авторизованных туннелей реализовано |
+| AnyTLS | Профили дополнения, повторное использование и восстановление сессий | Исследовать ограниченные профили и проверку живости; формат не скопирован |
+| TUIC v5 | QUIC-потоки, датаграммы и миграция | Исследовать через Neqo, не воспроизводить данные приложения через 0-RTT |
+| WebTunnel / Outline SDK | Настоящий HTTPS-фронтенд и модульные интерфейсы транспорта | Примеры для испытаний фронтенда и разделения потоков/пакетов. Не интегрированы |
+| DNSTT | Сквозная защита через рекурсивный DNS и отдельный слой сессий | Возможный явный аварийный режим с делегированием домена и проверкой сервера. Не быстрый основной транспорт; пока нет |
+| Sudoku | Повторное использование сессий, ограниченные очереди, полузакрытие | Разбор есть; формат Sudoku не перенесён, H2 уже выполняет мультиплексирование |
 
-See the [AmneziaWG and additional-project review](PROTOCOL-REVIEW-2026-10-18.md)
-for verified version identifiers, sources, transfer decisions and limits.
+См. [AmneziaWG и другие проекты](PROTOCOL-REVIEW-2026-10-18.md),
+[NaiveProxy/Sudoku](NAIVE-SUDOKU-REVIEW.md).
 
-## Layer boundaries
+## Границы слоёв
 
-1. Local SOCKS5 / eventual sing-box adapter.
-2. Authenticated proxy request and stream lifecycle.
-3. Carrier: Mozilla NSS + H2 first, Mozilla Neqo + H3 next; HTTP streaming and
-   DNS carriers only as separate, measured modes.
-4. Address selection and network policy; no automatic downgrade after a
-   certificate or authentication failure.
+1. Локальный SOCKS5, позднее адаптер sing-box.
+2. Авторизованный запрос и жизненный цикл потока.
+3. NSS + H2 сейчас; Neqo + H3 далее. HTTP-потоки и DNS — отдельные измеряемые режимы.
+4. Выбор адресов и политика сети без ослабления проверки после ошибки сертификата/авторизации.
 
-The NSS backend is a real TLS data path, but its HTTP/2 implementation currently
-comes from Go's x/net/http2. Its ALPN list and TLS settings are deliberately
-minimal and **are not a Firefox profile**. Certificate validation uses Go x509,
-not Firefox's verifier. System NSS versions and their cipher/extension choices
-must be recorded in captures. Moving to NSS does not by itself prove any DPI
-advantage. Necko/Neqo behavior, HTTP/2 SETTINGS, flow control, header order,
-connection reuse and timing still need versioned Firefox reference comparisons.
+NSS реально передаёт TLS-данные, но H2 остаётся Go x/net/http2, проверка — Go x509.
+Минимальные ALPN и TLS-настройки не являются профилем Firefox. Версии NSS,
+шифры и расширения нужно записывать. Нужны сравнения Necko/Neqo, SETTINGS H2,
+управления потоком, порядка заголовков, повторного использования и времени.
 
-## Next implementation gates
+## Следующие проверки
 
-- Collect desktop/mobile Firefox reference traces, with software versions and
-  cold/resumed handshake settings; measure NSS differences.
-- Stabilize NSS cancellation, error reporting, concurrent reads/writes, trust
-  validation and packaging across supported platforms.
-- Compare the implemented initial-v1 padding against an unpadded control using
-  Firefox/NaiveProxy captures and real network tests. Its explicit negotiation,
-  parser limits and overhead budget do not prove a classifier advantage. Keep
-  traffic shaping disabled by default.
-- Implement Neqo client H3 against an interoperable stable server, then compare
-  loss, RTT, bandwidth/CPU and UDP availability against H2 and NaiveProxy.
-- Add carrier selection only after transports exist, with cooldowns and setup
-  budgets. Never replay an established stream, credentials to arbitrary origins,
-  or application bytes after uncertain delivery.
-- Add DNS carrier independently, with server authentication across resolvers,
-  queue/packet limits and explicit opt-in. A switch cannot recover existing TCP
-  sessions without a separate resumable session protocol.
+Снять эталоны Firefox ПК/телефона для холодного и возобновлённого соединения.
+Стабилизировать отмену, ошибки, параллельный ввод-вывод, доверие и поставку NSS.
+Сравнить initial-v1 с обычным потоком по Firefox/NaiveProxy и реальным сетям:
+ограничения парсера и расходов не доказывают преимущества перед DPI.
+Проверить клиент Neqo H3 со стабильным совместимым сервером: потери, RTT,
+полоса, CPU, доступность UDP. Затем добавлять выбор транспортов с бюджетом
+установки и паузами. Не воспроизводить установленные потоки и данные с
+неопределённым фактом доставки; не передавать секреты произвольным адресам.
+DNS-режиму нужны своя авторизация через резолверы и ограничения пакетов/очередей.
 
-## Primary references checked
+Для доверенных HTTPS-адресов уже есть резервирование, круговой выбор и выбор по
+числу активных потоков с паузой после сетевых сбоев: [настройка](ENDPOINTS.md).
+HTTP/3, распределение по полосе, прогрев пулов и совпадение с Firefox ещё предстоят.
 
-- [NaiveProxy architecture and padding specification](https://github.com/klzgrad/naiveproxy)
-- [mieru](https://github.com/enfein/mieru) and [traffic patterns](https://github.com/enfein/mieru/blob/main/docs/traffic-pattern.md)
-- [Hysteria 2 protocol](https://v2.hysteria.network/docs/developers/Protocol/)
-- [XHTTP design discussion](https://github.com/XTLS/Xray-core/discussions/4113)
-- [DNSTT protocol](https://www.bamsoftware.com/software/dnstt/protocol.html) and [security notes](https://www.bamsoftware.com/software/dnstt/security.html)
-- [Mozilla Neqo](https://github.com/mozilla/neqo)
-- [NSS NSPR I/O layering](https://nss-crypto.org/reference/security/nss/legacy/reference/nspr_functions/index.html)
+## Первичные источники
 
-These references inform independently written adapters and experiments; their
-source is not copied into FoxTunnel. Check licenses before any code reuse.
+- [NaiveProxy](https://github.com/klzgrad/naiveproxy).
+- [mieru](https://github.com/enfein/mieru), [форма трафика](https://github.com/enfein/mieru/blob/main/docs/traffic-pattern.md).
+- [Hysteria 2](https://v2.hysteria.network/docs/developers/Protocol/).
+- [XHTTP](https://github.com/XTLS/Xray-core/discussions/4113).
+- [DNSTT: протокол](https://www.bamsoftware.com/software/dnstt/protocol.html), [защита](https://www.bamsoftware.com/software/dnstt/security.html).
+- [Mozilla Neqo](https://github.com/mozilla/neqo).
+- [Слои ввода-вывода NSS/NSPR](https://nss-crypto.org/reference/security/nss/legacy/reference/nspr_functions/index.html).
 
-## Endpoint scheduling and follow-up review
+Адаптеры написаны независимо. Перед переносом чужого кода нужно проверить лицензию.
 
-Trusted multi-origin setup failover, round-robin and least-active scheduling
-are implemented for both TLS backends, with bounded network-failure cooldown.
-See [configuration and limits](ENDPOINTS.md) and the
-[NaiveProxy/Sudoku review](NAIVE-SUDOKU-REVIEW.md).
-HTTP/3, bandwidth-aware scheduling, warm pools and Firefox fingerprint parity
-remain experiments rather than delivered features.
+## Эксперимент объединения путей
+
+Отдельный явный режим `--bond` передаёт блоки одного потока через несколько
+входов к общему выходу. Обычные режимы распределения целых потоков сохранены.
+См. [запуск, подтверждения, границы и проверки](BONDING.md).
+Это прототип: преимущество скорости и устойчивость к ТСПУ не доказаны.

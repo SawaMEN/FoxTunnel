@@ -122,3 +122,5 @@ func TestNSSProxyFallback(t *testing.T)                     { testProxyFallback(
 func TestNSSFallbackStopsOnCertificateFailure(t *testing.T) { testFallbackCertificate(t, "nss") }
 
 func TestEndpointSchedulingNSS(t *testing.T) { testEndpointScheduling(t, "nss") }
+
+func TestBondedSOCKSNSS(t *testing.T) { testBondedSOCKS(t, "nss") }

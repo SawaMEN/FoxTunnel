@@ -1,32 +1,40 @@
-# Roadmap
+# План разработки
 
-- [x] Initialize repository and experimental Go module.
-- [x] HTTP/2 CONNECT server behind TLS 1.3 with Basic proxy authentication.
-- [x] Local SOCKS5 TCP client with certificate validation.
-- [x] Basic tests for tunneled roundtrips, authorization and destination filtering.
-- [x] Serve an operator-owned static site for ordinary requests and rejected probes.
-- [x] Bound CONNECT setup, release cancelled streams, preserve upload half-close.
-- [x] Add TLS resumption, filtered dual-stack fallback and local throughput benchmark.
-- [x] Add opt-in bounded initial-record padding with explicit negotiation, parser limits, fuzzing and Go/NSS tests.
-- [ ] Test in multiple OS configurations and behind an HTTPS frontend.
-- [x] Bound authenticated destination setup and relay concurrency before DNS/dial.
-- [x] Review AmneziaWG 3.1 and additional transport designs with pinned sources.
-- [ ] Add rate limiting, HTTP/TLS connection limits, observability without leaking targets/credentials, graceful shutdown and external audit.
-- [ ] Capture up-to-date Firefox reference handshake on desktop and mobile; define fingerprint conformance tests.
-- [x] Add standalone NSS/NSPR ClientHello capture experiment (not a transport).
-- [x] Add experimental Linux NSS TLS 1.3 data adapter with certificate validation and h2 ALPN.
-- [ ] Stabilize NSS packaging, pin supported Mozilla versions and compare Firefox fingerprints.
-- [ ] Investigate Neqo client-side QUIC/HTTP3 and RFC 9298 CONNECT-UDP; compare overhead.
-- [ ] Decide if the Mozilla implementation has measurable advantages relative to Chromium/NaïveProxy.
-- [ ] Integrate with sing-box fork and 3x-ui only after protocols and lifecycle stabilize.
+**Русский** | [English](ROADMAP.en.md)
 
-**Do not ship this prototype to end users as a censorship-resistant VPN.**
+- [x] Репозиторий и экспериментальный Go-модуль.
+- [x] Сервер HTTP/2 CONNECT поверх TLS 1.3 с Basic-аутентификацией прокси.
+- [x] Локальный SOCKS5 TCP-клиент с проверкой сертификата.
+- [x] Проверки передачи данных, авторизации и фильтрации назначения.
+- [x] Собственный статический сайт для обычных запросов и отклонённых проб.
+- [x] Ограничение времени установки, отмена потоков и полузакрытие отправки.
+- [x] Возобновление Go TLS, выбор IPv4/IPv6 и локальный тест скорости.
+- [x] Необязательное дополнение первых записей: согласование, ограничения, фаззинг, Go/NSS.
+- [x] Ограничение авторизованной нагрузки до DNS и подключения к назначению.
+- [x] Разбор AmneziaWG 3.1 и других транспортов с зафиксированными исходниками.
+- [x] Отдельный инструмент захвата ClientHello NSS/NSPR.
+- [x] Экспериментальный Linux-адаптер данных NSS TLS 1.3 с проверкой сертификата и h2 ALPN.
+- [x] Резервирование и распределение новых потоков между доверенными серверами с паузой после сетевых ошибок.
+- [x] Разбор NaiveProxy/Sudoku; тесты распределения на обеих реализациях TLS.
+- [x] Русская документация и CLI по умолчанию; английский как второй язык.
+- [ ] Проверки на нескольких ОС и за независимым HTTPS-фронтендом.
+- [ ] Ограничение частоты запросов и HTTP/TLS-соединений, диагностика без утечки адресов/секретов, корректная остановка, внешний аудит.
+- [ ] Актуальные эталонные рукопожатия Firefox на ПК и телефонах; тесты соответствия отпечатков.
+- [ ] Стабильная поставка NSS, фиксация версий Mozilla и сравнение с Firefox.
+- [ ] Neqo QUIC/HTTP/3 и RFC 9298 CONNECT-UDP; измерение накладных расходов.
+- [ ] Оценка распределения по пропускной способности и ограниченного предварительного прогрева соединений.
+- [ ] Испытания в сетях российских операторов: успешность, восстановление, задержки, скорость, CPU/ОЗУ и наблюдаемые признаки.
+- [ ] Проверка измеримых преимуществ над Chromium/NaiveProxy в одинаковых условиях.
+- [ ] Адаптер sing-box и интеграция 3x-ui после стабилизации протокола и соединений.
 
-## Endpoint scheduling and follow-up review
+**Не распространять прототип как готовый устойчивый к блокировкам VPN.**
+Реализованные режимы и ограничения описаны в [настройке серверов](ENDPOINTS.md)
+и [разборе NaiveProxy/Sudoku](NAIVE-SUDOKU-REVIEW.md). HTTP/3 и полное совпадение
+поведения с Firefox пока не реализованы.
 
-Trusted multi-origin setup failover, round-robin and least-active scheduling
-are implemented for both TLS backends, with bounded network-failure cooldown.
-See [configuration and limits](ENDPOINTS.md) and the
-[NaiveProxy/Sudoku review](NAIVE-SUDOKU-REVIEW.md).
-HTTP/3, bandwidth-aware scheduling, warm pools and Firefox fingerprint parity
-remain experiments rather than delivered features.
+## Эксперимент объединения путей
+
+Отдельный явный режим `--bond` передаёт блоки одного потока через несколько
+входов к общему выходу. Обычные режимы распределения целых потоков сохранены.
+См. [запуск, подтверждения, границы и проверки](BONDING.md).
+Это прототип: преимущество скорости и устойчивость к ТСПУ не доказаны.

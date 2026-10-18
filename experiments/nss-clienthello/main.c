@@ -9,6 +9,12 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+static const char *text(const char *ru, const char *en) {
+ const char *lang = getenv("FOXTUNNEL_LANG");
+ return lang && strcmp(lang, "en") == 0 ? en : ru;
+}
 
 #include <nss.h>
 #include <prerror.h>
@@ -18,20 +24,20 @@
 #include <sslproto.h>
 
 static int fail(const char *step) {
-    fprintf(stderr, "%s failed (NSPR error %d)\n", step, PR_GetError());
+    fprintf(stderr, text("Ошибка %s (код NSPR %d)\n", "%s failed (NSPR error %d)\n"), step, PR_GetError());
     return 1;
 }
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        fprintf(stderr, "usage: nss-clienthello <loopback-port> <tls-sni-hostname>\n");
+        fprintf(stderr, "%s", text("Использование: nss-clienthello <локальный-порт> <имя-TLS-SNI>\n", "usage: nss-clienthello <loopback-port> <tls-sni-hostname>\n"));
         return 2;
     }
     char *end = NULL;
     errno = 0;
     long port = strtol(argv[1], &end, 10);
     if (errno || *end != '\0' || port < 1 || port > 65535 || argv[2][0] == '\0') {
-        fprintf(stderr, "invalid port or SNI hostname\n");
+        fprintf(stderr, "%s", text("Некорректный порт или имя SNI\n", "invalid port or SNI hostname\n"));
         return 2;
     }
     if (NSS_NoDB_Init(NULL) != SECSuccess) return fail("NSS_NoDB_Init");
@@ -59,7 +65,7 @@ int main(int argc, char **argv) {
         fail("SSL_VersionRangeGetSupported"); goto close_socket;
     }
     if (range.max < SSL_LIBRARY_VERSION_TLS_1_3) {
-        fprintf(stderr, "NSS TLS 1.3 support is required\n"); goto close_socket;
+        fprintf(stderr, "%s", text("Требуется поддержка TLS 1.3 в NSS\n", "NSS TLS 1.3 support is required\n")); goto close_socket;
     }
     range.min = SSL_LIBRARY_VERSION_TLS_1_3;
     range.max = SSL_LIBRARY_VERSION_TLS_1_3;
@@ -80,9 +86,9 @@ int main(int argc, char **argv) {
     if (SSL_ForceHandshakeWithTimeout(fd, PR_SecondsToInterval(5)) != SECSuccess) {
         PRErrorCode err = PR_GetError();
         const char *name = PR_ErrorToName(err);
-        fprintf(stderr, "expected incomplete handshake: %s (%d)\n", name ? name : "unknown", err);
+        fprintf(stderr, text("Ожидаемое незавершённое рукопожатие: %s (%d)\n", "expected incomplete handshake: %s (%d)\n"), name ? name : "unknown", err);
     }
-    fprintf(stderr, "NSS %s: ClientHello attempted on loopback; full TLS handshake is intentionally unavailable\n", NSS_GetVersion());
+    fprintf(stderr, text("NSS %s: попытка ClientHello через loopback; полное рукопожатие намеренно не выполняется\n", "NSS %s: ClientHello attempted on loopback; full TLS handshake is intentionally unavailable\n"), NSS_GetVersion());
     result = 0;
 close_socket:
     PR_Close(fd);

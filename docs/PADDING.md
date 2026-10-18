@@ -1,92 +1,82 @@
-# Experimental initial-v1 padding
+# Экспериментальное дополнение initial-v1
 
-This opt-in experiment addresses recognizable initial application-data lengths
-inside TLS tunnels. It is inspired by NaiveProxy's bounded initial-padding
-approach. It does not change TLS ClientHello, HTTP/2 SETTINGS, connection
-lifetimes or traffic timing, and is not a Firefox fingerprint profile or proof
-of censorship resistance. HTTP/2 and TLS can coalesce/split writes: these are
-application records, not a guarantee about network packet sizes.
+**Русский** | [English](PADDING.en.md)
 
-## Enable explicitly at both ends
+Режим изменяет длины первых записей приложения внутри TLS по мотивам NaiveProxy.
+Он не меняет ClientHello, SETTINGS H2, время и срок жизни соединений. H2/TLS
+могут объединять и делить записи: их длины не равны гарантированным размерам
+сетевых пакетов. Совпадение с Firefox и устойчивость к блокировкам не доказаны.
 
-Use the existing credentials and certificate setup, with `--padding` on both
-server and client:
+## Включение
 
 ```sh
 ./foxtunnel server --cert server.crt --key server.key --padding --web-root /srv/public-site
 ./foxtunnel client --server https://your-server.example --padding
 ```
 
-For NSS, build with `-tags nss` and add `--tls-backend nss` to the client. Padding
-is disabled by default. There is no sleep, padding-only keepalive, or background
-cover traffic.
+Используются обычные учётные данные и сертификаты. Для NSS нужны сборка
+`-tags nss` и `--tls-backend nss`. По умолчанию режим отключён. Искусственных
+задержек, фонового маскирующего трафика и keepalive только с дополнением нет.
 
-## Negotiation and compatibility
+## Согласование
 
-The client sends exactly one `X-FoxTunnel-Padding: initial-v1` header inside its
-authenticated HTTPS CONNECT request. The server acknowledges the same value
-only if its padding support is enabled. Unknown, duplicate or combined values
-are rejected. The server checks negotiation after authentication but before
-resolving/dialing the destination. Rejected unauthenticated probes use the public
-website handler with the proxy authorization and padding capability removed.
+В авторизованном HTTPS CONNECT клиент отправляет ровно один заголовок
+`X-FoxTunnel-Padding: initial-v1`. Сервер подтверждает его, только если режим
+включён. Неизвестные, повторные и объединённые значения запрещены. Проверка
+происходит после авторизации, до DNS/подключения к назначению. У отклонённых
+неавторизованных проб удаляются авторизация и заголовок дополнения перед сайтом.
 
-The client sends no application data until the HTTP/2 response succeeds and
-matches the requested capability. Missing, unknown, duplicate or unexpected
-acknowledgements fail setup without a raw retry. A padding-enabled server can
-still accept a normal unpadded client; an unpadded client rejects an unexpected
-padding acknowledgement. A new padded client fails against an older server
-without corrupting a destination stream. This experiment is **not advertised
-as NaiveProxy wire-compatible**, despite similar record framing.
+Данные приложения отправляются после успешного H2-ответа с точным подтверждением.
+Пропущенное, неверное, повторное или неожиданное подтверждение завершает установку
+без повтора обычным потоком. Сервер с дополнением принимает обычного клиента;
+обычный клиент отвергает неожиданное подтверждение. Новый клиент не повреждает
+поток назначения при подключении к старому серверу. Совместимость с форматом
+NaiveProxy не заявляется.
 
-## Per-direction framing
+## Формат каждого направления
 
-Each direction independently encodes its first eight nonempty records. A large
-write is divided into payloads of at most 16 KiB until the eight-record budget
-is exhausted. Empty writes emit nothing. After those records, all remaining
-bytes in that direction are passed through unchanged.
+Первые восемь непустых записей кодируются независимо в обе стороны. Большая запись
+делится на части до 16 КиБ, пока бюджет не исчерпан. Пустая запись ничего не
+создаёт. Затем оставшиеся байты передаются без преобразования.
 
-| Field | Size | Meaning |
+| Поле | Размер | Значение |
 | --- | --- | --- |
-| Payload length | 2 bytes | Unsigned big-endian, 1–16384 |
-| Padding length | 1 byte | Uniform random integer, 0–255 |
-| Payload | Payload length | Application bytes |
-| Padding | Padding length | Zero bytes inside encrypted TLS; ignored by reader |
+| Длина данных | 2 байта | Беззнаковое big-endian, 1–16384 |
+| Длина дополнения | 1 байт | Равномерное случайное число 0–255 |
+| Данные | Указанная длина | Байты приложения |
+| Дополнение | Указанная длина | Нулевые байты внутри TLS; получатель пропускает |
 
-Each record is assembled before writing, with a fresh cryptographic random
-padding length. A pooled buffer's padding region is cleared so it cannot send
-another stream's plaintext. A framing write failure is terminal; partially
-emitted records are not retried as new records.
+Запись собирается целиком; длина дополнения выбирается криптографическим ГСЧ.
+Область дополнения буфера очищается, чтобы не отправить открытые данные другого
+потока. Частично отправленная запись при ошибке не создаётся повторно.
 
-The decoder validates a complete record before exposing its payload. Zero or
-oversized payload lengths fail. EOF at a record boundary is a valid half-close,
-even before all eight records have been used. Truncated headers, payloads or
-padding fail with unexpected EOF. Decoder storage is bounded and released when
-all eight records are consumed; there is no padding allocation in the raw phase.
+Декодер проверяет всю запись до выдачи данных. Нулевая и чрезмерная длина —
+ошибка. EOF на границе записи допустим для полузакрытия даже до восьмой записи;
+усечённый заголовок, данные или дополнение дают unexpected EOF. Буфер ограничен
+и освобождается после восьмой записи; в обычной фазе дополнение память не выделяет.
 
-The maximum extra framing/padding is **2064 bytes per direction**, or **4128
-bytes per bidirectional stream**, excluding capability headers and normal H2/TLS
-framing. Short exchanges can have a high percentage overhead; this is why the
-mode stays explicit and needs comparison against an unpadded control.
+Максимум дополнительных данных — **2064 байта в направлении, 4128 на поток**,
+без заголовков согласования и H2/TLS. В коротких обменах относительные расходы
+могут быть велики, поэтому нужно сравнение с выключенным режимом.
 
-## Validation
+## Проверки
 
-Tests cover large/small writes, byte-at-a-time reads, bounded overhead, malformed
-lengths, truncation at every point of a record, failed/short writes, capability
-mismatches, plain-client compatibility, half-close, interactive flushing, raw
-transition, Go TLS and NSS data paths. The decoder has a fuzz target:
+Тестируются большие/малые записи, побайтовое чтение, накладные расходы,
+некорректные длины, усечение в каждой позиции, ошибки/короткие записи,
+согласование, обычные клиенты, полузакрытие, интерактивная отправка, переход
+к обычному потоку и обе реализации TLS. Есть фаззинг декодера:
 
 ```sh
-go test ./internal/tunnel -run '^$' -fuzz FuzzPaddingDecoder -fuzztime=10s -parallel=2
+go test ./internal/tunnel -run '^$' -fuzz FuzzPaddingDecoder -fuzztime=100000x -parallel=2 -timeout=120s
 go test -race ./... -count=1 -timeout=60s
 go test -race -tags nss ./... -count=1 -timeout=60s
 go test -tags nss ./internal/tunnel -run '^$' \
   -bench 'Benchmark(NSS)?(Padded)?TunnelRoundTrip' -benchmem -benchtime=500ms -count=3
 ```
 
-These benchmarks reuse an established stream, so they mostly measure the raw
-phase after the short initial prefix. They do not measure classifier accuracy
-or demonstrate an advantage over NaiveProxy. Real Firefox reference traces,
-first-exchange overhead, cold setup, loss/RTT and operator-network tests remain
-necessary. HTTP header padding and RST_STREAM padding are not implemented.
+Тест скорости повторно использует поток и преимущественно измеряет обычную
+фазу после префикса. Он не измеряет классификацию DPI. Нужны эталон Firefox,
+расходы первого обмена, холодная установка, потери/RTT и испытания у операторов.
+Дополнение HTTP-заголовков и RST_STREAM не реализовано.
 
-Reference: [NaiveProxy padding design](https://github.com/klzgrad/naiveproxy#padding-protocol-an-informal-specification).
+Источник: [описание NaiveProxy](https://github.com/klzgrad/naiveproxy#padding-protocol-an-informal-specification).

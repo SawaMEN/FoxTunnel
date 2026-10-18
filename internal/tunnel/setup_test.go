@@ -25,7 +25,7 @@ func closedProxy(t *testing.T) string {
 	l.Close()
 	return addr
 }
-func setupEndpoint(t *testing.T, c *Client, handler http.Handler) *httptest.Server {
+func setupEndpoint(t testing.TB, c *Client, handler http.Handler) *httptest.Server {
 	t.Helper()
 	s := httptest.NewUnstartedServer(handler)
 	s.EnableHTTP2 = true

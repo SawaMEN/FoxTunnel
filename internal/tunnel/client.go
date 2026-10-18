@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"net"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 )
 
@@ -48,7 +50,8 @@ type Client struct {
 		http.RoundTripper
 		CloseIdleConnections()
 	}
-	tlsConfig *tls.Config
+	bondClient *bond.Client
+	tlsConfig  *tls.Config
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {
@@ -57,11 +60,11 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 		return nil, err
 	}
 	if user == "" || password == "" || strings.Contains(user, ":") {
-		return nil, errors.New("nonempty credentials and a username without colon are required")
+		return nil, errors.New(i18n.Text("nonempty credentials and a username without colon are required"))
 	}
 	roots, err := x509.SystemCertPool()
 	if err != nil {
-		return nil, fmt.Errorf("system CA store: %w", err)
+		return nil, fmt.Errorf(i18n.Text("system CA store: %w"), err)
 	}
 	if caFile != "" {
 		data, err := os.ReadFile(caFile)
@@ -69,7 +72,7 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 			return nil, err
 		}
 		if !roots.AppendCertsFromPEM(data) {
-			return nil, errors.New("CA file contains no PEM certificates")
+			return nil, errors.New(i18n.Text("CA file contains no PEM certificates"))
 		}
 	}
 	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile}
@@ -112,7 +115,7 @@ func (c *Client) SetTLSBackend(name string) error {
 		c.transport = transport
 		return nil
 	default:
-		return fmt.Errorf("unknown TLS backend %q (choose go or nss)", name)
+		return fmt.Errorf(i18n.Text("unknown TLS backend %q (choose go or nss)"), name)
 	}
 }
 
@@ -140,6 +143,10 @@ func (c *Client) handle(conn net.Conn) {
 	}
 	_ = conn.SetDeadline(time.Time{})
 
+	if c.bondClient != nil {
+		c.handleBond(conn, target)
+		return
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	stream, err := c.openTunnel(ctx, target)
@@ -184,7 +191,7 @@ func socks5Handshake(conn net.Conn) (string, error) {
 		return "", err
 	}
 	if hello[0] != 5 || hello[1] == 0 {
-		return "", errors.New("unsupported SOCKS greeting")
+		return "", errors.New(i18n.Text("unsupported SOCKS greeting"))
 	}
 	methods := make([]byte, int(hello[1]))
 	if _, err := io.ReadFull(conn, methods); err != nil {
@@ -198,7 +205,7 @@ func socks5Handshake(conn net.Conn) (string, error) {
 	}
 	if !noAuth {
 		_, _ = conn.Write([]byte{5, 0xff})
-		return "", errors.New("SOCKS no-auth method unavailable")
+		return "", errors.New(i18n.Text("SOCKS no-auth method unavailable"))
 	}
 	if _, err := conn.Write([]byte{5, 0}); err != nil {
 		return "", err
@@ -209,7 +216,7 @@ func socks5Handshake(conn net.Conn) (string, error) {
 	}
 	if h[0] != 5 || h[1] != 1 || h[2] != 0 {
 		_ = socks5Reply(conn, 0x07)
-		return "", errors.New("only SOCKS CONNECT is supported")
+		return "", errors.New(i18n.Text("only SOCKS CONNECT is supported"))
 	}
 	var host string
 	switch h[3] {
@@ -231,7 +238,7 @@ func socks5Handshake(conn net.Conn) (string, error) {
 			return "", err
 		}
 		if n[0] == 0 {
-			return "", errors.New("empty hostname")
+			return "", errors.New(i18n.Text("empty hostname"))
 		}
 		name := make([]byte, n[0])
 		if _, err := io.ReadFull(conn, name); err != nil {
@@ -240,7 +247,7 @@ func socks5Handshake(conn net.Conn) (string, error) {
 		host = string(name)
 	default:
 		_ = socks5Reply(conn, 0x08)
-		return "", errors.New("unsupported SOCKS address type")
+		return "", errors.New(i18n.Text("unsupported SOCKS address type"))
 	}
 	var p [2]byte
 	if _, err := io.ReadFull(conn, p[:]); err != nil {
@@ -248,7 +255,7 @@ func socks5Handshake(conn net.Conn) (string, error) {
 	}
 	port := binary.BigEndian.Uint16(p[:])
 	if port == 0 || strings.ContainsAny(host, "\x00\r\n") {
-		return "", errors.New("invalid destination")
+		return "", errors.New(i18n.Text("invalid destination"))
 	}
 	return net.JoinHostPort(host, strconv.Itoa(int(port))), nil
 }

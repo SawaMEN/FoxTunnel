@@ -1,0 +1,156 @@
+[Русский](PERFORMANCE.md) | **English**
+
+# Performance and network validation
+
+## What this milestone changes
+
+- An operator-owned static website replaces the fixed product-branded page.
+- TLS session tickets may resume subsequent connections using a bounded memory
+  cache; the first handshake and the long-lived data path are not accelerated by
+  this cache. Resumption changes ClientHello and needs separate reference traces.
+- Dual-stack destination dialing falls back after 250 ms instead of waiting for
+  a broken first family to consume the complete setup timeout. Address filtering
+  happens before dialing; DNS is not repeated by a racing dialer.
+- CONNECT setup times out independently of stream lifetime. Cancellation closes
+  destination sockets even when the destination is silent. Normal upload EOF
+  still allows a final response.
+
+These are implementation improvements, not a claim of Firefox parity,
+undetectability, censorship resistance, or superiority to NaiveProxy.
+
+## Reproduce local measurements
+
+```sh
+go test -race ./... -count=1 -timeout=60s
+go vet ./...
+go test ./internal/tunnel -run '^$' -bench BenchmarkTunnelRoundTrip -benchmem -benchtime=1s -count=3
+```
+
+The benchmark establishes SOCKS5 over certificate-verified HTTP/2/TLS 1.3 and
+then reuses a stream to echo 64-byte and 1-MiB messages. MB/s counts the payload
+once, although each iteration sends it in both directions. Setup time is
+excluded; allocations include the benchmark's upload goroutine/channel. This
+is a loopback test, so it does not predict Internet speed or DPI behavior.
+Do not run comparison benchmarks concurrently.
+
+## Required comparisons before deployment claims
+
+Compare the same server, client OS, route, payload and traffic limits with
+NaiveProxy and real Firefox. Record software versions and both cold and resumed
+TLS sessions. Measure connection setup p50/p95, throughput, CPU, peak memory,
+success rate, disconnect recovery and overhead. Repeat with IPv6 failure,
+latency, loss, blocked UDP and multiple concurrent applications.
+
+Capture TLS ClientHello and HTTP/2 SETTINGS, initial windows, frame ordering,
+connection reuse and timing. Current fingerprint tooling captures only TLS
+ClientHello; no current Firefox reference trace is shipped. A static website
+does not change these passive client fingerprints or prevent IP-based blocks.
+
+Censorship tests need explicit observations on the affected operator networks,
+including successes and failures over time. Local unit tests cannot establish
+that Russian TSPU will not classify or block a tunnel.
+
+## Local observation (Go 1.23.12, Linux amd64)
+
+Three sequential benchmark repetitions on an AMD EPYC 9V74 shared runner:
+
+| Revision | 64-byte roundtrip | 1-MiB echo payload rate |
+| --- | --- | --- |
+| Baseline `8e74056` | 54.7–61.7 microseconds | 349.5–356.1 MB/s |
+| This milestone | 54.2–65.3 microseconds | 352.0–385.3 MB/s |
+
+These ranges overlap and the sample is small. They do **not** establish a
+steady-state speed improvement. The intended gains are faster family fallback,
+TLS resumption on reconnects and resource release on aborts. Those behaviors
+have separate regression tests. Internet throughput and TSPU behavior remain
+unmeasured.
+
+## NSS adapter observation (Go 1.26.9, Linux amd64, NSS 3.98)
+
+A separate run in one tagged binary, with both backends measured sequentially,
+three 500-ms repetitions per case on the same shared AMD EPYC runner:
+
+| Backend | 64-byte roundtrip | 1-MiB echo payload rate |
+| --- | --- | --- |
+| Go TLS | 54.4–58.6 microseconds | 316.3–380.4 MB/s |
+| NSS TLS + Go H2 | 95.7–98.2 microseconds | 301.9–336.5 MB/s |
+
+The initial NSS adapter does not show a speed advantage here. Native/Go callback
+crossings and a different H2 implementation add work, especially for small
+messages. These loopback samples are diagnostic, not Internet predictions or
+statistically established regressions. No packet-loss, real-route, Firefox,
+NaiveProxy or TSPU comparison has been run.
+
+```sh
+go test -tags nss ./internal/tunnel -run '^$' \
+  -bench 'Benchmark(NSS)?TunnelRoundTrip' -benchmem -benchtime=500ms -count=3
+```
+
+Validation for the adapter also passed with Go's race detector, vet, ordinary
+and tagged builds, CGO-disabled baseline tests, strict native compiler warnings,
+and AddressSanitizer. The AddressSanitizer run used `detect_leaks=0` because this
+runner cannot enumerate `/proc` threads for LeakSanitizer; no memory-leak scan
+result is claimed.
+
+## Initial-v1 padding observation (Go 1.26.9, NSS 3.98)
+
+Three 500-ms repetitions per case on the shared Linux runner:
+
+| Backend / mode | 64-byte roundtrip | 1-MiB echo payload rate |
+| --- | --- | --- |
+| Go, plain | 53.9–59.8 microseconds | 293.9–339.8 MB/s |
+| Go, padding enabled | 59.7–63.5 microseconds | 196.3–321.7 MB/s |
+| NSS, plain | 118.9–144.2 microseconds | 257.2–297.8 MB/s |
+| NSS, padding enabled | 95.0–115.7 microseconds | 252.9–303.7 MB/s |
+
+The stream benchmarks predominantly exercise the raw phase. The wide ranges
+and even reversed plain/padded rankings show runner variance; they do not
+establish a steady-state penalty or advantage. Padding stays disabled by
+default. No Internet or classifier result is inferred from these samples.
+
+The separate `BenchmarkInitialPaddingEncoder` discards encoded output, measuring
+only CPU, wire-byte overhead and warmed-pool allocations for a new prefix:
+
+| Payload in one write | Encoder time | Mean extra bytes |
+| --- | --- | --- |
+| 64 bytes (one record) | 60.5–70.7 ns | 130.5–130.6 |
+| 16 KiB (one record) | 333.9–367.0 ns | 130.5–130.6 |
+| 128 KiB (eight records) | 2.78–2.93 microseconds | 1044 |
+
+The encoder microbenchmark reported zero allocations per operation after the
+buffer pool was warmed. It excludes decoder allocation, HTTP/2, TLS, sockets,
+setup and real network costs. See [padding format and bounds](PADDING.en.md).
+
+## CI fuzz budget correction
+
+The first padding CI run passed race tests but failed after its 10-second fuzz
+budget with `context deadline exceeded`, without a saved failing input. A local
+Go 1.26.0 run did not reproduce the failure. This is consistent with a fuzz
+coordinator deadline race, but the log alone does not prove the root cause.
+
+CI now uses the latest Go 1.26 patch and a 100,000-execution fuzz budget with an
+independent 120-second process timeout. Failures remain fatal; there is no retry
+or error suppression. The same counted command passed locally. A real parser
+crash or hang must still fail the job. Longer time-based campaigns remain useful
+outside the bounded CI smoke check.
+
+## Bonding prototype: loopback observation
+
+Go 1.26.9, Linux amd64, shared AMD EPYC 9V74; three sequential 500-ms repetitions
+without concurrent checks. One-MiB echo counts payload once and excludes setup.
+Bonding uses two actual HTTPS entries and a separate HTTPS exit; ordinary CONNECT
+uses one HTTPS server.
+
+| Mode | 1-MiB echo, MB/s | Total allocated bytes per exchange |
+| --- | --- | --- |
+| Ordinary CONNECT, Go TLS | 245.04–390.40 | 21.9–24.3 kB |
+| Bonding, Go TLS | 135.75–190.18 | 9.91–10.16 MB |
+
+Allocation counts include all participating goroutines and the in-process
+servers. They are not resident memory or wire overhead. Per-block HTTP requests,
+a second TLS hop and copying have substantial cost; this prototype is slower in
+this test. Independent constrained-route gains remain unmeasured. Runner variance
+is large; no Internet or superiority claim follows. CPU/allocation profiling and
+more economical streaming framing are next, preserving ACKs and bounded windows.
+
+[Bonding design and deployment](BONDING.en.md).

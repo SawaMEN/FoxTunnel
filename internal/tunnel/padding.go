@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"net/http"
 	"sync"
@@ -26,7 +27,7 @@ func paddingRequested(header http.Header) (bool, error) {
 		return false, nil
 	}
 	if len(values) != 1 || values[0] != paddingVersion {
-		return false, errors.New("unsupported padding mode")
+		return false, errors.New(i18n.Text("unsupported padding mode"))
 	}
 	return true, nil
 }
@@ -91,7 +92,7 @@ func (w *paddingWriter) writeRaw(p []byte) (int, error) {
 	n, err := w.writer.Write(p)
 	if n < 0 || n > len(p) {
 		n = 0
-		err = errors.New("invalid underlying write count")
+		err = errors.New(i18n.Text("invalid underlying write count"))
 	}
 	if n < len(p) && err == nil {
 		err = io.ErrShortWrite
@@ -103,7 +104,7 @@ func writePaddingFrame(w io.Writer, p []byte) error {
 	for len(p) > 0 {
 		n, err := w.Write(p)
 		if n < 0 || n > len(p) {
-			return errors.New("invalid underlying write count")
+			return errors.New(i18n.Text("invalid underlying write count"))
 		}
 		if err != nil {
 			return err
@@ -156,7 +157,7 @@ func (r *paddingReader) Read(p []byte) (int, error) {
 	n := int(binary.BigEndian.Uint16(header[:2]))
 	pad := int(header[2])
 	if n == 0 || n > maxPaddingPayload {
-		r.err = errors.New("invalid padding record length")
+		r.err = errors.New(i18n.Text("invalid padding record length"))
 		r.buffer = nil
 		return 0, r.err
 	}

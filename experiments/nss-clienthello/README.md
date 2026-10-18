@@ -1,17 +1,19 @@
-# Mozilla NSS ClientHello experiment
+# Эксперимент захвата ClientHello Mozilla NSS
 
-This is a **capture-only**, standalone C program linked against Mozilla NSS/NSPR.
-It connects **only to `127.0.0.1`**, emits an NSS ClientHello (TLS 1.3,
-`h2`/`http/1.1` ALPN, configurable SNI) and expects the capture listener to
-terminate the connection without completing a TLS handshake.
+**Русский** | [English](README.en.md)
 
-**This is not FoxTunnel's TLS transport and is not the full Firefox fingerprint.**
-There is no HTTP/2 implementation here, no connection to remote services, and
-no certificate accepted or validated. A future production transport MUST verify
-certificate chains and hostnames with a properly configured NSS trust store and
-must not inherit the intentional early termination behavior of this tool.
+Отдельная программа C с NSS/NSPR предназначена **только для захвата приветствия**.
+Она подключается лишь к `127.0.0.1`, отправляет ClientHello TLS 1.3 с ALPN
+`h2`/`http/1.1` и заданным SNI. Ожидается, что инструмент захвата закроет
+соединение, не завершив рукопожатие.
 
-## Build on Debian/Ubuntu
+**Это не транспорт данных FoxTunnel и не полный отпечаток Firefox.**
+Здесь нет HTTP/2, подключения к удалённым сервисам и принятия либо проверки
+сертификата. Транспорт данных обязан проверять цепочку и имя, управлять доверием,
+таймерами и параллельностью; намеренно незавершённое рукопожатие туда переносить
+нельзя.
+
+## Сборка Debian/Ubuntu
 
 ```sh
 sudo apt-get install libnss3-dev libnspr4-dev pkg-config
@@ -20,26 +22,27 @@ cc -std=c11 -Wall -Wextra -Werror -O2 \
   -o nss-clienthello $(pkg-config --libs nss nspr)
 ```
 
-## Capture
+## Захват
 
-Terminal 1:
+Первый терминал:
 
 ```sh
 go run ./cmd/ft-fingerprint --listen 127.0.0.1:19443 --out nss.json
 ```
 
-Terminal 2:
+Второй терминал:
 
 ```sh
 ./nss-clienthello 19443 example.org
 ```
 
-The NSS program reports an attempted handshake; the capture JSON is evidence
-that a ClientHello was actually received and parsed. Compare the NSS output
-with `ft-fingerprint --sample-go` or a real Firefox capture, always recording
-the library and browser versions. NSS does not include the entire Firefox Necko
-stack or automatically reproduce its ClientHello ordering/settings.
+Сообщение программы указывает на попытку рукопожатия. JSON захвата подтверждает,
+что ClientHello действительно получен и разобран. Сравнивайте его с
+`ft-fingerprint --sample-go` и реальным Firefox, записывая версии библиотек и
+браузера. NSS сама по себе не включает Necko и не воспроизводит порядок/настройки
+ClientHello Firefox.
 
-The current research experiment uses system NSS at build/runtime. A production
-implementation must pin an audited NSS/NSPR version, manage CVE updates, and
-support Windows/macOS/Linux lifecycle requirements separately.
+Инструмент использует системную NSS при сборке и запуске. Для выпуска нужно
+фиксировать проверенную версию NSS/NSPR, сопровождать исправления уязвимостей и
+отдельно поддерживать жизненный цикл Windows/macOS/Linux.
+Язык сообщений по умолчанию русский; `FOXTUNNEL_LANG=en` включает английский.

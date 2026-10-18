@@ -1,6 +1,8 @@
-# Experimental NSS transport (Linux)
+# Экспериментальный транспорт NSS для Linux
 
-Build with Go 1.26+, a C compiler, pkg-config, NSS and NSPR development packages:
+**Русский** | [English](README.en.md)
+
+Нужны Go 1.26+, C-компилятор, pkg-config и пакеты разработки NSS/NSPR:
 
 ```sh
 sudo apt-get install libnss3-dev libnspr4-dev pkg-config
@@ -9,30 +11,27 @@ FOXTUNNEL_USER=alice FOXTUNNEL_PASSWORD=secret ./foxtunnel client \
   --tls-backend nss --server https://your-server.example
 ```
 
-Use `--ca-cert` for a private CA without disabling verification. The existing
-FoxTunnel H2 server is compatible. An ordinary build without the nss tag keeps
-Go TLS and explicitly rejects `--tls-backend nss`; it never silently substitutes
-a different backend. Unsupported platforms also return a clear error.
+`--ca-cert` добавляет частный CA без отключения проверки. Сервер FoxTunnel H2
+совместим. Обычная сборка без `nss` сохраняет Go TLS и явно отклоняет запрос NSS;
+скрытой замены нет. Неподдерживаемая платформа также возвращает ошибку.
 
-NSS handles the TLS 1.3 handshake, key exchange, encryption/decryption and h2
-ALPN negotiation. A custom NSPR layer borrows Go-managed TCP I/O using opaque
-cgo handles. Go's x509 verifies the complete peer-supplied chain against the
-configured CA pool/system roots, hostname, validity and serverAuth usage.
-The certificate hook never accepts a failed verification. No HTTP request or
-proxy credentials are sent before a verified handshake and h2 negotiation.
+NSS выполняет рукопожатие TLS 1.3, обмен ключами, шифрование и h2 ALPN.
+Слой NSPR передаёт TCP-ввод-вывод сокетам Go через непрозрачные дескрипторы cgo.
+Go x509 проверяет цепочку относительно системных и настроенных CA, имя узла,
+срок действия и назначение serverAuth. Неуспешная проверка не принимается.
+HTTP и учётные данные не отправляются до проверки и согласования h2.
 
-Context cancellation closes TCP to unblock C/Go I/O callbacks. Read/write
-operations are serialized independently; Close first interrupts the raw socket,
-then waits for operations to unwind before destroying NSS state and deleting
-the handle. NSS initializes once for process lifetime. Close currently interrupts the raw socket before destroying NSS state and does not guarantee an orderly TLS close_notify; browser-like teardown remains a measurement task. No 0-RTT is used. NSS
-session caching/tickets are disabled for this first adapter so authentication
-hooks cannot be skipped on resumed sessions; Go-backend session resumption
-remains supported. Peer chains are bounded to 16 certificates of at most 1 MiB
-each. There is no Firefox OCSP/revocation or Necko behavior parity claim.
+Отмена закрывает TCP, разблокируя вызовы C/Go. Чтение и запись сериализуются
+независимо. Close сначала прерывает исходный сокет, затем ждёт завершения операций,
+освобождает NSS и дескриптор. NSS инициализируется один раз на процесс.
+Корректный TLS close_notify пока не гарантируется: сходство завершения с браузером
+требует измерений. 0-RTT нет. Сессии и билеты NSS отключены, чтобы возобновление
+не пропускало обработчик проверки; возобновление Go TLS сохранено. Цепочка
+ограничена 16 сертификатами до 1 МиБ каждый. Эквивалентность Firefox OCSP,
+проверке отзыва и Necko не заявляется.
 
-Tests include full SOCKS/H2 payload transfer on concurrent streams, hostname
-and trust rejection, required h2 ALPN, CONNECT/handshake cancellation, concurrent
-close and half-close. Run:
+Проверяются параллельная передача SOCKS/H2, неверное имя и доверие, обязательный
+h2, отмена CONNECT/рукопожатия, параллельное закрытие и полузакрытие:
 
 ```sh
 go test -race -tags nss ./... -count=1 -timeout=60s
@@ -40,10 +39,10 @@ go vet -tags nss ./...
 go test -race ./... -count=1 -timeout=60s
 ```
 
-Record `pkg-config --modversion nss nspr` in measurements. Distro NSS versions
-may differ substantially from current Firefox. Keep production dependencies
-updated through the OS vendor and record backport versions. NSS can only change
-TLS behavior: H2 remains Go x/net/http2, and no browser-equivalent profile, H3,
-UDP, DNSTT or real-network TSPU test is provided by this adapter. Optional
-initial-record padding belongs to the tunnel layer and supports both backends;
-see [its specification](../../docs/PADDING.md).
+В измерениях сохраняйте `pkg-config --modversion nss nspr`. Системная NSS может
+существенно отличаться от NSS текущего Firefox. Обновляйте её через поставщика
+ОС и учитывайте исправления, перенесённые в старые версии.
+H2 остаётся Go x/net/http2. H3, UDP, DNSTT и испытания ТСПУ этот адаптер не добавляет.
+Необязательное [дополнение первых записей](../../docs/PADDING.md) относится к слою
+туннеля и работает с обеими реализациями TLS. Русский CLI включён по умолчанию;
+`--lang en` выбирает английский.

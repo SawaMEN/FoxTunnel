@@ -6,7 +6,8 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
-	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/bond"
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"net"
 	"net/http"
@@ -33,9 +34,20 @@ type Server struct {
 	activeTunnels atomic.Int64
 	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
 	Cover http.Handler
+	// Bond is an opt-in hub or relay, behind the same authentication boundary.
+	Bond http.Handler
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.Bond != nil && r.Method == http.MethodPost && r.ProtoMajor == 2 && r.URL.Path == bond.Path && s.authorized(r) {
+		if !s.acquireTunnel() {
+			http.Error(w, "server busy", http.StatusServiceUnavailable)
+			return
+		}
+		defer s.activeTunnels.Add(-1)
+		s.Bond.ServeHTTP(w, r)
+		return
+	}
 	// Select the tunnel only after authentication; rejected requests use the
 	// same handler as the public website and never dial a destination.
 	if r.Method != http.MethodConnect || r.ProtoMajor != 2 || !s.authorized(r) {
@@ -143,11 +155,11 @@ func (s *Server) timeout() time.Duration {
 func splitTarget(address string) (string, string, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil || host == "" {
-		return "", "", errors.New("missing host or port")
+		return "", "", errors.New(i18n.Text("missing host or port"))
 	}
 	n, err := strconv.Atoi(port)
 	if err != nil || n < 1 || n > 65535 {
-		return "", "", errors.New("invalid port")
+		return "", "", errors.New(i18n.Text("invalid port"))
 	}
 	return host, port, nil
 }
@@ -177,7 +189,7 @@ func (s *Server) dialTarget(ctx context.Context, host, port string) (net.Conn, e
 		}
 	}
 	if len(permitted) == 0 {
-		return nil, fmt.Errorf("no permitted destination addresses")
+		return nil, errors.New(i18n.Text("no permitted destination addresses"))
 	}
 	dialer := &net.Dialer{Timeout: s.timeout(), KeepAlive: 30 * time.Second}
 	return dialFamilies(ctx, permitted, port, 250*time.Millisecond, dialer.DialContext)

@@ -1,21 +1,45 @@
 # FoxTunnel
 
-An experimental encrypted tunneling project. The first milestone provides an **authenticated HTTP/2 CONNECT baseline** with a local SOCKS5 client and a TLS server. The longer-term research goal is to test Mozilla NSS and Neqo against this baseline, then assess whether Firefox-like networking behavior offers any measurable benefit.
+**Русский** | [English](README.en.md)
 
-> **Status: experimental prototype; not ready for production.** The default client uses **Go crypto/tls**; Linux tagged builds can opt into an **experimental NSS TLS backend**. Neither is a complete Firefox stack. It does not reproduce Firefox TLS or HTTP/2 fingerprints and offers only opt-in experimental initial padding. HTTP/3, UDP, censorship-resistance guarantees and 3x-ui integration are not implemented. Do not market it as superior to NaïveProxy.
+Экспериментальный защищённый туннель с локальным SOCKS5-клиентом и сервером
+HTTP/2 CONNECT поверх TLS 1.3. Цель проекта — измерить возможности сетевого
+стека Mozilla для быстрого и устойчивого подключения, в том числе в сетях РФ.
+Русский — основной язык интерфейса и документации, английский — второй.
 
-## Build and test
+**Статус: прототип, не готовый продукт.** По умолчанию используется Go TLS;
+Linux-сборка с тегом `nss` поддерживает экспериментальную реализацию Mozilla NSS.
+Это ещё не полный сетевой стек Firefox: HTTP/2 реализован на Go, совпадение
+отпечатков с Firefox не доказано. HTTP/3, UDP и интеграция с 3x-ui пока отсутствуют.
+Работа в условиях ТСПУ российских операторов требует отдельных испытаний;
+необнаружимость и превосходство над NaiveProxy не установлены.
 
-Requires Go 1.26+.
+## Сборка и проверки
+
+Нужен Go 1.26 или новее:
 
 ```sh
-go test ./... -race
+go test -race ./...
 go build -o foxtunnel ./cmd/foxtunnel
 ```
 
-## Quick local example
+Справка доступна без учётных данных:
 
-Generate a development certificate (do not use a self-signed certificate in a real deployment):
+```sh
+./foxtunnel server --help
+./foxtunnel client --help
+./foxtunnel client --lang en --help
+```
+
+Названия команд, параметров, переменных окружения и JSON-полей одинаковы для
+обоих языков. Сообщения FoxTunnel переведены; вложенная диагностика ОС и
+сторонних библиотек может сохранять исходный язык. Язык интерфейса не меняет
+сетевой протокол и ответы публичного сайта.
+
+## Локальный пример
+
+Создайте тестовый сертификат. Для публичного развёртывания нужен подходящий
+доверенный сертификат, а не этот самоподписанный пример:
 
 ```sh
 openssl req -x509 -newkey rsa:3072 -nodes -sha256 -days 2 \
@@ -23,7 +47,7 @@ openssl req -x509 -newkey rsa:3072 -nodes -sha256 -days 2 \
   -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
 ```
 
-Server, terminal 1:
+В первом терминале:
 
 ```sh
 export FOXTUNNEL_USER='example-user'
@@ -31,166 +55,148 @@ export FOXTUNNEL_PASSWORD='replace-with-a-long-random-password'
 ./foxtunnel server --listen 127.0.0.1:8443 --cert server.crt --key server.key
 ```
 
-Client, terminal 2, with the **same** environment variables:
+Во втором терминале задайте **те же** переменные и запустите клиент:
 
 ```sh
+export FOXTUNNEL_USER='example-user'
+export FOXTUNNEL_PASSWORD='replace-with-a-long-random-password'
 ./foxtunnel client --server https://localhost:8443 --ca-cert server.crt
 ```
 
-Local TCP applications can use `SOCKS5` at `127.0.0.1:1080` (remote DNS resolution is supported when the application sends a SOCKS5 hostname). For the local example only, the server denies loopback/private targets by default. To reach a TCP service on the local machine, restart it with `--allow-private` **only in an isolated test environment**.
+Адрес SOCKS5 — `127.0.0.1:1080`. Удалённое разрешение DNS работает, если
+приложение передаёт SOCKS5 имя узла. Сервер по умолчанию запрещает частные и
+локальные IP назначения. Для обращения к локальному сервису в изолированной
+тестовой среде можно включить `--allow-private` на сервере.
 
-## Security properties and limits
+## Проверка подлинности и ограничения
 
-- All proxy CONNECT requests require HTTP Basic proxy authorization **inside TLS**. Empty credentials and usernames containing `:` are rejected. Ordinary requests and rejected probes use the public website handler (plain `404` by default).
-- The server requires HTTP/2 CONNECT, TLS 1.3 and a TLS certificate; no plaintext tunnel endpoint is exposed by the CLI.
-- The client validates the server hostname and certificate; `--ca-cert` adds a trusted CA/certificate without disabling verification.
-- The server resolves destination IPs before dialing, and rejects private, loopback, link-local, shared, and selected special-use addresses unless `--allow-private` is explicitly set.
-- SOCKS5 is unauthenticated; its default listening address is loopback. **Never expose the SOCKS5 port publicly.**
-- Credentials are supplied via environment variables, not command-line arguments; protect process environment and deployment secrets accordingly.
-- No UDP, HTTP/3, traffic shaping, domain fronting, browser fingerprint parity, or active-scanning proof is implemented. Initial-record padding is an opt-in experiment.
-- This prototype has not had an external security review. Do not use it as an anonymity solution.
+- CONNECT требует Basic-аутентификацию **внутри TLS**. Пустые учётные данные и
+  двоеточие в имени пользователя запрещены.
+- Клиент проверяет сертификат и имя сервера, требует TLS 1.3 и h2 ALPN до
+  отправки авторизации. `--ca-cert` добавляет доверие без отключения проверки.
+- Сервер разрешает имя назначения и проверяет IP до подключения: частные,
+  локальные, link-local, shared и некоторые специальные диапазоны запрещены,
+  если явно не задан `--allow-private`.
+- Локальный SOCKS5 не имеет аутентификации: оставляйте его на loopback и не
+  открывайте порт в Интернет.
+- Учётные данные передаются переменными окружения; защищайте окружение процесса
+  и секреты развёртывания.
+- Независимый аудит ещё не проведён. Анонимность, незаметность для DPI и
+  устойчивость к активному сканированию не доказаны.
 
-## Public website and connection behavior
+## Публичный сайт и соединения
 
-Serve your own public static website on the same HTTPS listener:
+На том же HTTPS-порту можно разместить собственный статический сайт:
 
 ```sh
 ./foxtunnel server --listen :443 --cert server.crt --key server.key --web-root /srv/public-site
 ```
 
-Put an `index.html` and only public assets in that directory. Dotfiles and
-unindexed directory listings are rejected; symlinks must also point to public
-assets. Requests without valid tunnel authentication go to the website handler,
-with proxy credentials removed. Without `--web-root`, the listener returns a
-plain 404 instead of a product-branded placeholder. This removes one obvious
-identifier; it is **not proof of resistance to active probing**. TLS and HTTP/2
-still use Go and retain their network fingerprints.
+В каталог помещают `index.html` и только публичные файлы. Скрытые файлы и
+списки каталогов без индекса запрещены; ссылки также должны вести только к
+публичным данным. Обычные запросы и отклонённые пробы попадают в обработчик
+сайта без прокси-авторизации. Без `--web-root` возвращается обычный 404.
+Это убирает фирменную страницу, но не скрывает сетевые отпечатки TLS/HTTP/2.
 
-The client reuses HTTP/2 connections and caches up to 32 TLS sessions in memory
-for reconnects. No TLS 0-RTT or certificate-verification bypass is enabled.
-`--connect-timeout 15s` limits CONNECT setup only, including an unresponsive
-server; established streams can last longer. The server races the alternative
-IP family after 250 ms (immediately on first-family failure), using only resolved
-addresses that passed its destination policy. Stream cancellation releases the
-destination socket, while normal TCP half-close keeps the response readable.
+Клиент повторно использует H2-соединения. Go TLS хранит до 32 сессий в памяти
+для возобновления; TLS 0-RTT не применяется. `--connect-timeout 15s` ограничивает
+только установку CONNECT. На сервере альтернативное семейство IPv4/IPv6
+запускается через 250 мс или сразу после ошибки первого. Используются только
+проверенные IP; повторного DNS-запроса при гонке нет. Отмена закрывает сокет
+назначения, а нормальное полузакрытие отправки позволяет дочитать ответ.
 
-See [performance methodology](docs/PERFORMANCE.md) for reproducible local tests
-and the measurements still needed on real networks.
-
-## Experimental Mozilla NSS data transport
-
-Linux builds can now use NSS for the complete TLS 1.3 data connection:
+## Экспериментальная поддержка NSS
 
 ```sh
 go build -tags nss -o foxtunnel ./cmd/foxtunnel
 ./foxtunnel client --tls-backend nss --server https://your-server.example
 ```
 
-Requires NSS/NSPR headers, pkg-config and a C compiler. Credentials are still
-supplied by `FOXTUNNEL_USER` / `FOXTUNNEL_PASSWORD`; `--ca-cert` is supported.
-The backend verifies certificates and requires h2 ALPN. It does not fall back
-silently if unavailable. H2 is still Go x/net/http2, and certificate verification
-is Go x509; NSS alone does **not** make this a Firefox-equivalent client.
-NSS session resumption is disabled in this first adapter; the Go backend keeps
-its existing session cache.
+Нужны Linux, C-компилятор, pkg-config и пакеты разработки NSS/NSPR.
+NSS обслуживает TLS-данные; H2 остаётся Go x/net/http2, проверка сертификатов —
+Go x509. При недоступном NSS клиент выдаёт ошибку, а не меняет реализацию молча.
+Возобновление сессий NSS пока отключено. Подробнее: [адаптер NSS](internal/nsstls/README.md).
 
-See [NSS build, lifecycle and limits](internal/nsstls/README.md) and the
-[transport strategy based on NaiveProxy, mieru, Hysteria 2, XHTTP and DNSTT](docs/TRANSPORT-STRATEGY.md).
+## Дополнение первых записей
 
-## Experimental bounded initial padding
+`--padding` на клиенте и сервере включает согласуемый режим `initial-v1`:
+первые восемь записей в каждом направлении дополняются, затем идёт обычный
+поток. Максимальная добавка — 4128 байт на двунаправленный поток без учёта
+H2/TLS и заголовков. Искусственных задержек нет; неверное подтверждение режима
+останавливает установку до передачи данных приложения. Режим выключен по
+умолчанию. Он не меняет отпечаток TLS/H2. См. [формат и проверки](docs/PADDING.md).
 
-`--padding` on both server and client enables negotiated padding for the first
-eight application-data records per direction, followed by raw streaming. The
-mode adds at most 4128 bytes per bidirectional stream (excluding H2/TLS and
-capability headers), with no artificial delays. A missing/incorrect server
-acknowledgement fails setup before application data is sent; it never silently
-retries unpadded. Both Go TLS and NSS clients are supported.
+## Несколько серверов и нагрузка
 
-This does not modify TLS/H2 fingerprints or prove resistance to DPI. See the
-[wire format, compatibility, limits and tests](docs/PADDING.md).
-
-## Bounded server capacity
-
-The server defaults to at most 256 authenticated tunnels, including destination
-lookup/dial work. `--max-tunnels 128` changes this limit. Excess authenticated
-CONNECT requests fail with HTTP 503 before destination work; they are not queued
-or retried automatically. Slots are returned on cancellation, errors and normal
-stream teardown. Website requests and rejected probes still use the public
-handler. This is a resource bound, not a complete TLS/HTTP or DDoS defense.
-
-See the [AmneziaWG 3.1 / AnyTLS / TUIC / WebTunnel / Outline review](docs/PROTOCOL-REVIEW-2026-10-18.md)
-for what can transfer to the Mozilla design and what still needs experiments.
-
-## Multiple trusted servers
-
-The client can distribute **new streams** across up to eight configured HTTPS
-origins. `--balance failover` is the default; `round-robin` and `least-active`
-enable parallel use of independent servers. Repeat `--fallback-server` to add
-origins. Network setup failures trigger bounded retries and temporary cooldown;
-established streams are never replayed. Certificate, HTTP and padding failures
-remain terminal. All origins receive the same credentials after TLS verification.
+До восьми явно доверенных HTTPS-серверов могут одновременно обслуживать новые
+потоки. Все получают одинаковые учётные данные после проверки TLS.
 
 ```sh
 ./foxtunnel client --server https://edge-a.example \
   --fallback-server https://edge-b.example --balance least-active
 ```
 
-See [selection, recovery and limits](docs/ENDPOINTS.md) and the
-[NaiveProxy/Sudoku audit](docs/NAIVE-SUDOKU-REVIEW.md). Multiple servers do not
-combine bandwidth for one stream or establish resistance to TSPU detection.
+| Режим `--balance` | Выбор сервера |
+| --- | --- |
+| `failover` (по умолчанию) | Последний успешно использованный сервер; другой — при сетевой ошибке установки |
+| `round-robin` | По очереди |
+| `least-active` | Наименьшее число устанавливаемых и открытых потоков этого клиента |
 
-## Roadmap
+После сетевого сбоя недоступный сервер временно уступает место доступным.
+Повторы ограничены общим временем установки; фоновых проб нет. Ошибки
+сертификата, TLS/ALPN, HTTP-статуса и согласования дополнения не обходятся
+переключением. Установленные потоки не переносятся и не воспроизводятся заново.
+Один поток не объединяет пропускную способность нескольких серверов.
+См. [настройку и ограничения](docs/ENDPOINTS.md).
 
-1. Validate HTTP/2 baseline against packet captures, test HTTPS CONNECT behavior and error handling.
-2. Stabilize the experimental **NSS TLS adapter** and prove differences using packet-level capture and Firefox versioned reference traces.
-3. Integrate **Neqo** for experimental QUIC/HTTP/3, with fallback to HTTP/2. Do not deploy Neqo's experimental server in production.
-4. Evaluate HTTP/2 and HTTP/3 fingerprints, transport overhead, downtime, performance and censor behavior with reproducible benchmarks.
-5. After API stabilization: adapter for sing-box and lifecycle integration in 3x-ui.
+На сервере `--max-tunnels` ограничивает одновременно авторизованные туннели
+вместе с DNS, подключением и передачей. По умолчанию — 256. При превышении
+возвращается 503 до работы с назначением, без очереди. Место освобождается при
+ошибке, отмене и закрытии. Это ограничение ресурсов, а не полная защита от DDoS.
 
-## Firefox TLS fingerprint research (second milestone)
+## Исследование отпечатков Firefox
 
-`ft-fingerprint` **does not implement Firefox TLS**. It extracts non-secret
-ClientHello metadata to establish measured differences against a real Firefox
-reference trace. No SNI hostname, session ID, client random, or key share bytes
-are persisted. JA3 is informational only and is not an anonymity or security score.
-
-Build the tool and generate a **Go TLS** baseline locally:
+`ft-fingerprint` извлекает несекретные метаданные ClientHello. Он не сохраняет
+имя SNI, случайные значения клиента, идентификатор сессии и содержимое key share.
+JA3 — вспомогательное сравнение, а не оценка анонимности.
 
 ```sh
 go build -o ft-fingerprint ./cmd/ft-fingerprint
 ./ft-fingerprint --sample-go --out go.json
-```
-
-Capture a **real Firefox ClientHello** on the same computer (separate terminal):
-
-```sh
 ./ft-fingerprint --listen 127.0.0.1:9443 --out firefox.json
 ```
 
-Open `https://127.0.0.1:9443/` in Firefox. The browser will report a connection
-failure; **this is expected** because the probe only reads ClientHello and never
-performs a TLS handshake. For meaningful browser vs client comparisons, use a
-consistent host/SNI, OS and network environment, and record Firefox version,
-proxy configuration, HTTP settings and whether ECH is enabled.
-
-Compare the two samples:
+Для последней команды откройте `https://127.0.0.1:9443/` в Firefox.
+Ошибка TLS ожидаема: инструмент завершает соединение после ClientHello.
+Записывайте версию Firefox, ОС, настройки прокси, HTTP и ECH; условия сравнения
+должны совпадать.
 
 ```sh
 ./ft-fingerprint --input go.json --compare firefox.json --strict
 ```
 
-The command reports differences in cipher suites, extension ordering, supported
-versions, key shares, ALPN, and legacy JA3 fingerprint. `--strict` exits nonzero
-when any compared field differs. The JSON represents a *single handshake only*.
-This does not test HTTP/2 SETTINGS, timing, certificate validation, payload
-patterns or Firefox Necko behavior. No claim of fingerprint parity is made.
+Сравниваются шифры, расширения, версии, группы ключей, ALPN и другие поля.
+`--strict` возвращает ненулевой код при различии. HTTP/2 SETTINGS, порядок
+кадров и временные характеристики этот инструмент не проверяет.
+Отдельный [эксперимент NSS ClientHello](experiments/nss-clienthello/README.md)
+генерирует только приветствие и не является транспортом.
 
-See [architecture](docs/ARCHITECTURE.md) and [project milestones](docs/ROADMAP.md).
+## Документация и дальнейшая работа
 
-## Native Mozilla NSS experiment
+- [Архитектура](docs/ARCHITECTURE.md) и [план разработки](docs/ROADMAP.md).
+- [Измерения скорости и сетевые испытания](docs/PERFORMANCE.md).
+- [Выбор подходов из других протоколов](docs/TRANSPORT-STRATEGY.md).
+- [Разбор AmneziaWG и дополнительных проектов](docs/PROTOCOL-REVIEW-2026-10-18.md).
+- [Ограничения NaiveProxy и идеи Sudoku](docs/NAIVE-SUDOKU-REVIEW.md).
 
-A **standalone NSS/NSPR ClientHello generator** is available under
-[`experiments/nss-clienthello`](experiments/nss-clienthello/). It emits a
-real NSS TLS 1.3 ClientHello to a loopback-only capture listener, but does
-not complete TLS, validate certificates, proxy traffic or integrate with the
-Go transport. See its README for build and comparison instructions.
+Следующие этапы — эталонные записи реального Firefox, стабилизация NSS,
+эксперимент Neqo/HTTP/3, измерения потерь, задержек и поведения в сетях
+российских операторов. Интеграции sing-box и 3x-ui следуют после стабилизации
+протокола и жизненного цикла соединений.
+
+## Эксперимент объединения путей
+
+Отдельный явный режим `--bond` передаёт блоки одного потока через несколько
+входов к общему выходу. Обычные режимы распределения целых потоков сохранены.
+См. [запуск, подтверждения, границы и проверки](docs/BONDING.md).
+Это прототип: преимущество скорости и устойчивость к ТСПУ не доказаны.

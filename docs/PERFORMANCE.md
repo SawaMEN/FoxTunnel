@@ -1,22 +1,18 @@
-# Performance and network validation
+# Скорость и сетевые испытания
 
-## What this milestone changes
+**Русский** | [English](PERFORMANCE.en.md)
 
-- An operator-owned static website replaces the fixed product-branded page.
-- TLS session tickets may resume subsequent connections using a bounded memory
-  cache; the first handshake and the long-lived data path are not accelerated by
-  this cache. Resumption changes ClientHello and needs separate reference traces.
-- Dual-stack destination dialing falls back after 250 ms instead of waiting for
-  a broken first family to consume the complete setup timeout. Address filtering
-  happens before dialing; DNS is not repeated by a racing dialer.
-- CONNECT setup times out independently of stream lifetime. Cancellation closes
-  destination sockets even when the destination is silent. Normal upload EOF
-  still allows a final response.
+## Что улучшено
 
-These are implementation improvements, not a claim of Firefox parity,
-undetectability, censorship resistance, or superiority to NaiveProxy.
+Собственный сайт заменяет фирменную страницу. Кэш Go TLS может ускорять повторное
+рукопожатие, но не первое и не уже установленный поток; возобновлённые ClientHello
+нужно сравнивать отдельно. Для назначения IPv4/IPv6 второе семейство запускается
+через 250 мс; проверка адресов предшествует подключению, DNS не повторяется.
+Установка CONNECT ограничена независимо от срока жизни потока. Отмена освобождает
+сокет; EOF отправки позволяет дочитать ответ. Это инженерные улучшения, а не
+доказательство неотличимости от Firefox или устойчивости к ТСПУ.
 
-## Reproduce local measurements
+## Воспроизведение
 
 ```sh
 go test -race ./... -count=1 -timeout=60s
@@ -24,110 +20,117 @@ go vet ./...
 go test ./internal/tunnel -run '^$' -bench BenchmarkTunnelRoundTrip -benchmem -benchtime=1s -count=3
 ```
 
-The benchmark establishes SOCKS5 over certificate-verified HTTP/2/TLS 1.3 and
-then reuses a stream to echo 64-byte and 1-MiB messages. MB/s counts the payload
-once, although each iteration sends it in both directions. Setup time is
-excluded; allocations include the benchmark's upload goroutine/channel. This
-is a loopback test, so it does not predict Internet speed or DPI behavior.
-Do not run comparison benchmarks concurrently.
+Тест создаёт SOCKS5 поверх проверенного H2/TLS 1.3 и повторно использует поток
+для эха 64 байт и 1 МиБ. MB/s учитывает полезные данные один раз, хотя они идут
+в обе стороны. Установка исключена; выделения включают тестовую горутину/канал.
+Loopback не предсказывает скорость Интернета и поведение DPI. Сравнительные
+измерения нельзя запускать одновременно.
 
-## Required comparisons before deployment claims
+## Что измерить до заявлений о преимуществах
 
-Compare the same server, client OS, route, payload and traffic limits with
-NaiveProxy and real Firefox. Record software versions and both cold and resumed
-TLS sessions. Measure connection setup p50/p95, throughput, CPU, peak memory,
-success rate, disconnect recovery and overhead. Repeat with IPv6 failure,
-latency, loss, blocked UDP and multiple concurrent applications.
+На одинаковых сервере, ОС, маршруте, данных и лимитах сравнить NaiveProxy и
+реальный Firefox. Записать версии, холодное/возобновлённое TLS. Измерять установку
+p50/p95, полосу, CPU, пиковую память, успешность, восстановление и расходы.
+Повторить при сбое IPv6, задержках, потерях, запрете UDP и параллельных приложениях.
 
-Capture TLS ClientHello and HTTP/2 SETTINGS, initial windows, frame ordering,
-connection reuse and timing. Current fingerprint tooling captures only TLS
-ClientHello; no current Firefox reference trace is shipped. A static website
-does not change these passive client fingerprints or prevent IP-based blocks.
+Снять ClientHello и H2 SETTINGS, окна, порядок кадров, повторное использование
+и время. Текущий инструмент видит лишь ClientHello; эталон Firefox не поставляется.
+Сайт не скрывает клиентские отпечатки и не предотвращает блокировку IP.
+Для ТСПУ нужны наблюдения в затронутых сетях операторов РФ со временем, включая
+отказы. Локальные тесты не доказывают невозможность обнаружения и блокировки.
 
-Censorship tests need explicit observations on the affected operator networks,
-including successes and failures over time. Local unit tests cannot establish
-that Russian TSPU will not classify or block a tunnel.
+## Предыдущие локальные измерения
 
-## Local observation (Go 1.23.12, Linux amd64)
+Общий runner Linux amd64, AMD EPYC 9V74; малые выборки и вариативность не дают
+статистического доказательства ускорения. MB/s — десятичные мегабайты в секунду.
 
-Three sequential benchmark repetitions on an AMD EPYC 9V74 shared runner:
+Go 1.23.12, три последовательных повторения:
 
-| Revision | 64-byte roundtrip | 1-MiB echo payload rate |
+| Версия | Эхо 64 байт, мкс | Эхо 1 МиБ, MB/s |
 | --- | --- | --- |
-| Baseline `8e74056` | 54.7–61.7 microseconds | 349.5–356.1 MB/s |
-| This milestone | 54.2–65.3 microseconds | 352.0–385.3 MB/s |
+| База `8e74056` | 54,7–61,7 | 349,5–356,1 |
+| Этап улучшения соединений | 54,2–65,3 | 352,0–385,3 |
 
-These ranges overlap and the sample is small. They do **not** establish a
-steady-state speed improvement. The intended gains are faster family fallback,
-TLS resumption on reconnects and resource release on aborts. Those behaviors
-have separate regression tests. Internet throughput and TSPU behavior remain
-unmeasured.
+Диапазоны перекрываются. Цели изменения — выбор семейства адресов, возобновление
+и освобождение ресурсов, а не доказанное ускорение постоянной передачи.
 
-## NSS adapter observation (Go 1.26.9, Linux amd64, NSS 3.98)
+Go 1.26.9, NSS 3.98, один бинарный файл с последовательной проверкой реализаций,
+три повторения по 500 мс:
 
-A separate run in one tagged binary, with both backends measured sequentially,
-three 500-ms repetitions per case on the same shared AMD EPYC runner:
-
-| Backend | 64-byte roundtrip | 1-MiB echo payload rate |
+| Реализация | Эхо 64 байт, мкс | Эхо 1 МиБ, MB/s |
 | --- | --- | --- |
-| Go TLS | 54.4–58.6 microseconds | 316.3–380.4 MB/s |
-| NSS TLS + Go H2 | 95.7–98.2 microseconds | 301.9–336.5 MB/s |
+| Go TLS | 54,4–58,6 | 316,3–380,4 |
+| NSS TLS + Go H2 | 95,7–98,2 | 301,9–336,5 |
 
-The initial NSS adapter does not show a speed advantage here. Native/Go callback
-crossings and a different H2 implementation add work, especially for small
-messages. These loopback samples are diagnostic, not Internet predictions or
-statistically established regressions. No packet-loss, real-route, Firefox,
-NaiveProxy or TSPU comparison has been run.
+Первая версия NSS-адаптера здесь не быстрее. Переходы Go/C и другая H2-реализация
+добавляют работу, особенно для коротких сообщений. Это диагностика, а не прогноз
+Интернета или доказанная регрессия. Сравнений с потерями, Firefox, NaiveProxy и
+ТСПУ не проведено.
 
 ```sh
 go test -tags nss ./internal/tunnel -run '^$' \
   -bench 'Benchmark(NSS)?TunnelRoundTrip' -benchmem -benchtime=500ms -count=3
 ```
 
-Validation for the adapter also passed with Go's race detector, vet, ordinary
-and tagged builds, CGO-disabled baseline tests, strict native compiler warnings,
-and AddressSanitizer. The AddressSanitizer run used `detect_leaks=0` because this
-runner cannot enumerate `/proc` threads for LeakSanitizer; no memory-leak scan
-result is claimed.
+Адаптер прошёл детектор гонок, vet, сборки, тесты без CGO, строгие предупреждения
+C и AddressSanitizer. Для ASAN задано `detect_leaks=0`: runner не позволял обход
+потоков `/proc`. Результат проверки утечек не заявляется.
 
-## Initial-v1 padding observation (Go 1.26.9, NSS 3.98)
+## Дополнение initial-v1
 
-Three 500-ms repetitions per case on the shared Linux runner:
+Go 1.26.9 / NSS 3.98, по три повторения 500 мс:
 
-| Backend / mode | 64-byte roundtrip | 1-MiB echo payload rate |
+| Режим | Эхо 64 байт, мкс | Эхо 1 МиБ, MB/s |
 | --- | --- | --- |
-| Go, plain | 53.9–59.8 microseconds | 293.9–339.8 MB/s |
-| Go, padding enabled | 59.7–63.5 microseconds | 196.3–321.7 MB/s |
-| NSS, plain | 118.9–144.2 microseconds | 257.2–297.8 MB/s |
-| NSS, padding enabled | 95.0–115.7 microseconds | 252.9–303.7 MB/s |
+| Go, обычный | 53,9–59,8 | 293,9–339,8 |
+| Go, дополнение | 59,7–63,5 | 196,3–321,7 |
+| NSS, обычный | 118,9–144,2 | 257,2–297,8 |
+| NSS, дополнение | 95,0–115,7 | 252,9–303,7 |
 
-The stream benchmarks predominantly exercise the raw phase. The wide ranges
-and even reversed plain/padded rankings show runner variance; they do not
-establish a steady-state penalty or advantage. Padding stays disabled by
-default. No Internet or classifier result is inferred from these samples.
+Измеряется преимущественно обычная фаза после префикса. Разброс и обратный порядок
+результатов показывают нестабильность runner, а не преимущество/штраф дополнения.
+Режим выключен по умолчанию. Выводов о классификации и Интернете нет.
 
-The separate `BenchmarkInitialPaddingEncoder` discards encoded output, measuring
-only CPU, wire-byte overhead and warmed-pool allocations for a new prefix:
+`BenchmarkInitialPaddingEncoder` отбрасывает результат и измеряет лишь кодировщик
+нового префикса с прогретым пулом:
 
-| Payload in one write | Encoder time | Mean extra bytes |
+| Данные одной записи | Время | Средняя добавка, байт |
 | --- | --- | --- |
-| 64 bytes (one record) | 60.5–70.7 ns | 130.5–130.6 |
-| 16 KiB (one record) | 333.9–367.0 ns | 130.5–130.6 |
-| 128 KiB (eight records) | 2.78–2.93 microseconds | 1044 |
+| 64 байта | 60,5–70,7 нс | 130,5–130,6 |
+| 16 КиБ | 333,9–367,0 нс | 130,5–130,6 |
+| 128 КиБ, восемь записей | 2,78–2,93 мкс | 1044 |
 
-The encoder microbenchmark reported zero allocations per operation after the
-buffer pool was warmed. It excludes decoder allocation, HTTP/2, TLS, sockets,
-setup and real network costs. See [padding format and bounds](PADDING.md).
+После прогрева — ноль выделений на операцию. Не учитываются декодер, H2/TLS,
+сокеты, установка и сеть. См. [формат](PADDING.md).
 
-## CI fuzz budget correction
+## Бюджет фаззинга CI
 
-The first padding CI run passed race tests but failed after its 10-second fuzz
-budget with `context deadline exceeded`, without a saved failing input. A local
-Go 1.26.0 run did not reproduce the failure. This is consistent with a fuzz
-coordinator deadline race, but the log alone does not prove the root cause.
+Первый CI с фаззингом 10 секунд прошёл детектор гонок, затем завершился
+`context deadline exceeded` без сохранённого входа. Локальный Go 1.26.0 это не
+повторил. Возможна гонка срока координатора, но лог не доказывает причину.
+Теперь CI берёт последний патч Go 1.26 и 100 000 выполнений с отдельным таймаутом
+120 секунд. Ошибки остаются конечными, повтора и подавления нет. Локальный прогон
+прошёл. Длительные кампании нужны отдельно от ограниченной проверки CI.
 
-CI now uses the latest Go 1.26 patch and a 100,000-execution fuzz budget with an
-independent 120-second process timeout. Failures remain fatal; there is no retry
-or error suppression. The same counted command passed locally. A real parser
-crash or hang must still fail the job. Longer time-based campaigns remain useful
-outside the bounded CI smoke check.
+## Прототип объединения путей: локальная проверка
+
+Go 1.26.9, Linux amd64, общий AMD EPYC 9V74, три последовательных повторения
+по 500 мс без одновременного запуска других проверок. Эхо 1 МиБ, MB/s учитывает
+данные один раз; установка исключена. У объединения — два настоящих HTTPS-входа
+и отдельный HTTPS-выход, у обычного режима — один HTTPS-сервер.
+
+| Режим | Эхо 1 МиБ, MB/s | Суммарно выделено памяти за обмен |
+| --- | --- | --- |
+| Обычный CONNECT, Go TLS | 245,04–390,40 | 21,9–24,3 КБ |
+| Объединение путей, Go TLS | 135,75–190,18 | 9,91–10,16 МБ |
+
+Число байтов на операцию — сумма выделений во всех участвующих горутинах,
+а не одновременно занятая память и не расход на проводе. Внутри одного процесса
+тест учитывает также серверы. У прототипа заметная цена HTTP-запросов на каждый
+блок, второго TLS-перехода и копирования. В этом опыте он медленнее обычного
+туннеля. Преимущества при независимых ограниченных маршрутах не измерены.
+Образцы на общем runner существенно различаются; ни превосходство, ни скорость
+Интернета из них не следуют. Следующий этап — профиль CPU/выделений и более
+экономный потоковый формат с сохранением подтверждений и ограниченных окон.
+
+[Описание и запуск объединения путей](BONDING.md).

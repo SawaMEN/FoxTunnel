@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"net"
 	"net/http"
@@ -18,12 +19,12 @@ import (
 
 const maxProxyEndpoints = 8
 
-var errH2Required = errors.New("proxy must negotiate h2 ALPN")
+var errH2Required = i18n.Error(i18n.Text("proxy must negotiate h2 ALPN"))
 
 func parseServerURL(raw string) (*url.URL, error) {
 	u, err := url.Parse(raw)
 	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
-		return nil, errors.New("server must be an https://host[:port] URL")
+		return nil, errors.New(i18n.Text("server must be an https://host[:port] URL"))
 	}
 	return u, nil
 }
@@ -33,7 +34,7 @@ func parseServerURL(raw string) (*url.URL, error) {
 // verification. No discovery, redirects, cleartext fallback or protocol change.
 func (c *Client) SetFallbackServers(rawURLs []string) error {
 	if len(rawURLs) >= maxProxyEndpoints {
-		return fmt.Errorf("at most %d fallback servers are allowed", maxProxyEndpoints-1)
+		return fmt.Errorf(i18n.Text("at most %d fallback servers are allowed"), maxProxyEndpoints-1)
 	}
 	key := func(u *url.URL) string {
 		port := u.Port()
@@ -50,7 +51,7 @@ func (c *Client) SetFallbackServers(rawURLs []string) error {
 			return err
 		}
 		if seen[key(u)] {
-			return errors.New("duplicate proxy origin")
+			return errors.New(i18n.Text("duplicate proxy origin"))
 		}
 		seen[key(u)] = true
 		endpoints = append(endpoints, u)
@@ -122,11 +123,11 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 		timedOut := !timer.Stop()
 		if err == nil && !timedOut && attemptCtx.Err() == nil {
 			if resp.ProtoMajor != 2 || resp.StatusCode != http.StatusOK {
-				err = fmt.Errorf("CONNECT rejected (HTTP/%d status %d)", resp.ProtoMajor, resp.StatusCode)
+				err = fmt.Errorf(i18n.Text("CONNECT rejected (HTTP/%d status %d)"), resp.ProtoMajor, resp.StatusCode)
 			} else {
 				negotiated, paddingErr := paddingRequested(resp.Header)
 				if paddingErr != nil || negotiated != c.Padding {
-					err = errors.New("CONNECT padding negotiation failed")
+					err = errors.New(i18n.Text("CONNECT padding negotiation failed"))
 				}
 			}
 			if err == nil {
@@ -233,7 +234,7 @@ func (c *Client) SetBalance(mode string) error {
 	switch mode {
 	case "failover", "round-robin", "least-active":
 	default:
-		return fmt.Errorf("unknown balance mode %q", mode)
+		return fmt.Errorf(i18n.Text("unknown balance mode %q"), mode)
 	}
 	c.balance = mode
 	return nil

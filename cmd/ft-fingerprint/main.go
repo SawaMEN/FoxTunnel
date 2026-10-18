@@ -6,8 +6,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"net"
 	"os"
@@ -24,13 +24,18 @@ func main() {
 	}
 }
 func run() error {
-	listen := flag.String("listen", "", "listen on loopback for one ClientHello (closes before TLS completes)")
-	goSample := flag.Bool("sample-go", false, "capture the current Go TLS ClientHello without using network")
-	input := flag.String("input", "", "read fingerprint from JSON file")
-	output := flag.String("out", "", "write JSON to file (otherwise stdout)")
-	reference := flag.String("compare", "", "reference fingerprint JSON for a detailed comparison")
-	strict := flag.Bool("strict", false, "return nonzero if any compared field differs")
-	flag.Parse()
+	args, err := i18n.SelectLanguage(os.Args[1:])
+	if err != nil {
+		return err
+	}
+	fs := i18n.NewFlagSet("ft-fingerprint")
+	listen := fs.String("listen", "", i18n.Text("listen on loopback for one ClientHello (closes before TLS completes)"))
+	goSample := fs.Bool("sample-go", false, i18n.Text("capture the current Go TLS ClientHello without using network"))
+	input := fs.String("input", "", i18n.Text("read fingerprint from JSON file"))
+	output := fs.String("out", "", i18n.Text("write JSON to file (otherwise stdout)"))
+	reference := fs.String("compare", "", i18n.Text("reference fingerprint JSON for a detailed comparison"))
+	strict := fs.Bool("strict", false, i18n.Text("return nonzero if any compared field differs"))
+	i18n.Parse(fs, args)
 	modes := 0
 	if *listen != "" {
 		modes++
@@ -42,10 +47,9 @@ func run() error {
 		modes++
 	}
 	if modes != 1 {
-		return errors.New("choose exactly one of --listen, --sample-go, --input")
+		return errors.New(i18n.Text("choose exactly one of --listen, --sample-go, --input"))
 	}
 	var h fingerprint.Hello
-	var err error
 	switch {
 	case *goSample:
 		h, err = captureGo()
@@ -57,7 +61,7 @@ func run() error {
 			return e
 		}
 		if addr.IP == nil || !addr.IP.IsLoopback() {
-			return errors.New("--listen must bind to an explicit loopback IP")
+			return errors.New(i18n.Text("--listen must bind to an explicit loopback IP"))
 		}
 		var l net.Listener
 		l, e = net.ListenTCP("tcp", addr)
@@ -65,7 +69,7 @@ func run() error {
 			return e
 		}
 		defer l.Close()
-		fmt.Fprintln(os.Stderr, "capture listening on", l.Addr(), "(one handshake; TLS failure on browser is expected)")
+		fmt.Fprintln(os.Stderr, i18n.Text("capture listening on"), l.Addr(), i18n.Text("(one handshake; TLS failure on browser is expected)"))
 		tcp := l.(*net.TCPListener)
 		_ = tcp.SetDeadline(time.Now().Add(60 * time.Second))
 		conn, e := tcp.Accept()
@@ -97,13 +101,13 @@ func run() error {
 		} {
 			if !reflect.DeepEqual(f.a, f.b) {
 				different = true
-				fmt.Fprintln(os.Stderr, "DIFF", f.name, ": reference", f.a, "candidate", f.b)
+				fmt.Fprintln(os.Stderr, i18n.Text("DIFF"), f.name, i18n.Text(": reference"), f.a, i18n.Text("candidate"), f.b)
 			}
 		}
 		if ref.JA3 == h.JA3 {
-			fmt.Fprintln(os.Stderr, "JA3: equal (not proof of browser equivalence)")
+			fmt.Fprintln(os.Stderr, i18n.Text("JA3: equal (not proof of browser equivalence)"))
 		} else {
-			fmt.Fprintln(os.Stderr, "JA3: different")
+			fmt.Fprintln(os.Stderr, i18n.Text("JA3: different"))
 			different = true
 		}
 	}
@@ -121,7 +125,7 @@ func run() error {
 		return err
 	}
 	if *strict && different {
-		return errors.New("fingerprints differ")
+		return errors.New(i18n.Text("fingerprints differ"))
 	}
 	return nil
 }

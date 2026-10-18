@@ -1,76 +1,67 @@
-# NaiveProxy and Sudoku: limitations and transferable design
+# Ограничения NaiveProxy и полезные идеи Sudoku
 
-## Scope and pinned sources
+**Русский** | [English](NAIVE-SUDOKU-REVIEW.en.md)
 
-Reviewed source snapshots:
+## Исходники
 
-- [NaiveProxy](https://github.com/klzgrad/naiveproxy/tree/0539676ac91d9607caa00869b709e66643b91ac5),
-  particularly `USAGE.txt`, README and `src/net/tools/naive/naive_padding_socket.cc`.
-- [Sudoku](https://github.com/SUDOKU-ASCII/sudoku/tree/a3a4c8a081221f2a352f2c36deaf8137900718b1),
-  particularly `internal/tunnel/mux_dialer.go`, `mux_session.go`, `mux_stream.go`
-  and the README. This is the network proxy project SUDOKU-ASCII/sudoku.
+Разобраны зафиксированные версии:
 
-This is a source review and local regression work. No deployed NaiveProxy/Sudoku
-vulnerability or successful TSPU classification was demonstrated. Architectural
-tradeoffs must not be presented as exploitable security bugs.
+- [NaiveProxy 0539676](https://github.com/klzgrad/naiveproxy/tree/0539676ac91d9607caa00869b709e66643b91ac5):
+  `USAGE.txt`, README, `src/net/tools/naive/naive_padding_socket.cc`.
+- [Sudoku a3a4c8a](https://github.com/SUDOKU-ASCII/sudoku/tree/a3a4c8a081221f2a352f2c36deaf8137900718b1):
+  `internal/tunnel/mux_dialer.go`, `mux_session.go`, `mux_stream.go`, README.
+  Речь о сетевом прокси SUDOKU-ASCII/sudoku.
 
-## NaiveProxy audit and FoxTunnel status
+Это разбор кода и локальные проверки, а не подтверждение уязвимости работающего
+NaiveProxy/Sudoku или обнаружения ТСПУ. Архитектурный компромисс не равен
+эксплуатируемой ошибке защиты.
 
-| Limitation or tradeoff | FoxTunnel response | Remaining boundary |
+## NaiveProxy и состояние FoxTunnel
+
+| Ограничение/компромисс | Что сделано в FoxTunnel | Что остаётся |
 | --- | --- | --- |
-| An unavailable configured entry can interrupt service. | Explicit trusted alternatives, bounded setup failover and cooldown are now implemented. | Shared deployment risk, not a unique Naive flaw; all entries can still be blocked. |
-| HTTP/2 over TCP shares loss recovery across streams. | New streams can be distributed across independent origins. | Each connection retains TCP head-of-line blocking. Naive already offers QUIC; FoxTunnel does not yet. |
-| Extra tunnel connections can improve bad-path behavior but change observable patterns. | Explicit failover/round-robin/least-active selection; no automatic packet striping. | Naive already has concurrency controls and warns about detectability. More parallelism is not proof of concealment. |
-| Long-lived-connection retirement trades recovery against application continuity. | FoxTunnel setup deadlines do not impose stream lifetime limits. | A broken established stream still fails; no transparent migration. |
-| Initial padding leaves later length/timing information. | Existing optional bounded prefix padding remains. | Neither copying the first-eight-record idea nor changing its bytes proves resistance to traffic analysis. |
-| Browser-derived behavior needs continual maintenance. | NSS is isolated behind an explicit backend and fingerprint comparison tooling exists. | Go H2 plus NSS is not Firefox Necko/Neqo. Naive's Chromium integration is more mature. |
-| Server behavior and hosting can be observed or blocked. | Public website handler and authenticated admission limits already exist. | FoxTunnel's static cover is not equivalent to a mature browser/server deployment and does not prevent IP blocking. |
+| Отказ настроенного входа прерывает доступ | Доверенные альтернативы, ограниченные повторы и пауза после сетевых ошибок | Это общий риск развёртывания; все узлы могут быть заблокированы |
+| H2/TCP разделяет восстановление потерь между потоками | Новые потоки распределяются между независимыми адресами | В каждом TCP блокировка сохраняется. У Naive уже есть QUIC, у FoxTunnel пока нет |
+| Дополнительные соединения помогают плохому пути, но меняют вид трафика | Явный выбор режимов без автоматического чередования пакетов | У Naive есть управление параллельностью и предупреждение об обнаружимости |
+| Принудительная смена долгого соединения влияет на приложения | Таймер FoxTunnel ограничивает только установку | Сломанный установленный поток не мигрирует прозрачно |
+| Начальное дополнение оставляет длины и время последующего трафика | Сохранён необязательный ограниченный префикс | Восемь записей сами по себе не доказывают защиту от анализа |
+| Поведение браузера требует сопровождения | Отдельный NSS-адаптер и инструмент сравнения отпечатков | NSS с Go H2 не равен Necko/Neqo; интеграция Chromium у Naive зрелее |
+| Хостинг и поведение сервера наблюдаемы | Публичный сайт и ограничение авторизованной нагрузки | Статический сайт не заменяет зрелое развёртывание и не предотвращает блокировку IP |
 
-During the audit we also fixed a FoxTunnel-specific gap: the Go TLS backend now
-requires h2 ALPN **before** sending proxy authentication, matching the NSS policy.
-It cannot silently use an HTTP/1 tunnel. Certificate/ALPN/protocol failures remain
-terminal even with multiple configured origins.
+Также исправлен собственный пробел FoxTunnel: Go TLS требует h2 ALPN **до**
+отправки авторизации, как NSS. Скрытого перехода на HTTP/1 нет. Ошибки
+сертификата, ALPN и протокола остаются конечными при нескольких адресах.
 
-There is no basis for claiming that FoxTunnel has eliminated all NaiveProxy
-weaknesses or is currently faster, less detectable, or generally more capable.
-The new work improves explicitly testable failure handling and distribution.
+Оснований считать, что устранены все ограничения NaiveProxy или FoxTunnel уже
+быстрее и менее обнаружим, нет. Улучшены проверяемые восстановление и распределение.
 
-## What Sudoku contributes
+## Sudoku
 
-Sudoku's mux implementation provides useful examples of reusable sessions,
-serialized session creation, directional close handling, bounded unread queues
-and batched small writes. Its current source caps unread data per logical stream
-and resets an overflowing stream instead of blocking the shared reader. These
-are concrete lifecycle/resource ideas worth testing in any future custom mux.
+Полезны повторное использование сессий, сериализация их создания, направленное
+закрытие, ограниченные очереди непрочитанных данных и объединение малых записей.
+При переполнении очередь отдельного потока сбрасывается, не блокируя общий
+демультиплексор. Эти идеи пригодятся при испытаниях собственного слоя сессий.
 
-FoxTunnel already delegates multiplexing to H2. Adding another Sudoku-style mux
-inside H2 would duplicate framing and flow control. We retain existing H2 reuse
-and half-close handling, and independently implement bounded endpoint selection
-and recovery. No Sudoku source code or wire format was copied.
+В FoxTunnel мультиплексирование уже делает H2. Ещё один такой слой внутри H2
+дублировал бы формат и управление потоком. Сохранены использование H2-соединений
+и полузакрытие; выбор узлов и восстановление написаны независимо. Код и формат
+Sudoku не копировались.
 
-Sudoku encoding/low entropy alone is not browser behavior or encryption. Inside
-TLS it also does not control the ciphertext's visible entropy. A separate raw
-transport would need independent security and classifier evaluation. We therefore
-do not add ASCII encoding, nested disguises or arbitrary padding to this HTTPS
-baseline on the assumption that they improve concealment.
+Низкая энтропия и Sudoku-кодирование не равны браузерному поведению или шифрованию.
+Внутри TLS они не задают наблюдаемую энтропию шифротекста. Отдельный открытый
+транспорт потребовал бы собственного анализа защиты и классификации. ASCII,
+вложенные маскировки и произвольное дополнение в базовый HTTPS не добавлены.
+При будущем переносе кода нужно учесть GPL и дополнительное условие имени Sudoku.
 
-Sudoku's GPL terms and additional naming condition must be evaluated before any
-future source reuse; architectural learning here does not import its code.
+## Дальнейшие эксперименты
 
-## Next experiments, not implemented features
+1. Малые запросы одновременно с зависшей большой передачей: память, хвост задержек,
+   отмена. Различать управление потоком H2 и восстановление потерь TCP.
+2. Холодная/тёплая установка p50/p95 и CPU на одном и нескольких адресах, включая
+   полностью недоступный узел. Число потоков не равно весу пропускной способности.
+3. Ограниченный прогрев после измерения стоимости рукопожатия и формы трафика.
+4. Neqo/H3 против Naive QUIC на одном маршруте, включая запрет UDP, с проверенным H2.
+5. Версионированные эталоны Firefox и повторяемые наблюдения у операторов РФ.
 
-1. Compare concurrent small requests while a bulk stream is stalled: memory,
-   tail latency and cancellation for both TLS backends. H2 per-stream flow
-   control must be evaluated separately from underlying TCP loss recovery.
-2. Measure cold/warm setup p50/p95 and CPU with one versus several origins,
-   including a blackholed endpoint. Least-active counts are not bandwidth weights.
-3. Evaluate bounded warm connection pools only after observing handshake cost
-   and traffic patterns; do not create an unlimited reconnect/prewarm storm.
-4. Integrate a separate Neqo/H3 experiment and compare against Naive QUIC on
-   the same route, including blocked UDP. Keep a verified H2 fallback.
-5. Version Firefox reference captures, test TLS and H2 differences, then conduct
-   repeatable observations on affected Russian networks. No current local test
-   predicts TSPU resistance.
-
-See [endpoint configuration](ENDPOINTS.md), [transport strategy](TRANSPORT-STRATEGY.md)
-and [measurement methodology](PERFORMANCE.md).
+См. [настройку узлов](ENDPOINTS.md), [стратегию](TRANSPORT-STRATEGY.md)
+и [методику измерений](PERFORMANCE.md).

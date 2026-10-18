@@ -17,6 +17,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"net"
 	"net/http"
@@ -40,7 +41,7 @@ var initError error
 func NewTransport(config *tls.Config) (Transport, error) {
 	initOnce.Do(func() {
 		if code := C.ft_init(); code != 0 {
-			initError = fmt.Errorf("NSS initialization failed: %d", code)
+			initError = fmt.Errorf(i18n.Text("NSS initialization failed: %d"), code)
 		}
 	})
 	if initError != nil {
@@ -101,7 +102,7 @@ func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) 
 	if c.fd == nil {
 		c.handle.Delete()
 		raw.Close()
-		return nil, fmt.Errorf("NSS connection settings: %d", code)
+		return nil, fmt.Errorf(i18n.Text("NSS connection settings: %d"), code)
 	}
 	// Cancellation closes Go's socket, which unblocks any NSS I/O callback.
 	stop := context.AfterFunc(ctx, func() { _ = raw.Close() })
@@ -115,7 +116,7 @@ func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) 
 		if c.verifyErr != nil {
 			return nil, c.verifyErr
 		}
-		return nil, fmt.Errorf("NSS handshake/ALPN failed: %d", code)
+		return nil, fmt.Errorf(i18n.Text("NSS handshake/ALPN failed: %d"), code)
 	}
 	_ = raw.SetDeadline(time.Time{})
 	return c, nil
@@ -139,7 +140,7 @@ func (c *conn) Read(p []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		return 0, fmt.Errorf("NSS read failed: %d", code)
+		return 0, fmt.Errorf(i18n.Text("NSS read failed: %d"), code)
 	}
 	if n == 0 {
 		return 0, io.EOF
@@ -164,7 +165,7 @@ func (c *conn) Write(p []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		return 0, fmt.Errorf("NSS write failed: %d", code)
+		return 0, fmt.Errorf(i18n.Text("NSS write failed: %d"), code)
 	}
 	if int(n) < len(p) {
 		return int(n), io.ErrShortWrite
@@ -255,7 +256,7 @@ func ft_go_cert(handle C.uintptr_t, buffer unsafe.Pointer, length C.int) C.int {
 func ft_go_verify(handle C.uintptr_t) C.int {
 	c := cgo.Handle(handle).Value().(*conn)
 	if len(c.certificates) == 0 {
-		c.verifyErr = errors.New("NSS peer provided no certificate")
+		c.verifyErr = errors.New(i18n.Text("NSS peer provided no certificate"))
 		return 0
 	}
 	intermediates := x509.NewCertPool()

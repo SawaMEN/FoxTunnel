@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"strconv"
 	"strings"
@@ -42,21 +43,21 @@ func ReadClientHello(r io.Reader) (Hello, error) {
 	for {
 		var h [5]byte
 		if _, err := io.ReadFull(r, h[:]); err != nil {
-			return Hello{}, fmt.Errorf("TLS record header: %w", err)
+			return Hello{}, fmt.Errorf(i18n.Text("TLS record header: %w"), err)
 		}
 		if h[0] != 22 {
-			return Hello{}, errors.New("expected TLS handshake record")
+			return Hello{}, errors.New(i18n.Text("expected TLS handshake record"))
 		}
 		n := int(binary.BigEndian.Uint16(h[3:]))
 		if n == 0 || n > 16384+2048 {
-			return Hello{}, errors.New("invalid TLS record length")
+			return Hello{}, errors.New(i18n.Text("invalid TLS record length"))
 		}
 		if len(message)+n > maxHandshake+4 {
-			return Hello{}, errors.New("ClientHello exceeds 64 KiB")
+			return Hello{}, errors.New(i18n.Text("ClientHello exceeds 64 KiB"))
 		}
 		body := make([]byte, n)
 		if _, err := io.ReadFull(r, body); err != nil {
-			return Hello{}, fmt.Errorf("TLS record body: %w", err)
+			return Hello{}, fmt.Errorf(i18n.Text("TLS record body: %w"), err)
 		}
 		if len(message) == 0 {
 			recordVersion = binary.BigEndian.Uint16(h[1:3])
@@ -64,11 +65,11 @@ func ReadClientHello(r io.Reader) (Hello, error) {
 		message = append(message, body...)
 		if len(message) >= 4 && total < 0 {
 			if message[0] != 1 {
-				return Hello{}, errors.New("first handshake message is not ClientHello")
+				return Hello{}, errors.New(i18n.Text("first handshake message is not ClientHello"))
 			}
 			total = int(message[1])<<16 | int(message[2])<<8 | int(message[3])
 			if total > maxHandshake {
-				return Hello{}, errors.New("ClientHello exceeds 64 KiB")
+				return Hello{}, errors.New(i18n.Text("ClientHello exceeds 64 KiB"))
 			}
 		}
 		if total >= 0 && len(message) >= total+4 {
@@ -117,7 +118,7 @@ func (c *cursor) vec16() ([]byte, error) {
 }
 func words(b []byte) ([]uint16, error) {
 	if len(b)%2 != 0 {
-		return nil, errors.New("odd 16-bit vector length")
+		return nil, errors.New(i18n.Text("odd 16-bit vector length"))
 	}
 	r := make([]uint16, 0, len(b)/2)
 	for i := 0; i < len(b); i += 2 {
@@ -130,7 +131,7 @@ func words(b []byte) ([]uint16, error) {
 func ParseClientHello(recordVersion uint16, msg []byte) (Hello, error) {
 	var h Hello
 	if len(msg) < 4 || msg[0] != 1 || len(msg)-4 != int(msg[1])<<16|int(msg[2])<<8|int(msg[3]) {
-		return h, errors.New("invalid ClientHello frame")
+		return h, errors.New(i18n.Text("invalid ClientHello frame"))
 	}
 	h.RecordVersion = recordVersion
 	c := cursor{msg[4:]}
@@ -144,11 +145,11 @@ func ParseClientHello(recordVersion uint16, msg []byte) (Hello, error) {
 	}
 	sid, e := c.vec8()
 	if e != nil || len(sid) > 32 {
-		return h, errors.New("invalid session id")
+		return h, errors.New(i18n.Text("invalid session id"))
 	}
 	cipher, e := c.vec16()
 	if e != nil || len(cipher) == 0 {
-		return h, errors.New("invalid cipher suites")
+		return h, errors.New(i18n.Text("invalid cipher suites"))
 	}
 	h.CipherSuites, e = words(cipher)
 	if e != nil {
@@ -156,14 +157,14 @@ func ParseClientHello(recordVersion uint16, msg []byte) (Hello, error) {
 	}
 	compression, e := c.vec8()
 	if e != nil || len(compression) == 0 {
-		return h, errors.New("invalid compression methods")
+		return h, errors.New(i18n.Text("invalid compression methods"))
 	}
 	if len(c.b) == 0 {
-		return h, errors.New("missing extensions")
+		return h, errors.New(i18n.Text("missing extensions"))
 	}
 	ext, e := c.vec16()
 	if e != nil || len(c.b) != 0 {
-		return h, errors.New("invalid extension block")
+		return h, errors.New(i18n.Text("invalid extension block"))
 	}
 	ec := cursor{ext}
 	for len(ec.b) > 0 {
@@ -183,7 +184,7 @@ func ParseClientHello(recordVersion uint16, msg []byte) (Hello, error) {
 		case 10, 13:
 			b, err := sub.vec16()
 			if err != nil || len(sub.b) != 0 {
-				return h, errors.New("bad supported-groups/signature-algorithms extension")
+				return h, errors.New(i18n.Text("bad supported-groups/signature-algorithms extension"))
 			}
 			v, err := words(b)
 			if err != nil {
@@ -197,7 +198,7 @@ func ParseClientHello(recordVersion uint16, msg []byte) (Hello, error) {
 		case 11:
 			b, err := sub.vec8()
 			if err != nil || len(sub.b) != 0 {
-				return h, errors.New("bad EC point formats extension")
+				return h, errors.New(i18n.Text("bad EC point formats extension"))
 			}
 			for _, point := range b {
 				h.ECPointFormats = append(h.ECPointFormats, int(point))
@@ -205,20 +206,20 @@ func ParseClientHello(recordVersion uint16, msg []byte) (Hello, error) {
 		case 16:
 			b, err := sub.vec16()
 			if err != nil || len(sub.b) != 0 {
-				return h, errors.New("bad ALPN extension")
+				return h, errors.New(i18n.Text("bad ALPN extension"))
 			}
 			a := cursor{b}
 			for len(a.b) > 0 {
 				p, err := a.vec8()
 				if err != nil || len(p) == 0 {
-					return h, errors.New("bad ALPN protocol")
+					return h, errors.New(i18n.Text("bad ALPN protocol"))
 				}
 				h.ALPN = append(h.ALPN, string(p))
 			}
 		case 43:
 			b, err := sub.vec8()
 			if err != nil || len(sub.b) != 0 {
-				return h, errors.New("bad supported versions")
+				return h, errors.New(i18n.Text("bad supported versions"))
 			}
 			h.SupportedVersions, err = words(b)
 			if err != nil {
@@ -227,7 +228,7 @@ func ParseClientHello(recordVersion uint16, msg []byte) (Hello, error) {
 		case 51:
 			b, err := sub.vec16()
 			if err != nil || len(sub.b) != 0 {
-				return h, errors.New("bad key shares")
+				return h, errors.New(i18n.Text("bad key shares"))
 			}
 			a := cursor{b}
 			for len(a.b) > 0 {
@@ -237,7 +238,7 @@ func ParseClientHello(recordVersion uint16, msg []byte) (Hello, error) {
 				}
 				key, err := a.vec16()
 				if err != nil || len(key) == 0 {
-					return h, errors.New("bad key share")
+					return h, errors.New(i18n.Text("bad key share"))
 				}
 				h.KeyShareGroups = append(h.KeyShareGroups, group)
 			}

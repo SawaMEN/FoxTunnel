@@ -3,6 +3,7 @@ package tunnel
 import (
 	"context"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"net"
 	"net/netip"
 	"time"
@@ -15,7 +16,7 @@ type contextDial func(context.Context, string, string) (net.Conn, error)
 // Only two dial sequences run at once; every losing socket is closed.
 func dialFamilies(ctx context.Context, ips []netip.Addr, port string, delay time.Duration, dial contextDial) (net.Conn, error) {
 	if len(ips) == 0 {
-		return nil, errors.New("no destination addresses")
+		return nil, errors.New(i18n.Text("no destination addresses"))
 	}
 	var primary, fallback []netip.Addr
 	for _, ip := range ips {

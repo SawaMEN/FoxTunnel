@@ -1,88 +1,84 @@
-# Protocol review: 18 October 2026
+# Разбор протоколов: 18 октября 2026 года
 
-## Verified AmneziaWG snapshot
+**Русский** | [English](PROTOCOL-REVIEW-2026-10-18.en.md)
 
-The latest observed versioned date tag in `amnezia-vpn/amneziawg-go` is
-**v3.1.20260828**, pointing to
-**b5928efb6ca19f0153958460c3d141f04abc5c2e**. The observed master head matches
-that commit. Official Amnezia documentation describes AWG 3.1. The repository's
-`version.go` still contains a legacy date string, so it is not used to infer the
-protocol generation. The GitHub Releases page is empty; a tag, an application
-release number and a protocol generation are different identifiers.
+## Проверенная версия AmneziaWG
 
-Primary references:
+На момент разбора последний наблюдаемый датированный тег `amneziawg-go` —
+**v3.1.20260828**, коммит **b5928efb6ca19f0153958460c3d141f04abc5c2e**;
+наблюдаемая вершина master совпала с ним. Официальная документация описывает
+AWG 3.1. В `version.go` осталась старая дата: по ней нельзя определять поколение
+протокола. Страница GitHub Releases была пустой. Тег, выпуск приложения и
+поколение протокола — разные идентификаторы.
 
-- [Versioned tree](https://github.com/amnezia-vpn/amneziawg-go/tree/v3.1.20260828)
-- [Pinned configuration documentation](https://github.com/amnezia-vpn/amneziawg-go/blob/b5928efb6ca19f0153958460c3d141f04abc5c2e/README.md)
-- [Official protocol overview](https://docs.amnezia.org/documentation/amnezia-wg/)
-- [Pinned receive/admission code](https://github.com/amnezia-vpn/amneziawg-go/blob/b5928efb6ca19f0153958460c3d141f04abc5c2e/device/receive.go)
-- [Pinned timing code](https://github.com/amnezia-vpn/amneziawg-go/blob/b5928efb6ca19f0153958460c3d141f04abc5c2e/device/timers.go)
+Первичные источники:
 
-## What transfers to a Firefox-based design
+- [Тег](https://github.com/amnezia-vpn/amneziawg-go/tree/v3.1.20260828).
+- [Настройки](https://github.com/amnezia-vpn/amneziawg-go/blob/b5928efb6ca19f0153958460c3d141f04abc5c2e/README.md).
+- [Официальный обзор](https://docs.amnezia.org/documentation/amnezia-wg/).
+- [Приём и допуск](https://github.com/amnezia-vpn/amneziawg-go/blob/b5928efb6ca19f0153958460c3d141f04abc5c2e/device/receive.go).
+- [Таймеры](https://github.com/amnezia-vpn/amneziawg-go/blob/b5928efb6ca19f0153958460c3d141f04abc5c2e/device/timers.go).
 
-AWG 3 documents header protection, configurable content padding and timing
-ranges, alongside junk/signature packets and message-size parameters. Its
-carrier is WireGuard-style UDP, whereas FoxTunnel currently uses verified TLS
-and HTTP/2. The following are engineering decisions inferred from that review,
-not claims that AWG code or a complete AWG transport was integrated.
+## Применимость к Mozilla
 
-| Observed approach | FoxTunnel decision |
+AWG 3 описывает защиту заголовков, настройку дополнения и времени, мусорные/
+сигнатурные пакеты и размеры сообщений. Это UDP-транспорт семейства WireGuard,
+а FoxTunnel использует проверяемые TLS и H2. Ниже — инженерные выводы, а не
+заявление об интеграции AWG или копировании его кода.
+
+| Подход | Решение FoxTunnel |
 | --- | --- |
-| Padding/timing variability | Evaluate locally bounded profiles against captures, overhead and latency. Keep the current fixed-budget experiment as a control. No remote scripts or arbitrary parameter ranges. |
-| Protection of exposed metadata | HTTPS already encrypts H2/application metadata. Study the remaining TLS/QUIC-visible features; do not add an unrelated cipher outside NSS. |
-| Junk/signature preambles | Do not prepend AWG packets to TLS or mutate Mozilla QUIC. That would change the chosen carrier rather than preserve Firefox behavior. |
-| Packet-size discipline | Measure path-MTU behavior for future Neqo datagrams. No automatic IP fragmentation or unbounded padding. |
-| Under-load handling | Bound expensive authenticated proxy work before DNS/destination sockets. Implemented here as a tunnel admission limit, not a copy of AWG cookies. |
-| UDP batching | Profile separately when a native datagram carrier exists; UDP syscall optimizations cannot be assumed to accelerate the current C/Go TLS path. |
+| Вариативность дополнения/времени | Измерять ограниченные локальные профили, расходы и задержки; текущий фиксированный бюджет — контроль. Без удалённых скриптов и произвольных диапазонов |
+| Защита метаданных | HTTPS уже шифрует H2 и данные; изучать оставшиеся признаки TLS/QUIC, не добавлять посторонний шифр вокруг NSS |
+| Сигнатурные префиксы | Не подставлять AWG-пакеты перед TLS и не менять формат Mozilla QUIC: это меняет транспорт |
+| Размеры пакетов | Измерить MTU для будущих датаграмм Neqo; без автоматической IP-фрагментации и неограниченного дополнения |
+| Работа под нагрузкой | Ограничить дорогую авторизованную работу до DNS/сокетов; лимит туннелей реализован, механизм AWG cookies не копировался |
+| Пакетная отправка UDP | Профилировать при появлении датаграмм; оптимизация системных вызовов UDP не обязательно ускорит C/Go TLS |
 
-## Additional projects reviewed
+## Дополнительные проекты
 
-The entries below are candidate design lessons, not implemented transports.
+Это идеи для оценки, не готовые транспорты FoxTunnel.
 
-| Project / primary source | Useful design lesson | Decision and limitation |
+| Источник | Полезная идея | Решение и ограничение |
 | --- | --- | --- |
-| [AnyTLS protocol](https://github.com/anytls/anytls-go/blob/main/docs/protocol.md) | Configurable initial padding, session reuse, stream-open status and stalled-session handling | Evaluate bounded per-server padding profiles and explicit liveness handling. Keep certificate verification; the reference examples warn about their insecure defaults. No AnyTLS framing copied. |
-| [TUIC v5 specification](https://github.com/tuic-protocol/tuic/blob/master/SPEC.md) | QUIC streams/datagrams, migration, explicit UDP session behavior | Evaluate using Mozilla Neqo and standard H3/MASQUE. No TLS 0-RTT application data without a replay-safe design. QUIC features do not prove Firefox parity. |
-| [Tor WebTunnel deployment](https://community.torproject.org/relay/setup/webtunnel/) | Ordinary website and HTTPS frontend with a routed tunnel endpoint | Test a real independent frontend and probe-response equivalence. The existing static website is only a first step; WebTunnel compatibility and Tor are not integrated. |
-| [Outline SDK](https://github.com/OutlineFoundation/outline-sdk) | Separate stream/packet connections and dialers; compose transport adapters | Preserve independent carrier interfaces and test connectivity/throughput outside the UI. Do not nest transports merely to accumulate features. |
+| [AnyTLS](https://github.com/anytls/anytls-go/blob/main/docs/protocol.md) | Профили начального дополнения, сессии, статус открытия, зависшие сессии | Исследовать ограниченные профили и живость; сохранять проверку сертификата. Примеры предупреждают о небезопасных настройках. Формат не скопирован |
+| [TUIC v5](https://github.com/tuic-protocol/tuic/blob/master/SPEC.md) | QUIC-потоки, датаграммы, миграция и UDP-сессии | Исследовать Neqo и H3/MASQUE. Не использовать данные 0-RTT без защиты от повторов; QUIC не доказывает совпадение с Firefox |
+| [Tor WebTunnel](https://community.torproject.org/relay/setup/webtunnel/) | Настоящий сайт и HTTPS-фронтенд с маршрутом туннеля | Проверить независимый фронтенд и одинаковость ответов на пробы. Статический сайт — лишь начало; Tor/WebTunnel не интегрированы |
+| [Outline SDK](https://github.com/OutlineFoundation/outline-sdk) | Отдельные потоковые/пакетные соединения и составные адаптеры | Сохранять независимые интерфейсы и проверять связь/скорость вне интерфейса; не вкладывать транспорты ради числа функций |
 
-The prior [transport strategy](TRANSPORT-STRATEGY.md) covers NaiveProxy, mieru,
-Hysteria 2, XHTTP/VLESS and DNSTT. Those modes have different network assumptions:
-UDP may be unavailable, DNS has a constrained packet budget, and HTTP streaming
-requires specific frontend behavior. Combining their wire formats does not
-combine their strongest properties automatically.
+[Стратегия](TRANSPORT-STRATEGY.md) охватывает NaiveProxy, mieru, Hysteria 2,
+XHTTP/VLESS и DNSTT. У них разные предположения: UDP может отсутствовать,
+DNS ограничен бюджетом пакетов, потоковый HTTP зависит от фронтенда.
+Сложение форматов не даёт автоматически сумму их лучших свойств.
 
-## Concrete change from this review
+## Реализованное изменение
 
-The server now admits at most **256 authenticated CONNECT handlers** at once
-by default, configurable with `--max-tunnels`. Admission includes DNS and TCP
-setup as well as active relaying. Excess work returns HTTP 503 immediately,
-without destination lookup/dial or an unbounded waiting queue. Slots are released
-on errors and stream teardown. Ordinary website requests and rejected probes
-still use the same public handler, including while capacity is exhausted.
+Сервер допускает по умолчанию **256 авторизованных CONNECT-обработчиков**,
+настройка — `--max-tunnels`. Учитываются DNS, TCP-установка и передача.
+Лишний запрос немедленно получает HTTP 503 до DNS/подключения, без неограниченной
+очереди. Ошибки и закрытие освобождают место. Публичный сайт и отклонённые пробы
+используют прежний обработчик даже при заполнении лимита.
 
-This bounds destination work and socket growth; it does not bound TLS handshake
-CPU, all HTTP/2 memory, public-site work or bandwidth, and is not DDoS protection.
-Per-source rate limiting and HTTP/TLS connection admission remain separate work.
-No automatic retry or stream replay was added.
+Лимит сдерживает работу назначения и рост сокетов, но не весь CPU TLS, память H2,
+сайт и полосу. Это не полная защита от DDoS. Ограничение частоты по источнику и
+допуск HTTP/TLS-соединений — отдельные задачи. Сам лимит не добавляет повторы
+или воспроизведение потоков; последующий режим резервирования описан отдельно.
 
-## Next priorities, with measurable gates
+## Приоритеты и измеряемые условия
 
-1. Versioned Firefox TLS and H2 reference traces: extension/settings order,
-   flow control, resumption, close behavior and timing. NSS alone is insufficient.
-2. NSS profiling: small-message latency, CPU and allocation costs; compare against
-   the Go baseline before changing pooling, scheduling or buffers.
-3. Neqo H3/CONNECT-UDP experiment with bounded queues, validated datagram sizes,
-   loss/RTT/UDP-blocking tests and a stable interoperable server.
-4. Locally bounded padding profiles inspired by AWG/AnyTLS, with capability and
-   overhead accounting. Prove effects experimentally rather than maximizing
-   randomness or inserting delays by default.
-5. Real frontend/probing comparisons and tests on affected operator networks.
-   Record successes, failures and changes over time, with NaiveProxy as a control.
-6. Explicit optional HTTP-streaming and DNS carriers after the core is stable.
-   Preserve server authentication and never replay uncertain application data.
+1. Версионированные эталоны Firefox TLS/H2: порядок, управление потоком,
+   возобновление, закрытие и время. Одной NSS недостаточно.
+2. Профилирование NSS: малые сообщения, CPU и выделения памяти против Go до
+   изменения буферов, пулов и планировщика.
+3. Neqo H3/CONNECT-UDP: ограниченные очереди, размеры, потери/RTT/запрет UDP,
+   стабильный совместимый сервер.
+4. Ограниченные профили по мотивам AWG/AnyTLS с согласованием и учётом расходов;
+   эффект нужно измерять, а не максимизировать случайность и задержки.
+5. Реальный фронтенд, активные пробы и сети операторов: успехи, отказы и изменения
+   со временем; NaiveProxy как контроль.
+6. Явные HTTP- и DNS-режимы после стабилизации ядра, без ослабления авторизации
+   и повтора данных с неопределённой доставкой.
 
-A successful release gate needs connection success, recovery time, throughput,
-p95 latency, CPU/memory and identifiable-feature measurements. There is no
-credible "best protocol" ranking without specifying the network and workload.
-No Internet/TSPU result or superiority over these projects is established here.
+Условия выпуска включают успешность, время восстановления, скорость, p95,
+CPU/память и наблюдаемые признаки. Без сети и нагрузки достоверного рейтинга
+«лучший протокол» нет. Результат для Интернета/ТСПУ и превосходство не установлены.
