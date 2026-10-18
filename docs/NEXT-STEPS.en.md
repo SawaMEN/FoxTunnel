@@ -2,48 +2,46 @@
 
 [Русский](NEXT-STEPS.md) | **English**
 
-Assessment after main `bc257ef`, 18 October 2026. Seven native transports, NSS TLS,
-coordinator links and bounded local failure tests exist. These are engineering
-priorities, not censorship-resistance claims.
+Assessment baseline: main `b56f8e4`, 18 October 2026. Seven transports, Linux NSS
+TLS, XHTTP path/Host and packet-up pipeline, a partial H2 receive profile, SDK,
+cluster setup and bounded bond recovery through a common exit already exist.
+Live Firefox 158/Go/NSS measurements are stored; full Firefox parity is absent.
 
-| Priority | Work | Acceptance |
+| Stage | Work | Acceptance |
 |---|---|---|
-| 1: XHTTP deployment | Shared path/Host, validation, setup/link/join | Three modes through a controlled HTTPS frontend; independent Host/SNI; NSS; TLS rejection before HTTP; custom-route cluster |
-| 2: efficiency | Bounded packet-up coalescing/pipeline, then persistent bond channels | Same RTT/loss workload; CPU/allocations/memory; ordering and no replay after lost ACK; bounded slow-node queues |
-| 3: Mozilla | Capture a pinned Firefox/OS baseline, compare full TLS/H2, experiment with client Neqo | Reproducible versioned TLS/H2/QUIC captures and explicit differences; separate Neqo build/test; no Firefox parity claim from NSS alone |
-| 4: access and VPN | Per-user revocation, UDP, TUN, routes/DNS/kill switch | Independent user revocation; UDP bounds; no direct-route or DNS leaks during failure |
-| 5: operations | Measured useful node throughput/load, diagnostics, shutdown, field tests | Consistent anonymized Russian-operator success/recovery/RTT/throughput/CPU/memory data, including failures |
+| 1. Reproducible baseline | Inspect archive contents, pin build environment, align documentation and compatibility | Nine targets pass index and offline verify; Go/NSS/SDK checks on the same commit; experimental tag only after review |
+| 2. Mozilla TLS/H2 | Address measured NSS/H2 differences; resumption/identity isolation; decide which Mozilla components are needed | Reproducible agreement/gap report against pinned Firefox/OS, matched workloads and preserved TLS checks |
+| 3. Data path | Small-write coalescing, Go/C/copy profiling, persistent bounded bond lanes | Same RTT/loss workload: throughput/p95/CPU/memory; ordered duplicate-free failure handling and bounded queues |
+| 4. Neqo | Mozilla QUIC/H3 client against an independent server, controlled H2 fallback | Transfer/CA/SNI/pin and blocked-UDP switching-time tests without weakening TLS policy |
+| 5. Access | Per-user revocation/rotation, quotas, rate limits, safe diagnostics | One user's revocation leaves others intact; bounded resources; no secrets in logs |
+| 6. Full VPN | UDP, then TUN, routes, DNS/IPv6, kill switch for the first OS | TCP/UDP policy and leak/failure/sleep/network-change tests |
+| 7. Operations | Native OS tests, soak load, certificates, shutdown, updates/rollback, signing | Reproducible installation and recovery on real target systems |
+| 8. Evidence/integrations | NaiveProxy comparison, operator field tests, external audit, client/panel adapters | Published data including failures, tested integrations with pinned versions |
 
-Priority 1 is implemented in this iteration: end-to-end route settings,
-independent random routes for new setup clusters and inheritance on join.
-Reference XHTTP interoperability, XMUX, direction-specific endpoints and arbitrary
-CDN support are still not established. The test HTTPS frontend is configured
-explicitly, including authentication forwarding.
+Stage 1 adds independent checks without executing archives and
+[compatibility/first-tag rules](COMPATIBILITY.en.md). Branch/PR CI builds without
+publishing. Publication requires a separate version tag. Linux NSS assets bundle
+hash-pinned Mozilla libraries; macOS/Windows are still Go cross-builds. Determine
+release availability from GitHub Releases, not from the presence of a workflow.
 
-Packet-up now has a bounded four-request window, with ordered body writes,
-contiguous ACK advancement and no replay. A controlled 40 ms ACK-delay benchmark
-improved from 0.80 to 3.18 MB/s (256 KiB carrier echo, Go TLS, two short runs).
-Full SOCKS/inner-H2 loopback runs improved from 38.44–42.78 to 95.84–96.13 MB/s;
-allocated bytes fell from 5.16–5.33 to 3.69–3.87 MB per 1 MiB echo, while allocation
-count increased from about 17.4k to 19.8–20.0k. These measure different workloads,
-not Internet or NSS performance. Persistent bond channels remain separate work.
+The next concrete stage-2 task is to split the [WEB-PROFILE](WEB-PROFILE.en.md)
+gaps into TLS/ALPN/key shares, SETTINGS/HPACK and connection lifecycle, with a
+measurement and decision for each. The receive profile already changes real
+windows, but not SETTINGS order or the Necko stack. Matching NSS versions is
+insufficient; a full Necko port is not yet a required architectural decision.
 
-[Live Firefox 158 TLS/H2 captures](WEB-PROFILE.en.md) now establish explicit gaps:
-NSS 3.98 and even Firefox's NSS 3.130 do not reproduce Firefox's Hello, SETTINGS
-or connection window. The next Mozilla work must address actual stack behavior,
-then matched traffic distributions and operator field tests. No TSPU result is
-established by local captures.
+Firefox HTML versus TCP echo is not a disguise evaluation. Matched workloads,
+external packet captures, RTT/loss, repeated connections and multiple OSes are
+needed. Local packet-up/bond improvements establish no Internet advantage. The
+common exit remains a failure point; lost destination TCP sockets do not migrate.
+Field measurements can start earlier and repeat after changes.
 
-The unfinished ECH draft uses Go TLS, not NSS. It needs fail-closed credential,
-key rotation, SNI/pin/cache and setup/cluster coverage before inclusion. ECH alone
-does not advance Firefox fidelity.
+Access management and platform tests can run alongside Mozilla work. ECH/REALITY,
+XMUX, separate XHTTP direction endpoints and arbitrary CDNs are separate
+experiments, not first-tag prerequisites. External XHTTP interoperability needs
+independent wire tests. Automatic transport selection follows measurements.
 
-[Mozilla Neqo](https://github.com/mozilla/neqo) provides QUIC/H3/QPACK using NSS.
-Its README explicitly excludes the experimental server from production use;
-client integration against our existing server should therefore come first.
-The [XHTTP design](https://github.com/XTLS/Xray-core/discussions/4113) informs
-transport tests; it does not establish FoxTunnel reachability in Russian networks.
-
-[A partial HTTP/2 receive profile is implemented](H2-RECEIVE-PROFILE.en.md): Firefox 158 windows and HPACK, with Go/NSS wire/credit tests. TLS, SETTINGS order and connection behavior still differ; opt-in only.
-
-Independent distribution is a separate requirement: [versioned binaries, manifest/checksums and integration by any panel](DISTRIBUTION.en.md), [optional SDK](SDK.en.md), [wire draft](WIRE-DRAFT-0.md), MIT. Development does not depend on 3x-ui; packaging CI must assemble all nine targets before tag publication.
+Evaluate [Neqo](https://github.com/mozilla/neqo) as a client first; Mozilla's
+experimental server is not a production replacement for the FoxTunnel server.
+Stable sing-box/Hiddify/3x-ui adapters follow stabilized contracts. No individual
+stage proves Russian TSPU resistance.

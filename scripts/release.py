@@ -8,16 +8,14 @@ import io
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import tarfile
 import tempfile
 import zipfile
 import mozilla_runtime
+from release_verify import TARGETS, validate_version, validate_manifest, read_json, inspect_archive, verify
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGETS = set('linux/amd64/go linux/arm64/go linux/armv7/go darwin/amd64/go darwin/arm64/go windows/amd64/go windows/arm64/go linux/amd64/nss linux/arm64/nss'.split())
-VERSION = re.compile(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z')
 
 
 def command(args, env=None):
@@ -66,15 +64,6 @@ def licenses(go, env):
     return files
 
 
-def validate_version(version):
-    if not VERSION.fullmatch(version):
-        raise ValueError('version must be a v-prefixed semantic version')
-    if '-' in version:
-        for identifier in version.split('-', 1)[1].split('.'):
-            if identifier.isdigit() and len(identifier) > 1 and identifier.startswith('0'):
-                raise ValueError('numeric prerelease identifiers cannot have leading zeros')
-
-
 def build(a):
     validate_version(a.version)
     target = f'{a.os}/{a.arch}/{a.backend}'
@@ -89,6 +78,7 @@ def build(a):
     env = os.environ.copy()
     env.update(GOOS=a.os, GOARCH='arm' if a.arch == 'armv7' else a.arch, GOARM='7', GOAMD64='v1', CGO_ENABLED='1' if a.backend == 'nss' else '0', GOWORK='off', GOFLAGS='')
     host = json.loads(command([a.go, 'env', '-json', 'GOHOSTOS', 'GOHOSTARCH'], env))
+    go_version = command([a.go, 'env', 'GOVERSION'], env)
     native = host['GOHOSTOS'] == env['GOOS'] and host['GOHOSTARCH'] == env['GOARCH']
     if a.backend == 'nss' and not native:
         raise ValueError('NSS requires a native Linux runner for the selected architecture')
@@ -117,7 +107,7 @@ def build(a):
             env = mozilla_runtime.verify_loaded(executable, Path(tmp), runtime_info['libraries'], env)
         if native:
             info = json.loads(command([str(executable), 'version', '--json'], env))
-            for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', default_tls_backend='go').items():
+            for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], go_version=go_version, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', default_tls_backend='go').items():
                 if info[k] != v:
                     raise ValueError('native metadata mismatch: ' + k)
         if a.backend == 'nss' and info.get('nss_version') != runtime_info['nss_version']:
@@ -125,6 +115,7 @@ def build(a):
         files = licenses(a.go, env)
         files.update(runtime_files)
         p = dict(schema=1, version=a.version, commit=commit, build_date=date, target=target, goos=a.os, goarch=env['GOARCH'], variant=variant, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', experimental=True, native_smoke_tested=native)
+        p['go_version'] = go_version
         p['tls_backends'] = ['go', 'nss'] if a.backend == 'nss' else ['go']
         p['default_tls_backend'] = 'go'
         p['runtime'] = dict(kind='bundled-nss', baseline=a.baseline, packages=['glibc', 'libgcc-s1'], mozilla=runtime_info) if a.backend == 'nss' else dict(kind='cgo-disabled')
@@ -154,35 +145,20 @@ def build(a):
 
 def index(a):
     validate_version(a.version)
-    base, packages, seen, commit = Path(a.input), [], set(), None
+    base, packages = Path(a.input), []
     expected = set(a.targets.split(',')) if a.targets else TARGETS
+    if not expected or not expected <= TARGETS:
+        raise ValueError('unsupported index target set')
+    if (base / 'manifest.json').exists() or (base / 'SHA256SUMS').exists():
+        raise FileExistsError('refusing to replace an existing release index')
     for path in sorted(base.glob('*.metadata.json')):
-        p = json.loads(path.read_text())
-        name = p['filename']
-        if Path(name).name != name or not name.startswith('foxtunnel_'):
-            raise ValueError('invalid archive filename')
-        parts = p['target'].split('/')
-        if len(parts) != 3:
-            raise ValueError('invalid target')
-        suffix = '.zip' if parts[0] == 'windows' else '.tar.gz'
-        expected_name = 'foxtunnel_' + a.version[1:] + '_' + '_'.join(parts) + suffix
-        if name != expected_name:
-            raise ValueError('archive filename does not match target/version')
-        archive = base / name
-        if p['schema'] != 1 or p['version'] != a.version or p['dirty']:
-            raise ValueError('mixed version/schema or dirty build')
-        if p['target'] in seen or p['target'] not in expected:
-            raise ValueError('duplicate/unexpected target')
-        seen.add(p['target'])
-        if p['sha256'] != sha(archive) or p['size'] != archive.stat().st_size:
-            raise ValueError('archive hash/size mismatch')
-        if commit is not None and p['commit'] != commit:
-            raise ValueError('mixed source commits')
-        commit = p['commit']
-        packages.append(p)
-    if seen != expected:
-        raise ValueError('incomplete release target set: ' + str(expected - seen))
+        packages.append(read_json(path))
+    commit = packages[0].get('commit') if packages else None
     manifest = dict(schema=1, version=a.version, commit=commit, protocol_draft='foxtunnel-draft-0', artifacts=packages)
+    validate_manifest(manifest, a.version, commit, expected)
+    # Check the actual payload, not just a self-consistent sidecar hash.
+    for p in packages:
+        inspect_archive(base / p['filename'], p)
     new_file(base / 'manifest.json', (json.dumps(manifest, indent=2) + '\n').encode())
     sums = ''.join(p['sha256'] + '  ' + p['filename'] + '\n' for p in packages)
     sums += sha(base / 'manifest.json') + '  manifest.json\n'
@@ -205,10 +181,15 @@ def main():
     i.add_argument('--version', required=True)
     i.add_argument('--input', default='dist')
     i.add_argument('--targets', help='test subset; release CI requires all nine targets')
+    v = sub.add_parser('verify', help='verify downloaded release assets without extracting or executing them')
+    v.add_argument('--version', required=True, help='exact expected tag from a trusted source')
+    v.add_argument('--commit', required=True, help='expected full source commit from a trusted source')
+    v.add_argument('--input', default='dist')
+    v.add_argument('--target', help='verify only this archive; the manifest must still list all nine targets')
     a = parser.parse_args()
     try:
-        (build if a.command == 'build' else index)(a)
-    except (ValueError, KeyError, OSError, subprocess.CalledProcessError) as e:
+        {'build': build, 'index': index, 'verify': verify}[a.command](a)
+    except (ValueError, KeyError, OSError, EOFError, tarfile.TarError, zipfile.BadZipFile, subprocess.CalledProcessError) as e:
         parser.exit(1, str(e) + '\n')
 
 
