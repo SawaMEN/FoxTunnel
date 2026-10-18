@@ -84,6 +84,9 @@ is inside encrypted transport and is not a Firefox traffic profile.
 
 ## Version and integration boundaries
 
+[Compatibility and first-tag acceptance](COMPATIBILITY.en.md) define version
+pinning, incompatible-change requirements and offline archive verification.
+
 Standalone CLI/release artifacts: [DISTRIBUTION.en.md](DISTRIBUTION.en.md).
 Public Go embedding: [SDK.en.md](SDK.en.md). Binary metadata and release manifest
 schema 1 are separate from this wire draft. Connection sharing, codec defaults,

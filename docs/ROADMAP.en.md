@@ -22,6 +22,7 @@
 - [x] Bounded packet-up pipeline (4 POSTs), delayed-ACK tests; live Firefox 158 and Go/NSS TLS/H2 profiles (see WEB-PROFILE.en.md).
 - [x] Opt-in firefox-158 HTTP/2 receive profile: actual windows/HPACK, Go/NSS and XHTTP, wire/credit/cancellation/TLS tests.
 - [x] Independent public SDK/MIT/wire draft; nine-target versioned binary pipeline with manifest, version metadata and SHA-256.
+- [x] Offline release-content/build.json/Mozilla-provenance/hash verification and compatibility rules; Go 1.26.9 in CI.
 - [ ] Independent XHTTP interoperability, XMUX and separate direction settings.
 - [ ] Native ECH/REALITY and measured automatic transport selection.
 - [ ] TUN/UDP, system routing/DNS/kill switch and individual user credentials.
@@ -31,10 +32,12 @@
 - [x] Bound authenticated destination setup and relay concurrency before DNS/dial.
 - [x] Review AmneziaWG 3.1 and additional transport designs with pinned sources.
 - [ ] Add rate limiting, HTTP/TLS connection limits, observability without leaking targets/credentials, graceful shutdown and external audit.
-- [ ] Capture up-to-date Firefox reference handshake on desktop and mobile; define fingerprint conformance tests.
+- [x] Live Firefox 158 Linux TLS/H2 reference measurements and Go/NSS comparisons.
+- [ ] Matched workloads, external packet captures, other OSes/mobile and full conformance tests.
 - [x] Add standalone NSS/NSPR ClientHello capture experiment (not a transport).
 - [x] Add experimental Linux NSS TLS 1.3 data adapter with certificate validation and h2 ALPN.
-- [ ] Stabilize NSS packaging, pin supported Mozilla versions and compare Firefox fingerprints.
+- [x] Linux NSS runtime from pinned Mozilla archives, hashes/licenses, native amd64/arm64 and isolated-container tests.
+- [ ] Ongoing NSS maintenance and Firefox behavior conformance on target systems.
 - [ ] Investigate Neqo client-side QUIC/HTTP3 and RFC 9298 CONNECT-UDP; compare overhead.
 - [ ] Decide if the Mozilla implementation has measurable advantages relative to Chromium/NaïveProxy.
 - [ ] Integrate with sing-box fork and 3x-ui only after protocols and lifecycle stabilize.

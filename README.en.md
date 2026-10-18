@@ -2,7 +2,7 @@
 
 # FoxTunnel
 
-[Standalone versioned binaries](docs/DISTRIBUTION.en.md) · [Public SDK](docs/SDK.en.md) · [Wire draft 0](docs/WIRE-DRAFT-0.md) · [MIT](LICENSE)
+[Standalone versioned binaries](docs/DISTRIBUTION.en.md) · [Public SDK](docs/SDK.en.md) · [Wire draft 0](docs/WIRE-DRAFT-0.md) · [Compatibility and release verification](docs/COMPATIBILITY.en.md) · [MIT](LICENSE)
 
 An experimental encrypted tunneling project. It provides native **H2 CONNECT, H2 POST, WSS and H3 POST/QUIC** with a local SOCKS5 client and a TLS server. The longer-term research goal is to test Mozilla NSS and Neqo against this baseline, then assess whether Firefox-like networking behavior offers any measurable benefit.
 

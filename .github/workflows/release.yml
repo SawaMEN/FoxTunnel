@@ -14,7 +14,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26.x'
+          go-version: '1.26.9'
+      - name: Validate source and release contract before packaging
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_*.py'
+          go vet ./...
+          go test -race ./... -count=1 -timeout=120s
+          cd integration/external && go test -race ./... -count=1 -timeout=60s
       - name: Build seven portable archives
         shell: bash
         env:
@@ -43,7 +49,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26.x'
+          go-version: '1.26.9'
       - name: Install NSS dependencies
         run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config unzip binutils
       - name: Build NSS archive and execute version check
@@ -83,6 +89,7 @@ jobs:
           RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.0.0-ci' }}
         run: |
           python3 scripts/release.py index --version "$RELEASE_TAG"
+          python3 scripts/release.py verify --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
           cd dist && sha256sum -c SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:

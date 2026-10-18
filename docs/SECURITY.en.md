@@ -59,8 +59,9 @@ capturing all system DNS/traffic. There is no independent audit or Russian TSPU
 field evidence; NSS plus Go H2 is not Firefox parity. Authentication is a bearer
 credential inside TLS, without TUIC-style TLS-exporter channel binding. Per-user
 keys/revocation and global cluster telemetry are absent. The main exit remains
-a failure/bandwidth bottleneck. Certificate provisioning/renewal and maintained
-system NSS/NSPR packages remain operational requirements.
+a failure/bandwidth bottleneck. Certificate provisioning/renewal remains an operational requirement. Versioned
+Linux NSS archives bundle pinned Mozilla libraries; updating them requires a new
+FoxTunnel release. Developer/SDK builds use their own NSS/NSPR environment.
 
 Go/NSS race/integration tests cover custom identity, wrong name/key/CA before
 HTTP, policy isolation, bond failure/deduplication, setup/join and private output,

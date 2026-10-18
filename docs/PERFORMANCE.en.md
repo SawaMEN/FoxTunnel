@@ -42,8 +42,10 @@ success rate, disconnect recovery and overhead. Repeat with IPv6 failure,
 latency, loss, blocked UDP and multiple concurrent applications.
 
 Capture TLS ClientHello and HTTP/2 SETTINGS, initial windows, frame ordering,
-connection reuse and timing. Current fingerprint tooling captures only TLS
-ClientHello; no current Firefox reference trace is shipped. A static website
+connection reuse and timing. `ft-fingerprint` captures only TLS ClientHello. `ft-webprofile` additionally observes initial H2 fields and TLS
+record metadata. [Firefox 158 Linux reference measurements and known
+differences](WEB-PROFILE.en.md) are shipped; matched workloads and external
+packet captures remain future work. A static website
 does not change these passive client fingerprints or prevent IP-based blocks.
 
 Censorship tests need explicit observations on the affected operator networks,

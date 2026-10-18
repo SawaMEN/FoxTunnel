@@ -122,3 +122,26 @@ unchanged. Ordinary developer `go build -tags nss` and SDK consumers still use t
 libraries selected by their own toolchain/runtime; only this release script
 constructs the bundle. Matching NSS versions does not establish Firefox TLS/HTTP
 fingerprint parity or resistance to TSPU classification.
+
+## Independent downloaded-asset verification
+
+From a reviewed checkout with Python 3.11+:
+
+```sh
+python3 scripts/release.py verify --input downloaded \
+  --version "$RELEASE_TAG" --commit "$RELEASE_COMMIT" --target linux/arm64/nss
+```
+
+Choose the tag and full expected source commit from a trusted source first.
+Without `--target`, verify all nine archives; the manifest always needs the full
+matrix. Sidecar metadata is unnecessary. No content is extracted or executed:
+checks compare the index with embedded build.json and Mozilla provenance/library
+hashes, and reject unsafe/duplicate paths, links and read-limit violations.
+SHA256SUMS is also checked against the manifest. After safe extraction, separately
+check the executable's actual `version --json` on the target OS.
+
+CI pins Go 1.26.9; new build.json/manifest records include `go_version`. Older
+schema-1 archives may omit this additional field. Tag publication requires Go
+race/vet, external SDK and Python checks inside the distribution workflow itself,
+both native NSS jobs, complete index and independent verify.
+[Compatibility and first-tag acceptance](COMPATIBILITY.en.md).

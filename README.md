@@ -1,6 +1,6 @@
 # FoxTunnel
 
-[Отдельные версионные бинарники](docs/DISTRIBUTION.md) · [Публичный SDK](docs/SDK.md) · [Wire draft 0](docs/WIRE-DRAFT-0.md) · [MIT](LICENSE)
+[Отдельные версионные бинарники](docs/DISTRIBUTION.md) · [Публичный SDK](docs/SDK.md) · [Wire draft 0](docs/WIRE-DRAFT-0.md) · [Совместимость и проверка релиза](docs/COMPATIBILITY.md) · [MIT](LICENSE)
 
 [Потоковый XHTTP с Mozilla NSS](docs/XHTTP.md)
 
