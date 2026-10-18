@@ -41,6 +41,12 @@ func Dial(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host st
 	return DialWithSettings(ctx, rt, origin, mode, auth, host, Settings{})
 }
 func DialWithSettings(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host string, settings Settings) (net.Conn, error) {
+	return dialWithWindow(ctx, rt, origin, mode, auth, host, settings, clientPacketWindow)
+}
+func dialWithWindow(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host string, settings Settings, window int) (net.Conn, error) {
+	if window < 1 || window > clientPacketWindow {
+		return nil, errHandshake
+	}
 	settings, err := Normalize(settings.Path, settings.Host)
 	if err != nil {
 		return nil, err
@@ -89,7 +95,7 @@ func DialWithSettings(ctx context.Context, rt http.RoundTripper, origin, mode, a
 			down.Body.Close()
 			return nil, ctx.Err()
 		}
-		go sendPackets(c, life, rt, u, auth, host, settings.Path)
+		go sendPacketsWindow(c, life, rt, u, auth, host, settings.Path, window)
 		go func() { _, _ = io.Copy(peer, down.Body); _ = down.Body.Close(); _ = c.Close() }()
 		success = true
 		return c, nil

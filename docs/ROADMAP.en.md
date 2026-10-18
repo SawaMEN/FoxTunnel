@@ -19,6 +19,7 @@
 - [x] Native H2 POST, WSS carrying H2, H3 POST/QUIC, shared discovery/bond, profile and setup settings.
 - [x] Three native XHTTP modes: stream-one, stream-up and bounded packet-up; Go/NSS, setup, links and cluster.
 - [x] Shared XHTTP path/HTTP Host, random new-cluster routes, join inheritance and controlled HTTPS frontend tests.
+- [x] Bounded packet-up pipeline (4 POSTs), delayed-ACK tests; live Firefox 158 and Go/NSS TLS/H2 profiles (see WEB-PROFILE.en.md).
 - [ ] Independent XHTTP interoperability, XMUX and separate direction settings.
 - [ ] Native ECH/REALITY and measured automatic transport selection.
 - [ ] TUN/UDP, system routing/DNS/kill switch and individual user credentials.

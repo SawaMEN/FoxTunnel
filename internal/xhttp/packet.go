@@ -5,9 +5,11 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -17,6 +19,7 @@ import (
 const MaxPacketBytes = 64 << 10
 const MaxPendingPackets = 8
 const clientPacketBytes = 32 << 10
+const clientPacketWindow = 4
 
 type packet struct {
 	data      []byte
@@ -94,7 +97,7 @@ func (s *Server) servePacket(w http.ResponseWriter, r *http.Request, id string, 
 	// Bound each body independently: an earlier block may be legitimately stuck
 	// in application backpressure, so the reorder worker cannot own this timer.
 	readTimer := time.AfterFunc(PairTimeout, func() { s.close(id, p) })
-	data, err := io.ReadAll(io.LimitReader(r.Body, MaxPacketBytes+1))
+	data, err := readPacket(r)
 	readTimer.Stop()
 	if err != nil || len(data) > MaxPacketBytes {
 		s.close(id, p)
@@ -112,8 +115,8 @@ func (s *Server) servePacket(w http.ResponseWriter, r *http.Request, id string, 
 	item.ready = true
 	p.signalLocked()
 	s.mu.Unlock()
-	// ACK only after ordered delivery so a sequential sender naturally observes
-	// application backpressure and cannot fill the bounded reorder window.
+	// ACK only after ordered delivery so the bounded client window observes
+	// application backpressure instead of acknowledging queued bytes.
 	select {
 	case <-item.delivered:
 	case <-p.done:
@@ -214,29 +217,141 @@ func sendRequestAt(ctx context.Context, rt http.RoundTripper, u *url.URL, method
 	}
 	return resp, nil
 }
-func sendPackets(c *carrier, ctx context.Context, rt http.RoundTripper, u *url.URL, auth, host, prefix string) {
-	defer c.Close()
-	buffer := make([]byte, clientPacketBytes)
-	var seq uint64
+
+// readPacket allocates once for the known-size POSTs emitted by our client.
+// Unknown-size bodies retain bounded legacy handling. Always check EOF, since
+// custom transports and tests may not enforce the declared Content-Length.
+func readPacket(r *http.Request) ([]byte, error) {
+	if r.ContentLength < 0 {
+		return io.ReadAll(io.LimitReader(r.Body, MaxPacketBytes+1))
+	}
+	if r.ContentLength > MaxPacketBytes {
+		return nil, errHandshake
+	}
+	data := make([]byte, int(r.ContentLength))
+	if _, err := io.ReadFull(r.Body, data); err != nil {
+		return nil, err
+	}
+	var extra [1]byte
+	if _, err := io.ReadFull(r.Body, extra[:]); err != io.EOF {
+		return nil, errHandshake
+	}
+	return data, nil
+}
+
+type packetResult struct {
+	seq uint64
+	err error
+}
+type outgoingPacket struct {
+	buffer       []byte
+	acknowledged bool
+}
+
+func sendPacketsWindow(c *carrier, ctx context.Context, rt http.RoundTripper, u *url.URL, auth, host, prefix string, window int) {
+	var workers sync.WaitGroup
+	// Cancellation must happen before waiting, including a worker whose ACK is
+	// stuck. Results are buffered for the complete bounded window during teardown.
+	defer func() { _ = c.Close(); workers.Wait() }()
+	results := make(chan packetResult, window)
+	slots := make([]outgoingPacket, window)
+	for i := range slots {
+		slots[i].buffer = make([]byte, clientPacketBytes)
+	}
+	var base, next uint64
+	record := func(result packetResult) bool {
+		if result.err != nil {
+			return false
+		}
+		slots[result.seq%uint64(window)].acknowledged = true
+		// Reuse a slot only when all preceding ACKs have arrived. A later ACK must
+		// not advance the sequence window past a missing earlier acknowledgement.
+		for base < next && slots[base%uint64(window)].acknowledged {
+			slots[base%uint64(window)].acknowledged = false
+			base++
+		}
+		return true
+	}
 	for {
-		n, err := c.peer.Read(buffer)
-		if n > 0 {
-			dest := *u
-			dest.Path += "/" + strconv.FormatUint(seq, 10)
-			attempt, cancel := context.WithTimeout(ctx, PairTimeout)
-			// Do not set GetBody: automatic HTTP replay after an ambiguous ACK is unsafe.
-			resp, sendErr := sendRequestAt(attempt, rt, &dest, "POST", packetBody{bytes.NewReader(buffer[:n])}, auth, host, false, prefix)
-			if sendErr == nil {
-				_, sendErr = io.Copy(io.Discard, io.LimitReader(resp.Body, 4097))
-				_ = resp.Body.Close()
-			}
-			cancel()
-			if sendErr != nil || seq == ^uint64(0) {
+		for next-base >= uint64(window) {
+			select {
+			case result := <-results:
+				if !record(result) {
+					return
+				}
+			case <-ctx.Done():
 				return
 			}
-			seq++
 		}
-		if err != nil {
+		slot := &slots[next%uint64(window)]
+		n, readErr := c.peer.Read(slot.buffer)
+		if n > 0 {
+			seq := next
+			written := make(chan struct{})
+			workers.Add(1)
+			go func(payload []byte) {
+				defer workers.Done()
+				var once sync.Once
+				var writeErr error
+				finishWrite := func(err error) { once.Do(func() { writeErr = err; close(written) }) }
+				attempt, cancel := context.WithTimeout(ctx, PairTimeout)
+				defer cancel()
+				// WroteRequest runs only after the complete body was written. Start the
+				// next POST at that boundary, without waiting for the previous response.
+				trace := &httptrace.ClientTrace{WroteRequest: func(info httptrace.WroteRequestInfo) {
+					if info.Err != nil {
+						_ = c.Close()
+					}
+					finishWrite(info.Err)
+				}}
+				attempt = httptrace.WithClientTrace(attempt, trace)
+				dest := *u
+				dest.Path += "/" + strconv.FormatUint(seq, 10)
+				// GetBody stays nil: no automatic replay after an ambiguous ACK.
+				body := &ownedPacketBody{reader: bytes.NewReader(payload)}
+				resp, err := sendRequestAt(attempt, rt, &dest, "POST", body, auth, host, false, prefix)
+				if err != nil {
+					finishWrite(err)
+				} else {
+					// A peer can send headers before it reads the upload. Its
+					// response must not release the payload while a writer still
+					// owns it; require successful completion of the request body.
+					select {
+					case <-written:
+						err = writeErr
+					case <-attempt.Done():
+						err = attempt.Err()
+						finishWrite(err)
+					}
+				}
+				if err == nil {
+					var count int64
+					count, err = io.Copy(io.Discard, io.LimitReader(resp.Body, 4097))
+					_ = resp.Body.Close()
+					if count > 4096 {
+						err = errHandshake
+					}
+				}
+				if resp != nil {
+					_ = resp.Body.Close()
+				}
+				_ = body.Close()
+				if err != nil {
+					_ = c.Close()
+				}
+				results <- packetResult{seq: seq, err: err}
+			}(slot.buffer[:n])
+			next++
+			select {
+			case <-written:
+			case <-ctx.Done():
+				return
+			}
+			if seq == ^uint64(0) {
+				return
+			}
+		}
+		if readErr != nil {
 			return
 		}
 	}
@@ -244,3 +359,22 @@ func sendPackets(c *carrier, ctx context.Context, rt http.RoundTripper, u *url.U
 
 // Hide the concrete bytes.Reader type from NewRequest so GetBody stays nil.
 type packetBody struct{ *bytes.Reader }
+
+// Close synchronizes with any outstanding body read, including a transport
+// which returns an early response. No stale writer may read a reused buffer.
+type ownedPacketBody struct {
+	mu     sync.Mutex
+	reader *bytes.Reader
+	closed bool
+}
+
+func (b *ownedPacketBody) Read(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.closed {
+		return 0, io.ErrClosedPipe
+	}
+	return b.reader.Read(p)
+}
+func (b *ownedPacketBody) Len() int     { b.mu.Lock(); defer b.mu.Unlock(); return b.reader.Len() }
+func (b *ownedPacketBody) Close() error { b.mu.Lock(); b.closed = true; b.mu.Unlock(); return nil }

@@ -66,9 +66,13 @@ response carries padding every 25 seconds, outside application data. Outer ALPN
 is H2 only; H1/H3 carriers are not implemented here.
 
 Packet-up uses fixed-length `application/octet-stream` POSTs, up to 32 KiB from
-the client, waiting for one ACK at a time after ordered delivery to the inner
-stream, without automatic HTTP retries. Upload
-throughput is therefore sensitive to RTT. The server reserves at most eight
+the client, with at most four unacknowledged sequence positions (128 KiB of
+client payload buffers per carrier). The next POST starts only after the previous
+body is completely written, without waiting for its response. ACKs follow ordered
+delivery; only contiguous ACKs advance the window. Early responses cannot release
+an upload buffer, and ambiguous failures close the carrier without HTTP replay.
+The four-request cap still limits throughput at high RTT; transport/header buffers
+are additional to the payload budget. The server reserves at most eight
 blocks of up to 64 KiB, including reads in progress and a blocked delivery.
 It reconstructs numbered blocks from zero, rejects duplicates, out-of-window
 numbers and stream/packet mixing. A missing sequence or stalled body expires
@@ -113,8 +117,18 @@ Command: `go test ./internal/tunnel -run '^$' -bench 'BenchmarkNativeTransports/
 Nested H2 adds overhead here; this is not an improvement over CONNECT. These
 short loopback runs do not measure Internet routes, NSS or Russian networks.
 
-After adding packet-up, a separate short run of the same methodology measured
-10.2–12.8 MB/s and approximately 5.1–5.2 MB allocated per 1 MiB exchange. This
-conservative mode has one POST in flight and acknowledges ordered delivery,
-with separate HTTP headers per block. Bounded pipelining and write coalescing
-remain performance work; these measurements do not replace field tests.
+A fresh before/after test of the bounded packet-up pipeline (Go 1.26.9, same host,
+1 MiB SOCKS/inner-H2 echo, 500 ms, two runs) measured 38.44–42.78 →
+95.84–96.13 MB/s. Bytes allocated per exchange fell from 5.16–5.33 to 3.69–3.87 MB;
+allocation count increased from about 17.4k to 19.8–20.0k. Historical shorter runs
+were noisy and are not directly comparable to this before/after pair.
+
+The separate carrier-only benchmark isolates ACK delay, not complete Internet
+RTT: `go test ./internal/xhttp -run '^$' -bench BenchmarkPacketWindow -benchtime=500ms -count=2`.
+With a 256 KiB echo and a 40 ms response delay per POST, window 1 measured
+0.80 MB/s and window 4 measured 3.18 MB/s; with no artificial delay, 100.5–110.2
+and 169.7–177.1 MB/s respectively. The fixture does not add loss, TCP delay or a
+throughput cap. Write coalescing and persistent bond channels remain separate
+work. These local Go TLS measurements do not establish NSS, Internet or TSPU
+performance. [Live Firefox TLS/H2 profiles](WEB-PROFILE.en.md) measure a different
+question: the current transports still differ from a browser.

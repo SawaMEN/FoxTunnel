@@ -20,10 +20,19 @@ Reference XHTTP interoperability, XMUX, direction-specific endpoints and arbitra
 CDN support are still not established. The test HTTPS frontend is configured
 explicitly, including authentication forwarding.
 
-The next performance work starts from known costs: one acknowledged POST per
-packet-up block and one RPC per bond block. Short Go TLS loopback packet-up runs
-measured 10.2–12.8 MB/s and roughly 5 MB allocated per 1 MiB exchange; these do
-not measure NSS or the Internet. Limit aggregation/concurrency before comparing.
+Packet-up now has a bounded four-request window, with ordered body writes,
+contiguous ACK advancement and no replay. A controlled 40 ms ACK-delay benchmark
+improved from 0.80 to 3.18 MB/s (256 KiB carrier echo, Go TLS, two short runs).
+Full SOCKS/inner-H2 loopback runs improved from 38.44–42.78 to 95.84–96.13 MB/s;
+allocated bytes fell from 5.16–5.33 to 3.69–3.87 MB per 1 MiB echo, while allocation
+count increased from about 17.4k to 19.8–20.0k. These measure different workloads,
+not Internet or NSS performance. Persistent bond channels remain separate work.
+
+[Live Firefox 158 TLS/H2 captures](WEB-PROFILE.en.md) now establish explicit gaps:
+NSS 3.98 and even Firefox's NSS 3.130 do not reproduce Firefox's Hello, SETTINGS
+or connection window. The next Mozilla work must address actual stack behavior,
+then matched traffic distributions and operator field tests. No TSPU result is
+established by local captures.
 
 The unfinished ECH draft uses Go TLS, not NSS. It needs fail-closed credential,
 key rotation, SNI/pin/cache and setup/cluster coverage before inclusion. ECH alone
