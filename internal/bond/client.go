@@ -32,15 +32,24 @@ type Client struct {
 	SetupTimeout       time.Duration
 	// Pipeline is 0 (automatic), 4, or 8. Configure before Open.
 	Pipeline int
-	mu       sync.Mutex
-	paths    []pathState
-	next     uint64
+	// Weights are relative configured capacities (1..100), not traffic quotas.
+	// ExpectedHub optionally pins the exit before the first destination dial.
+	Weights     []int
+	ExpectedHub string
+	mu          sync.Mutex
+	paths       []pathState
+	next        uint64
 }
 
 func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
 	c.mu.Lock()
 	if len(c.paths) != len(c.Endpoints) {
 		c.paths = make([]pathState, len(c.Endpoints))
+		// Independent clients must not all probe the first configured node first.
+		var seed [8]byte
+		if _, err := rand.Read(seed[:]); err == nil {
+			c.next = binary.BigEndian.Uint64(seed[:])
+		}
 	}
 	now := time.Now()
 	selected := -1
@@ -58,6 +67,9 @@ func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
 			delay = 100 * time.Millisecond
 		}
 		score := delay * time.Duration(p.pending+1)
+		if len(c.Weights) == len(c.Endpoints) && c.Weights[index] > 0 {
+			score /= time.Duration(c.Weights[index])
+		}
 		if p.latency == 0 && p.pending == 0 {
 			score = 0
 		}
@@ -233,8 +245,24 @@ func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
 	if c.Pipeline != 0 && c.Pipeline != 4 && c.Pipeline != window {
 		return nil, errors.New(i18n.Text("bond pipeline must be auto, 4 or 8"))
 	}
-	if len(c.Endpoints) < 2 || len(c.Endpoints) > 8 || c.Transport == nil {
+	if len(c.Endpoints) < 1 || len(c.Endpoints) > 8 || (len(c.Endpoints) == 1 && c.ExpectedHub == "") || c.Transport == nil {
 		return nil, errors.New(i18n.Text("bond requires two to eight trusted nodes"))
+	}
+	if c.ExpectedHub != "" {
+		id, err := hex.DecodeString(c.ExpectedHub)
+		if err != nil || len(id) != 32 || hex.EncodeToString(id) != c.ExpectedHub {
+			return nil, errors.New(i18n.Text("invalid bond hub identity"))
+		}
+	}
+	if len(c.Weights) != 0 {
+		if len(c.Weights) != len(c.Endpoints) {
+			return nil, errors.New(i18n.Text("invalid cluster configuration"))
+		}
+		for _, weight := range c.Weights {
+			if weight < 1 || weight > 100 {
+				return nil, errors.New(i18n.Text("invalid cluster configuration"))
+			}
+		}
 	}
 	streamCtx, cancel := context.WithCancel(ctx)
 	s := &Stream{client: c, ctx: streamCtx, cancel: cancel, futures: make(map[uint64]chan result), uploadSlots: make(chan *[chunkSize]byte, window)}
@@ -254,7 +282,7 @@ func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
 	}
 	setup, stop := context.WithTimeout(streamCtx, setupTimeout)
 	defer stop()
-	opened, err := c.request(setup, s.token[:], "", opOpen, 0, 0, []byte(target))
+	opened, err := c.request(setup, s.token[:], c.ExpectedHub, opOpen, 0, 0, []byte(target))
 	if err != nil {
 		cancel()
 		return nil, err
@@ -264,6 +292,10 @@ func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
 		return nil, errors.New(i18n.Text("invalid bond hub identity"))
 	}
 	s.hub = hex.EncodeToString(opened.data)
+	if c.ExpectedHub != "" && s.hub != c.ExpectedHub {
+		cancel()
+		return nil, errors.New(i18n.Text("invalid bond hub identity"))
+	}
 	return s, nil
 }
 func (s *Stream) fetch() {

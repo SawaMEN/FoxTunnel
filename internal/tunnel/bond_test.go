@@ -2,17 +2,22 @@ package tunnel
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
+	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 )
 
 func TestBondedSOCKSGo(t *testing.T) { testBondedSOCKS(t, "go") }
@@ -22,6 +27,12 @@ func testBondedSOCKS(t *testing.T, backend string) {
 	}
 }
 func testBondedSOCKSDepth(t *testing.T, backend string, depth int) {
+	testBondedSOCKSMode(t, backend, depth, false)
+}
+
+func TestDiscoveredBondedSOCKSGo(t *testing.T) { testBondedSOCKSMode(t, "go", 8, true) }
+
+func testBondedSOCKSMode(t *testing.T, backend string, depth int, discover bool) {
 	var destinations atomic.Int64
 	target := testDestination(t, func(c net.Conn) { destinations.Add(1); _, _ = io.Copy(c, c) })
 	client, addr := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
@@ -47,7 +58,7 @@ func testBondedSOCKSDepth(t *testing.T, backend string, depth int) {
 			}
 			data, _ := io.ReadAll(r.Body)
 			r.Body = io.NopCloser(bytes.NewReader(data))
-			if index == 0 && len(data) > 0 && data[0] == 0 && lostOpen.CompareAndSwap(false, true) {
+			if len(data) > 0 && data[0] == 0 && lostOpen.CompareAndSwap(false, true) {
 				record := httptest.NewRecorder()
 				relay.ServeHTTP(record, r)
 				w.WriteHeader(504)
@@ -74,8 +85,26 @@ func testBondedSOCKSDepth(t *testing.T, backend string, depth int) {
 	}
 	client.FallbackAttemptTimeout = 250 * time.Millisecond
 	client.BondPipeline = depth
-	if err := client.EnableBond(); err != nil {
-		t.Fatal(err)
+	if discover {
+		file := filepath.Join(t.TempDir(), "cluster.json")
+		config, _ := json.Marshal(cluster.Config{Version: 1, Nodes: []cluster.Node{{URL: a.URL, Weight: 3}, {URL: b.URL, Weight: 1}}})
+		if err := os.WriteFile(file, config, 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := exit.ConfigureCluster(file); err != nil {
+			t.Fatal(err)
+		}
+		usePrimary(t, client, hubServer.URL)
+		if err := client.SetFallbackServers(nil); err != nil {
+			t.Fatal(err)
+		}
+		if err := client.EnableBondDiscovery(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := client.EnableBond(); err != nil {
+			t.Fatal(err)
+		}
 	}
 	conn, code := connectSOCKS(t, addr, target)
 	if code != 0 {

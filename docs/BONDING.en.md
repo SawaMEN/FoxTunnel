@@ -1,5 +1,8 @@
 # Experimental multi-node stream bonding
 
+For one-address links with coordinator-issued topology and capacity weights,
+see [main-node cluster management](CLUSTER.en.md). Explicit-node setup remains supported.
+
 [Русский](BONDING.md) | **English**
 
 `--bond` carries blocks of a single TCP stream through two to eight trusted

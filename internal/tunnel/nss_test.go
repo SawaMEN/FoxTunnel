@@ -123,4 +123,6 @@ func TestNSSFallbackStopsOnCertificateFailure(t *testing.T) { testFallbackCertif
 
 func TestEndpointSchedulingNSS(t *testing.T) { testEndpointScheduling(t, "nss") }
 
-func TestBondedSOCKSNSS(t *testing.T) { testBondedSOCKS(t, "nss") }
+func TestBondedSOCKSNSS(t *testing.T)                { testBondedSOCKS(t, "nss") }
+func TestDiscoveredBondedSOCKSNSS(t *testing.T)      { testBondedSOCKSMode(t, "nss", 8, true) }
+func TestDiscoveryRejectsUnverifiedNSS(t *testing.T) { testDiscoveryRejectsUnverifiedTLS(t, "nss") }

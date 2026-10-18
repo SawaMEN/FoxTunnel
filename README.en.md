@@ -88,6 +88,14 @@ destination socket, while normal TCP half-close keeps the response readable.
 See [performance methodology](docs/PERFORMANCE.en.md) for reproducible local tests
 and the measurements still needed on real networks.
 
+## Main node and one-address links
+
+For a one-address bonded connection link, use
+`foxtunnel share --server https://main.example --bond --discover`.
+The main node publishes trusted ingress origins/capacity weights and reassembles
+their data into one destination TCP stream. See [cluster setup and limits](docs/CLUSTER.en.md)
+and the [Sudoku/dnstt source review](docs/SUDOKU-DNSTT-REVIEW.en.md).
+
 ## Experimental Mozilla NSS data transport
 
 Linux builds can now use NSS for the complete TLS 1.3 data connection:

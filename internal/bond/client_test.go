@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -16,6 +17,49 @@ import (
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestWeightedPendingAndCooldown(t *testing.T) {
+	a, _ := url.Parse("https://a.example")
+	b, _ := url.Parse("https://b.example")
+	c := &Client{Endpoints: []*url.URL{a, b}, Weights: []int{4, 1}, paths: []pathState{{latency: time.Millisecond}, {latency: time.Millisecond}}}
+	var counts [2]int
+	var releases []func(time.Duration, bool)
+	for range 100 {
+		index, done := c.reserve([]bool{false, false})
+		counts[index]++
+		releases = append(releases, done)
+	}
+	if counts[0] != 80 || counts[1] != 20 {
+		t.Fatalf("capacity weighting: %v", counts)
+	}
+	for _, done := range releases {
+		done(time.Millisecond, false)
+	}
+	index, done := c.reserve([]bool{false, true})
+	if index != 0 {
+		t.Fatal("wrong forced path")
+	}
+	done(0, true)
+	index, done = c.reserve([]bool{false, false})
+	defer done(time.Millisecond, false)
+	if index != 1 {
+		t.Fatal("high weight overrode failed-node cooldown")
+	}
+}
+
+func TestOpenPinsCoordinatorHubBeforeDial(t *testing.T) {
+	a, _ := url.Parse("https://a.example")
+	expected := strings.Repeat("ab", 32)
+	c := &Client{Endpoints: []*url.URL{a}, Weights: []int{1}, ExpectedHub: expected, Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Header.Get("X-FoxTunnel-Bond-Hub") != expected {
+			t.Error("open did not carry pinned hub")
+		}
+		return &http.Response{StatusCode: 200, ProtoMajor: 2, ContentLength: 32, Body: io.NopCloser(bytes.NewReader(make([]byte, 32)))}, nil
+	})}
+	if _, err := c.Open(context.Background(), "example.org:443"); err == nil {
+		t.Fatal("different exit identity accepted")
+	}
+}
 func TestSmallWritesUseConcurrentPaths(t *testing.T) {
 	ready := make(chan struct{})
 	release := make(chan struct{})

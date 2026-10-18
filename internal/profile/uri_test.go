@@ -28,6 +28,27 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatal("connection profile changed")
 	}
 }
+
+func TestCoordinatorOnlyLink(t *testing.T) {
+	c := Config{Version: 1, Servers: []string{"https://main.example"}, Username: "alice", Password: "secret", Bond: true, Discover: true}
+	link, err := Encode(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := Decode(link)
+	if err != nil || !got.Discover || !got.Bond || len(got.Servers) != 1 {
+		t.Fatal("single coordinator did not roundtrip", err)
+	}
+	c.Bond = false
+	if _, err := Encode(c); err == nil {
+		t.Fatal("discovery without bonding accepted")
+	}
+	c.Bond = true
+	c.Servers = append(c.Servers, "https://other.example")
+	if _, err := Encode(c); err == nil {
+		t.Fatal("ambiguous coordinator and explicit paths accepted")
+	}
+}
 func TestRejectUnsafeOrAmbiguousLinks(t *testing.T) {
 	valid := `{"v":1,"servers":["https://a.example"],"username":"alice","password":"secret-marker"}`
 	wrap := func(data string) string { return "vetroff://" + base64.RawURLEncoding.EncodeToString([]byte(data)) }

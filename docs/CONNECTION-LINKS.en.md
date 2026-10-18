@@ -42,8 +42,14 @@ query, fragment or userinfo. Stable fields:
 ```
 
 TLS: go/nss. Balance: failover/round-robin/least-active. Pipeline: auto/4/8.
-Bonding requires two nodes and cannot combine with padding. NSS requires the
+Explicit-node bonding requires two nodes and cannot combine with padding. NSS requires the
 appropriate local build and never silently substitutes Go TLS.
+
+`"discover":true` with `"bond":true` requires exactly one server, the coordinator.
+Generate it with `share --server https://main.example --bond --discover`.
+The coordinator issues ingress origins/weights; one active ingress is allowed
+as degraded mode. See [cluster setup](CLUSTER.en.md). Discovery cannot be combined
+with explicit fallback servers; older clients reject the new field.
 
 Limits: 16-KiB URI, 256-byte username, 1024-byte password, eight unique HTTPS
 origins without embedded credentials or non-root paths. Positive setup/attempt

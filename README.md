@@ -128,6 +128,16 @@ H2/TLS и заголовков. Искусственных задержек не
 
 ## Несколько серверов и нагрузка
 
+Для объединения путей с одной ссылкой используйте главную ноду:
+
+```sh
+./foxtunnel share --server https://main.example --bond --discover
+```
+
+Главная нода хранит адреса и веса входов и собирает их данные в один TCP-сеанс.
+Клиент получает состав после авторизации; список серверов в ссылке не нужен.
+См. [настройку главной ноды, обновления и ограничения](docs/CLUSTER.md).
+
 До восьми явно доверенных HTTPS-серверов могут одновременно обслуживать новые
 потоки. Все получают одинаковые учётные данные после проверки TLS.
 
@@ -187,6 +197,7 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 - [Измерения скорости и сетевые испытания](docs/PERFORMANCE.md).
 - [Выбор подходов из других протоколов](docs/TRANSPORT-STRATEGY.md).
 - [Разбор AmneziaWG и дополнительных проектов](docs/PROTOCOL-REVIEW-2026-10-18.md).
+- [Дополнительный разбор Sudoku и dnstt](docs/SUDOKU-DNSTT-REVIEW.md).
 - [Проверка исходников AnyTLS, Hysteria 2, Shadowsocks 2022, XHTTP, mieru и NaiveProxy](docs/SIX-PROTOCOL-AUDIT.md).
 - [Ограничения NaiveProxy и идеи Sudoku](docs/NAIVE-SUDOKU-REVIEW.md).
 

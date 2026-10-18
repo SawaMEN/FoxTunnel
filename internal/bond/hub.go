@@ -179,8 +179,15 @@ func (h *Hub) get(ctx context.Context, token []byte, target string) (*session, e
 		return nil, ctx.Err()
 	}
 }
-func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+// Identity binds discovery and all entry paths to this running common exit.
+func (h *Hub) Identity() (string, error) {
 	h.identityOnce.Do(func() { _, h.identityError = rand.Read(h.identity[:]) })
+	return hex.EncodeToString(h.identity[:]), h.identityError
+}
+
+func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	_, _ = h.Identity()
 	if h.identityError != nil {
 		http.Error(w, "hub initialization failed", 503)
 		return

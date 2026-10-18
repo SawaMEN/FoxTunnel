@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -39,6 +40,7 @@ func main() {
 		bondHub := fs.Bool("bond-hub", false, i18n.Text("enable experimental common exit for bonded streams"))
 		bondRelay := fs.String("bond-upstream", "", i18n.Text("trusted HTTPS common exit; run this server as a bond relay"))
 		bondCA := fs.String("bond-ca-cert", "", i18n.Text("additional trusted PEM for the common exit"))
+		clusterFile := fs.String("cluster-file", "", i18n.Text("cluster JSON file served by the common exit (requires --bond-hub)"))
 		maxTunnels := fs.Int("max-tunnels", 256, i18n.Text("maximum active authenticated tunnels, including destination dialing"))
 		webRoot := fs.String("web-root", "", i18n.Text("public website directory for ordinary requests and rejected probes"))
 		allowPrivate := fs.Bool("allow-private", false, i18n.Text("permit private/loopback destination IPs (unsafe on public deployments)"))
@@ -77,6 +79,11 @@ func main() {
 			defer closeRelay()
 			handler.Bond = relay
 		}
+		if *clusterFile != "" {
+			if err := handler.ConfigureCluster(*clusterFile); err != nil {
+				log.Fatal(err)
+			}
+		}
 		server := &http.Server{
 			Addr:              *listen,
 			Handler:           handler,
@@ -97,6 +104,7 @@ func main() {
 		fs.Var(&fallbacks, "fallback-server", i18n.Text("explicit trusted HTTPS proxy fallback (repeat up to seven times)"))
 		bondPipeline := fs.String("bond-pipeline", "auto", i18n.Text("bond pipeline: auto, 4 or 8 (higher depth uses more memory)"))
 		bonded := fs.Bool("bond", false, i18n.Text("experimental multi-node stream bonding; nodes must share one hub"))
+		discover := fs.Bool("discover", false, i18n.Text("obtain trusted bond nodes and capacity weights from the main HTTPS node"))
 		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active"))
 		attemptTimeout := fs.Duration("fallback-attempt-timeout", 5*time.Second, i18n.Text("setup time per endpoint when fallbacks are configured"))
 		padding := fs.Bool("padding", false, i18n.Text("require experimental initial-record padding (server must enable it)"))
@@ -142,6 +150,7 @@ func main() {
 			*tlsBackend = imported.TLSBackend
 			*balance = imported.Balance
 			*bonded = imported.Bond
+			*discover = imported.Discover
 			*bondPipeline = imported.Pipeline
 			*padding = imported.Padding
 			*connectTimeout, _ = time.ParseDuration(imported.ConnectTimeout)
@@ -151,7 +160,7 @@ func main() {
 			if user == "" || password == "" {
 				log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 			}
-			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Balance: *balance, Bond: *bonded, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
+			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -166,6 +175,9 @@ func main() {
 		}
 		if *connectTimeout <= 0 {
 			log.Fatal(i18n.Text("--connect-timeout must be positive"))
+		}
+		if *discover && !*bonded {
+			log.Fatal(i18n.Text("cluster discovery requires --bond"))
 		}
 		client, err := tunnel.NewClient(*server, user, password, *ca)
 		if err != nil {
@@ -193,7 +205,13 @@ func main() {
 			log.Fatal(i18n.Text("bond pipeline must be auto, 4 or 8"))
 		}
 		if *bonded {
-			if err := client.EnableBond(); err != nil {
+			var err error
+			if *discover {
+				err = client.EnableBondDiscovery(context.Background())
+			} else {
+				err = client.EnableBond()
+			}
+			if err != nil {
 				log.Fatal(err)
 			}
 		}

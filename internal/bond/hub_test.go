@@ -9,9 +9,28 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
+
+func TestCoordinatorIdentityRejectsOtherExitBeforeDial(t *testing.T) {
+	var dialed atomic.Bool
+	h := &Hub{Dial: func(context.Context, string) (net.Conn, error) { dialed.Store(true); return nil, net.ErrClosed }}
+	defer h.Close()
+	data := make([]byte, headerSize)
+	data[0] = opOpen
+	binary.BigEndian.PutUint64(data[1:9], uint64(time.Now().Unix()))
+	data = append(data, []byte("example.org:443")...)
+	r := httptest.NewRequest("POST", "https://main.example"+Path, bytes.NewReader(data))
+	r.Header.Set("X-FoxTunnel-Bond-Hub", strings.Repeat("ab", 32))
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 409 || dialed.Load() {
+		t.Fatal("wrong exit performed destination work", w.Code)
+	}
+}
 
 func TestHubBoundsAndTombstones(t *testing.T) {
 	var peer net.Conn

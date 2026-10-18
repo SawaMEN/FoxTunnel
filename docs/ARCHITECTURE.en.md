@@ -24,6 +24,12 @@ See [padding specification](PADDING.en.md).
 
 ## Mozilla/Firefox transport experiment
 
+The opt-in `--bond --discover` mode uses one main-node address. That node
+publishes authenticated, bounded topology/weight snapshots and retains the
+destination TCP socket for reassembly. Snapshots expire and pin the running
+exit identity before destination work. Existing sessions retain their paths.
+See [cluster design and limits](CLUSTER.en.md).
+
 Firefox uses NSS for TLS, Necko for networking and Neqo (Rust) for QUIC and HTTP/3. Loading NSS alone cannot guarantee Firefox-like TLS signatures: Firefox manages extension order, ALPN, HTTP/2 configuration, connection reuse and timeout behavior. Necko is not a standalone client library. The tagged Linux NSS adapter now provides a complete certificate-verified TLS 1.3 data path over Go-managed sockets, with Go x/net/http2 on top. Its certificate verification uses Go x509 rather than the Firefox verifier. It requires h2 ALPN and does not silently downgrade. NSS session caching is disabled in this first adapter. This is not Firefox fingerprint parity; reference captures and HTTP/2 comparison remain outstanding. See [adapter details](../internal/nsstls/README.en.md). Neqo will be evaluated as a separate QUIC/HTTP/3 transport, not swapped into the current Go `http.Transport` without significant engineering.
 
 Important: [`mozilla/neqo`](https://github.com/mozilla/neqo) explicitly marks its server implementation as experimental and unsuitable for production. The baseline uses Go's stable HTTP/2 server instead.

@@ -8,7 +8,24 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/SawaMEN/FoxTunnel/internal/profile"
 )
+
+func TestShareSingleCoordinator(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := helperCommand(ctx, "share", "--server", "https://main.example", "--bond", "--discover")
+	cmd.Env = helperEnv(true)
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	config, err := profile.Decode(strings.TrimSpace(string(out)))
+	if err != nil || !config.Discover || !config.Bond || len(config.Servers) != 1 || config.Servers[0] != "https://main.example" {
+		t.Fatal("coordinator settings missing from link", err)
+	}
+}
 
 // main contains exit paths; exercise it in an isolated copy of the test binary.
 func TestCLIHelper(t *testing.T) {

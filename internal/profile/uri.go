@@ -29,6 +29,7 @@ type Config struct {
 	TLSBackend     string   `json:"tls,omitempty"`
 	Balance        string   `json:"balance,omitempty"`
 	Bond           bool     `json:"bond,omitempty"`
+	Discover       bool     `json:"discover,omitempty"`
 	Pipeline       string   `json:"pipeline,omitempty"`
 	Padding        bool     `json:"padding,omitempty"`
 	ConnectTimeout string   `json:"connect_timeout,omitempty"`
@@ -85,7 +86,10 @@ func (c *Config) normalize() error {
 	if c.Pipeline != "auto" && c.Pipeline != "4" && c.Pipeline != "8" {
 		return invalid()
 	}
-	if c.Bond && (len(c.Servers) < 2 || c.Padding) {
+	if c.Discover && (!c.Bond || len(c.Servers) != 1) {
+		return invalid()
+	}
+	if c.Bond && ((!c.Discover && len(c.Servers) < 2) || c.Padding) {
 		return invalid()
 	}
 	if c.ConnectTimeout == "" {
@@ -154,7 +158,7 @@ func uniqueFields(data []byte) bool {
 		return false
 	}
 	seen := make(map[string]bool)
-	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "balance": true, "bond": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
+	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "balance": true, "bond": true, "discover": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
 	for decoder.More() {
 		token, err := decoder.Token()
 		if err != nil {

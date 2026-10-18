@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
+	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"net"
@@ -36,9 +37,20 @@ type Server struct {
 	Cover http.Handler
 	// Bond is an opt-in hub or relay, behind the same authentication boundary.
 	Bond http.Handler
+	// Cluster is authenticated coordinator discovery on the common exit.
+	Cluster http.Handler
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.Cluster != nil && r.Method == http.MethodGet && r.ProtoMajor == 2 && r.URL.Path == cluster.Path && s.authorized(r) {
+		if !s.acquireTunnel() {
+			http.Error(w, "server busy", http.StatusServiceUnavailable)
+			return
+		}
+		defer s.activeTunnels.Add(-1)
+		s.Cluster.ServeHTTP(w, r)
+		return
+	}
 	if s.Bond != nil && r.Method == http.MethodPost && r.ProtoMajor == 2 && r.URL.Path == bond.Path && s.authorized(r) {
 		if !s.acquireTunnel() {
 			http.Error(w, "server busy", http.StatusServiceUnavailable)

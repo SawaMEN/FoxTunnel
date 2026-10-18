@@ -51,9 +51,10 @@ type Client struct {
 		CloseIdleConnections()
 	}
 	// BondPipeline is 0 (automatic), 4 or 8; set before EnableBond.
-	BondPipeline int
-	bondClient   *bond.Client
-	tlsConfig    *tls.Config
+	BondPipeline  int
+	bondClient    *bond.Client
+	bondDiscovery *bondDiscovery
+	tlsConfig     *tls.Config
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {
@@ -145,7 +146,7 @@ func (c *Client) handle(conn net.Conn) {
 	}
 	_ = conn.SetDeadline(time.Time{})
 
-	if c.bondClient != nil {
+	if c.bondClient != nil || c.bondDiscovery != nil {
 		c.handleBond(conn, target)
 		return
 	}

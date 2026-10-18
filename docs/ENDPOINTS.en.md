@@ -18,8 +18,9 @@ All configured origins receive the same proxy credentials, only after verified
 TLS 1.3 and h2 ALPN. Configure certificates and credentials on each server.
 Do not add arbitrary public proxies. URL userinfo, non-root paths, queries,
 fragments, duplicates and cleartext origins are rejected. `--ca-cert`, the
-selected TLS backend and padding policy apply to every origin. No automatic
-endpoint discovery or redirect following is performed.
+selected TLS backend and padding policy apply to every origin. Ordinary CONNECT
+does not discover endpoints. Bond has a separate opt-in [coordinator mode](CLUSTER.en.md).
+Redirects are never followed.
 
 ## Selection and recovery
 

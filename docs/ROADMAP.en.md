@@ -10,6 +10,10 @@
 - [x] Bound CONNECT setup, release cancelled streams, preserve upload half-close.
 - [x] Add TLS resumption, filtered dual-stack fallback and local throughput benchmark.
 - [x] Add opt-in bounded initial-record padding with explicit negotiation, parser limits, fuzzing and Go/NSS tests.
+- [x] Main-node topology/weight discovery: one-address links, refresh/expiry, exit identity and Go/NSS tests.
+- [x] Review Sudoku and the official dnstt v1.20260501.0 archive.
+- [ ] Persistent bond lanes instead of per-block RPC; delivery-based path estimates.
+- [ ] Global ingress telemetry and automatic allocation between clients.
 - [ ] Test in multiple OS configurations and behind an HTTPS frontend.
 - [x] Bound authenticated destination setup and relay concurrency before DNS/dial.
 - [x] Review AmneziaWG 3.1 and additional transport designs with pinned sources.

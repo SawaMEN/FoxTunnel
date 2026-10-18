@@ -15,6 +15,9 @@ import (
 
 // EnableBond must be called after endpoint/TLS configuration, before Serve.
 func (c *Client) EnableBond() error {
+	if c.bondDiscovery != nil {
+		return i18n.Error("invalid cluster configuration")
+	}
 	if c.BondPipeline != 0 && c.BondPipeline != 4 && c.BondPipeline != 8 {
 		return errors.New(i18n.Text("bond pipeline must be auto, 4 or 8"))
 	}
@@ -33,7 +36,16 @@ func (c *Client) EnableBond() error {
 func (c *Client) handleBond(conn net.Conn, target string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	stream, err := c.bondClient.Open(ctx, target)
+	carrier := c.bondClient
+	if c.bondDiscovery != nil {
+		var err error
+		carrier, err = c.discoveredBond(ctx)
+		if err != nil {
+			_ = socks5Reply(conn, 0x05)
+			return
+		}
+	}
+	stream, err := carrier.Open(ctx, target)
 	if err != nil {
 		_ = socks5Reply(conn, 0x05)
 		return

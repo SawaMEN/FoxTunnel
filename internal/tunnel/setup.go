@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"io"
 	"net"
@@ -22,8 +23,8 @@ const maxProxyEndpoints = 8
 var errH2Required = i18n.Error(i18n.Text("proxy must negotiate h2 ALPN"))
 
 func parseServerURL(raw string) (*url.URL, error) {
-	u, err := url.Parse(raw)
-	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
+	u, err := cluster.Origin(raw)
+	if err != nil {
 		return nil, errors.New(i18n.Text("server must be an https://host[:port] URL"))
 	}
 	return u, nil

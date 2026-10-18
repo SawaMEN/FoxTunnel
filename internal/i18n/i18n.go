@@ -35,6 +35,12 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
+	"cluster JSON file served by the common exit (requires --bond-hub)":                         "JSON-файл состава кластера на главной ноде (требуется --bond-hub)",
+	"obtain trusted bond nodes and capacity weights from the main HTTPS node":                   "Получить доверенные ноды и веса мощности с главной HTTPS-ноды",
+	"cluster configuration requires --bond-hub":                                                 "Состав кластера можно выдавать только с главной ноды --bond-hub",
+	"cluster discovery requires --bond":                                                         "Получение состава кластера требует --bond",
+	"invalid cluster configuration":                                                             "Некорректная конфигурация кластера",
+	"cluster discovery failed":                                                                  "Не удалось получить состав кластера с главной ноды",
 	"invalid vetroff connection link":                                                           "Некорректная ссылка подключения vetroff://",
 	"vetroff connection link (prefer --link-file for secrets)":                                  "Ссылка vetroff:// (для секретов предпочтительнее --link-file)",
 	"read vetroff connection link from file or - for stdin":                                     "Прочитать ссылку vetroff:// из файла или - для stdin",
