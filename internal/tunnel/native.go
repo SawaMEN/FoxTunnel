@@ -32,8 +32,8 @@ func (c *Client) SetTransport(mode string) error {
 	if mode == "" {
 		mode = "h2-connect"
 	}
-	if mode != "h2-connect" && mode != "h2-post" && mode != "wss" && mode != "h3-post" && mode != "xhttp-stream-one" && mode != "xhttp-stream-up" {
-		return i18n.Error("unknown native transport (choose h2-connect, h2-post, h3-post, wss, xhttp-stream-one or xhttp-stream-up)")
+	if mode != "h2-connect" && mode != "h2-post" && mode != "wss" && mode != "h3-post" && mode != "xhttp-stream-one" && mode != "xhttp-stream-up" && mode != "xhttp-packet-up" {
+		return i18n.Error("unknown native transport (choose h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up)")
 	}
 	if c.bondClient != nil || c.bondDiscovery != nil {
 		return i18n.Error("configure transport before enabling bond")
@@ -48,7 +48,7 @@ func (c *Client) SetTransport(mode string) error {
 }
 
 func makeNativeTransport(mode, backend string, config *tls.Config, auth string) (tlsTransport, error) {
-	if mode == "xhttp-stream-one" || mode == "xhttp-stream-up" {
+	if mode == "xhttp-stream-one" || mode == "xhttp-stream-up" || mode == "xhttp-packet-up" {
 		return newXHTTPTransport(mode, backend, config, auth)
 	}
 	if mode == "h3-post" {

@@ -2,7 +2,7 @@
 
 **Русский** | [English](NATIVE-TRANSPORTS.en.md)
 
-FoxTunnel сам принимает и создаёт шесть вариантов соединения. Xray, sing-box,
+FoxTunnel сам принимает и создаёт семь вариантов соединения. Xray, sing-box,
 внешний SOCKS-транспорт и отдельный клиент другого протокола не требуются.
 WebSocket и QUIC реализованы зависимостями Go, включаемыми в один бинарный файл.
 
@@ -14,6 +14,7 @@ WebSocket и QUIC реализованы зависимостями Go, вклю
 | `h3-post` | HTTP/3 POST поверх QUIC/UDP с TLS 1.3 | Go QUIC TLS | Да |
 | `xhttp-stream-one` | Двусторонний POST; внутри HTTP/2 FoxTunnel | Go или экспериментальный NSS | Да |
 | `xhttp-stream-up` | Раздельные потоковые POST/GET с UUID сессии; внутри HTTP/2 FoxTunnel | Go или экспериментальный NSS | Да |
+| `xhttp-packet-up` | Нумерованные POST и потоковый GET; внутри HTTP/2 FoxTunnel | Go или экспериментальный NSS | Да |
 
 Во всех режимах есть проверка CA/имени, дополнительный SPKI pin, одинаковая
 авторизация, ограничения назначений, полузакрытие отправки и отмена потоков.
@@ -79,10 +80,10 @@ SNI и pin координатора и каждого входа сохраня�
 Они используют собственную авторизацию и формат FoxTunnel. `h2-post` и
 `h3-post` — потоковая передача через POST; это **не совместимость с Xray XHTTP**.
 
-Добавлены независимые потоковые carriers `xhttp-stream-one` и `xhttp-stream-up`.
+Добавлены независимые carriers `xhttp-stream-one`, `xhttp-stream-up` и `xhttp-packet-up`.
 Они следуют базовой форме запросов XHTTP; внутри остаётся FoxTunnel, а не VLESS.
 Работают с Mozilla NSS, `setup`, `vetroff://`, discovery и объединением нод.
-`packet-up`, XMUX, пользовательский path/Host и тесты совместимости с Xray пока
+XMUX, пользовательский path/Host и тесты совместимости с Xray пока
 не реализованы. Это не заявление о полной совместимости XHTTP. Подробнее:
 [XHTTP и Mozilla NSS](XHTTP.md).
 Отдельный исполняемый Xray для такой будущей реализации не обязателен.

@@ -12,7 +12,7 @@ import (
 )
 
 func TestStreamingCarrierWire(t *testing.T) {
-	for _, mode := range []string{"xhttp-stream-one", "xhttp-stream-up"} {
+	for _, mode := range []string{"xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			served := make(chan struct{})
 			s := &Server{MaxSessions: 1, Authorized: func(r *http.Request) bool { return r.Header.Get("Proxy-Authorization") == "token" }, ServeConn: func(c net.Conn, r *http.Request) { defer close(served); _, _ = io.Copy(c, c) }}
@@ -23,7 +23,11 @@ func TestStreamingCarrierWire(t *testing.T) {
 				if len(r.Header.Get("Referer")) < 100 {
 					t.Error("missing header padding")
 				}
-				if r.Method == "POST" && r.Header.Get("Content-Type") != "application/grpc" {
+				wantType := "application/grpc"
+				if mode == "xhttp-packet-up" {
+					wantType = "application/octet-stream"
+				}
+				if r.Method == "POST" && r.Header.Get("Content-Type") != wantType {
 					t.Error("wrong upload content type")
 				}
 				s.ServeHTTP(w, r)
@@ -91,7 +95,7 @@ func TestAdmissionAndPairExpiry(t *testing.T) {
 	}
 }
 func TestPathValidation(t *testing.T) {
-	for _, path := range []string{Path + "bad", Path + "00000000-0000-4000-8000-000000000001/0", Path + "?token=secret", Path + "%2f", Path + "../"} {
+	for _, path := range []string{Path + "bad", Path + "00000000-0000-4000-8000-000000000001/00", Path + "?token=secret", Path + "%2f", Path + "../"} {
 		if Matches(httptest.NewRequest("GET", "https://node"+path, nil)) {
 			t.Fatal("ambiguous path accepted", path)
 		}

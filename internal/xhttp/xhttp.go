@@ -38,7 +38,7 @@ func headers(w http.ResponseWriter) {
 // succeeded. A failed/cancelled setup closes every request and pipe. Redirects
 // are never followed because the supplied RoundTripper is used directly.
 func Dial(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host string) (net.Conn, error) {
-	if mode != "xhttp-stream-one" && mode != "xhttp-stream-up" {
+	if mode != "xhttp-stream-one" && mode != "xhttp-stream-up" && mode != "xhttp-packet-up" {
 		return nil, errHandshake
 	}
 	u, err := url.Parse(origin)
@@ -46,7 +46,7 @@ func Dial(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host st
 		return nil, errHandshake
 	}
 	u.Path = Path
-	if mode == "xhttp-stream-up" {
+	if mode != "xhttp-stream-one" {
 		var id [16]byte
 		if _, err := rand.Read(id[:]); err != nil {
 			return nil, err
@@ -68,27 +68,21 @@ func Dial(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host st
 		}
 	}()
 	request := func(method string, body io.Reader) (*http.Response, error) {
-		r, err := http.NewRequestWithContext(life, method, u.String(), body)
-		if err != nil {
-			return nil, errHandshake
-		}
-		if host != "" {
-			r.Host = host
-		}
-		r.Header.Set("Proxy-Authorization", auth)
-		r.Header.Set("Referer", u.Scheme+"://"+u.Host+Path+"?x_padding="+padding())
-		if method == "POST" {
-			r.Header.Set("Content-Type", "application/grpc")
-		}
-		resp, err := rt.RoundTrip(r)
+		return sendRequest(life, rt, u, method, body, auth, host, true)
+	}
+	if mode == "xhttp-packet-up" {
+		down, err := request("GET", nil)
 		if err != nil {
 			return nil, err
 		}
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			return nil, errHandshake
+		if ctx.Err() != nil {
+			down.Body.Close()
+			return nil, ctx.Err()
 		}
-		return resp, nil
+		go sendPackets(c, life, rt, u, auth, host)
+		go func() { _, _ = io.Copy(peer, down.Body); _ = down.Body.Close(); _ = c.Close() }()
+		success = true
+		return c, nil
 	}
 	// NopCloser avoids net/http closing the shared duplex pipe when it finishes
 	// reading the upload. Only carrier.Close owns the pipe and request lifetime.
@@ -149,10 +143,17 @@ type session struct {
 	done             chan struct{}
 	once             sync.Once
 	timer            *time.Timer
+	ctx              context.Context
+	cancel           context.CancelFunc
+	mode             string
+	pending          map[uint64]*packet
+	next             uint64
+	changed          chan struct{}
 }
 
 func (s *Server) close(id string, p *session) {
 	p.once.Do(func() {
+		p.cancel()
 		_ = p.local.Close()
 		_ = p.peer.Close()
 		s.mu.Lock()
@@ -167,9 +168,7 @@ func (s *Server) close(id string, p *session) {
 		close(p.done)
 	})
 }
-func (s *Server) claim(id string, upload bool) (*session, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *Server) getSessionLocked(id string) *session {
 	p := s.sessions[id]
 	if id == "" {
 		p = nil
@@ -180,10 +179,11 @@ func (s *Server) claim(id string, upload bool) (*session, bool) {
 			limit = 256
 		}
 		if s.active >= limit {
-			return nil, false
+			return nil
 		}
 		a, b := net.Pipe()
-		p = &session{local: a, peer: b, done: make(chan struct{})}
+		ctx, cancel := context.WithCancel(context.Background())
+		p = &session{local: a, peer: b, done: make(chan struct{}), ctx: ctx, cancel: cancel, changed: make(chan struct{})}
 		s.active++
 		if id != "" {
 			if s.sessions == nil {
@@ -193,10 +193,20 @@ func (s *Server) claim(id string, upload bool) (*session, bool) {
 			p.timer = time.AfterFunc(PairTimeout, func() { s.close(id, p) })
 		}
 	}
+	return p
+}
+func (s *Server) claim(id string, upload bool) (*session, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p := s.getSessionLocked(id)
+	if p == nil {
+		return nil, false
+	}
 	if upload {
 		if p.upload {
 			return nil, false
 		}
+		p.mode = "stream"
 		p.upload = true
 	} else {
 		if p.download {
@@ -220,19 +230,21 @@ func validID(id string) bool {
 }
 
 // Matches rejects escaped separators, query strings and ambiguous spellings.
-func Matches(r *http.Request) bool {
-	if !strings.HasPrefix(r.URL.Path, Path) || r.URL.RawPath != "" || r.URL.RawQuery != "" {
-		return false
-	}
-	tail := strings.TrimPrefix(r.URL.Path, Path)
-	return tail == "" || validID(tail)
-}
+func Matches(r *http.Request) bool { _, _, ok := parsePath(r); return ok }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !Matches(r) || r.ProtoMajor != 2 || s.Authorized == nil || !s.Authorized(r) || (r.Method != "GET" && r.Method != "POST") {
 		http.NotFound(w, r)
 		return
 	}
-	id := strings.TrimPrefix(r.URL.Path, Path)
+	id, seq, _ := parsePath(r)
+	if seq != nil {
+		if r.Method != "POST" {
+			http.NotFound(w, r)
+			return
+		}
+		s.servePacket(w, r, id, *seq)
+		return
+	}
 	upload := r.Method == "POST"
 	if id == "" && !upload {
 		http.NotFound(w, r)

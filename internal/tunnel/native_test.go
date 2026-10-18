@@ -18,7 +18,7 @@ import (
 
 func TestNativeTransports(t *testing.T) { testNativeTransports(t, "go") }
 func testNativeTransports(t *testing.T, backend string) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		if backend == "nss" && mode == "h3-post" {
 			continue
 		}
@@ -66,7 +66,7 @@ func testNativeTransports(t *testing.T, backend string) {
 }
 
 func TestNativeDiscoveredBond(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) { testBondedSOCKSNative(t, "go", 8, true, mode) })
 	}
 }
@@ -75,7 +75,7 @@ func TestNativeVerificationBeforeCredentials(t *testing.T) {
 	testNativeVerificationBeforeCredentials(t, "go")
 }
 func testNativeVerificationBeforeCredentials(t *testing.T, backend string) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		if backend == "nss" && mode == "h3-post" {
 			continue
 		}
@@ -123,7 +123,7 @@ func testNativeVerificationBeforeCredentials(t *testing.T, backend string) {
 }
 
 func TestNativePolicyAndCancellation(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			s := &Server{Username: "alice", Password: "secret", AllowPrivate: true}
 			c, _ := testClient(t, s)
@@ -185,13 +185,13 @@ func startNativeH3(t testing.TB, endpoint *httptest.Server, server *Server) {
 }
 
 func BenchmarkNativeTransports(b *testing.B) {
-	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		b.Run(mode, func(b *testing.B) { benchmarkNativeOptions(b, "go", false, mode) })
 	}
 }
 
 func TestNativeSetupTimeout(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			done := make(chan struct{}, 1)
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done(); done <- struct{}{} })
@@ -253,7 +253,7 @@ func TestNativeProbeCover(t *testing.T) {
 }
 
 func TestXHTTPIdleClosePreservesActiveStream(t *testing.T) {
-	for _, mode := range []string{"xhttp-stream-one", "xhttp-stream-up"} {
+	for _, mode := range []string{"xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			target := testDestination(t, func(c net.Conn) { _, _ = io.Copy(c, c) })
 			c, _ := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})

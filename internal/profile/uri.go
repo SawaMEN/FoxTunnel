@@ -76,7 +76,7 @@ func (c *Config) normalize() error {
 	if c.Transport == "" {
 		c.Transport = "h2-connect"
 	}
-	if c.Transport != "h2-connect" && c.Transport != "h2-post" && c.Transport != "wss" && c.Transport != "h3-post" && c.Transport != "xhttp-stream-one" && c.Transport != "xhttp-stream-up" {
+	if c.Transport != "h2-connect" && c.Transport != "h2-post" && c.Transport != "wss" && c.Transport != "h3-post" && c.Transport != "xhttp-stream-one" && c.Transport != "xhttp-stream-up" && c.Transport != "xhttp-packet-up" {
 		return invalid()
 	}
 	if c.TLSBackend == "" {

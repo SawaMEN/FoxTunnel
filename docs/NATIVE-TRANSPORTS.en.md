@@ -2,7 +2,7 @@
 
 [Русский](NATIVE-TRANSPORTS.md) | **English**
 
-FoxTunnel implements and terminates six transports itself. No Xray, sing-box,
+FoxTunnel implements and terminates seven transports itself. No Xray, sing-box,
 external SOCKS carrier or separate protocol client is required. The Go WebSocket
 and QUIC dependencies are compiled into the binary.
 
@@ -14,6 +14,7 @@ and QUIC dependencies are compiled into the binary.
 | `h3-post` | HTTP/3 POST over QUIC/UDP, TLS 1.3 | Go QUIC TLS | Yes |
 | `xhttp-stream-one` | Duplex POST carrying FoxTunnel HTTP/2 | Go or experimental NSS | Yes |
 | `xhttp-stream-up` | Separate streaming POST/GET with a session UUID, carrying FoxTunnel HTTP/2 | Go or experimental NSS | Yes |
+| `xhttp-packet-up` | Numbered POSTs and a streaming GET, carrying FoxTunnel HTTP/2 | Go or experimental NSS | Yes |
 
 Every mode retains CA/hostname verification, additive SPKI pins, authentication,
 destination restrictions, cancellation and upload half-close. WSS carries HTTP/2
@@ -69,9 +70,9 @@ mode. Automatic transport probing and speed-based selection are not implemented.
 
 Native chains now include FoxTunnel over H2 POST/TLS, HTTP/2 over WSS/TLS, and
 H3 POST/QUIC. Their framing and authentication are FoxTunnel's. These POST
-transports are **not interoperable Xray XHTTP implementations**. Independent `xhttp-stream-one` and `xhttp-stream-up` carriers now implement the
-basic streaming XHTTP request shape. The payload remains FoxTunnel, not VLESS.
-They support NSS, setup, links, discovery and bonding. Packet-up, XMUX, custom
+transports are **not interoperable Xray XHTTP implementations**. Independent `xhttp-stream-one`, `xhttp-stream-up` and `xhttp-packet-up` carriers
+now implement the basic XHTTP request shapes. The payload remains FoxTunnel, not VLESS.
+They support NSS, setup, links, discovery and bonding. XMUX, custom
 path/Host and cross-implementation interoperability tests are still pending;
 full XHTTP compatibility is not claimed. See [XHTTP and NSS](XHTTP.en.md).
 
