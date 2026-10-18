@@ -257,6 +257,10 @@ func TestTLSResumptionOnReconnect(t *testing.T) {
 		resumed <- r.TLS.DidResume
 		_, _ = w.Write([]byte("site"))
 	}))
+	// This test verifies the Go TLS session cache, not the NSS adapter.
+	if err := client.SetTLSBackend("go"); err != nil {
+		t.Fatal(err)
+	}
 	for i := 0; i < 2; i++ {
 		req, err := http.NewRequest(http.MethodGet, client.ServerURL.String(), nil)
 		if err != nil {

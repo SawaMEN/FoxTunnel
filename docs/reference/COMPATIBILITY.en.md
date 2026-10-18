@@ -38,7 +38,7 @@ python3 scripts/release.py verify --input downloaded \
   --version "$RELEASE_TAG" --commit "$RELEASE_COMMIT" --target linux/arm64/nss
 ```
 
-Without `--target`, verify all four Linux archives; a selected-target verification only needs its archive. `manifest.json` and `SHA256SUMS` are no longer published. CI-only sidecars are not required by consumers. The verifier inspects embedded `build.json`, expected version/commit/schema/draft, archive members, path safety and NSS library hashes without extraction or execution.
+Without `--target`, verify both Linux NSS archives; a selected-target verification only needs its archive. `manifest.json` and `SHA256SUMS` are no longer published. CI-only sidecars are not required by consumers. The verifier inspects embedded `build.json`, expected version/commit/schema/draft, archive members, path safety and NSS library hashes without extraction or execution.
 
 **Integrity caveat:** embedded build metadata is not an independently trusted checksum or signature. Obtain the expected commit and release archive from trustworthy sources; a maliciously replaced archive could contain self-consistent forged metadata. Detached signatures/attestations are not currently implemented.
 
@@ -48,7 +48,7 @@ Without `--target`, verify all four Linux archives; a selected-target verificati
   and a Mozilla lock with binary/source archive and license URLs/hashes.
 - Go vet/race, the external SDK consumer and Python checks pass for that commit;
   both native NSS jobs test transfers and a container without host NSS/NSPR.
-- Four Linux targets are built; local index and independent verify inspect archive contents.
+- Both Linux NSS targets are built; local index and independent verify inspect archive contents.
 - macOS, Windows and armv7 are excluded from published release builds.
 - The tag points to that exact commit; the workflow publishes a prerelease only.
   Existing assets are never replaced. CI assets are not a release before tagging.

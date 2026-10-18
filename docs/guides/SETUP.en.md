@@ -27,8 +27,7 @@ lists itself as a direct ingress. Share only `main-node/connection.txt`:
 ```
 
 The link contains an access secret; base64url is not encryption. Server JSON
-and the private TLS key remain administrative files. Setup selects Go TLS;
-`setup --tls-backend nss` generates a profile requiring an NSS-capable client.
+and the private TLS key remain administrative files. Setup writes `tls:auto`: NSS on supported TCP transports in NSS-tagged Linux builds, and Go QUIC for H3. `--tls-backend nss` strictly requires NSS; `--tls-backend go` is a diagnostic override.
 Ingress joins preserve the main-node client profile. Imported links exclude
 TLS-backend overrides.
 

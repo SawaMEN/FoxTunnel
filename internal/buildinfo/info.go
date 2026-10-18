@@ -34,5 +34,9 @@ func Current() Info {
 	if NSSAvailable {
 		backends = append(backends, "nss")
 	}
-	return Info{NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: "go", ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
+	defaultBackend := "go"
+	if NSSAvailable {
+		defaultBackend = "nss"
+	}
+	return Info{NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
 }

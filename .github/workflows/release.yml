@@ -23,7 +23,7 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: python3 scripts/release_request.py
-  portable:
+  quality:
     needs: [request]
     runs-on: ubuntu-24.04
     steps:
@@ -38,20 +38,6 @@ jobs:
           go vet ./...
           go test -race ./... -count=1 -timeout=120s
           cd integration/external && go test -race ./... -count=1 -timeout=60s
-      - name: Build two Linux portable archives
-        shell: bash
-        env:
-          RELEASE_TAG: ${{ needs.request.outputs.version }}
-        run: |
-          set -euo pipefail
-          for target in linux/amd64 linux/arm64; do
-            python3 scripts/release.py build --version "$RELEASE_TAG" --os "${target%/*}" --arch "${target#*/}" --backend go
-          done
-      - uses: actions/upload-artifact@v4
-        with:
-          name: portable-archives
-          path: dist/*
-          if-no-files-found: error
   nss:
     needs: [request]
     strategy:
@@ -94,7 +80,7 @@ jobs:
           path: dist/*
           if-no-files-found: error
   index:
-    needs: [request, portable, nss]
+    needs: [request, quality, nss]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +88,7 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - name: Validate four Linux release archives
+      - name: Validate two Linux NSS release archives
         env:
           RELEASE_TAG: ${{ needs.request.outputs.version }}
         run: |

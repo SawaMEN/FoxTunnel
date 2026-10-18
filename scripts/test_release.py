@@ -36,7 +36,7 @@ class ReleaseContract(unittest.TestCase):
                      experimental=True, build_date='2026-10-18T19:00:00Z', target=target,
                      goos=goos, goarch=arch,
                      variant='', build_flavor=flavor,
-                     tls_backends=['go', 'nss'] if flavor == 'nss' else ['go'], default_tls_backend='go',
+                     tls_backends=['go', 'nss'] if flavor == 'nss' else ['go'], default_tls_backend='nss',
                      protocol_draft=verify.DRAFT, native_smoke_tested=True, runtime=runtime,
                      filename=name)
             meta = self.root / (name + '.metadata.json')
@@ -94,7 +94,7 @@ class ReleaseContract(unittest.TestCase):
 
     def test_selected_archive_only_and_full_release_checks(self):
         release.index(self.args)
-        self.verify_args.target = 'linux/arm64/go'
+        self.verify_args.target = 'linux/arm64/nss'
         selected = json.loads(self.entries[self.find(self.verify_args.target)].read_text())['filename']
         for p in self.root.glob('foxtunnel_*'):
             if p.name != selected:
@@ -133,9 +133,9 @@ class ReleaseContract(unittest.TestCase):
         original = json.loads(self.entries[0].read_text())
         for key, value in [('schema', True), ('dirty', 0), ('experimental', 1), ('size', True),
                            ('native_smoke_tested', 1), ('sha256', 'no'), ('goarch', 'wrong'),
-                           ('tls_backends', ['go', 'nss']), ('protocol_draft', 'future'),
+                           ('tls_backends', ['nss']), ('protocol_draft', 'future'),
                            ('commit', 'short'), ('build_date', '2026-02-30T00:00:00Z'),
-                           ('runtime', {'kind': 'system-nss'})]:
+                           ('default_tls_backend', 'go'), ('runtime', {'kind': 'system-nss'})]:
             with self.subTest(key=key):
                 self.entries[0].write_text(json.dumps(original))
                 self.edit(key, value)
@@ -171,7 +171,7 @@ class ReleaseContract(unittest.TestCase):
         self.expect_index_error('Mozilla license')
 
     def test_unsafe_tar_names_rejected(self):
-        for target in ('linux/amd64/go',):
+        for target in ('linux/amd64/nss',):
             index = self.find(target)
             for name in ('../outside', '/outside', 'licenses/../outside', 'licenses\\outside',
                          'C:outside', 'CON', 'licenses/Go-LICENSE.'):
@@ -181,7 +181,7 @@ class ReleaseContract(unittest.TestCase):
             self.pack(index)
 
     def test_tar_links_special_files_duplicates_and_modes_rejected(self):
-        index = self.find('linux/amd64/go')
+        index = self.find('linux/amd64/nss')
         for kind in (tarfile.SYMTYPE, tarfile.LNKTYPE, tarfile.FIFOTYPE):
             with self.subTest(kind=kind):
                 item = tarfile.TarInfo('licenses/link')
@@ -232,8 +232,7 @@ class ReleaseContract(unittest.TestCase):
         verify.verify(self.verify_args)
 
     def test_only_supported_linux_targets(self):
-        self.assertEqual({'linux/amd64/go', 'linux/arm64/go',
-                          'linux/amd64/nss', 'linux/arm64/nss'}, verify.TARGETS)
+        self.assertEqual({'linux/amd64/nss', 'linux/arm64/nss'}, verify.TARGETS)
         self.verify_args.target = 'windows/amd64/go'
         with self.assertRaisesRegex(ValueError, 'unsupported requested target'):
             verify.verify(self.verify_args)

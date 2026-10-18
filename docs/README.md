@@ -26,6 +26,7 @@
 
 ## Исследования
 - [Исследовательские материалы](research/)
+- [План интеграции Mozilla Neqo/HTTP3](research/NEQO-INTEGRATION.md)
 - [Методика измерений](research/PERFORMANCE.md)
 - [Измерения](measurements/)
 
