@@ -23,5 +23,7 @@ jobs:
         run: go test ./internal/profile -run '^$' -fuzz FuzzLinkDecoder -fuzztime=10000x -parallel=2 -timeout=60s
       - name: Build
         run: go build ./cmd/foxtunnel
+      - name: Проверка известных уязвимостей Go
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
       - name: Фаззинг состава кластера
         run: go test ./internal/cluster -run '^$' -fuzz FuzzClusterDecoder -fuzztime=10000x -parallel=2 -timeout=60s

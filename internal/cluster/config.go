@@ -2,25 +2,27 @@
 package cluster
 
 import (
-	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"io"
 	"net"
 	"net/url"
 	"strconv"
 	"strings"
-	"unicode/utf8"
+
+	"github.com/SawaMEN/FoxTunnel/internal/safejson"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 )
 
 const Path = "/.well-known/foxtunnel-cluster-v1"
 const MaxBytes = 16 << 10
 
 type Node struct {
-	URL      string `json:"url"`
-	Weight   int    `json:"weight"`
-	Disabled bool   `json:"disabled,omitempty"`
+	URL       string `json:"url"`
+	Weight    int    `json:"weight"`
+	Disabled  bool   `json:"disabled,omitempty"`
+	SNI       string `json:"sni,omitempty"`
+	PinSHA256 string `json:"pin_sha256,omitempty"`
 }
 type Config struct {
 	Version int    `json:"v"`
@@ -63,6 +65,11 @@ func validateNodes(nodes []Node) error {
 		if err != nil {
 			return ErrInvalid
 		}
+		policy, err := tlsidentity.Normalize(n.SNI, n.PinSHA256)
+		if err != nil {
+			return ErrInvalid
+		}
+		n.SNI, n.PinSHA256 = policy.SNI, policy.PinSHA256
 		port := u.Port()
 		if port == "" {
 			port = "443"
@@ -109,61 +116,5 @@ func DecodeManifest(r io.Reader) (Manifest, error) {
 }
 
 func strict(r io.Reader, out any) error {
-	data, err := io.ReadAll(io.LimitReader(r, MaxBytes+1))
-	if err != nil || len(data) > MaxBytes || !utf8.Valid(data) {
-		return ErrInvalid
-	}
-	d := json.NewDecoder(bytes.NewReader(data))
-	if !uniqueValue(d, 0) {
-		return ErrInvalid
-	}
-	if _, err := d.Token(); err != io.EOF {
-		return ErrInvalid
-	}
-	d = json.NewDecoder(bytes.NewReader(data))
-	d.DisallowUnknownFields()
-	if d.Decode(out) != nil {
-		return ErrInvalid
-	}
-	return nil
-}
-
-// Reject duplicate keys and case aliases, including in nested node objects.
-func uniqueValue(d *json.Decoder, depth int) bool {
-	if depth > 8 {
-		return false
-	}
-	t, err := d.Token()
-	if err != nil {
-		return false
-	}
-	delim, ok := t.(json.Delim)
-	if !ok {
-		return true
-	}
-	switch delim {
-	case '{':
-		seen := make(map[string]bool)
-		for d.More() {
-			t, err := d.Token()
-			key, ok := t.(string)
-			if err != nil || !ok || key != strings.ToLower(key) || seen[key] {
-				return false
-			}
-			seen[key] = true
-			if !uniqueValue(d, depth+1) {
-				return false
-			}
-		}
-	case '[':
-		for d.More() {
-			if !uniqueValue(d, depth+1) {
-				return false
-			}
-		}
-	default:
-		return false
-	}
-	end, err := d.Token()
-	return err == nil && ((delim == '{' && end == json.Delim('}')) || (delim == '[' && end == json.Delim(']')))
+	return safejson.Decode(r, MaxBytes, out)
 }

@@ -14,6 +14,8 @@ Linux-сборка с тегом `nss` поддерживает эксперим
 Работа в условиях ТСПУ российских операторов требует отдельных испытаний;
 необнаружимость и превосходство над NaiveProxy не установлены.
 
+[Простая подготовка главной ноды и входов](docs/SETUP.md) · [Свойства защиты](docs/SECURITY.md)
+
 ## Сборка и проверки
 
 Нужен Go 1.26 или новее:
@@ -128,6 +130,11 @@ H2/TLS и заголовков. Искусственных задержек не
 
 ## Несколько серверов и нагрузка
 
+Для простой подготовки главной ноды есть `setup`: случайный секрет, отдельный
+серверный JSON и готовая ссылка с SNI/TLS 1.3/SPKI pin. Вход присоединяется по
+файлу главной ссылки и регистрируется командой `cluster-add`.
+См. [подготовку в несколько команд](docs/SETUP.md) и [свойства защиты](docs/SECURITY.md).
+
 Для объединения путей с одной ссылкой используйте главную ноду:
 
 ```sh
@@ -198,6 +205,7 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 - [Выбор подходов из других протоколов](docs/TRANSPORT-STRATEGY.md).
 - [Разбор AmneziaWG и дополнительных проектов](docs/PROTOCOL-REVIEW-2026-10-18.md).
 - [Дополнительный разбор Sudoku и dnstt](docs/SUDOKU-DNSTT-REVIEW.md).
+- [Актуальные Amnezia/AmneziaWG и TUIC v5](docs/AMNEZIA-TUIC-REVIEW.md).
 - [Проверка исходников AnyTLS, Hysteria 2, Shadowsocks 2022, XHTTP, mieru и NaiveProxy](docs/SIX-PROTOCOL-AUDIT.md).
 - [Ограничения NaiveProxy и идеи Sudoku](docs/NAIVE-SUDOKU-REVIEW.md).
 

@@ -39,6 +39,12 @@ var initOnce sync.Once
 var initError error
 
 func NewTransport(config *tls.Config) (Transport, error) {
+	if config.InsecureSkipVerify {
+		return nil, i18n.Error("TLS verification cannot be disabled")
+	}
+	if config.VerifyPeerCertificate != nil {
+		return nil, i18n.Error("unsupported NSS certificate callback (use VerifyConnection)")
+	}
 	initOnce.Do(func() {
 		if code := C.ft_init(); code != 0 {
 			initError = fmt.Errorf(i18n.Text("NSS initialization failed: %d"), code)
@@ -67,7 +73,7 @@ func NewTransport(config *tls.Config) (Transport, error) {
 			if config.ServerName != "" {
 				host = config.ServerName
 			}
-			return wrap(setup, raw, host, config.RootCAs)
+			return wrapConfig(setup, raw, host, config)
 		},
 	}, nil
 }
@@ -84,10 +90,15 @@ type conn struct {
 	serverName                   string
 	roots                        *x509.CertPool
 	certificates                 []*x509.Certificate
+	verifiedChains               [][]*x509.Certificate
+	verifyConnection             func(tls.ConnectionState) error
 }
 
 func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) (*conn, error) {
-	c := &conn{raw: raw, serverName: name, roots: roots}
+	return wrapConfig(ctx, raw, name, &tls.Config{RootCAs: roots})
+}
+func wrapConfig(ctx context.Context, raw net.Conn, name string, config *tls.Config) (*conn, error) {
+	c := &conn{raw: raw, serverName: name, roots: config.RootCAs, verifyConnection: config.VerifyConnection}
 	c.handle = cgo.NewHandle(c)
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -193,7 +204,7 @@ func (c *conn) SetDeadline(t time.Time) error      { return c.raw.SetDeadline(t)
 func (c *conn) SetReadDeadline(t time.Time) error  { return c.raw.SetReadDeadline(t) }
 func (c *conn) SetWriteDeadline(t time.Time) error { return c.raw.SetWriteDeadline(t) }
 func (c *conn) ConnectionState() tls.ConnectionState {
-	return tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, NegotiatedProtocol: "h2", ServerName: c.serverName, PeerCertificates: c.certificates}
+	return tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, NegotiatedProtocol: "h2", ServerName: c.serverName, PeerCertificates: c.certificates, VerifiedChains: c.verifiedChains}
 }
 
 //export ft_go_read
@@ -263,9 +274,15 @@ func ft_go_verify(handle C.uintptr_t) C.int {
 	for _, cert := range c.certificates[1:] {
 		intermediates.AddCert(cert)
 	}
-	_, c.verifyErr = c.certificates[0].Verify(x509.VerifyOptions{DNSName: c.serverName, Roots: c.roots, Intermediates: intermediates, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}})
+	c.verifiedChains, c.verifyErr = c.certificates[0].Verify(x509.VerifyOptions{DNSName: c.serverName, Roots: c.roots, Intermediates: intermediates, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}})
 	if c.verifyErr != nil {
 		return 0
+	}
+	if c.verifyConnection != nil {
+		c.verifyErr = c.verifyConnection(c.ConnectionState())
+		if c.verifyErr != nil {
+			return 0
+		}
 	}
 	return 1
 }

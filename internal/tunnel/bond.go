@@ -87,8 +87,16 @@ func (s *Server) NewBondHub() *bond.Hub {
 // NewBondRelay forwards only to one explicit trusted hub over verified TLS/h2.
 // Configure the same proxy credentials on the relay and hub. No redirects.
 func NewBondRelay(raw, user, password, ca string) (http.Handler, func(), error) {
+	return NewBondRelayIdentity(raw, user, password, ca, "", "")
+}
+
+func NewBondRelayIdentity(raw, user, password, ca, sni, pin string) (http.Handler, func(), error) {
 	upstream, err := NewClient(raw, user, password, ca)
 	if err != nil {
+		return nil, nil, err
+	}
+	if err := upstream.SetServerIdentity(sni, pin); err != nil {
+		upstream.Close()
 		return nil, nil, err
 	}
 	endpoint := *upstream.ServerURL

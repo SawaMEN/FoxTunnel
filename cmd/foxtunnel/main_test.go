@@ -3,14 +3,76 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 )
+
+func TestSetupCLIAndServerConfig(t *testing.T) {
+	s := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer s.Close()
+	dir := t.TempDir()
+	certPath, keyPath := filepath.Join(dir, "cert.pem"), filepath.Join(dir, "key.pem")
+	keyDER, err := x509.MarshalPKCS8PrivateKey(s.TLS.Certificates[0].PrivateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if os.WriteFile(certPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: s.Certificate().Raw}), 0600) != nil || os.WriteFile(keyPath, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER}), 0600) != nil {
+		t.Fatal("fixture write")
+	}
+	out := filepath.Join(dir, "generated")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	setup := helperCommand(ctx, "setup", "--server", "https://example.com", "--cert", certPath, "--key", keyPath, "--ca-cert", certPath, "--out", out)
+	setup.Env = helperEnv(false)
+	message, err := setup.CombinedOutput()
+	if err != nil {
+		t.Fatal("setup CLI failed", err, string(message))
+	}
+	configFile := filepath.Join(out, "server.json")
+	config, err := bootstrap.ReadServer(configFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(message), config.Password) || strings.Contains(string(message), "vetroff://") {
+		t.Fatal("setup printed secrets")
+	}
+	config.Listen = "127.0.0.1:0"
+	data, _ := json.Marshal(config)
+	if err := os.WriteFile(configFile, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	server := helperCommand(ctx, "server", "--config", configFile)
+	server.Env = helperEnv(false)
+	stderr, err := server.StderrPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := server.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { server.Process.Kill(); server.Wait() }()
+	line, err := bufio.NewReader(stderr).ReadString('\n')
+	if err != nil || !strings.Contains(line, "HTTPS") || strings.Contains(line, config.Password) {
+		t.Fatal("server config did not start", err, line)
+	}
+	conflict := helperCommand(ctx, "server", "--config", configFile, "--listen", "127.0.0.1:0")
+	conflict.Env = helperEnv(false)
+	if output, err := conflict.CombinedOutput(); err == nil || strings.Contains(string(output), config.Password) {
+		t.Fatal("ambiguous server config accepted")
+	}
+}
 
 func TestShareSingleCoordinator(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

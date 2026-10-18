@@ -16,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 )
 
 const Scheme = "vetroff"
@@ -27,6 +28,9 @@ type Config struct {
 	Username       string   `json:"username"`
 	Password       string   `json:"password"`
 	TLSBackend     string   `json:"tls,omitempty"`
+	SNI            string   `json:"sni,omitempty"`
+	PinSHA256      string   `json:"pin_sha256,omitempty"`
+	Encryption     string   `json:"encryption,omitempty"`
 	Balance        string   `json:"balance,omitempty"`
 	Bond           bool     `json:"bond,omitempty"`
 	Discover       bool     `json:"discover,omitempty"`
@@ -70,6 +74,17 @@ func (c *Config) normalize() error {
 	}
 	if c.TLSBackend == "" {
 		c.TLSBackend = "go"
+	}
+	policy, err := tlsidentity.Normalize(c.SNI, c.PinSHA256)
+	if err != nil {
+		return invalid()
+	}
+	c.SNI, c.PinSHA256 = policy.SNI, policy.PinSHA256
+	if c.Encryption == "" {
+		c.Encryption = "tls13"
+	}
+	if c.Encryption != "tls13" {
+		return invalid()
 	}
 	if c.TLSBackend != "go" && c.TLSBackend != "nss" {
 		return invalid()
@@ -158,7 +173,7 @@ func uniqueFields(data []byte) bool {
 		return false
 	}
 	seen := make(map[string]bool)
-	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "balance": true, "bond": true, "discover": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
+	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "sni": true, "pin_sha256": true, "encryption": true, "balance": true, "bond": true, "discover": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
 	for decoder.More() {
 		token, err := decoder.Token()
 		if err != nil {

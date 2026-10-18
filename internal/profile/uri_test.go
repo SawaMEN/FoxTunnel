@@ -1,7 +1,9 @@
 package profile
 
 import (
+	"crypto/x509"
 	"encoding/base64"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"reflect"
 	"strings"
 	"testing"
@@ -30,7 +32,7 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func TestCoordinatorOnlyLink(t *testing.T) {
-	c := Config{Version: 1, Servers: []string{"https://main.example"}, Username: "alice", Password: "secret", Bond: true, Discover: true}
+	c := Config{Version: 1, Servers: []string{"https://main.example"}, Username: "alice", Password: "secret", Bond: true, Discover: true, SNI: "main.example", PinSHA256: tlsidentity.Pin(&x509.Certificate{RawSubjectPublicKeyInfo: []byte("key")}), Encryption: "tls13"}
 	link, err := Encode(c)
 	if err != nil {
 		t.Fatal(err)
@@ -38,6 +40,9 @@ func TestCoordinatorOnlyLink(t *testing.T) {
 	got, err := Decode(link)
 	if err != nil || !got.Discover || !got.Bond || len(got.Servers) != 1 {
 		t.Fatal("single coordinator did not roundtrip", err)
+	}
+	if got.SNI != c.SNI || got.PinSHA256 != c.PinSHA256 || got.Encryption != "tls13" {
+		t.Fatal("TLS settings lost in link")
 	}
 	c.Bond = false
 	if _, err := Encode(c); err == nil {
@@ -62,6 +67,10 @@ func TestRejectUnsafeOrAmbiguousLinks(t *testing.T) {
 		strings.Replace(valid, `https://a.example`, `https://a.example/path`, 1),
 		strings.Replace(valid, `"v":1`, `"v":1,"bond":true`, 1),
 		strings.Replace(valid, `"v":1`, `"v":1,"tls":"insecure"`, 1),
+		strings.Replace(valid, `"v":1`, `"v":1,"encryption":"none"`, 1),
+		strings.Replace(valid, `"v":1`, `"v":1,"encryption":"tls12"`, 1),
+		strings.Replace(valid, `"v":1`, `"v":1,"sni":"other.example:443"`, 1),
+		strings.Replace(valid, `"v":1`, `"v":1,"pin_sha256":"invalid"`, 1),
 		strings.Replace(valid, `"v":1`, `"v":1,"pipeline":"256"`, 1),
 		strings.Replace(valid, `"v":1`, `"v":1,"connect_timeout":"24h"`, 1),
 		strings.Replace(valid, `["https://a.example"]`, `["https://a.example","https://A.example:443"]`, 1),
@@ -84,6 +93,8 @@ func TestRejectUnsafeOrAmbiguousLinks(t *testing.T) {
 func FuzzLinkDecoder(f *testing.F) {
 	link, _ := Encode(Config{Version: 1, Servers: []string{"https://a.example"}, Username: "alice", Password: "sample"})
 	f.Add(link)
+	identityLink, _ := Encode(Config{Version: 1, Servers: []string{"https://a.example"}, Username: "alice", Password: "sample", SNI: "vpn.example", PinSHA256: tlsidentity.Pin(&x509.Certificate{RawSubjectPublicKeyInfo: []byte("key")})})
+	f.Add(identityLink)
 	f.Add("vetroff://bad!")
 	f.Fuzz(func(t *testing.T, raw string) {
 		config, err := Decode(raw)

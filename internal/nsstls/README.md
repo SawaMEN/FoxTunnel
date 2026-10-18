@@ -2,6 +2,10 @@
 
 **Русский** | [English](README.en.md)
 
+SNI и дополнительный SPKI pin теперь поддерживаются через настройки клиента.
+VerifyConnection выполняется после x509-проверки цепочки/имени; insecure и
+неподдерживаемый VerifyPeerCertificate отклоняются. См. [свойства защиты](../../docs/SECURITY.md).
+
 Нужны Go 1.26+, C-компилятор, pkg-config и пакеты разработки NSS/NSPR:
 
 ```sh

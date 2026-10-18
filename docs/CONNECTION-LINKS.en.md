@@ -2,6 +2,13 @@
 
 [Русский](CONNECTION-LINKS.md) | **English**
 
+`setup` generates complete server configuration and a link: [instructions](SETUP.en.md).
+Additional settings are --sni, --pin-sha256 and --encryption tls13, serialized
+as sni/pin_sha256/encryption. Pins supplement CA/name verification. These apply
+to the primary origin/coordinator; ingresses have independent manifest policies.
+No private server key is exported. Old links use safe defaults; older clients
+reject unknown new fields. See [security properties](SECURITY.en.md).
+
 The connection scheme is **vetroff://**. One link stores one HTTPS server or up
 to eight trusted nodes, credentials and client settings. CLI import/export is
 implemented; OS-level URL-handler registration is not yet implemented.

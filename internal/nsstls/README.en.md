@@ -1,5 +1,9 @@
 [Русский](README.md) | **English**
 
+Client identity settings now support SNI and an additive SPKI pin. VerifyConnection
+runs after x509 chain/name validation; insecure verification and unsupported
+VerifyPeerCertificate callbacks are rejected. See [security properties](../../docs/SECURITY.en.md).
+
 # Experimental NSS transport (Linux)
 
 Build with Go 1.26+, a C compiler, pkg-config, NSS and NSPR development packages:

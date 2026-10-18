@@ -17,6 +17,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 )
 
 // ConfigureCluster must run before serving, on the common exit only. The file
@@ -165,12 +166,27 @@ func (c *Client) discoveredBond(ctx context.Context) (*bond.Client, error) {
 			if d.current == nil || !reflect.DeepEqual(d.manifest, m) {
 				endpoints := make([]*url.URL, 0, len(m.Nodes))
 				weights := make([]int, 0, len(m.Nodes))
+				policies := make(map[string]tlsidentity.Policy)
 				for _, n := range m.Nodes {
 					u, _ := cluster.Origin(n.URL)
 					endpoints = append(endpoints, u)
 					weights = append(weights, n.Weight)
+					policies[u.Scheme+"://"+u.Host] = tlsidentity.Policy{SNI: n.SNI, PinSHA256: n.PinSHA256}
 				}
-				d.current = &bond.Client{Endpoints: endpoints, Weights: weights, ExpectedHub: m.HubID, Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline}
+				var transport http.RoundTripper = c.transport
+				if pool, ok := c.transport.(*identityPool); ok {
+					transport = identityView{pool: pool, policies: policies}
+				} else {
+					for _, policy := range policies {
+						if policy != (tlsidentity.Policy{}) {
+							close(d.refreshing)
+							d.refreshing = nil
+							d.mu.Unlock()
+							return nil, i18n.Error("invalid TLS identity settings")
+						}
+					}
+				}
+				d.current = &bond.Client{Endpoints: endpoints, Weights: weights, ExpectedHub: m.HubID, Transport: transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline}
 				d.manifest = m
 			}
 			d.expires = now.Add(time.Duration(m.ValidFor) * time.Second)

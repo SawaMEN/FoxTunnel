@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 )
 
 // Client exposes a local SOCKS5 CONNECT listener backed by HTTP/2 CONNECT.
@@ -30,6 +30,9 @@ type Client struct {
 	Username   string
 	Password   string
 	CACertFile string
+	// MaxConnections bounds local SOCKS sockets, including incomplete handshakes.
+	// Configure before Serve; zero uses 256.
+	MaxConnections int
 	// ConnectTimeout bounds setup only, never the lifetime of an open stream.
 	// Set before calling Serve; zero uses 15 seconds.
 	ConnectTimeout time.Duration
@@ -55,6 +58,8 @@ type Client struct {
 	bondClient    *bond.Client
 	bondDiscovery *bondDiscovery
 	tlsConfig     *tls.Config
+	identity      tlsidentity.Policy
+	backend       string
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {
@@ -79,8 +84,9 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 		}
 	}
 	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile}
-	c.tlsConfig = &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ClientSessionCache: tls.NewLRUClientSessionCache(32)}
-	c.transport = newGoTransport(c.tlsConfig)
+	c.tlsConfig = &tls.Config{MinVersion: tls.VersionTLS13, MaxVersion: tls.VersionTLS13, RootCAs: roots, ClientSessionCache: tls.NewLRUClientSessionCache(32)}
+	c.transport = &identityPool{base: newGoTransport(c.tlsConfig), config: c.tlsConfig.Clone(), backend: "go", primary: u.Scheme + "://" + u.Host, entries: make(map[string]identityEntry)}
+	c.backend = "go"
 
 	return c, nil
 }
@@ -104,27 +110,33 @@ func newGoTransport(config *tls.Config) *http.Transport {
 // SetTLSBackend selects a backend before Serve starts. It never falls back
 // silently: an unavailable NSS build returns an error.
 func (c *Client) SetTLSBackend(name string) error {
+	if c.bondClient != nil || c.bondDiscovery != nil {
+		return i18n.Error("configure TLS before enabling bond")
+	}
 	switch name {
 	case "go":
-		c.transport.CloseIdleConnections()
-		c.transport = newGoTransport(c.tlsConfig)
-		return nil
 	case "nss":
-		transport, err := nsstls.NewTransport(c.tlsConfig)
-		if err != nil {
-			return err
-		}
-		c.transport.CloseIdleConnections()
-		c.transport = transport
-		return nil
 	default:
 		return fmt.Errorf(i18n.Text("unknown TLS backend %q (choose go or nss)"), name)
 	}
+	transport, err := makeTLStransport(name, c.tlsConfig)
+	if err != nil {
+		return err
+	}
+	c.transport.CloseIdleConnections()
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: name, primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
+	c.backend = name
+	return nil
 }
 
 func (c *Client) Close() { c.transport.CloseIdleConnections() }
 
 func (c *Client) Serve(listener net.Listener) error {
+	limit := c.MaxConnections
+	if limit <= 0 {
+		limit = 256
+	}
+	slots := make(chan struct{}, limit)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -133,7 +145,12 @@ func (c *Client) Serve(listener net.Listener) error {
 			}
 			return err
 		}
-		go c.handle(conn)
+		select {
+		case slots <- struct{}{}:
+			go func() { defer func() { <-slots }(); c.handle(conn) }()
+		default:
+			_ = conn.Close()
+		}
 	}
 }
 

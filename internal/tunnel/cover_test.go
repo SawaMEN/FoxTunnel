@@ -70,3 +70,36 @@ func TestCoverStripsProxyCredentials(t *testing.T) {
 		t.Fatal("cover not called or request mutated")
 	}
 }
+
+func TestCoverConfinesSymlinksAndHidesConfiguration(t *testing.T) {
+	root := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "secret.txt")
+	if err := os.WriteFile(outside, []byte("private-marker"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "asset.txt")); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"server.json", "connection.txt", "cluster.json", "server.key"} {
+		if err := os.WriteFile(filepath.Join(root, name), []byte("private-marker"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cover, err := NewCover(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"asset.txt", "server.json", "connection.txt", "cluster.json", "server.key"} {
+		w := httptest.NewRecorder()
+		cover.ServeHTTP(w, httptest.NewRequest("GET", "/"+name, nil))
+		if w.Code != 404 || strings.Contains(w.Body.String(), "private-marker") {
+			t.Fatal("public file escape", name, w.Code)
+		}
+	}
+	if CheckPublicRoot(root, filepath.Join(root, "server.key")) == nil {
+		t.Fatal("private key inside site accepted")
+	}
+	if err := CheckPublicRoot(root, outside); err != nil {
+		t.Fatal(err)
+	}
+}

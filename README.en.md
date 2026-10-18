@@ -6,6 +6,8 @@ An experimental encrypted tunneling project. The first milestone provides an **a
 
 > **Status: experimental prototype; not ready for production.** The default client uses **Go crypto/tls**; Linux tagged builds can opt into an **experimental NSS TLS backend**. Neither is a complete Firefox stack. It does not reproduce Firefox TLS or HTTP/2 fingerprints and offers only opt-in experimental initial padding. HTTP/3, UDP, censorship-resistance guarantees and 3x-ui integration are not implemented. Do not market it as superior to NaïveProxy.
 
+[Simple main/ingress setup](docs/SETUP.en.md) · [Security properties](docs/SECURITY.en.md)
+
 ## Language
 
 Russian is the primary documentation and CLI language. Use `--lang en` on
@@ -89,6 +91,11 @@ See [performance methodology](docs/PERFORMANCE.en.md) for reproducible local tes
 and the measurements still needed on real networks.
 
 ## Main node and one-address links
+
+`setup` generates private server configuration and a ready link with a random
+secret, SNI/TLS 1.3/SPKI pin. Join ingresses from the main link and register
+them with `cluster-add`. See [simple setup](docs/SETUP.en.md),
+[security limits](docs/SECURITY.en.md) and [Amnezia/TUIC review](docs/AMNEZIA-TUIC-REVIEW.en.md).
 
 For a one-address bonded connection link, use
 `foxtunnel share --server https://main.example --bond --discover`.

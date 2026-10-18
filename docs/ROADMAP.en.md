@@ -12,6 +12,11 @@
 - [x] Add opt-in bounded initial-record padding with explicit negotiation, parser limits, fuzzing and Go/NSS tests.
 - [x] Main-node topology/weight discovery: one-address links, refresh/expiry, exit identity and Go/NSS tests.
 - [x] Review Sudoku and the official dnstt v1.20260501.0 archive.
+- [x] Review current Amnezia/AWG, TUIC v5 and its pinned Wind dependency.
+- [x] SNI/SPKI/tls13 links and per-ingress policies, Go/NSS checks and ticket isolation.
+- [x] Generated setup/join bundles, private server configuration and atomic ingress registration.
+- [x] Pre-handshake socket admission, confined public site and govulncheck CI.
+- [ ] TUN/UDP, system routing/DNS/kill switch and individual user credentials.
 - [ ] Persistent bond lanes instead of per-block RPC; delivery-based path estimates.
 - [ ] Global ingress telemetry and automatic allocation between clients.
 - [ ] Test in multiple OS configurations and behind an HTTPS frontend.

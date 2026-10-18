@@ -18,6 +18,7 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 )
 
 func TestBondedSOCKSGo(t *testing.T) { testBondedSOCKS(t, "go") }
@@ -87,7 +88,7 @@ func testBondedSOCKSMode(t *testing.T, backend string, depth int, discover bool)
 	client.BondPipeline = depth
 	if discover {
 		file := filepath.Join(t.TempDir(), "cluster.json")
-		config, _ := json.Marshal(cluster.Config{Version: 1, Nodes: []cluster.Node{{URL: a.URL, Weight: 3}, {URL: b.URL, Weight: 1}}})
+		config, _ := json.Marshal(cluster.Config{Version: 1, Nodes: []cluster.Node{{URL: a.URL, Weight: 3, SNI: "example.com", PinSHA256: tlsidentity.Pin(a.Certificate())}, {URL: b.URL, Weight: 1, SNI: "example.com", PinSHA256: tlsidentity.Pin(b.Certificate())}}})
 		if err := os.WriteFile(file, config, 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -96,6 +97,9 @@ func testBondedSOCKSMode(t *testing.T, backend string, depth int, discover bool)
 		}
 		usePrimary(t, client, hubServer.URL)
 		if err := client.SetFallbackServers(nil); err != nil {
+			t.Fatal(err)
+		}
+		if err := client.SetServerIdentity("example.com", tlsidentity.Pin(hubServer.Certificate())); err != nil {
 			t.Fatal(err)
 		}
 		if err := client.EnableBondDiscovery(context.Background()); err != nil {

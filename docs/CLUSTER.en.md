@@ -10,6 +10,10 @@ to them directly. One address in the link does not mean one ingress data path.
 
 ## Configuration
 
+For generated main/ingress configuration, see [setup / cluster-add](SETUP.en.md).
+Nodes also accept sni/pin_sha256, emitted by setup in public node.json.
+Each ingress has independent additive CA/name/pin verification.
+
 Create `cluster.json` on the main node:
 
 ```json
