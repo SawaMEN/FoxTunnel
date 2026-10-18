@@ -90,7 +90,11 @@ func (s *Server) servePacket(w http.ResponseWriter, r *http.Request, id string, 
 	defer stopBody()
 	stopRequest := context.AfterFunc(r.Context(), func() { s.close(id, p) })
 	defer stopRequest()
+	// Bound each body independently: an earlier block may be legitimately stuck
+	// in application backpressure, so the reorder worker cannot own this timer.
+	readTimer := time.AfterFunc(PairTimeout, func() { s.close(id, p) })
 	data, err := io.ReadAll(io.LimitReader(r.Body, MaxPacketBytes+1))
+	readTimer.Stop()
 	if err != nil || len(data) > MaxPacketBytes {
 		s.close(id, p)
 		http.Error(w, "invalid packet", http.StatusBadRequest)

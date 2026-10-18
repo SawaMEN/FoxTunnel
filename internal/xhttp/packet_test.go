@@ -268,3 +268,41 @@ func FuzzCarrierPath(f *testing.F) {
 		}
 	})
 }
+
+func TestPacketBodyDeadlineWhilePriorDeliveryBlocked(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		s := &Server{Authorized: func(*http.Request) bool { return true }}
+		p, _ := s.claim(testID, false)
+		delivered := make(chan *httptest.ResponseRecorder, 1)
+		go func() { delivered <- packetRequest(s, "0", strings.NewReader("blocked consumer")) }()
+		synctest.Wait()
+		reader, writer := io.Pipe()
+		defer writer.Close()
+		stalled := make(chan *httptest.ResponseRecorder, 1)
+		go func() { stalled <- packetRequest(s, "1", reader) }()
+		synctest.Wait()
+		time.Sleep(PairTimeout + time.Second)
+		synctest.Wait()
+		select {
+		case w := <-stalled:
+			if w.Code != 400 {
+				t.Fatal(w.Code)
+			}
+		default:
+			t.Fatal("body timeout was blocked by delivery")
+		}
+		select {
+		case w := <-delivered:
+			if w.Code != 410 {
+				t.Fatal(w.Code)
+			}
+		default:
+			t.Fatal("blocked ACK retained")
+		}
+		select {
+		case <-p.done:
+		default:
+			t.Fatal("session retained")
+		}
+	})
+}
