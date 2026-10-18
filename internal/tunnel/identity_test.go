@@ -58,6 +58,10 @@ func TestPinCannotReuseAnotherOriginsSessionTicket(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Close()
+	// Session resumption is currently a Go TLS feature; NSS disables tickets.
+	if err := c.SetTLSBackend("go"); err != nil {
+		t.Fatal(err)
+	}
 	c.tlsConfig.RootCAs.AddCert(aCert)
 	c.tlsConfig.RootCAs.AddCert(bCert)
 	policy := tlsidentity.Policy{SNI: "vpn.example", PinSHA256: tlsidentity.Pin(aCert)}
