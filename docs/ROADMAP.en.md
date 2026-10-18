@@ -17,7 +17,10 @@
 - [x] Generated setup/join bundles, private server configuration and atomic ingress registration.
 - [x] Pre-handshake socket admission, confined public site and govulncheck CI.
 - [x] Native H2 POST, WSS carrying H2, H3 POST/QUIC, shared discovery/bond, profile and setup settings.
-- [ ] Native ECH/REALITY, interoperable XHTTP and measured automatic transport selection.
+- [x] Three native XHTTP modes: stream-one, stream-up and bounded packet-up; Go/NSS, setup, links and cluster.
+- [x] Shared XHTTP path/HTTP Host, random new-cluster routes, join inheritance and controlled HTTPS frontend tests.
+- [ ] Independent XHTTP interoperability, XMUX and separate direction settings.
+- [ ] Native ECH/REALITY and measured automatic transport selection.
 - [ ] TUN/UDP, system routing/DNS/kill switch and individual user credentials.
 - [ ] Persistent bond lanes instead of per-block RPC; delivery-based path estimates.
 - [ ] Global ingress telemetry and automatic allocation between clients.
@@ -50,3 +53,5 @@ The separate opt-in `--bond` mode carries blocks of one stream through multiple
 entries to one common exit. Ordinary whole-stream scheduling remains available.
 See [deployment, acknowledgements, limits and tests](BONDING.en.md).
 No speed advantage or TSPU resistance is established.
+
+Priorities and acceptance criteria: [NEXT-STEPS.en.md](NEXT-STEPS.en.md).

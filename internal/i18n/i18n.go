@@ -35,9 +35,14 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
-	"HTTP/3 requires Go QUIC TLS; NSS cannot be selected": "HTTP/3 использует Go QUIC TLS; NSS для него недоступен",
-	"optional native HTTP/3 UDP listening address":        "Необязательный адрес UDP для встроенного HTTP/3",
-	"bond requires HTTP/2 or HTTP/3":                      "Объединение нод требует HTTP/2 или HTTP/3",
+	"XHTTP path prefix (setup generates a random route by default)": "Префикс пути XHTTP (setup по умолчанию создаёт случайный маршрут)",
+	"invalid XHTTP path or Host":                                    "Недопустимый путь или HTTP Host для XHTTP",
+	"XHTTP settings require an XHTTP transport":                     "Настройки XHTTP требуют выбора транспорта XHTTP",
+	"XHTTP path prefix (default: built-in route)":                   "Префикс пути XHTTP (по умолчанию встроенный маршрут)",
+	"outer XHTTP Host override (does not change TLS SNI)":           "HTTP Host внешнего XHTTP-соединения (не меняет TLS SNI)",
+	"HTTP/3 requires Go QUIC TLS; NSS cannot be selected":           "HTTP/3 использует Go QUIC TLS; NSS для него недоступен",
+	"optional native HTTP/3 UDP listening address":                  "Необязательный адрес UDP для встроенного HTTP/3",
+	"bond requires HTTP/2 or HTTP/3":                                "Объединение нод требует HTTP/2 или HTTP/3",
 
 	"native transport: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up (no external proxy)": "Встроенный транспорт: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up или xhttp-packet-up (без внешнего прокси)",
 	"unknown native transport (choose h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up)":     "Неизвестный встроенный транспорт (выберите h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up или xhttp-packet-up)",

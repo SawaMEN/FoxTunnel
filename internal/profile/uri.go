@@ -17,12 +17,15 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 const Scheme = "vetroff"
 const MaxLinkBytes = 16 << 10
 
 type Config struct {
+	XHTTPPath      string   `json:"xhttp_path,omitempty"`
+	XHTTPHost      string   `json:"xhttp_host,omitempty"`
 	Version        int      `json:"v"`
 	Servers        []string `json:"servers"`
 	Username       string   `json:"username"`
@@ -78,6 +81,13 @@ func (c *Config) normalize() error {
 	}
 	if c.Transport != "h2-connect" && c.Transport != "h2-post" && c.Transport != "wss" && c.Transport != "h3-post" && c.Transport != "xhttp-stream-one" && c.Transport != "xhttp-stream-up" && c.Transport != "xhttp-packet-up" {
 		return invalid()
+	}
+	if c.XHTTPPath != "" || c.XHTTPHost != "" {
+		settings, err := xhttp.Normalize(c.XHTTPPath, c.XHTTPHost)
+		if err != nil || !xhttp.IsMode(c.Transport) {
+			return invalid()
+		}
+		c.XHTTPPath, c.XHTTPHost = settings.Path, settings.Host
 	}
 	if c.TLSBackend == "" {
 		c.TLSBackend = "go"
@@ -183,7 +193,7 @@ func uniqueFields(data []byte) bool {
 		return false
 	}
 	seen := make(map[string]bool)
-	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "transport": true, "sni": true, "pin_sha256": true, "encryption": true, "balance": true, "bond": true, "discover": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
+	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "transport": true, "xhttp_path": true, "xhttp_host": true, "sni": true, "pin_sha256": true, "encryption": true, "balance": true, "bond": true, "discover": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
 	for decoder.More() {
 		token, err := decoder.Token()
 		if err != nil {

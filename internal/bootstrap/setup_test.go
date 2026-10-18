@@ -191,3 +191,65 @@ func TestServerConfigRejectsSecretsInUnknownOrDuplicateFields(t *testing.T) {
 		}
 	}
 }
+
+func TestSetupXHTTPRouteInheritance(t *testing.T) {
+	for _, mode := range []string{"xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+		t.Run(mode, func(t *testing.T) {
+			main := fixture(t, "main.example")
+			main.Transport = mode
+			main.XHTTPPath = "/api/cluster"
+			main.XHTTPHost = "Route.Example"
+			if err := Generate(main); err != nil {
+				t.Fatal(err)
+			}
+			config, err := ReadServer(filepath.Join(main.Output, "server.json"))
+			if err != nil || config.XHTTPPath != "/api/cluster/" || config.XHTTPHost != "route.example" {
+				t.Fatal("main route", err)
+			}
+			join := fixture(t, "node.example")
+			join.JoinLinkFile = filepath.Join(main.Output, "connection.txt")
+			if err := Generate(join); err != nil {
+				t.Fatal(err)
+			}
+			joined, err := ReadServer(filepath.Join(join.Output, "server.json"))
+			if err != nil || joined.XHTTPPath != config.XHTTPPath || joined.XHTTPHost != config.XHTTPHost || joined.BondSNI != "main.example" {
+				t.Fatal("joined route/identity", err)
+			}
+			join.Output = filepath.Join(filepath.Dir(join.Output), "conflict")
+			join.XHTTPPath = "/other"
+			if err := Generate(join); err == nil {
+				t.Fatal("conflicting join route ignored")
+			}
+			if _, err := os.Stat(join.Output); !os.IsNotExist(err) {
+				t.Fatal("failed join wrote secrets")
+			}
+		})
+	}
+}
+
+func TestSetupXHTTPAutomaticRoute(t *testing.T) {
+	first := fixture(t, "main.example")
+	first.Transport = "xhttp-stream-up"
+	second := fixture(t, "second.example")
+	second.Transport = "xhttp-packet-up"
+	if err := Generate(first); err != nil {
+		t.Fatal(err)
+	}
+	if err := Generate(second); err != nil {
+		t.Fatal(err)
+	}
+	a, _ := ReadServer(filepath.Join(first.Output, "server.json"))
+	b, _ := ReadServer(filepath.Join(second.Output, "server.json"))
+	if !strings.HasPrefix(a.XHTTPPath, "/api/") || a.XHTTPPath == b.XHTTPPath || a.XHTTPHost != "" {
+		t.Fatal("automatic route missing, repeated or confused with Host")
+	}
+	join := fixture(t, "node.example")
+	join.JoinLinkFile = filepath.Join(first.Output, "connection.txt")
+	if err := Generate(join); err != nil {
+		t.Fatal(err)
+	}
+	c, _ := ReadServer(filepath.Join(join.Output, "server.json"))
+	if c.XHTTPPath != a.XHTTPPath {
+		t.Fatal("join generated a different route")
+	}
+}

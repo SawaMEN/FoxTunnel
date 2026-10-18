@@ -135,3 +135,5 @@ func TestNSSNativeDiscoveredBond(t *testing.T) {
 		t.Run(mode, func(t *testing.T) { testBondedSOCKSNative(t, "nss", 8, true, mode) })
 	}
 }
+
+func TestXHTTPSettingsNSS(t *testing.T) { testXHTTPSettings(t, "nss") }
