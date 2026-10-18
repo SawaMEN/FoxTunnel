@@ -37,13 +37,13 @@ jobs:
           go vet ./...
           go test -race ./... -count=1 -timeout=120s
           cd integration/external && go test -race ./... -count=1 -timeout=60s
-      - name: Build seven portable archives
+      - name: Build two Linux portable archives
         shell: bash
         env:
           RELEASE_TAG: ${{ needs.request.outputs.version }}
         run: |
           set -euo pipefail
-          for target in linux/amd64 linux/arm64 linux/armv7 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+          for target in linux/amd64 linux/arm64; do
             python3 scripts/release.py build --version "$RELEASE_TAG" --os "${target%/*}" --arch "${target#*/}" --backend go
           done
       - uses: actions/upload-artifact@v4
@@ -101,21 +101,17 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - name: Verify complete nine-target release
+      - name: Validate four Linux release archives
         env:
           RELEASE_TAG: ${{ needs.request.outputs.version }}
         run: |
           python3 scripts/release.py index --version "$RELEASE_TAG"
           python3 scripts/release.py verify --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
-          cd dist && sha256sum -c SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: release-assets
           path: |
             dist/*.tar.gz
-            dist/*.zip
-            dist/manifest.json
-            dist/SHA256SUMS
           if-no-files-found: error
   publish:
     if: needs.request.outputs.publish == 'true'
@@ -150,7 +146,7 @@ jobs:
             fi
             tag_flags=(--target "$GITHUB_SHA")
           fi
-          notes=(--notes 'Experimental standalone FoxTunnel. Verify manifest/checksums and archive contents. Linux NSS assets bundle Mozilla libraries; keep lib/ beside the executable. No production or censorship-resistance claim.')
+          notes=(--notes 'Experimental standalone FoxTunnel. Verify the archived build.json against the trusted release tag/commit and inspect archive contents. Linux NSS assets bundle Mozilla libraries; keep lib/ beside the executable. No production or censorship-resistance claim.')
           if [ -f "docs/releases/$RELEASE_TAG.md" ]; then
             notes=(--notes-file "docs/releases/$RELEASE_TAG.md")
           fi

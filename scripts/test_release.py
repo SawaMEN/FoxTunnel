@@ -3,12 +3,10 @@ import hashlib
 import io
 import json
 from pathlib import Path
-import stat
 import tarfile
 import tempfile
 import unittest
 from unittest.mock import patch
-import zipfile
 import release
 import release_verify as verify
 
@@ -22,7 +20,7 @@ class ReleaseContract(unittest.TestCase):
         self.entries = []
         for target in sorted(release.TARGETS):
             goos, arch, flavor = target.split('/')
-            suffix = '.zip' if goos == 'windows' else '.tar.gz'
+            suffix = '.tar.gz'
             name = 'foxtunnel_0.1.0-alpha.1_' + target.replace('/', '_') + suffix
             runtime = dict(kind='cgo-disabled')
             if flavor == 'nss':
@@ -36,8 +34,8 @@ class ReleaseContract(unittest.TestCase):
                                nss_version='3.130', mozilla=provenance)
             p = dict(schema=1, version=self.args.version, commit='a' * 40, dirty=False,
                      experimental=True, build_date='2026-10-18T19:00:00Z', target=target,
-                     goos=goos, goarch='arm' if arch == 'armv7' else arch,
-                     variant='7' if arch == 'armv7' else '', build_flavor=flavor,
+                     goos=goos, goarch=arch,
+                     variant='', build_flavor=flavor,
                      tls_backends=['go', 'nss'] if flavor == 'nss' else ['go'], default_tls_backend='go',
                      protocol_draft=verify.DRAFT, native_smoke_tested=True, runtime=runtime,
                      filename=name)
@@ -54,29 +52,20 @@ class ReleaseContract(unittest.TestCase):
         build = {k: v for k, v in p.items() if k not in verify.ARCHIVE_FIELDS}
         files = {'build.json': json.dumps(build).encode(), 'LICENSE': b'MIT',
                  'THIRD_PARTY_NOTICES.txt': b'notices', 'licenses/Go-LICENSE': b'BSD',
-                 'foxtunnel.exe' if p['goos'] == 'windows' else 'foxtunnel': b'fixture executable, never run'}
+                 'foxtunnel': b'fixture executable, never run'}
         if p['build_flavor'] == 'nss':
             files.update({'mozilla-runtime.json': json.dumps(p['runtime']['mozilla']).encode(),
                           'licenses/Mozilla-about-license.html': b'Mozilla notices', 'lib/libnss3.so': b'library'})
         if mutate:
             mutate(files)
         archive = self.root / p['filename']
-        if p['goos'] == 'windows':
-            with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
-                for name, data in files.items():
-                    item = zipfile.ZipInfo(name)
-                    item.external_attr = 0o100755 << 16
-                    z.writestr(item, data)
-                for item, data in extra:
-                    z.writestr(item, data)
-        else:
-            with tarfile.open(archive, 'w:gz') as tar:
-                for name, data in files.items():
-                    item = tarfile.TarInfo(name)
-                    item.mode, item.size = 0o755, len(data)
-                    tar.addfile(item, io.BytesIO(data))
-                for item, data in extra:
-                    tar.addfile(item, io.BytesIO(data))
+        with tarfile.open(archive, 'w:gz') as tar:
+            for name, data in files.items():
+                item = tarfile.TarInfo(name)
+                item.mode, item.size = 0o755, len(data)
+                tar.addfile(item, io.BytesIO(data))
+            for item, data in extra:
+                tar.addfile(item, io.BytesIO(data))
         p.update(sha256=release.sha(archive), size=archive.stat().st_size)
         path.write_text(json.dumps(p))
 
@@ -97,17 +86,16 @@ class ReleaseContract(unittest.TestCase):
 
     def test_complete_index_and_offline_verification_without_sidecars(self):
         release.index(self.args)
-        self.assertEqual(9, len(json.loads((self.root / 'manifest.json').read_text())['artifacts']))
-        self.assertEqual(10, len((self.root / 'SHA256SUMS').read_text().splitlines()))
+        self.assertFalse((self.root / 'manifest.json').exists())
+        self.assertFalse((self.root / 'SHA256SUMS').exists())
         for path in self.entries:
             path.unlink()
         verify.verify(self.verify_args)
-        with self.assertRaises(FileExistsError):
-            release.index(self.args)
-
-    def test_selected_archive_only_but_complete_manifest_required(self):
         release.index(self.args)
-        self.verify_args.target = 'windows/arm64/go'
+
+    def test_selected_archive_only_and_full_release_checks(self):
+        release.index(self.args)
+        self.verify_args.target = 'linux/arm64/go'
         selected = json.loads(self.entries[self.find(self.verify_args.target)].read_text())['filename']
         for p in self.root.glob('foxtunnel_*'):
             if p.name != selected:
@@ -184,7 +172,7 @@ class ReleaseContract(unittest.TestCase):
         self.expect_index_error('Mozilla license')
 
     def test_unsafe_tar_and_zip_names_rejected(self):
-        for target in ('linux/amd64/go', 'windows/amd64/go'):
+        for target in ('linux/amd64/go',):
             index = self.find(target)
             for name in ('../outside', '/outside', 'licenses/../outside', 'licenses\\outside',
                          'C:outside', 'CON', 'licenses/Go-LICENSE.'):
@@ -210,15 +198,6 @@ class ReleaseContract(unittest.TestCase):
         self.pack(index, extra=[(item, b'bad')])
         self.expect_index_error('privileged')
 
-    def test_zip_symlink_and_case_collision_rejected(self):
-        index = self.find('windows/amd64/go')
-        item = zipfile.ZipInfo('licenses/link')
-        item.create_system, item.external_attr = 3, (stat.S_IFLNK | 0o777) << 16
-        self.pack(index, extra=[(item, b'../../outside')])
-        self.expect_index_error('link/special')
-        self.pack(index, lambda files: files.update({'license': b'dup'}))
-        self.expect_index_error('duplicate')
-
     def test_limits_enforced(self):
         # Small limits exercise the same streaming guards without allocating a bomb.
         with patch.object(verify, 'MAX_MEMBER', 16):
@@ -236,31 +215,29 @@ class ReleaseContract(unittest.TestCase):
                 self.pack(0, lambda files: files.update({'build.json': data}))
                 self.expect_index_error()
 
-    def test_downloaded_manifest_and_sums_contract(self):
+    def test_trusted_source_commit_and_version_required(self):
         release.index(self.args)
-        manifest_path = self.root / 'manifest.json'
-        original = manifest_path.read_bytes()
-        for version, commit in [('v9.0.0', 'a' * 40), (self.args.version, 'b' * 40)]:
+        for version, commit in [('v9.0.0', 'a' * 40),
+                                (self.args.version, 'b' * 40)]:
             self.verify_args.version, self.verify_args.commit = version, commit
-            with self.assertRaisesRegex(ValueError, 'mismatch'):
+            with self.assertRaisesRegex(ValueError, 'no release archives|mismatch'):
                 verify.verify(self.verify_args)
         self.verify_args.version, self.verify_args.commit = self.args.version, 'a' * 40
-        manifest = json.loads(original)
-        manifest['artifacts'].pop()
-        manifest_path.write_text(json.dumps(manifest))
-        with self.assertRaisesRegex(ValueError, 'target set'):
-            verify.verify(self.verify_args)
-        manifest_path.write_bytes(original)
-        (self.root / 'SHA256SUMS').write_text('incorrect\n')
-        with self.assertRaisesRegex(ValueError, 'SHA256SUMS'):
-            verify.verify(self.verify_args)
 
-    def test_no_partial_index_when_checksum_file_exists(self):
-        (self.root / 'SHA256SUMS').write_text('existing\n')
-        with self.assertRaises(FileExistsError):
-            release.index(self.args)
+    def test_no_checksum_or_manifest_outputs(self):
+        release.index(self.args)
         self.assertFalse((self.root / 'manifest.json').exists())
-        self.assertEqual('existing\n', (self.root / 'SHA256SUMS').read_text())
+        self.assertFalse((self.root / 'SHA256SUMS').exists())
+        for path in self.entries:
+            path.unlink()
+        verify.verify(self.verify_args)
+
+    def test_only_supported_linux_targets(self):
+        self.assertEqual({'linux/amd64/go', 'linux/arm64/go',
+                          'linux/amd64/nss', 'linux/arm64/nss'}, verify.TARGETS)
+        self.verify_args.target = 'windows/amd64/go'
+        with self.assertRaisesRegex(ValueError, 'unsupported requested target'):
+            verify.verify(self.verify_args)
 
     def test_version_contract(self):
         for good in ['v0.1.0-alpha.1', 'v1.2.3', 'v1.2.3-rc-1']:
