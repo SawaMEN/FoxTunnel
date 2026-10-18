@@ -13,11 +13,12 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 func TestNativeTransports(t *testing.T) { testNativeTransports(t, "go") }
 func testNativeTransports(t *testing.T, backend string) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
 		if backend == "nss" && mode == "h3-post" {
 			continue
 		}
@@ -65,7 +66,7 @@ func testNativeTransports(t *testing.T, backend string) {
 }
 
 func TestNativeDiscoveredBond(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
 		t.Run(mode, func(t *testing.T) { testBondedSOCKSNative(t, "go", 8, true, mode) })
 	}
 }
@@ -74,7 +75,7 @@ func TestNativeVerificationBeforeCredentials(t *testing.T) {
 	testNativeVerificationBeforeCredentials(t, "go")
 }
 func testNativeVerificationBeforeCredentials(t *testing.T, backend string) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
 		if backend == "nss" && mode == "h3-post" {
 			continue
 		}
@@ -122,7 +123,7 @@ func testNativeVerificationBeforeCredentials(t *testing.T, backend string) {
 }
 
 func TestNativePolicyAndCancellation(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
 		t.Run(mode, func(t *testing.T) {
 			s := &Server{Username: "alice", Password: "secret", AllowPrivate: true}
 			c, _ := testClient(t, s)
@@ -184,13 +185,13 @@ func startNativeH3(t testing.TB, endpoint *httptest.Server, server *Server) {
 }
 
 func BenchmarkNativeTransports(b *testing.B) {
-	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post"} {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
 		b.Run(mode, func(b *testing.B) { benchmarkNativeOptions(b, "go", false, mode) })
 	}
 }
 
 func TestNativeSetupTimeout(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
 		t.Run(mode, func(t *testing.T) {
 			done := make(chan struct{}, 1)
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done(); done <- struct{}{} })
@@ -231,7 +232,7 @@ func TestNativeProbeCover(t *testing.T) {
 		}
 		w.WriteHeader(418)
 	})}
-	for _, path := range []string{postPath, wsPath} {
+	for _, path := range []string{postPath, wsPath, xhttp.Path, xhttp.Path + "00000000-0000-4000-8000-000000000001"} {
 		for _, proto := range []int{1, 2, 3} {
 			r := httptest.NewRequest("POST", "https://main.example"+path, nil)
 			r.ProtoMajor = proto
@@ -248,5 +249,46 @@ func TestNativeProbeCover(t *testing.T) {
 				t.Fatal("unauthenticated probe reached tunnel", path, proto, w.Code)
 			}
 		}
+	}
+}
+
+func TestXHTTPIdleClosePreservesActiveStream(t *testing.T) {
+	for _, mode := range []string{"xhttp-stream-one", "xhttp-stream-up"} {
+		t.Run(mode, func(t *testing.T) {
+			target := testDestination(t, func(c net.Conn) { _, _ = io.Copy(c, c) })
+			c, _ := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+			if err := c.SetTransport(mode); err != nil {
+				t.Fatal(err)
+			}
+			stream, err := c.openTunnel(context.Background(), target)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer stream.close()
+			transport := c.transport.(*identityPool).base.(*xhttpTransport)
+			transport.CloseIdleConnections()
+			data := []byte("active carrier survives idle close")
+			if _, err := stream.writer.Write(data); err != nil {
+				t.Fatal(err)
+			}
+			got := make([]byte, len(data))
+			if _, err := io.ReadFull(stream.response.Body, got); err != nil || !bytes.Equal(got, data) {
+				t.Fatal("active stream cut off", err)
+			}
+			stream.close()
+			deadline := time.Now().Add(time.Second)
+			for {
+				transport.mu.Lock()
+				n := len(transport.carriers)
+				transport.mu.Unlock()
+				if n == 0 {
+					break
+				}
+				if time.Now().After(deadline) {
+					t.Fatal("idle carrier retained")
+				}
+				time.Sleep(time.Millisecond)
+			}
+		})
 	}
 }

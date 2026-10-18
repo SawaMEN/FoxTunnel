@@ -110,7 +110,7 @@ func TestSetupAndJoinProduceUsablePrivateProfiles(t *testing.T) {
 }
 
 func TestSetupNativeTransports(t *testing.T) {
-	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post"} {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up"} {
 		t.Run(mode, func(t *testing.T) {
 			o := fixture(t, "main.example")
 			o.Transport = mode

@@ -1,5 +1,7 @@
 # FoxTunnel
 
+[Потоковый XHTTP с Mozilla NSS](docs/XHTTP.md)
+
 **Русский** | [English](README.en.md)
 
 Экспериментальный защищённый туннель с локальным SOCKS5-клиентом и сервером

@@ -5,13 +5,16 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 	"github.com/coder/websocket"
 	"golang.org/x/net/http2"
 )
@@ -29,8 +32,8 @@ func (c *Client) SetTransport(mode string) error {
 	if mode == "" {
 		mode = "h2-connect"
 	}
-	if mode != "h2-connect" && mode != "h2-post" && mode != "wss" && mode != "h3-post" {
-		return i18n.Error("unknown native transport (choose h2-connect, h2-post, h3-post or wss)")
+	if mode != "h2-connect" && mode != "h2-post" && mode != "wss" && mode != "h3-post" && mode != "xhttp-stream-one" && mode != "xhttp-stream-up" {
+		return i18n.Error("unknown native transport (choose h2-connect, h2-post, h3-post, wss, xhttp-stream-one or xhttp-stream-up)")
 	}
 	if c.bondClient != nil || c.bondDiscovery != nil {
 		return i18n.Error("configure transport before enabling bond")
@@ -45,6 +48,9 @@ func (c *Client) SetTransport(mode string) error {
 }
 
 func makeNativeTransport(mode, backend string, config *tls.Config, auth string) (tlsTransport, error) {
+	if mode == "xhttp-stream-one" || mode == "xhttp-stream-up" {
+		return newXHTTPTransport(mode, backend, config, auth)
+	}
 	if mode == "h3-post" {
 		if backend != "go" {
 			return nil, i18n.Error("HTTP/3 requires Go QUIC TLS; NSS cannot be selected")
@@ -192,4 +198,110 @@ func (s *Server) serveWSS(w http.ResponseWriter, r *http.Request) {
 
 func basicAuth(user, password string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+password))
+}
+
+// Mozilla NSS supplies the outer TLS handshake; Go supplies the HTTP/2 framing.
+// The inner connection is plaintext HTTP/2 inside the verified HTTPS carrier.
+func newXHTTPTransport(mode, backend string, config *tls.Config, auth string) (tlsTransport, error) {
+	outer, err := makeTLStransport(backend, config)
+	if err != nil {
+		return nil, err
+	}
+	inner := &http2.Transport{TLSClientConfig: config.Clone(), DisableCompression: true, IdleConnTimeout: 90 * time.Second}
+	t := &xhttpTransport{Transport: inner, outer: outer, carriers: make(map[net.Conn]bool)}
+	inner.DialTLSContext = func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+		conn, err := xhttp.Dial(ctx, outer, "https://"+addr, mode, auth, config.ServerName)
+		if err != nil {
+			return nil, err
+		}
+		t.mu.Lock()
+		if t.draining && t.active == 0 {
+			t.mu.Unlock()
+			conn.Close()
+			return nil, net.ErrClosed
+		}
+		t.carriers[conn] = true
+		t.mu.Unlock()
+		return &trackedCarrier{Conn: conn, owner: t}, nil
+	}
+	return t, nil
+}
+
+type xhttpTransport struct {
+	*http2.Transport
+	outer    tlsTransport
+	mu       sync.Mutex
+	active   int
+	draining bool
+	carriers map[net.Conn]bool
+}
+type trackedCarrier struct {
+	net.Conn
+	owner *xhttpTransport
+}
+
+func (c *trackedCarrier) Close() error {
+	err := c.Conn.Close()
+	c.owner.mu.Lock()
+	delete(c.owner.carriers, c.Conn)
+	c.owner.mu.Unlock()
+	return err
+}
+func (t *xhttpTransport) closeDrainedLocked() {
+	if !t.draining || t.active != 0 {
+		return
+	}
+	for conn := range t.carriers {
+		_ = conn.Close()
+		delete(t.carriers, conn)
+	}
+	t.draining = false
+}
+func (t *xhttpTransport) CloseIdleConnections() {
+	// A carrier stays an active outer request while its inner HTTP/2 is idle.
+	// Retire it after its last inner body is released, preserving active streams.
+	t.mu.Lock()
+	t.draining = true
+	t.closeDrainedLocked()
+	t.mu.Unlock()
+	t.Transport.CloseIdleConnections()
+	t.outer.CloseIdleConnections()
+}
+func (t *xhttpTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	t.mu.Lock()
+	t.active++
+	t.mu.Unlock()
+	release := func() { t.mu.Lock(); t.active--; t.closeDrainedLocked(); t.mu.Unlock() }
+	resp, err := t.Transport.RoundTrip(r)
+	if err != nil {
+		release()
+		return nil, err
+	}
+	resp.Body = &carrierBody{ReadCloser: resp.Body, release: release}
+	return resp, nil
+}
+
+type carrierBody struct {
+	io.ReadCloser
+	once    sync.Once
+	release func()
+}
+
+func (b *carrierBody) Read(p []byte) (int, error) {
+	n, err := b.ReadCloser.Read(p)
+	if err != nil {
+		b.once.Do(b.release)
+	}
+	return n, err
+}
+func (b *carrierBody) Close() error { err := b.ReadCloser.Close(); b.once.Do(b.release); return err }
+func (s *Server) serveXHTTP(w http.ResponseWriter, r *http.Request) {
+	s.xhttpOnce.Do(func() {
+		s.xhttpServer = &xhttp.Server{MaxSessions: s.MaxTunnels, Authorized: s.authorized, ServeConn: func(conn net.Conn, outer *http.Request) {
+			defer conn.Close()
+			inner := &http2.Server{MaxConcurrentStreams: 32, MaxUploadBufferPerConnection: 1 << 20, MaxUploadBufferPerStream: 64 << 10, IdleTimeout: 90 * time.Second}
+			inner.ServeConn(conn, &http2.ServeConnOpts{Context: context.Background(), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { r.TLS = outer.TLS; s.ServeHTTP(w, r) })})
+		}}
+	})
+	s.xhttpServer.ServeHTTP(w, r)
 }
