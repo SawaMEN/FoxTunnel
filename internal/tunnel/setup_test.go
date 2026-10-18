@@ -31,7 +31,8 @@ func setupEndpoint(t testing.TB, c *Client, handler http.Handler) *httptest.Serv
 	s.EnableHTTP2 = true
 	s.TLS = &tls.Config{MinVersion: tls.VersionTLS13, NextProtos: []string{"h2", "http/1.1"}}
 	s.StartTLS()
-	t.Cleanup(s.Close)
+	// Carriers are active outer HTTP requests even when inner H2 is idle.
+	t.Cleanup(func() { c.Close(); s.Close() })
 	c.tlsConfig.RootCAs.AddCert(s.Certificate())
 	return s
 }

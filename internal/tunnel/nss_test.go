@@ -131,7 +131,7 @@ func TestVerifiedSNIAndPinNSS(t *testing.T)          { testVerifiedSNIAndPin(t, 
 func TestNSSNativeTransports(t *testing.T)   { testNativeTransports(t, "nss") }
 func TestNSSNativeVerification(t *testing.T) { testNativeVerificationBeforeCredentials(t, "nss") }
 func TestNSSNativeDiscoveredBond(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss"} {
+	for _, mode := range []string{"h2-post", "wss", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) { testBondedSOCKSNative(t, "nss", 8, true, mode) })
 	}
 }

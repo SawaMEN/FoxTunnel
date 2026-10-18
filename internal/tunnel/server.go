@@ -9,12 +9,14 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 	"io"
 	"net"
 	"net/http"
 	"net/netip"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -34,6 +36,8 @@ type Server struct {
 	MaxTunnels       int
 	activeTunnels    atomic.Int64
 	activeWebSockets atomic.Int64
+	xhttpOnce        sync.Once
+	xhttpServer      *xhttp.Server
 	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
 	Cover http.Handler
 	// Bond is an opt-in hub or relay, behind the same authentication boundary.
@@ -43,6 +47,10 @@ type Server struct {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if xhttp.Matches(r) && r.ProtoMajor == 2 && s.authorized(r) {
+		s.serveXHTTP(w, r)
+		return
+	}
 	if r.Method == http.MethodGet && r.ProtoMajor == 1 && r.TLS != nil && r.URL.Path == wsPath && s.authorized(r) {
 		s.serveWSS(w, r)
 		return

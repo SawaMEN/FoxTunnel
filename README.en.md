@@ -6,7 +6,7 @@ An experimental encrypted tunneling project. It provides native **H2 CONNECT, H2
 
 > **Status: experimental prototype; not ready for production.** The default client uses **Go crypto/tls**; Linux tagged builds can opt into an **experimental NSS TLS backend**. Neither is a complete Firefox stack. It does not reproduce Firefox TLS or HTTP/2 fingerprints and offers only opt-in experimental initial padding. HTTP/3 uses Go QUIC; NSS supports H2/WSS. Application UDP, TUN, censorship-resistance guarantees and 3x-ui integration are not implemented. Do not market it as superior to NaïveProxy.
 
-[Native transports without Xray](docs/NATIVE-TRANSPORTS.en.md) · [Simple main/ingress setup](docs/SETUP.en.md) · [Security properties](docs/SECURITY.en.md)
+[Streaming XHTTP with Mozilla NSS](docs/XHTTP.en.md) · [Native transports without Xray](docs/NATIVE-TRANSPORTS.en.md) · [Simple main/ingress setup](docs/SETUP.en.md) · [Security properties](docs/SECURITY.en.md)
 
 ## Language
 
