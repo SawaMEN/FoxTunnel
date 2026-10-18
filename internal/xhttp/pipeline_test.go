@@ -32,10 +32,12 @@ func TestPacketWindowWaitsForContiguousACK(t *testing.T) {
 		if len(body) != clientPacketBytes || r.GetBody != nil {
 			t.Error("unsafe body ownership")
 		}
+		// Record completion before WroteRequest releases the next POST worker;
+		// observing after the callback can reorder notifications on another CPU.
+		starts <- *seq
 		if trace := httptrace.ContextClientTrace(r.Context()); trace != nil && trace.WroteRequest != nil {
 			trace.WroteRequest(httptrace.WroteRequestInfo{})
 		}
-		starts <- *seq
 		if *seq == 0 {
 			select {
 			case <-release:
