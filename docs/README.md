@@ -1,0 +1,39 @@
+# Документация FoxTunnel
+
+Русский — основной язык документации, английский доступен в соседних файлах с суффиксом `.en.md`.
+
+## Начало работы
+- [Подготовка и настройка](guides/SETUP.md)
+- [Ссылки подключения](guides/CONNECTION-LINKS.md)
+- [Серверы и точки входа](guides/ENDPOINTS.md)
+
+## Архитектура и протокол
+- [Архитектура](architecture/ARCHITECTURE.md)
+- [Нативные транспорты](architecture/NATIVE-TRANSPORTS.md)
+- [XHTTP](architecture/XHTTP.md)
+- [Кластер](architecture/CLUSTER.md)
+- [Объединение путей](architecture/BONDING.md)
+- [Padding](architecture/PADDING.md)
+- [Транспортная стратегия](architecture/TRANSPORT-STRATEGY.md)
+- [HTTP/2-профиль](architecture/H2-RECEIVE-PROFILE.md)
+
+## Справочники
+- [Безопасность](reference/SECURITY.md)
+- [Публичный SDK](reference/SDK.md)
+- [Формат провода](reference/WIRE-DRAFT-0.md)
+- [Сборки и релизы](reference/DISTRIBUTION.md)
+- [Совместимость](reference/COMPATIBILITY.md)
+
+## Исследования
+- [Исследовательские материалы](research/)
+- [Методика измерений](research/PERFORMANCE.md)
+- [Измерения](measurements/)
+
+## Развитие проекта
+- [Дорожная карта](planning/ROADMAP.md)
+- [Следующие этапы](planning/NEXT-STEPS.md)
+- [Примечания к релизам](releases/)
+
+Исходный код остаётся в `cmd/`, `internal/` и `foxtunnel.go` в корне; `examples/` содержит примеры SDK, `experiments/` — отдельные прототипы. `scripts/` отвечает за сборку и проверку релизов, `.github/workflows/` — за CI.
+
+Не переносите файлы Go-пакетов произвольно: тесты `*_test.go` должны оставаться рядом с кодом, а путь публичного SDK является частью API.

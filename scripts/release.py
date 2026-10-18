@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build immutable release archives and verify a complete version index."""
+"""Build four Linux release archives and validate them without extra index assets."""
 import argparse
 import datetime as dt
 import gzip
@@ -11,7 +11,6 @@ from pathlib import Path
 import subprocess
 import tarfile
 import tempfile
-import zipfile
 import mozilla_runtime
 from release_verify import TARGETS, validate_version, validate_manifest, read_json, inspect_archive, verify
 
@@ -76,7 +75,7 @@ def build(a):
     epoch = int(os.environ.get('SOURCE_DATE_EPOCH', command(['git', 'show', '-s', '--format=%ct', 'HEAD'])))
     date = dt.datetime.fromtimestamp(epoch, dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     env = os.environ.copy()
-    env.update(GOOS=a.os, GOARCH='arm' if a.arch == 'armv7' else a.arch, GOARM='7', GOAMD64='v1', CGO_ENABLED='1' if a.backend == 'nss' else '0', GOWORK='off', GOFLAGS='')
+    env.update(GOOS=a.os, GOARCH=a.arch, GOAMD64='v1', CGO_ENABLED='1' if a.backend == 'nss' else '0', GOWORK='off', GOFLAGS='')
     host = json.loads(command([a.go, 'env', '-json', 'GOHOSTOS', 'GOHOSTARCH'], env))
     go_version = command([a.go, 'env', 'GOVERSION'], env)
     native = host['GOHOSTOS'] == env['GOOS'] and host['GOHOSTARCH'] == env['GOARCH']
@@ -84,12 +83,12 @@ def build(a):
         raise ValueError('NSS requires a native Linux runner for the selected architecture')
     out = Path(a.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    ext = '.zip' if a.os == 'windows' else '.tar.gz'
+    ext = '.tar.gz'
     archive = out / f'foxtunnel_{a.version[1:]}_{a.os}_{a.arch}_{a.backend}{ext}'
     metadata = out / (archive.name + '.metadata.json')
     if archive.exists() or metadata.exists():
         raise ValueError('refusing to replace an existing versioned artifact')
-    variant = '7' if a.arch == 'armv7' else ''
+    variant = ''
     fields = {'Version': a.version, 'Commit': commit, 'BuildDate': date, 'Variant': variant, 'Dirty': str(dirty).lower()}
     ldflags = '-s -w -buildid= ' + ' '.join('-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.' + k + '=' + v for k, v in fields.items())
     with tempfile.TemporaryDirectory(prefix='foxtunnel-release-') as tmp:
@@ -97,7 +96,7 @@ def build(a):
         if a.backend == 'nss':
             runtime_files, runtime_info = mozilla_runtime.prepare(a.arch, tmp, a.mozilla_archive)
             env['CGO_LDFLAGS'] = env.get('CGO_LDFLAGS', '') + ' -Wl,--disable-new-dtags -Wl,-rpath,$ORIGIN/lib'
-        executable = Path(tmp) / ('foxtunnel.exe' if a.os == 'windows' else 'foxtunnel')
+        executable = Path(tmp) / 'foxtunnel'
         cmd = [a.go, 'build', '-mod=readonly', '-trimpath', '-buildvcs=false', '-ldflags', ldflags, '-o', str(executable)]
         if a.backend == 'nss':
             cmd += ['-tags', 'nss']
@@ -123,47 +122,33 @@ def build(a):
             p['runtime']['nss_version'] = info['nss_version']
         files['build.json'] = (json.dumps(p, indent=2) + '\n').encode()
         files[executable.name] = executable.read_bytes()
-        if ext == '.zip':
-            with zipfile.ZipFile(archive, 'x', compression=zipfile.ZIP_DEFLATED) as z:
-                stamp = dt.datetime.fromtimestamp(max(epoch, 315532800), dt.timezone.utc).timetuple()[:6]
-                for name, data in sorted(files.items()):
-                    entry = zipfile.ZipInfo(name, date_time=stamp)
-                    entry.compress_type = zipfile.ZIP_DEFLATED
-                    entry.external_attr = (0o100755 if name == executable.name else 0o100644) << 16
-                    z.writestr(entry, data)
-        else:
-            with archive.open('xb') as f, gzip.GzipFile(filename='', mode='wb', fileobj=f, mtime=epoch) as gz, tarfile.open(fileobj=gz, mode='w') as tar:
-                for name, data in sorted(files.items()):
-                    entry = tarfile.TarInfo(name)
-                    entry.size, entry.mtime = len(data), epoch
-                    entry.mode = 0o755 if name == executable.name else 0o644
-                    tar.addfile(entry, io.BytesIO(data))
+        with archive.open('xb') as f, gzip.GzipFile(filename='', mode='wb', fileobj=f, mtime=epoch) as gz, tarfile.open(fileobj=gz, mode='w') as tar:
+            for name, data in sorted(files.items()):
+                entry = tarfile.TarInfo(name)
+                entry.size, entry.mtime = len(data), epoch
+                entry.mode = 0o755 if name == executable.name else 0o644
+                tar.addfile(entry, io.BytesIO(data))
     p.update(filename=archive.name, sha256=sha(archive), size=archive.stat().st_size)
     new_file(metadata, (json.dumps(p, indent=2) + '\n').encode())
     print(json.dumps(dict(artifact=archive.name, sha256=p['sha256'], native_smoke_tested=native)))
 
 
 def index(a):
+    """Validate the complete local Linux release set without writing extra assets."""
     validate_version(a.version)
     base, packages = Path(a.input), []
     expected = set(a.targets.split(',')) if a.targets else TARGETS
     if not expected or not expected <= TARGETS:
         raise ValueError('unsupported index target set')
-    if (base / 'manifest.json').exists() or (base / 'SHA256SUMS').exists():
-        raise FileExistsError('refusing to replace an existing release index')
     for path in sorted(base.glob('*.metadata.json')):
         packages.append(read_json(path))
     commit = packages[0].get('commit') if packages else None
-    manifest = dict(schema=1, version=a.version, commit=commit, protocol_draft='foxtunnel-draft-0', artifacts=packages)
-    validate_manifest(manifest, a.version, commit, expected)
-    # Check the actual payload, not just a self-consistent sidecar hash.
+    release_set = dict(schema=1, version=a.version, commit=commit,
+                       protocol_draft='foxtunnel-draft-0', artifacts=packages)
+    validate_manifest(release_set, a.version, commit, expected)
     for p in packages:
         inspect_archive(base / p['filename'], p)
-    new_file(base / 'manifest.json', (json.dumps(manifest, indent=2) + '\n').encode())
-    sums = ''.join(p['sha256'] + '  ' + p['filename'] + '\n' for p in packages)
-    sums += sha(base / 'manifest.json') + '  manifest.json\n'
-    new_file(base / 'SHA256SUMS', sums.encode())
-    print(f'Verified {len(packages)} artifacts from {commit}')
+    print(f'Validated {len(packages)} Linux archives from {commit}; no index files written')
 
 
 def main():
@@ -180,16 +165,16 @@ def main():
     i = sub.add_parser('index')
     i.add_argument('--version', required=True)
     i.add_argument('--input', default='dist')
-    i.add_argument('--targets', help='test subset; release CI requires all nine targets')
+    i.add_argument('--targets', help='test subset; release CI requires all four Linux targets')
     v = sub.add_parser('verify', help='verify downloaded release assets without extracting or executing them')
     v.add_argument('--version', required=True, help='exact expected tag from a trusted source')
     v.add_argument('--commit', required=True, help='expected full source commit from a trusted source')
     v.add_argument('--input', default='dist')
-    v.add_argument('--target', help='verify only this archive; the manifest must still list all nine targets')
+    v.add_argument('--target', help='verify one Linux archive without requiring the other three')
     a = parser.parse_args()
     try:
         {'build': build, 'index': index, 'verify': verify}[a.command](a)
-    except (ValueError, KeyError, OSError, EOFError, tarfile.TarError, zipfile.BadZipFile, subprocess.CalledProcessError) as e:
+    except (ValueError, KeyError, OSError, EOFError, tarfile.TarError, subprocess.CalledProcessError) as e:
         parser.exit(1, str(e) + '\n')
 
 

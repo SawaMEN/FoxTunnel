@@ -1,10 +1,10 @@
 # FoxTunnel
 
-[Отдельные версионные бинарники](docs/DISTRIBUTION.md) · [Публичный SDK](docs/SDK.md) · [Wire draft 0](docs/WIRE-DRAFT-0.md) · [Совместимость и проверка релиза](docs/COMPATIBILITY.md) · [MIT](LICENSE)
+[Отдельные версионные бинарники](docs/reference/DISTRIBUTION.md) · [Публичный SDK](docs/reference/SDK.md) · [Wire draft 0](docs/reference/WIRE-DRAFT-0.md) · [Совместимость и проверка релиза](docs/reference/COMPATIBILITY.md) · [MIT](LICENSE)
 
-[Потоковый XHTTP с Mozilla NSS](docs/XHTTP.md)
+[Потоковый XHTTP с Mozilla NSS](docs/architecture/XHTTP.md)
 
-**Русский** | [English](README.en.md)
+**Русский** | [English](README.en.md) · [Каталог документации](docs/README.md)
 
 Экспериментальный защищённый туннель с локальным SOCKS5-клиентом и сервером
 с нативными H2 CONNECT, H2 POST, WSS и H3 POST/QUIC поверх TLS 1.3. Цель проекта — измерить возможности сетевого
@@ -19,7 +19,7 @@ Linux-сборка с тегом `nss` поддерживает эксперим
 Работа в условиях ТСПУ российских операторов требует отдельных испытаний;
 необнаружимость и превосходство над NaiveProxy не установлены.
 
-[Встроенные транспорты без Xray](docs/NATIVE-TRANSPORTS.md) · [Простая подготовка главной ноды и входов](docs/SETUP.md) · [Свойства защиты](docs/SECURITY.md)
+[Встроенные транспорты без Xray](docs/architecture/NATIVE-TRANSPORTS.md) · [Простая подготовка главной ноды и входов](docs/guides/SETUP.md) · [Свойства защиты](docs/reference/SECURITY.md)
 
 ## Сборка и проверки
 
@@ -131,14 +131,14 @@ Go x509. При недоступном NSS клиент выдаёт ошибк�
 поток. Максимальная добавка — 4128 байт на двунаправленный поток без учёта
 H2/TLS и заголовков. Искусственных задержек нет; неверное подтверждение режима
 останавливает установку до передачи данных приложения. Режим выключен по
-умолчанию. Он не меняет отпечаток TLS/H2. См. [формат и проверки](docs/PADDING.md).
+умолчанию. Он не меняет отпечаток TLS/H2. См. [формат и проверки](docs/architecture/PADDING.md).
 
 ## Несколько серверов и нагрузка
 
 Для простой подготовки главной ноды есть `setup`: случайный секрет, отдельный
 серверный JSON и готовая ссылка с SNI/TLS 1.3/SPKI pin. Вход присоединяется по
 файлу главной ссылки и регистрируется командой `cluster-add`.
-См. [подготовку в несколько команд](docs/SETUP.md) и [свойства защиты](docs/SECURITY.md).
+См. [подготовку в несколько команд](docs/guides/SETUP.md) и [свойства защиты](docs/reference/SECURITY.md).
 
 Для объединения путей с одной ссылкой используйте главную ноду:
 
@@ -148,7 +148,7 @@ H2/TLS и заголовков. Искусственных задержек не
 
 Главная нода хранит адреса и веса входов и собирает их данные в один TCP-сеанс.
 Клиент получает состав после авторизации; список серверов в ссылке не нужен.
-См. [настройку главной ноды, обновления и ограничения](docs/CLUSTER.md).
+См. [настройку главной ноды, обновления и ограничения](docs/architecture/CLUSTER.md).
 
 До восьми явно доверенных HTTPS-серверов могут одновременно обслуживать новые
 потоки. Все получают одинаковые учётные данные после проверки TLS.
@@ -169,7 +169,7 @@ H2/TLS и заголовков. Искусственных задержек не
 сертификата, TLS/ALPN, HTTP-статуса и согласования дополнения не обходятся
 переключением. Установленные потоки не переносятся и не воспроизводятся заново.
 Один поток не объединяет пропускную способность нескольких серверов.
-См. [настройку и ограничения](docs/ENDPOINTS.md).
+См. [настройку и ограничения](docs/guides/ENDPOINTS.md).
 
 На сервере `--max-tunnels` ограничивает одновременно авторизованные туннели
 вместе с DNS, подключением и передачей. По умолчанию — 256. При превышении
@@ -205,14 +205,14 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 
 ## Документация и дальнейшая работа
 
-- [Архитектура](docs/ARCHITECTURE.md) и [план разработки](docs/ROADMAP.md).
-- [Измерения скорости и сетевые испытания](docs/PERFORMANCE.md).
-- [Выбор подходов из других протоколов](docs/TRANSPORT-STRATEGY.md).
-- [Разбор AmneziaWG и дополнительных проектов](docs/PROTOCOL-REVIEW-2026-10-18.md).
-- [Дополнительный разбор Sudoku и dnstt](docs/SUDOKU-DNSTT-REVIEW.md).
-- [Актуальные Amnezia/AmneziaWG и TUIC v5](docs/AMNEZIA-TUIC-REVIEW.md).
-- [Проверка исходников AnyTLS, Hysteria 2, Shadowsocks 2022, XHTTP, mieru и NaiveProxy](docs/SIX-PROTOCOL-AUDIT.md).
-- [Ограничения NaiveProxy и идеи Sudoku](docs/NAIVE-SUDOKU-REVIEW.md).
+- [Архитектура](docs/architecture/ARCHITECTURE.md) и [план разработки](docs/planning/ROADMAP.md).
+- [Измерения скорости и сетевые испытания](docs/research/PERFORMANCE.md).
+- [Выбор подходов из других протоколов](docs/architecture/TRANSPORT-STRATEGY.md).
+- [Разбор AmneziaWG и дополнительных проектов](docs/research/PROTOCOL-REVIEW-2026-10-18.md).
+- [Дополнительный разбор Sudoku и dnstt](docs/research/SUDOKU-DNSTT-REVIEW.md).
+- [Актуальные Amnezia/AmneziaWG и TUIC v5](docs/research/AMNEZIA-TUIC-REVIEW.md).
+- [Проверка исходников AnyTLS, Hysteria 2, Shadowsocks 2022, XHTTP, mieru и NaiveProxy](docs/research/SIX-PROTOCOL-AUDIT.md).
+- [Ограничения NaiveProxy и идеи Sudoku](docs/research/NAIVE-SUDOKU-REVIEW.md).
 
 Следующие этапы — эталонные записи реального Firefox, стабилизация NSS,
 эксперимент Neqo/HTTP/3, измерения потерь, задержек и поведения в сетях
@@ -223,7 +223,7 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 
 Отдельный явный режим `--bond` передаёт блоки одного потока через несколько
 входов к общему выходу. Обычные режимы распределения целых потоков сохранены.
-См. [запуск, подтверждения, границы и проверки](docs/BONDING.md).
+См. [запуск, подтверждения, границы и проверки](docs/architecture/BONDING.md).
 Это прототип: преимущество скорости и устойчивость к ТСПУ не доказаны.
 
 ## Ссылки подключения
@@ -231,6 +231,6 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 Схема — `vetroff://`. Команда `foxtunnel share --server https://node-a.example`
 создаёт ссылку из настроек и учётных данных окружения. Импорт:
 `foxtunnel client --link-file connection.txt` или `--link-file -` для stdin.
-Ссылка содержит секреты. [Формат, несколько нод и примеры](docs/CONNECTION-LINKS.md).
+Ссылка содержит секреты. [Формат, несколько нод и примеры](docs/guides/CONNECTION-LINKS.md).
 
-[TLS/HTTP2: живое сравнение Firefox и FoxTunnel, команды и ограничения](docs/WEB-PROFILE.md).
+[TLS/HTTP2: живое сравнение Firefox и FoxTunnel, команды и ограничения](docs/research/WEB-PROFILE.md).

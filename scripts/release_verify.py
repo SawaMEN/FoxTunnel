@@ -6,9 +6,8 @@ from pathlib import Path
 import re
 import stat
 import tarfile
-import zipfile
 
-TARGETS = set('linux/amd64/go linux/arm64/go linux/armv7/go darwin/amd64/go darwin/arm64/go windows/amd64/go windows/arm64/go linux/amd64/nss linux/arm64/nss'.split())
+TARGETS = set('linux/amd64/go linux/arm64/go linux/amd64/nss linux/arm64/nss'.split())
 VERSION = re.compile(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z')
 COMMIT = re.compile(r'[0-9a-f]{40}\Z')
 HASH = re.compile(r'[0-9a-f]{64}\Z')
@@ -68,7 +67,7 @@ def read_json(path):
 
 def safe_name(name):
     # The release layout contains regular files only. Reject names unsafe on
-    # Windows as well as Unix, including alternate streams and device aliases.
+    # Linux and for portable extraction, including alternate streams and device aliases.
     if not isinstance(name, str) or not name or len(name) > 240 or '\\' in name:
         raise ValueError('unsafe archive member name')
     for part in name.split('/'):
@@ -87,8 +86,8 @@ def validate_metadata(p, version, commit):
         raise ValueError('unsupported release target')
     goos, arch, flavor = target.split('/')
     expected = dict(version=version, commit=commit, goos=goos,
-                    goarch='arm' if arch == 'armv7' else arch,
-                    variant='7' if arch == 'armv7' else '', build_flavor=flavor,
+                    goarch=arch,
+                    variant='', build_flavor=flavor,
                     protocol_draft=DRAFT, default_tls_backend='go',
                     tls_backends=['go', 'nss'] if flavor == 'nss' else ['go'])
     if type(p.get('schema')) is not int or p['schema'] != 1:
@@ -107,7 +106,7 @@ def validate_metadata(p, version, commit):
     if not isinstance(stamp, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', stamp):
         raise ValueError('invalid build date')
     dt.datetime.strptime(stamp, '%Y-%m-%dT%H:%M:%SZ')
-    suffix = '.zip' if goos == 'windows' else '.tar.gz'
+    suffix = '.tar.gz'
     if p.get('filename') != f'foxtunnel_{version[1:]}_{goos}_{arch}_{flavor}{suffix}':
         raise ValueError('archive filename does not match target/version')
     if not isinstance(p.get('sha256'), str) or not HASH.fullmatch(p['sha256']):
@@ -175,7 +174,7 @@ def inspect_archive(path, metadata):
     if path.stat().st_size != metadata['size'] or sha(path) != metadata['sha256']:
         raise ValueError('archive hash/size mismatch')
     hashes, documents, seen, total = {}, {}, set(), 0
-    executable = 'foxtunnel.exe' if metadata['goos'] == 'windows' else 'foxtunnel'
+    executable = 'foxtunnel'
     libraries = metadata['runtime'].get('mozilla', {}).get('libraries', {})
     allowed = {executable, 'build.json', 'LICENSE', 'THIRD_PARTY_NOTICES.txt'}
     if metadata['build_flavor'] == 'nss':
@@ -196,7 +195,7 @@ def inspect_archive(path, metadata):
             raise ValueError('archive member/total exceeds release limit')
         if name.endswith('.json') and size > MAX_JSON:
             raise ValueError('JSON exceeds release limit')
-        if name == executable and metadata['goos'] != 'windows' and mode & 0o111 != 0o111:
+        if name == executable and mode & 0o111 != 0o111:
             raise ValueError('Unix executable lacks execute permissions')
         total += size
         digest, data, read = hashlib.sha256(), bytearray(), 0
@@ -214,18 +213,10 @@ def inspect_archive(path, metadata):
         if data:
             documents[name] = json_object(data)
 
-    if path.name.endswith('.zip'):
-        with zipfile.ZipFile(path) as archive:
-            for item in archive.infolist():
-                mode = item.external_attr >> 16
-                consume(item.filename, item.file_size, mode,
-                        stat.S_ISREG(mode) and not item.flag_bits & 1,
-                        lambda item=item: archive.open(item))
-    else:
-        with tarfile.open(path, 'r|gz') as archive:
-            for item in archive:
-                consume(item.name, item.size, item.mode, item.isfile(),
-                        lambda item=item: archive.extractfile(item))
+    with tarfile.open(path, 'r|gz') as archive:
+        for item in archive:
+            consume(item.name, item.size, item.mode, item.isfile(),
+                    lambda item=item: archive.extractfile(item))
     if not allowed <= hashes.keys() or not any(name.startswith('licenses/') for name in hashes):
         raise ValueError('missing required archive member')
     expected_build = {k: v for k, v in metadata.items() if k not in ARCHIVE_FIELDS}
@@ -241,18 +232,50 @@ def inspect_archive(path, metadata):
                 raise ValueError('bundled Mozilla library hash mismatch: ' + name)
 
 
+def embedded_metadata(path):
+    """Read bounded build.json without extracting or executing an archive."""
+    if path.is_symlink() or not path.is_file():
+        raise ValueError('archive must be a regular local file')
+    if not 0 < path.stat().st_size <= MAX_TOTAL:
+        raise ValueError('invalid archive size')
+    with tarfile.open(path, 'r|gz') as archive:
+        for member in archive:
+            if member.name == 'build.json':
+                if not member.isfile() or not 0 < member.size <= MAX_JSON:
+                    raise ValueError('invalid embedded build.json')
+                with archive.extractfile(member) as source:
+                    data = source.read(MAX_JSON + 1)
+                if len(data) != member.size:
+                    raise ValueError('truncated embedded build.json')
+                metadata = json_object(data)
+                metadata.update(filename=path.name, sha256=sha(path), size=path.stat().st_size)
+                return metadata
+    raise ValueError('missing embedded build.json')
+
+
 def verify(a):
-    base = Path(a.input)
-    manifest = read_json(base / 'manifest.json')
-    entries = validate_manifest(manifest, a.version, a.commit)
-    sums = ''.join(p['sha256'] + '  ' + p['filename'] + '\n' for p in entries)
-    sums += sha(base / 'manifest.json') + '  manifest.json\n'
-    with (base / 'SHA256SUMS').open('rb') as f:
-        if f.read(65537) != sums.encode():
-            raise ValueError('SHA256SUMS differs from manifest')
+    """Verify four Linux archives, or one explicitly selected target, offline."""
+    validate_version(a.version)
+    if not isinstance(a.commit, str) or not COMMIT.fullmatch(a.commit):
+        raise ValueError('expected source commit must be a full lowercase Git SHA')
     if a.target is not None and a.target not in TARGETS:
         raise ValueError('unsupported requested target')
-    selected = [p for p in entries if a.target is None or p['target'] == a.target]
-    for p in selected:
-        inspect_archive(base / p['filename'], p)
-    print(f'Verified {len(selected)} archives for {a.version} from {a.commit}; no code executed')
+    base = Path(a.input)
+    if a.target:
+        target_filename = f"foxtunnel_{a.version[1:]}_{a.target.replace('/', '_')}.tar.gz"
+        archives = [base / target_filename]
+    else:
+        archives = sorted(base.glob(f'foxtunnel_{a.version[1:]}_*.tar.gz'))
+    if not archives:
+        raise ValueError('no release archives found')
+    seen = set()
+    for path in archives:
+        p = embedded_metadata(path)
+        validate_metadata(p, a.version, a.commit)
+        if p['target'] in seen or (a.target and p['target'] != a.target):
+            raise ValueError('duplicate/unexpected release target')
+        seen.add(p['target'])
+        inspect_archive(path, p)
+    if seen != ({a.target} if a.target else TARGETS):
+        raise ValueError('incomplete/unexpected release target set')
+    print(f'Verified {len(archives)} Linux archives for {a.version} from {a.commit}; no code executed')
