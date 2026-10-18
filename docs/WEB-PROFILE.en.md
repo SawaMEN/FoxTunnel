@@ -112,3 +112,5 @@ has been demonstrated by these local experiments.
 
 Firefox archive provenance: [official release tarball](https://archive.mozilla.org/pub/firefox/releases/158.0/linux-x86_64/en-US/firefox-158.0.tar.xz),
 SHA-256 `9549b054ec4cf85f50f6a19d8c6fb79580312e71ebc4ec2cb217ec9af09dc12a`.
+
+[Follow-up: actual HTTP/2 receive windows and HPACK](H2-RECEIVE-PROFILE.en.md).

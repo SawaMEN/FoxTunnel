@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"net"
 	"net/http"
@@ -22,4 +23,11 @@ func NewTransport(*tls.Config) (Transport, error) {
 
 func DialTLSContext(context.Context, string, string, *tls.Config) (net.Conn, error) {
 	return nil, i18n.Error("NSS backend unavailable: build on Linux with CGO_ENABLED=1 and -tags nss (NSS/NSPR development packages required)")
+}
+
+func NewTransportWithProfile(config *tls.Config, profile string) (Transport, error) {
+	if err := h2profile.Validate(profile); err != nil {
+		return nil, err
+	}
+	return NewTransport(config)
 }

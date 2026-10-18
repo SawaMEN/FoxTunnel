@@ -17,7 +17,9 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"golang.org/x/net/http2"
 	"io"
 	"net"
 	"net/http"
@@ -26,8 +28,6 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
-
-	"golang.org/x/net/http2"
 )
 
 type Transport interface {
@@ -39,6 +39,12 @@ var initOnce sync.Once
 var initError error
 
 func NewTransport(config *tls.Config) (Transport, error) {
+	return NewTransportWithProfile(config, "")
+}
+func NewTransportWithProfile(config *tls.Config, profile string) (Transport, error) {
+	if err := h2profile.Validate(profile); err != nil {
+		return nil, err
+	}
 	if config.InsecureSkipVerify {
 		return nil, i18n.Error("TLS verification cannot be disabled")
 	}
@@ -54,28 +60,35 @@ func NewTransport(config *tls.Config) (Transport, error) {
 		return nil, initError
 	}
 	config = config.Clone()
-	return &http2.Transport{
-		TLSClientConfig:    config,
-		DisableCompression: true,
-		IdleConnTimeout:    90 * time.Second,
-		DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-			setup, cancel := context.WithTimeout(ctx, 10*time.Second)
-			defer cancel()
-			raw, err := (&net.Dialer{KeepAlive: 30 * time.Second}).DialContext(setup, network, addr)
-			if err != nil {
-				return nil, err
-			}
-			host, _, err := net.SplitHostPort(addr)
-			if err != nil {
-				raw.Close()
-				return nil, err
-			}
-			if config.ServerName != "" {
-				host = config.ServerName
-			}
-			return wrapConfig(setup, raw, host, config)
-		},
-	}, nil
+	h1 := &http.Transport{TLSClientConfig: config.Clone(), DisableCompression: true, IdleConnTimeout: 90 * time.Second}
+	if err := h2profile.Configure(h1, profile); err != nil {
+		return nil, err
+	}
+	transport, err := http2.ConfigureTransports(h1)
+	if err != nil {
+		return nil, err
+	}
+	// ConfigureTransports installs a no-dial pool intended for h1's ALPN
+	// handoff. This adapter returns h2 directly and must own its dial pool.
+	transport.ConnPool = nil
+	transport.DialTLSContext = func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+		setup, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		raw, err := (&net.Dialer{KeepAlive: 30 * time.Second}).DialContext(setup, network, addr)
+		if err != nil {
+			return nil, err
+		}
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			raw.Close()
+			return nil, err
+		}
+		if config.ServerName != "" {
+			host = config.ServerName
+		}
+		return wrapConfig(setup, raw, host, config)
+	}
+	return transport, nil
 }
 
 type conn struct {

@@ -36,6 +36,7 @@ func run() error {
 	source := fs.String("source", "", "browser/backend version, OS and scenario label")
 	duration := fs.Duration("duration", 3*time.Second, "post-handshake observation, at most 30s")
 	sample := fs.String("sample", "", "optional real FoxTunnel client: go or nss")
+	receiveProfile := fs.String("h2-receive-profile", "default", "outer H2 receive profile: default or firefox-158")
 	transport := fs.String("transport", "xhttp-packet-up", "sample native H2/XHTTP transport (no WSS/H3)")
 	input := fs.String("input", "", "compare an existing report instead of capturing")
 	compare := fs.String("compare", "", "reference report; compare TLS and initial HTTP/2 metadata")
@@ -92,7 +93,7 @@ func run() error {
 		if *sample != "" {
 			done = make(chan error, 1)
 			go func() {
-				e := sampleClient(origin, *cert, *sample, *transport)
+				e := sampleClient(origin, *cert, *sample, *transport, *receiveProfile)
 				if e != nil {
 					_ = l.Close()
 				}
@@ -182,7 +183,7 @@ func load(path string) (webprofile.Profile, error) {
 
 // Exercise the public Client/SOCKS API, including the selected real outer
 // transport, inner H2, authentication and destination relay. No external hosts.
-func sampleClient(origin, cert, backend, mode string) error {
+func sampleClient(origin, cert, backend, mode, receiveProfile string) error {
 	echo, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return err
@@ -206,6 +207,9 @@ func sampleClient(origin, cert, backend, mode string) error {
 		return err
 	}
 	if err = client.SetTransport(mode); err != nil {
+		return err
+	}
+	if err = client.SetHTTP2ReceiveProfile(receiveProfile); err != nil {
 		return err
 	}
 	socks, err := net.Listen("tcp", "127.0.0.1:0")

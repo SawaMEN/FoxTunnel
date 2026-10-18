@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
+	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
@@ -55,14 +56,15 @@ type Client struct {
 		CloseIdleConnections()
 	}
 	// BondPipeline is 0 (automatic), 4 or 8; set before EnableBond.
-	BondPipeline    int
-	bondClient      *bond.Client
-	bondDiscovery   *bondDiscovery
-	tlsConfig       *tls.Config
-	identity        tlsidentity.Policy
-	backend         string
-	nativeTransport string
-	xhttpSettings   xhttp.Settings
+	BondPipeline     int
+	bondClient       *bond.Client
+	bondDiscovery    *bondDiscovery
+	tlsConfig        *tls.Config
+	identity         tlsidentity.Policy
+	backend          string
+	nativeTransport  string
+	h2ReceiveProfile string
+	xhttpSettings    xhttp.Settings
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {
@@ -95,9 +97,13 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 }
 
 func newGoTransport(config *tls.Config) *http.Transport {
+	t, _ := newGoTransportWithProfile(config, "")
+	return t
+}
+func newGoTransportWithProfile(config *tls.Config, profile string) (*http.Transport, error) {
 	protocols := new(http.Protocols)
 	protocols.SetHTTP2(true)
-	return &http.Transport{
+	t := &http.Transport{
 		Protocols: protocols,
 		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return dialGoH2(ctx, network, addr, config)
@@ -108,6 +114,10 @@ func newGoTransport(config *tls.Config) *http.Transport {
 		MaxIdleConns: 64, MaxIdleConnsPerHost: 16,
 		IdleConnTimeout: 90 * time.Second, TLSHandshakeTimeout: 10 * time.Second,
 	}
+	if err := h2profile.Configure(t, profile); err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 
 // SetTLSBackend selects a backend before Serve starts. It never falls back
@@ -122,12 +132,12 @@ func (c *Client) SetTLSBackend(name string) error {
 	default:
 		return fmt.Errorf(i18n.Text("unknown TLS backend %q (choose go or nss)"), name)
 	}
-	transport, err := makeNativeTransport(c.nativeTransport, name, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings)
+	transport, err := makeNativeTransport(c.nativeTransport, name, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile)
 	if err != nil {
 		return err
 	}
 	c.transport.CloseIdleConnections()
-	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: name, mode: c.nativeTransport, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: name, mode: c.nativeTransport, h2ReceiveProfile: c.h2ReceiveProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
 	c.backend = name
 	return nil
 }
@@ -289,4 +299,25 @@ func socks5Reply(w io.Writer, code byte) error {
 	}
 	_, err := w.Write([]byte{5, code, 0, 1, 0, 0, 0, 0, 0, 0})
 	return err
+}
+
+// SetHTTP2ReceiveProfile changes only the outer H2 receive configuration.
+// Configure before Serve and before enabling bond/discovery.
+func (c *Client) SetHTTP2ReceiveProfile(name string) error {
+	if err := h2profile.Validate(name); err != nil {
+		return err
+	}
+	if name == "default" {
+		name = ""
+	}
+	if c.bondClient != nil || c.bondDiscovery != nil {
+		return i18n.Error("configure transport before enabling bond")
+	}
+	old := c.h2ReceiveProfile
+	c.h2ReceiveProfile = name
+	if err := c.SetTLSBackend(c.backend); err != nil {
+		c.h2ReceiveProfile = old
+		return err
+	}
+	return nil
 }

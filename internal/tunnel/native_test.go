@@ -74,8 +74,11 @@ func TestNativeDiscoveredBond(t *testing.T) {
 func TestNativeVerificationBeforeCredentials(t *testing.T) {
 	testNativeVerificationBeforeCredentials(t, "go")
 }
-func testNativeVerificationBeforeCredentials(t *testing.T, backend string) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+func testNativeVerificationBeforeCredentials(t *testing.T, backend string, receiveProfile ...string) {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+		if len(receiveProfile) > 0 && (mode == "wss" || mode == "h3-post") {
+			continue
+		}
 		if backend == "nss" && mode == "h3-post" {
 			continue
 		}
@@ -108,6 +111,11 @@ func testNativeVerificationBeforeCredentials(t *testing.T, backend string) {
 				}
 				if err := c.SetTransport(mode); err != nil {
 					t.Fatal(err)
+				}
+				if len(receiveProfile) > 0 {
+					if err := c.SetHTTP2ReceiveProfile(receiveProfile[0]); err != nil {
+						t.Fatal(err)
+					}
 				}
 				if xhttp.IsMode(mode) {
 					if err := c.SetXHTTPSettings("/api/custom", "route.example"); err != nil {

@@ -47,9 +47,12 @@ func (c *Client) SetTransport(mode string) error {
 	return nil
 }
 
-func makeNativeTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings) (tlsTransport, error) {
+func makeNativeTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings, receiveProfile string) (tlsTransport, error) {
 	if mode == "xhttp-stream-one" || mode == "xhttp-stream-up" || mode == "xhttp-packet-up" {
-		return newXHTTPTransport(mode, backend, config, auth, settings)
+		return newXHTTPTransport(mode, backend, config, auth, settings, receiveProfile)
+	}
+	if receiveProfile != "" && (mode == "wss" || mode == "h3-post") {
+		return nil, i18n.Error("HTTP/2 receive profile requires an H2 or XHTTP transport")
 	}
 	if settings != (xhttp.Settings{}) {
 		return nil, xhttp.ErrSettings
@@ -63,7 +66,7 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 	if mode == "wss" {
 		return newWSSTransport(backend, config, auth)
 	}
-	t, err := makeTLStransport(backend, config)
+	t, err := makeTLStransport(backend, config, receiveProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -205,8 +208,8 @@ func basicAuth(user, password string) string {
 
 // Mozilla NSS supplies the outer TLS handshake; Go supplies the HTTP/2 framing.
 // The inner connection is plaintext HTTP/2 inside the verified HTTPS carrier.
-func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings) (tlsTransport, error) {
-	outer, err := makeTLStransport(backend, config)
+func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings, receiveProfile string) (tlsTransport, error) {
+	outer, err := makeTLStransport(backend, config, receiveProfile)
 	if err != nil {
 		return nil, err
 	}

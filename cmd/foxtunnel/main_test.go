@@ -136,7 +136,7 @@ func TestShareAndImportFromStdin(t *testing.T) {
 	if !strings.HasPrefix(link, "vetroff://") {
 		t.Fatal("wrong connection scheme")
 	}
-	client := helperCommand(ctx, "client", "--link-file", "-", "--listen", "127.0.0.1:0")
+	client := helperCommand(ctx, "client", "--link-file", "-", "--listen", "127.0.0.1:0", "--h2-receive-profile", "firefox-158")
 	client.Env = helperEnv(false)
 	client.Stdin = strings.NewReader(link + "\n")
 	stderr, err := client.StderrPipe()

@@ -35,6 +35,10 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
+	"HTTP/2 receive profile: default or experimental firefox-158":    "Профиль приёма HTTP/2: default или экспериментальный firefox-158",
+	"unknown HTTP/2 receive profile (choose default or firefox-158)": "Неизвестный профиль приёма HTTP/2 (выберите default или firefox-158)",
+	"HTTP/2 receive profile requires an H2 or XHTTP transport":       "Профиль приёма HTTP/2 требует транспорт H2 или XHTTP",
+
 	"XHTTP path prefix (setup generates a random route by default)": "Префикс пути XHTTP (setup по умолчанию создаёт случайный маршрут)",
 	"invalid XHTTP path or Host":                                    "Недопустимый путь или HTTP Host для XHTTP",
 	"XHTTP settings require an XHTTP transport":                     "Настройки XHTTP требуют выбора транспорта XHTTP",

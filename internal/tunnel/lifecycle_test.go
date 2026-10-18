@@ -193,7 +193,7 @@ func benchmarkTunnelOptions(b *testing.B, backend string, padding bool) {
 	benchmarkNativeOptions(b, backend, padding, "h2-connect")
 }
 
-func benchmarkNativeOptions(b *testing.B, backend string, padding bool, mode string) {
+func benchmarkNativeOptions(b *testing.B, backend string, padding bool, mode string, receiveProfile ...string) {
 	target := testDestination(b, func(c net.Conn) { _, _ = io.Copy(c, c) })
 	server := &Server{Username: "alice", Password: "secret", AllowPrivate: true, Padding: padding}
 	client, addr := testClient(b, server)
@@ -208,6 +208,11 @@ func benchmarkNativeOptions(b *testing.B, backend string, padding bool, mode str
 	}
 	if err := client.SetTransport(mode); err != nil {
 		b.Fatal(err)
+	}
+	if len(receiveProfile) > 0 {
+		if err := client.SetHTTP2ReceiveProfile(receiveProfile[0]); err != nil {
+			b.Fatal(err)
+		}
 	}
 	for _, size := range []int{64, 1 << 20} {
 		b.Run(stringSize(size), func(b *testing.B) {
