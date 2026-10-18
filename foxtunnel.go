@@ -28,7 +28,7 @@ type ClientConfig struct {
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
-	TLSBackend           string // Empty selects go; nss requires a Linux NSS-tagged build.
+	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for H3); explicit go/nss allowed.
 	Transport            string // Empty selects h2-connect.
 	ServerName, SPKIPin  string
 	XHTTPPath, XHTTPHost string
@@ -68,7 +68,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}()
 	backend := config.TLSBackend
 	if backend == "" {
-		backend = "go"
+		backend = "auto"
 	}
 	if err = core.SetTLSBackend(backend); err != nil {
 		return nil, err

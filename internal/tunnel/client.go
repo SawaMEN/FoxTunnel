@@ -20,13 +20,14 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
+	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 // Client exposes local SOCKS5 TCP over the selected native HTTPS transport.
-// Go TLS is the default; tagged Linux builds can opt into experimental NSS.
+// NSS is the default in NSS-tagged Linux builds for TCP transports; HTTP/3 stays Go QUIC.
 type Client struct {
 	ServerURL  *url.URL
 	Username   string
@@ -91,8 +92,13 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile}
 	c.tlsConfig = &tls.Config{MinVersion: tls.VersionTLS13, MaxVersion: tls.VersionTLS13, RootCAs: roots, ClientSessionCache: tls.NewLRUClientSessionCache(32)}
 	c.transport = &identityPool{base: newGoTransport(c.tlsConfig), config: c.tlsConfig.Clone(), backend: "go", primary: u.Scheme + "://" + u.Host, entries: make(map[string]identityEntry)}
-	c.backend = "go"
-
+	c.backend = "auto"
+	// Initialize the selected backend eagerly: never conceal an unusable NSS build.
+	if buildinfo.NSSAvailable {
+		if err := c.SetTLSBackend("auto"); err != nil {
+			return nil, err
+		}
+	}
 	return c, nil
 }
 
@@ -120,24 +126,31 @@ func newGoTransportWithProfile(config *tls.Config, profile string) (*http.Transp
 	return t, nil
 }
 
-// SetTLSBackend selects a backend before Serve starts. It never falls back
-// silently: an unavailable NSS build returns an error.
+// SetTLSBackend selects a backend before Serve starts. "auto" uses NSS on
+// supported TCP transports when compiled in, but Go QUIC for HTTP/3.
+// Explicit "nss" never silently falls back to Go.
 func (c *Client) SetTLSBackend(name string) error {
 	if c.bondClient != nil || c.bondDiscovery != nil {
 		return i18n.Error("configure TLS before enabling bond")
 	}
 	switch name {
-	case "go":
-	case "nss":
+	case "auto", "go", "nss":
 	default:
-		return fmt.Errorf(i18n.Text("unknown TLS backend %q (choose go or nss)"), name)
+		return fmt.Errorf(i18n.Text("unknown TLS backend %q (choose auto, go or nss)"), name)
 	}
-	transport, err := makeNativeTransport(c.nativeTransport, name, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile)
+	resolved := name
+	if name == "auto" {
+		resolved = "go"
+		if buildinfo.NSSAvailable && c.nativeTransport != "h3-post" {
+			resolved = "nss"
+		}
+	}
+	transport, err := makeNativeTransport(c.nativeTransport, resolved, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile)
 	if err != nil {
 		return err
 	}
 	c.transport.CloseIdleConnections()
-	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: name, mode: c.nativeTransport, h2ReceiveProfile: c.h2ReceiveProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, h2ReceiveProfile: c.h2ReceiveProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
 	c.backend = name
 	return nil
 }

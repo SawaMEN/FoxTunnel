@@ -7,7 +7,7 @@ import re
 import stat
 import tarfile
 
-TARGETS = set('linux/amd64/go linux/arm64/go linux/amd64/nss linux/arm64/nss'.split())
+TARGETS = set('linux/amd64/nss linux/arm64/nss'.split())
 VERSION = re.compile(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z')
 COMMIT = re.compile(r'[0-9a-f]{40}\Z')
 HASH = re.compile(r'[0-9a-f]{64}\Z')
@@ -88,7 +88,7 @@ def validate_metadata(p, version, commit):
     expected = dict(version=version, commit=commit, goos=goos,
                     goarch=arch,
                     variant='', build_flavor=flavor,
-                    protocol_draft=DRAFT, default_tls_backend='go',
+                    protocol_draft=DRAFT, default_tls_backend='nss',
                     tls_backends=['go', 'nss'] if flavor == 'nss' else ['go'])
     if type(p.get('schema')) is not int or p['schema'] != 1:
         raise ValueError('unsupported artifact schema')
@@ -254,7 +254,7 @@ def embedded_metadata(path):
 
 
 def verify(a):
-    """Verify four Linux archives, or one explicitly selected target, offline."""
+    """Verify both Linux NSS archives, or one explicitly selected target, offline."""
     validate_version(a.version)
     if not isinstance(a.commit, str) or not COMMIT.fullmatch(a.commit):
         raise ValueError('expected source commit must be a full lowercase Git SHA')

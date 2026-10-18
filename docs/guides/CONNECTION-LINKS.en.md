@@ -48,8 +48,8 @@ query, fragment or userinfo. Stable fields:
 {"v":1,"servers":["https://node-a.example","https://node-b.example"],"username":"example-user","password":"example-only-password","tls":"go","balance":"failover","bond":true,"pipeline":"auto","padding":false,"connect_timeout":"15s","attempt_timeout":"5s"}
 ```
 
-TLS: go/nss. Balance: failover/round-robin/least-active. Pipeline: auto/4/8.
-Explicit-node bonding requires two nodes and cannot combine with padding. NSS requires the
+TLS: auto/go/nss (auto uses NSS for TCP when compiled in, Go QUIC for H3). Balance: failover/round-robin/least-active. Pipeline: auto/4/8.
+Explicit-node bonding requires two nodes and cannot combine with padding. Explicit NSS requires the
 appropriate local build and never silently substitutes Go TLS.
 
 `"discover":true` with `"bond":true` requires exactly one server, the coordinator.
@@ -73,7 +73,7 @@ stdin import were checked by starting a loopback SOCKS listener.
 
 `transport` is `h2-connect` (default), `h2-post`, `wss` or `h3-post`.
 Use `share --transport wss` or `setup --transport wss`. NSS supports the first
-three; `h3-post` with `tls:nss` is rejected. Profiles launch no external programs.
+three; `h3-post` with explicit `tls:nss` is rejected; `tls:auto` uses Go QUIC. Profiles launch no external programs.
 Old links retain H2 CONNECT. See [configuration and limits](../architecture/NATIVE-TRANSPORTS.en.md).
 
 Fields `xhttp_path` / `xhttp_host` select a shared XHTTP cluster route independently of TLS SNI/pin; other transports reject them. See [XHTTP settings](../architecture/XHTTP.en.md).

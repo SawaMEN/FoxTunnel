@@ -90,7 +90,7 @@ func (c *Config) normalize() error {
 		c.XHTTPPath, c.XHTTPHost = settings.Path, settings.Host
 	}
 	if c.TLSBackend == "" {
-		c.TLSBackend = "go"
+		c.TLSBackend = "auto"
 	}
 	policy, err := tlsidentity.Normalize(c.SNI, c.PinSHA256)
 	if err != nil {
@@ -103,10 +103,10 @@ func (c *Config) normalize() error {
 	if c.Encryption != "tls13" {
 		return invalid()
 	}
-	if c.Transport == "h3-post" && c.TLSBackend != "go" {
+	if c.Transport == "h3-post" && c.TLSBackend == "nss" {
 		return invalid()
 	}
-	if c.TLSBackend != "go" && c.TLSBackend != "nss" {
+	if c.TLSBackend != "auto" && c.TLSBackend != "go" && c.TLSBackend != "nss" {
 		return invalid()
 	}
 	if c.Balance == "" {

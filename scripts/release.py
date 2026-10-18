@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build four Linux release archives and validate them without extra index assets."""
+"""Build two Linux NSS release archives and validate them without extra index assets."""
 import argparse
 import datetime as dt
 import gzip
@@ -106,7 +106,7 @@ def build(a):
             env = mozilla_runtime.verify_loaded(executable, Path(tmp), runtime_info['libraries'], env)
         if native:
             info = json.loads(command([str(executable), 'version', '--json'], env))
-            for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], go_version=go_version, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', default_tls_backend='go').items():
+            for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], go_version=go_version, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', default_tls_backend='nss' if a.backend == 'nss' else 'go').items():
                 if info[k] != v:
                     raise ValueError('native metadata mismatch: ' + k)
         if a.backend == 'nss' and info.get('nss_version') != runtime_info['nss_version']:
@@ -116,7 +116,7 @@ def build(a):
         p = dict(schema=1, version=a.version, commit=commit, build_date=date, target=target, goos=a.os, goarch=env['GOARCH'], variant=variant, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', experimental=True, native_smoke_tested=native)
         p['go_version'] = go_version
         p['tls_backends'] = ['go', 'nss'] if a.backend == 'nss' else ['go']
-        p['default_tls_backend'] = 'go'
+        p['default_tls_backend'] = 'nss' if a.backend == 'nss' else 'go'
         p['runtime'] = dict(kind='bundled-nss', baseline=a.baseline, packages=['glibc', 'libgcc-s1'], mozilla=runtime_info) if a.backend == 'nss' else dict(kind='cgo-disabled')
         if info.get('nss_version'):
             p['runtime']['nss_version'] = info['nss_version']
@@ -165,7 +165,7 @@ def main():
     i = sub.add_parser('index')
     i.add_argument('--version', required=True)
     i.add_argument('--input', default='dist')
-    i.add_argument('--targets', help='test subset; release CI requires all four Linux targets')
+    i.add_argument('--targets', help='test subset; release CI requires both Linux NSS targets')
     v = sub.add_parser('verify', help='verify downloaded release assets without extracting or executing them')
     v.add_argument('--version', required=True, help='exact expected tag from a trusted source')
     v.add_argument('--commit', required=True, help='expected full source commit from a trusted source')

@@ -20,18 +20,18 @@ CI version.
 
 | OS | Architectures | Flavors |
 |---|---|---|
-| Linux | amd64, arm64 | go, nss |
+| Linux | amd64, arm64 | nss |
 
-Exactly **four Linux archives** are published per tag; darwin/macOS, Windows and armv7 are excluded. Format: `foxtunnel_VERSION_linux_ARCH_FLAVOR.tar.gz` (the leading tag `v` is omitted from filenames).
+Exactly **two Linux NSS archives** are published per tag; darwin/macOS, Windows and armv7 are excluded. Format: `foxtunnel_VERSION_linux_ARCH_FLAVOR.tar.gz` (the leading tag `v` is omitted from filenames).
 
-Every archive includes `foxtunnel`, `build.json`, MIT/Go/dependency licenses, and third-party notices. NSS archives additionally bundle unchanged NSS/NSPR/SQLite libraries pinned to Firefox 158.0 in `lib/`, Mozilla license notices, and `mozilla-runtime.json` with source URLs and hashes. NSS needs compatible glibc/libgcc-s1 (Ubuntu 24.04 CI baseline); no host NSS packages are required. Keep the complete extracted directory. Even the NSS build defaults to the `go` backend until NSS is explicitly selected, and is not a complete Firefox networking implementation.
+Every archive includes `foxtunnel`, `build.json`, MIT/Go/dependency licenses, and third-party notices. NSS archives additionally bundle unchanged NSS/NSPR/SQLite libraries pinned to Firefox 158.0 in `lib/`, Mozilla license notices, and `mozilla-runtime.json` with source URLs and hashes. NSS needs compatible glibc/libgcc-s1 (Ubuntu 24.04 CI baseline); no host NSS packages are required. Keep the complete extracted directory. The NSS build defaults to NSS for H2/WSS/XHTTP (`auto`); Go TLS remains available via `--tls-backend go`, and H3 continues to use Go QUIC. This is not a complete Firefox networking implementation.
 
 `manifest.json` and `SHA256SUMS` are not generated or published. CI temporarily uses `*.metadata.json` sidecars to check the complete release set; they are not release assets. The embedded `build.json` remains the machine-readable build contract.
 
 ## Integration by a panel or client
 
 1. Choose an exact trusted tag and full source commit; do not select `/releases/latest`.
-2. Support `linux/amd64` and `linux/arm64`, choose `go` or `nss`, and download that `.tar.gz` from the tag.
+2. Support `linux/amd64` and `linux/arm64`, download the `nss` `.tar.gz` from the tag.
 3. Check the archive offline using `scripts/release.py verify` (below); securely extract it into a dedicated version directory, rejecting unsafe names and links.
 4. Run `foxtunnel version --json` and verify schema, tag, commit, target, protocol draft, TLS backends and `dirty: false`.
 5. Start `foxtunnel client --link-file PRIVATE_FILE --listen 127.0.0.1:1080` or `foxtunnel server --config PRIVATE_SERVER_JSON`. Keep secrets in private files and environment, not shell commands.
@@ -42,12 +42,10 @@ CPU mapping: x86_64 → amd64, aarch64 → arm64. Windows, macOS and armv7 recei
 ## Maintainer build
 
 ```sh
-python3 scripts/release.py build --version v0.1.0-alpha.1 \
-  --os linux --arch amd64 --backend go
 # NSS: native Linux with the pinned Mozilla runtime and native toolchain
 python3 scripts/release.py build --version v0.1.0-alpha.1 \
   --os linux --arch arm64 --backend nss --baseline ubuntu-24.04
-# After collecting the four archives and their CI-only sidecars:
+# After collecting the two NSS archives and their CI-only sidecars:
 python3 scripts/release.py index --version v0.1.0-alpha.1
 ```
 
@@ -83,9 +81,9 @@ python3 scripts/release.py verify --input downloaded \
   --version "$RELEASE_TAG" --commit "$RELEASE_COMMIT" --target linux/arm64/nss
 ```
 
-Without `--target`, verify all four Linux archives; with it, only the selected archive is needed. The verifier reads `build.json` directly from each archive, validates version/commit/draft/platform, limits, required members and Mozilla provenance/library hashes, and rejects unsafe paths and special files without extracting or executing code.
+Without `--target`, verify both Linux NSS archives; with it, only the selected archive is needed. The verifier reads `build.json` directly from each archive, validates version/commit/draft/platform, limits, required members and Mozilla provenance/library hashes, and rejects unsafe paths and special files without extracting or executing code.
 
-**Trust limitation:** there is no separately published checksum or signature. An archive's own `build.json` cannot establish authenticity against malicious replacement. Obtain the archive and expected source commit through a trusted channel; consider additional external integrity verification for deployment. CI validates all four archives, including Go vet/race, SDK and Python tests and two native NSS jobs.
+**Trust limitation:** there is no separately published checksum or signature. An archive's own `build.json` cannot establish authenticity against malicious replacement. Obtain the archive and expected source commit through a trusted channel; consider additional external integrity verification for deployment. CI validates all two NSS archives, including Go vet/race, SDK and Python tests and two native NSS jobs.
 
 ## Release through a reviewed version change
 
