@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "firefox_version": "158.0",
+  "nss_version": "3.130",
+  "base_url": "https://archive.mozilla.org/pub/firefox/releases/158.0/",
+  "source": {
+    "path": "source/firefox-158.0.source.tar.xz",
+    "sha256": "fc77f7801d7580a600af683cc367e261eb1ec74647e84a91b4a1e3c1dd5aa2bb"
+  },
+  "archives": {
+    "amd64": {
+      "path": "linux-x86_64/en-US/firefox-158.0.tar.xz",
+      "sha256": "9549b054ec4cf85f50f6a19d8c6fb79580312e71ebc4ec2cb217ec9af09dc12a"
+    },
+    "arm64": {
+      "path": "linux-aarch64/en-US/firefox-158.0.tar.xz",
+      "sha256": "ad647ee920828da7495de7a5f3eb5ddad457b107e4932b3fac49ce700bbbb2b2"
+    }
+  },
+  "libraries": [
+    "libnss3.so",
+    "libnssutil3.so",
+    "libsmime3.so",
+    "libssl3.so",
+    "libnspr4.so",
+    "libplc4.so",
+    "libplds4.so",
+    "libsoftokn3.so",
+    "libfreeblpriv3.so",
+    "libmozsqlite3.so"
+  ],
+  "license_sha256": "25b3a5b7f09335efc0e1c5f1a5fb35dcb612b272a0ef6260a0554b85748b15ce"
+}

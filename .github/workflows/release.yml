@@ -1,6 +1,7 @@
 name: Versioned binaries
 on:
   push:
+    branches: [main]
     tags: ['v[0-9]*']
   pull_request:
     paths: ['cmd/**', 'internal/**', 'foxtunnel*.go', 'scripts/**', 'LICENSE', 'go.*', '.github/workflows/release.yml']
@@ -44,13 +45,25 @@ jobs:
         with:
           go-version: '1.26.x'
       - name: Install NSS dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
-      - name: Verify native public SDK
-        run: go test -race -tags nss . -count=1 -timeout=60s
+        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config unzip binutils
       - name: Build NSS archive and execute version check
         env:
           RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.0.0-ci' }}
         run: python3 scripts/release.py build --version "$RELEASE_TAG" --os linux --arch '${{ matrix.arch }}' --backend nss --baseline ubuntu-24.04
+      - name: Test pinned Mozilla runtime and isolated NSS data transfer
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="$RUNNER_TEMP/nss-package"
+          mkdir -p "$package"
+          tar -xzf dist/*_nss.tar.gz -C "$package"
+          LD_LIBRARY_PATH="$package/lib" go test -race -tags nss ./... -count=1 -timeout=60s
+          CGO_LDFLAGS='-Wl,--disable-new-dtags -Wl,-rpath,$ORIGIN/lib' go test -c -tags nss -o "$package/sdk.test" .
+          docker run --rm --network none --read-only --tmpfs /tmp -v "$package:/release:ro" ubuntu:24.04 sh -ec '
+            if ldconfig -p | grep -Eq "libnss3|libnspr4"; then exit 1; fi
+            /release/foxtunnel version --json
+            /release/sdk.test -test.run "^TestPublicNSS" -test.timeout=60s
+          '
       - uses: actions/upload-artifact@v4
         with:
           name: nss-${{ matrix.arch }}-archive
@@ -103,4 +116,4 @@ jobs:
             echo 'Refusing to overwrite an existing release.' >&2
             exit 1
           fi
-          gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --title "FoxTunnel $RELEASE_TAG" --notes 'Experimental standalone FoxTunnel. Select the exact version, OS, architecture and build flavor from manifest.json; verify SHA256SUMS before running. NSS assets require the documented runtime packages. This is not a production or censorship-resistance claim.'
+          gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --title "FoxTunnel $RELEASE_TAG" --notes 'Experimental standalone FoxTunnel. Select the exact version, OS, architecture and build flavor from manifest.json; verify SHA256SUMS before running. Linux NSS assets include a hash-pinned Mozilla runtime; keep lib/ beside the executable. This is not a production or censorship-resistance claim.'

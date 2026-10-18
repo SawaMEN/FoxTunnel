@@ -10,7 +10,7 @@ The public Go SDK is an additional integration route, not a prerequisite.
 This change prepares the release pipeline; it does not itself create a release
 tag. After this workflow is merged, a maintainer's `vMAJOR.MINOR.PATCH[-pre]` tag
 builds all targets, verifies their index, then publishes an experimental GitHub
-prerelease. PR runs build the same artifacts without publishing a release. A
+prerelease. Main and PR runs build the same artifacts without publishing a release. A
 failed/missing target prevents publication. Existing releases/assets are never
 overwritten by the pipeline. Until a reviewed tag exists, pin a reviewed commit;
 do not treat the CI version `v0.0.0-ci` as a supported public release.
@@ -25,12 +25,14 @@ do not treat the CI version `v0.0.0-ci` as a supported public release.
 | Windows | amd64, arm64 | go |
 
 Nine archives per tag. `go` is CGO-disabled; `nss` additionally supports Mozilla
-NSS on native Linux and dynamically requires libnss3/libnspr4 on the documented
-build baseline (Ubuntu 24.04 in CI). NSS libraries are **not bundled**. Neither
+NSS on native Linux with unmodified NSS 3.130/NSPR/SQLite libraries from Firefox
+158.0 bundled in `lib/`. The host still needs compatible glibc and libgcc-s1 (Ubuntu 24.04 is
+the CI baseline); system NSS/NSPR packages are unnecessary. Keep the entire
+version directory together: copying only the executable loses its runtime. Neither
 flavor is a full Firefox stack. The default CLI TLS backend remains `go` even in
 an NSS-capable binary; select `--tls-backend nss` or an NSS-configured link when
 needed. macOS/Windows portable assets are cross-compiled; Linux native jobs run
-binary/SDK checks. Cross-compilation is not a runtime certification. macOS
+binary/SDK checks, including NSS transfer in a container without host NSS/NSPR. Cross-compilation is not a runtime certification. macOS
 notarization, executable signing and package installers are not implemented.
 
 Unix archive: `foxtunnel_VERSION_OS_ARCH_FLAVOR.tar.gz`; Windows uses `.zip`.
@@ -38,7 +40,9 @@ The filename version excludes the tag's leading `v`; the manifest includes it.
 Example **naming only**, not a claim that this tag already exists:
 `foxtunnel_0.1.0-alpha.1_linux_arm64_nss.tar.gz` under tag `v0.1.0-alpha.1`.
 Each archive contains the executable, `build.json`, MIT LICENSE, Go/linked-module
-license files and third-party notices. Native builds execute `version --json`
+license files and third-party notices. NSS archives additionally carry Mozilla
+license notices and `mozilla-runtime.json`: exact binary/source URLs, SHA-256
+and per-library hashes. Mozilla libraries retain their own licenses. Native builds execute `version --json`
 and compare embedded version/source/target/flavor against the package metadata.
 
 Release assets also include `manifest.json` (schema 1) and `SHA256SUMS`. The
@@ -82,7 +86,9 @@ yet stable; a release tag identifies an implementation, not automatic compatibil
 ```sh
 python3 scripts/release.py build --version v0.1.0-alpha.1 \
   --os linux --arch amd64 --backend go
-# NSS: native Linux, CGO toolchain and NSS/NSPR headers/pkg-config required.
+# NSS: native Linux, CGO toolchain, NSS/NSPR headers, pkg-config, binutils, unzip.
+# Downloads the hash-pinned official Firefox archive; --mozilla-archive permits
+# an offline copy (the same pinned SHA-256 is mandatory).
 python3 scripts/release.py build --version v0.1.0-alpha.1 \
   --os linux --arch arm64 --backend nss --baseline ubuntu-24.04
 # After collecting all nine archives and sidecar metadata in dist/:
@@ -97,3 +103,22 @@ Go builds use trimpath and embed the exact commit. This is not a claim of audite
 bit-for-bit reproducibility across different compilers/environments.
 
 [Public SDK](SDK.en.md) · [Protocol draft](WIRE-DRAFT-0.md) · [MIT](../LICENSE)
+
+## Pinned Mozilla runtime
+
+`scripts/mozilla-runtime.lock.json` pins both Linux archives, the corresponding
+complete source archive and Mozilla's license notices. Hash verification happens
+before extracting a fixed list of regular files. The executable uses ELF
+`DT_RPATH=$ORIGIN/lib`, including transitive dependencies; libraries stay byte for
+byte as published by Mozilla. Build checks reject wrong ELF architecture, missing
+libraries, unknown dependencies, runtime resolution outside the bundle or an
+unexpected NSS version. CI tests TLS and XHTTP with these libraries on both native
+architectures and inside a minimal Ubuntu container without NSS/NSPR packages.
+
+This pin is a release input, not an automatic security update. A maintainer must
+review Mozilla updates, replace binary/source/license hashes together, rerun both
+native jobs and issue a new FoxTunnel version. Existing versioned assets stay
+unchanged. Ordinary developer `go build -tags nss` and SDK consumers still use the
+libraries selected by their own toolchain/runtime; only this release script
+constructs the bundle. Matching NSS versions does not establish Firefox TLS/HTTP
+fingerprint parity or resistance to TSPU classification.

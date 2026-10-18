@@ -13,6 +13,7 @@ import subprocess
 import tarfile
 import tempfile
 import zipfile
+import mozilla_runtime
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = set('linux/amd64/go linux/arm64/go linux/armv7/go darwin/amd64/go darwin/arm64/go windows/amd64/go windows/arm64/go linux/amd64/nss linux/arm64/nss'.split())
@@ -60,7 +61,7 @@ def licenses(go, env):
         if not found:
             raise ValueError('missing linked-module license: ' + name)
     if env['CGO_ENABLED'] == '1':
-        notices.append('NSS/NSPR are dynamically linked, not bundled. Install libnss3/libnspr4. Mozilla sources/licenses: https://firefox-source-docs.mozilla.org/security/nss/ ; https://www.mozilla.org/MPL/2.0/')
+        notices.append('Unmodified Mozilla NSS/NSPR/SQLite libraries are bundled in lib/. See licenses/Mozilla-about-license.html for their licenses and notices. Source form is available at the exact URL and SHA-256 in mozilla-runtime.json; those libraries are not covered by FoxTunnel MIT LICENSE.')
     files['THIRD_PARTY_NOTICES.txt'] = ('\n'.join(notices) + '\n').encode()
     return files
 
@@ -102,22 +103,31 @@ def build(a):
     fields = {'Version': a.version, 'Commit': commit, 'BuildDate': date, 'Variant': variant, 'Dirty': str(dirty).lower()}
     ldflags = '-s -w -buildid= ' + ' '.join('-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.' + k + '=' + v for k, v in fields.items())
     with tempfile.TemporaryDirectory(prefix='foxtunnel-release-') as tmp:
+        runtime_files, runtime_info = {}, {}
+        if a.backend == 'nss':
+            runtime_files, runtime_info = mozilla_runtime.prepare(a.arch, tmp, a.mozilla_archive)
+            env['CGO_LDFLAGS'] = env.get('CGO_LDFLAGS', '') + ' -Wl,--disable-new-dtags -Wl,-rpath,$ORIGIN/lib'
         executable = Path(tmp) / ('foxtunnel.exe' if a.os == 'windows' else 'foxtunnel')
         cmd = [a.go, 'build', '-mod=readonly', '-trimpath', '-buildvcs=false', '-ldflags', ldflags, '-o', str(executable)]
         if a.backend == 'nss':
             cmd += ['-tags', 'nss']
         subprocess.run(cmd + ['./cmd/foxtunnel'], cwd=ROOT, env=env, check=True)
         info = {}
+        if a.backend == 'nss':
+            env = mozilla_runtime.verify_loaded(executable, Path(tmp), runtime_info['libraries'], env)
         if native:
             info = json.loads(command([str(executable), 'version', '--json'], env))
             for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', default_tls_backend='go').items():
                 if info[k] != v:
                     raise ValueError('native metadata mismatch: ' + k)
+        if a.backend == 'nss' and info.get('nss_version') != runtime_info['nss_version']:
+            raise ValueError('loaded NSS version differs from pinned Mozilla runtime')
         files = licenses(a.go, env)
+        files.update(runtime_files)
         p = dict(schema=1, version=a.version, commit=commit, build_date=date, target=target, goos=a.os, goarch=env['GOARCH'], variant=variant, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', experimental=True, native_smoke_tested=native)
         p['tls_backends'] = ['go', 'nss'] if a.backend == 'nss' else ['go']
         p['default_tls_backend'] = 'go'
-        p['runtime'] = dict(kind='dynamic', baseline=a.baseline, packages=['libnss3', 'libnspr4']) if a.backend == 'nss' else dict(kind='cgo-disabled')
+        p['runtime'] = dict(kind='bundled-nss', baseline=a.baseline, packages=['glibc', 'libgcc-s1'], mozilla=runtime_info) if a.backend == 'nss' else dict(kind='cgo-disabled')
         if info.get('nss_version'):
             p['runtime']['nss_version'] = info['nss_version']
         files['build.json'] = (json.dumps(p, indent=2) + '\n').encode()
@@ -189,6 +199,7 @@ def main():
     b.add_argument('--go', default='go')
     b.add_argument('--out', default='dist')
     b.add_argument('--baseline', default='native-host')
+    b.add_argument('--mozilla-archive', help='offline Firefox archive; pinned hash is always checked')
     b.add_argument('--allow-dirty', action='store_true')
     i = sub.add_parser('index')
     i.add_argument('--version', required=True)
