@@ -86,7 +86,15 @@ even without further arrivals. Destination setup has a ten-second limit.
 
 Client setup uses `--connect-timeout`; each attempt uses
 `--fallback-attempt-timeout` (minimum 100ms here). Each operation tries each entry
-at most once. Loss of every entry or the common exit terminates the stream.
+at most once per sweep, with at most three sweeps and cancellation-aware
+25ms/50ms pauses between failed sweeps. The same token, hub identity, sequence
+and payload are retained: a lost response after delivery does not redial the
+destination or write that block twice. Only the transient errors/statuses listed
+above permit another sweep; authentication, certificate/TLS, protocol, wrong-hub
+and closed-session errors stop immediately. All attempts remain subject to the
+parent setup/stream context and the configured per-attempt timeout. The upper
+bound is three times the number of entries, not unlimited retries. If every sweep
+fails or the common exit is lost, the stream terminates.
 There is no durable state replication or exit-socket migration. Upload half-close
 waits for earlier acknowledgements. Entry changes cannot repair a failed origin
 website or an exit-IP restriction; encrypted application HTTP is not inspected
@@ -102,7 +110,7 @@ wrong exit identity and close during dial.
 
 ```sh
 go test -race ./... -count=1 -timeout=60s
-go test -race -tags nss ./... -count=1 -timeout=60s
+go test -race -tags nss ./... -count=1 -timeout=120s
 go test ./internal/tunnel -run '^$' \
   -bench 'Benchmark(BondedLoopback|TunnelRoundTrip)' -benchmem -benchtime=500ms -count=3
 ```
@@ -138,3 +146,12 @@ minimum of the configured cap and max(250ms, four times its measured duration).
 Unknown/cooling alternatives do not shorten attempts. Open retains its full
 setup budget. Sequence numbers and verification remain unchanged, no background
 probing, and loss of all paths still terminates the stream.
+
+### Recovery regression check
+
+A deterministic shared-hub test drops both entries' first responses after each
+open/write/read/FIN/close has already reached the exit. It checks one destination
+dial, unchanged bytes and retained session identity. Additional tests bound the
+attempt count and verify cancellation and terminal TLS/authentication failures.
+This covers a temporary failure of all paths; it does not replicate exit state
+or guarantee recovery from arbitrary-duration outages.

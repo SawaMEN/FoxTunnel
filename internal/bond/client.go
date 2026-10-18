@@ -125,7 +125,20 @@ func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op b
 	binary.BigEndian.PutUint64(frame[41:49], ack)
 	tried := make([]bool, len(c.Endpoints))
 	var last error
-	for range tried {
+	// Hub records are idempotent within a bound session. A transient failure on
+	// every entry must not immediately discard the destination socket. Allow
+	// three bounded sweeps, retaining the exact token/sequence/payload for each.
+	for attemptNumber := range 3 * len(tried) {
+		if attemptNumber > 0 && attemptNumber%len(tried) == 0 {
+			timer := time.NewTimer(time.Duration(attemptNumber/len(tried)) * 25 * time.Millisecond)
+			select {
+			case <-timer.C:
+			case <-ctx.Done():
+				timer.Stop()
+				return block{}, ctx.Err()
+			}
+			clear(tried)
+		}
 		if ctx.Err() != nil {
 			return block{}, ctx.Err()
 		}

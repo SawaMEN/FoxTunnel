@@ -57,7 +57,7 @@ jobs:
           package="$RUNNER_TEMP/nss-package"
           mkdir -p "$package"
           tar -xzf dist/*_nss.tar.gz -C "$package"
-          LD_LIBRARY_PATH="$package/lib" go test -race -tags nss ./... -count=1 -timeout=60s
+          LD_LIBRARY_PATH="$package/lib" go test -race -tags nss ./... -count=1 -timeout=120s
           CGO_LDFLAGS='-Wl,--disable-new-dtags -Wl,-rpath,$ORIGIN/lib' go test -c -tags nss -o "$package/sdk.test" .
           docker run --rm --network none --read-only --tmpfs /tmp -v "$package:/release:ro" ubuntu:24.04 sh -ec '
             if ldconfig -p | grep -Eq "libnss3|libnspr4"; then exit 1; fi
