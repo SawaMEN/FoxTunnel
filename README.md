@@ -4,7 +4,7 @@
 
 [Потоковый XHTTP с Mozilla NSS](docs/architecture/XHTTP.md)
 
-**Русский** | [English](README.en.md)
+**Русский** | [English](README.en.md) · [Каталог документации](docs/README.md)
 
 Экспериментальный защищённый туннель с локальным SOCKS5-клиентом и сервером
 с нативными H2 CONNECT, H2 POST, WSS и H3 POST/QUIC поверх TLS 1.3. Цель проекта — измерить возможности сетевого

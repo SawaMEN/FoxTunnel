@@ -10,7 +10,7 @@ experimental commits.
 | Contract | Current rule |
 |---|---|
 | CLI | Commands/flags are not localized; human-readable messages are not an API |
-| `version --json`, `build.json`, manifest | Schema 1; allow additional fields, reject unknown schemas |
+| `version --json`, `build.json` | Schema 1; allow additional fields, reject unknown schemas |
 | Wire | `foxtunnel-draft-0` describes an implementation; no on-wire version negotiation |
 | Go SDK | Pin an exact tag/commit; API stability before v1 is not promised |
 | `vetroff://` | Contains credentials; unknown fields fail; import cannot disable TLS verification |
@@ -29,28 +29,18 @@ Python 3.11+ is required. Use `scripts/release.py`, `release_verify.py` and
 `mozilla_runtime.py` from a reviewed checkout. The verifier is offline and neither
 extracts archives nor executes their contents.
 
-1. Choose an exact tag and full source commit from a trusted source.
-2. Download manifest, SHA256SUMS and the selected archive from that tag.
-3. Verify them (the operator sets the variables beforehand):
+1. Choose an exact trusted tag and full source commit.
+2. Download a supported Linux `.tar.gz` archive from that tag.
+3. Verify it with Python 3.11+ from a reviewed checkout:
 
 ```sh
 python3 scripts/release.py verify --input downloaded \
   --version "$RELEASE_TAG" --commit "$RELEASE_COMMIT" --target linux/arm64/nss
 ```
 
-Without `--target`, verify all nine archives. A single-target check still requires
-the full target matrix in the manifest. Consumers do not need sidecar metadata.
-Checks cover expected version/commit/schema/draft, targets, SHA256SUMS, archive
-size/hash, embedded build.json, required files, NSS provenance and library hashes.
-Duplicate JSON keys/files, links, special files, unsafe paths, privileged modes
-and release read-limit violations fail. Executable machine code is not analyzed:
-after verification and safe extraction on the target OS, separately compare
-`version --json` against the metadata.
+Without `--target`, verify all four Linux archives; a selected-target verification only needs its archive. `manifest.json` and `SHA256SUMS` are no longer published. CI-only sidecars are not required by consumers. The verifier inspects embedded `build.json`, expected version/commit/schema/draft, archive members, path safety and NSS library hashes without extraction or execution.
 
-Checksums establish integrity and consistency, not authorship. A replaced
-manifest and archive can agree. Do not obtain the expected source commit solely
-from the downloaded manifest; a trusted source is required. Detached signatures
-and supply attestations are not implemented.
+**Integrity caveat:** embedded build metadata is not an independently trusted checksum or signature. Obtain the expected commit and release archive from trustworthy sources; a maliciously replaced archive could contain self-consistent forged metadata. Detached signatures/attestations are not currently implemented.
 
 ## First-tag acceptance
 
@@ -58,9 +48,8 @@ and supply attestations are not implemented.
   and a Mozilla lock with binary/source archive and license URLs/hashes.
 - Go vet/race, the external SDK consumer and Python checks pass for that commit;
   both native NSS jobs test transfers and a container without host NSS/NSPR.
-- Nine targets are built; index and independent verify inspect archive contents.
-- macOS/Windows remain cross-builds, without claims of native tests, NSS support
-  or executable signing on those systems.
+- Four Linux targets are built; local index and independent verify inspect archive contents.
+- macOS, Windows and armv7 are excluded from published release builds.
 - The tag points to that exact commit; the workflow publishes a prerelease only.
   Existing assets are never replaced. CI assets are not a release before tagging.
 - Updates use a separate version directory and retain rollback configuration;

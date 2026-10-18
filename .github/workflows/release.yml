@@ -34,6 +34,7 @@ jobs:
       - name: Validate source and release contract before packaging
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py'
+          python3 scripts/check_docs_links.py
           go vet ./...
           go test -race ./... -count=1 -timeout=120s
           cd integration/external && go test -race ./... -count=1 -timeout=60s
