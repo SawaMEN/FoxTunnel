@@ -235,3 +235,5 @@ The scheme is `vetroff://`. `foxtunnel share --server https://node-a.example`
 exports settings and environment credentials. Import with
 `foxtunnel client --link-file connection.txt` or `--link-file -` for stdin.
 Links contain secrets. [Format and examples](docs/CONNECTION-LINKS.en.md).
+
+[TLS/HTTP2: live Firefox/FoxTunnel comparison, commands and limitations](docs/WEB-PROFILE.en.md).

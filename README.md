@@ -230,3 +230,5 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 создаёт ссылку из настроек и учётных данных окружения. Импорт:
 `foxtunnel client --link-file connection.txt` или `--link-file -` для stdin.
 Ссылка содержит секреты. [Формат, несколько нод и примеры](docs/CONNECTION-LINKS.md).
+
+[TLS/HTTP2: живое сравнение Firefox и FoxTunnel, команды и ограничения](docs/WEB-PROFILE.md).
