@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -20,7 +21,7 @@ func testClient(t testing.TB, handler http.Handler) (*Client, string) {
 	t.Helper()
 	upstream := httptest.NewUnstartedServer(handler)
 	upstream.EnableHTTP2 = true
-	upstream.TLS = &tls.Config{MinVersion: tls.VersionTLS13}
+	upstream.TLS = &tls.Config{MinVersion: tls.VersionTLS13, NextProtos: []string{"h2", "http/1.1"}}
 	upstream.StartTLS()
 	t.Cleanup(upstream.Close)
 	ca := filepath.Join(t.TempDir(), "root.pem")
@@ -189,10 +190,23 @@ func benchmarkTunnelRoundTrip(b *testing.B, backend string) {
 }
 
 func benchmarkTunnelOptions(b *testing.B, backend string, padding bool) {
+	benchmarkNativeOptions(b, backend, padding, "h2-connect")
+}
+
+func benchmarkNativeOptions(b *testing.B, backend string, padding bool, mode string) {
 	target := testDestination(b, func(c net.Conn) { _, _ = io.Copy(c, c) })
-	client, addr := testClient(b, &Server{Username: "alice", Password: "secret", AllowPrivate: true, Padding: padding})
+	server := &Server{Username: "alice", Password: "secret", AllowPrivate: true, Padding: padding}
+	client, addr := testClient(b, server)
+	if mode == "h3-post" {
+		node := setupEndpoint(b, client, server)
+		startNativeH3(b, node, server)
+		client.ServerURL = nodeURL(b, node.URL)
+	}
 	client.Padding = padding
 	if err := client.SetTLSBackend(backend); err != nil {
+		b.Fatal(err)
+	}
+	if err := client.SetTransport(mode); err != nil {
 		b.Fatal(err)
 	}
 	for _, size := range []int{64, 1 << 20} {
@@ -260,3 +274,12 @@ func TestTLSResumptionOnReconnect(t *testing.T) {
 }
 
 func BenchmarkPaddedTunnelRoundTrip(b *testing.B) { benchmarkTunnelOptions(b, "go", true) }
+
+func nodeURL(t testing.TB, raw string) *url.URL {
+	t.Helper()
+	u, err := url.Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return u
+}

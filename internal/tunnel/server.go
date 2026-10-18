@@ -19,8 +19,8 @@ import (
 	"time"
 )
 
-// Server is an authenticated HTTP/2 CONNECT forward proxy. It has no
-// Firefox fingerprint parity. Initial-record padding is an opt-in experiment.
+// Server terminates authenticated native H2 CONNECT, H2/H3 POST and WSS.
+// It has no Firefox fingerprint parity. Padding is an opt-in experiment.
 type Server struct {
 	Username     string
 	Password     string
@@ -31,8 +31,9 @@ type Server struct {
 	Padding bool
 	// MaxTunnels bounds authenticated dialing/relay work across this Server.
 	// Zero uses 256. Configure before serving and do not copy Server after use.
-	MaxTunnels    int
-	activeTunnels atomic.Int64
+	MaxTunnels       int
+	activeTunnels    atomic.Int64
+	activeWebSockets atomic.Int64
 	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
 	Cover http.Handler
 	// Bond is an opt-in hub or relay, behind the same authentication boundary.
@@ -42,7 +43,18 @@ type Server struct {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if s.Cluster != nil && r.Method == http.MethodGet && r.ProtoMajor == 2 && r.URL.Path == cluster.Path && s.authorized(r) {
+	if r.Method == http.MethodGet && r.ProtoMajor == 1 && r.TLS != nil && r.URL.Path == wsPath && s.authorized(r) {
+		s.serveWSS(w, r)
+		return
+	}
+	if r.Method == http.MethodPost && (r.ProtoMajor == 2 || r.ProtoMajor == 3) && r.URL.Path == postPath && s.authorized(r) {
+		r = r.Clone(r.Context())
+		r.Method = http.MethodConnect
+		r.Host = r.Header.Get(targetHeader)
+		r.Header.Del(targetHeader)
+	}
+
+	if s.Cluster != nil && r.Method == http.MethodGet && (r.ProtoMajor == 2 || r.ProtoMajor == 3) && r.URL.Path == cluster.Path && s.authorized(r) {
 		if !s.acquireTunnel() {
 			http.Error(w, "server busy", http.StatusServiceUnavailable)
 			return
@@ -51,7 +63,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.Cluster.ServeHTTP(w, r)
 		return
 	}
-	if s.Bond != nil && r.Method == http.MethodPost && r.ProtoMajor == 2 && r.URL.Path == bond.Path && s.authorized(r) {
+	if s.Bond != nil && r.Method == http.MethodPost && (r.ProtoMajor == 2 || r.ProtoMajor == 3) && r.URL.Path == bond.Path && s.authorized(r) {
 		if !s.acquireTunnel() {
 			http.Error(w, "server busy", http.StatusServiceUnavailable)
 			return
@@ -62,11 +74,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// Select the tunnel only after authentication; rejected requests use the
 	// same handler as the public website and never dial a destination.
-	if r.Method != http.MethodConnect || r.ProtoMajor != 2 || !s.authorized(r) {
+	if r.Method != http.MethodConnect || (r.ProtoMajor != 2 && r.ProtoMajor != 3) || !s.authorized(r) {
 		if s.Cover != nil {
 			public := r.Clone(r.Context())
 			public.Header.Del("Proxy-Authorization")
 			public.Header.Del(paddingHeader)
+			public.Header.Del(targetHeader)
 			s.Cover.ServeHTTP(w, public)
 		} else {
 			http.NotFound(w, r)
@@ -100,7 +113,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stopClose := context.AfterFunc(r.Context(), func() { _ = upstream.Close() })
 	defer stopClose()
 
-	// The server can read r.Body while streaming the response only under HTTP/2.
+	// HTTP/2 and HTTP/3 allow reading the request while streaming a response.
 	if padded {
 		w.Header().Set(paddingHeader, paddingVersion)
 	}

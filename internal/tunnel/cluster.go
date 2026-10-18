@@ -107,7 +107,7 @@ func (c *Client) fetchCluster(ctx context.Context) (cluster.Manifest, bool, erro
 		return cluster.Manifest{}, transient, i18n.Error("cluster discovery failed")
 	}
 	defer resp.Body.Close()
-	if resp.ProtoMajor != 2 {
+	if resp.ProtoMajor != 2 && resp.ProtoMajor != 3 {
 		return cluster.Manifest{}, false, i18n.Error("cluster discovery failed")
 	}
 	if resp.StatusCode != http.StatusOK {

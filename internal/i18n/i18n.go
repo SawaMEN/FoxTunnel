@@ -35,6 +35,16 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
+	"HTTP/3 requires Go QUIC TLS; NSS cannot be selected": "HTTP/3 использует Go QUIC TLS; NSS для него недоступен",
+	"optional native HTTP/3 UDP listening address":        "Необязательный адрес UDP для встроенного HTTP/3",
+	"bond requires HTTP/2 or HTTP/3":                      "Объединение нод требует HTTP/2 или HTTP/3",
+
+	"native transport: h2-connect, h2-post, h3-post or wss (no external proxy)": "Встроенный транспорт: h2-connect, h2-post, h3-post или wss (без внешнего прокси)",
+	"unknown native transport (choose h2-connect, h2-post, h3-post or wss)":     "Неизвестный встроенный транспорт (выберите h2-connect, h2-post, h3-post или wss)",
+	"configure transport before enabling bond":                                  "Настройте транспорт до включения объединения нод",
+	"native WebSocket handshake rejected":                                       "Отклонено согласование встроенного WebSocket",
+	"unsupported NSS ALPN":                                                      "Неподдерживаемый ALPN для NSS",
+
 	"unsupported NSS certificate callback (use VerifyConnection)":                                                 "Неподдерживаемая проверка сертификата NSS (используйте VerifyConnection)",
 	"public website overlaps private configuration":                                                               "Каталог публичного сайта содержит закрытые настройки или ключ сервера",
 	"invalid TLS identity settings":                                                                               "Некорректные настройки SNI или публичного ключа сервера",

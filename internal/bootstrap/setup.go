@@ -23,6 +23,7 @@ import (
 
 type ServerConfig struct {
 	Version        int    `json:"v"`
+	H3Listen       string `json:"h3_listen,omitempty"`
 	Listen         string `json:"listen"`
 	Certificate    string `json:"cert"`
 	PrivateKey     string `json:"key"`
@@ -40,7 +41,7 @@ type ServerConfig struct {
 }
 type Options struct {
 	Server, Certificate, PrivateKey, Output, SNI, CACertFile, JoinLinkFile, UpstreamCAFile, WebRoot string
-	TLSBackend                                                                                      string
+	TLSBackend, Transport                                                                           string
 }
 
 var ErrConfig = errors.New("invalid server configuration")
@@ -58,6 +59,11 @@ func ReadServer(path string) (ServerConfig, error) {
 	}
 	if _, _, err := net.SplitHostPort(c.Listen); err != nil {
 		return ServerConfig{}, ErrConfig
+	}
+	if c.H3Listen != "" {
+		if _, _, err := net.SplitHostPort(c.H3Listen); err != nil {
+			return ServerConfig{}, ErrConfig
+		}
 	}
 	if c.BondHub && c.BondUpstream != "" || c.ClusterFile != "" && !c.BondHub {
 		return ServerConfig{}, ErrConfig
@@ -141,7 +147,7 @@ func Generate(o Options) error {
 		return ErrSetup
 	}
 	config.Password = base64.RawURLEncoding.EncodeToString(secret[:])
-	linkConfig := profile.Config{Version: 1, Servers: []string{u.String()}, Username: config.Username, Password: config.Password, SNI: policy.SNI, PinSHA256: policy.PinSHA256, Encryption: "tls13", TLSBackend: o.TLSBackend, Bond: true, Discover: true}
+	linkConfig := profile.Config{Version: 1, Servers: []string{u.String()}, Username: config.Username, Password: config.Password, SNI: policy.SNI, PinSHA256: policy.PinSHA256, Encryption: "tls13", TLSBackend: o.TLSBackend, Transport: o.Transport, Bond: true, Discover: true}
 	if o.WebRoot != "" {
 		config.WebRoot, err = filepath.Abs(o.WebRoot)
 		if err != nil {
@@ -184,6 +190,9 @@ func Generate(o Options) error {
 	} else {
 		config.BondHub = true
 		config.ClusterFile = filepath.Join(out, "cluster.json")
+	}
+	if linkConfig.Transport == "h3-post" {
+		config.H3Listen = ":443"
 	}
 	link, err := profile.Encode(linkConfig)
 	if err != nil {

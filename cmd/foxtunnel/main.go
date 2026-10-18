@@ -39,6 +39,7 @@ func main() {
 		cert := fs.String("cert", "", i18n.Text("TLS certificate PEM"))
 		key := fs.String("key", "", i18n.Text("TLS private key PEM"))
 		out := fs.String("out", "vetroff-config", i18n.Text("new private configuration directory (must not exist)"))
+		transport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post or wss (no external proxy)"))
 		backend := fs.String("tls-backend", "go", i18n.Text("TLS backend: go or experimental nss (requires -tags nss build)"))
 		sni := fs.String("sni", "", i18n.Text("verified TLS server name (default: URL hostname)"))
 		ca := fs.String("ca-cert", "", i18n.Text("additional trusted certificate PEM"))
@@ -46,7 +47,7 @@ func main() {
 		upstreamCA := fs.String("bond-ca-cert", "", i18n.Text("additional trusted PEM for the common exit"))
 		web := fs.String("web-root", "", i18n.Text("public website directory for ordinary requests and rejected probes"))
 		i18n.Parse(fs, os.Args[2:])
-		if err := bootstrap.Generate(bootstrap.Options{Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend}); err != nil {
+		if err := bootstrap.Generate(bootstrap.Options{Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport}); err != nil {
 			log.Fatal(i18n.Text(err.Error()))
 		}
 		fmt.Println(i18n.Text("configuration created: server.json, connection.txt and node.json (secrets not printed)"))
@@ -64,6 +65,7 @@ func main() {
 	case "server":
 		fs := i18n.NewFlagSet("foxtunnel server")
 		configFile := fs.String("config", "", i18n.Text("private server configuration JSON"))
+		h3Listen := fs.String("h3-listen", "", i18n.Text("optional native HTTP/3 UDP listening address"))
 		listen := fs.String("listen", "127.0.0.1:8443", i18n.Text("HTTPS listening address"))
 		cert := fs.String("cert", "", i18n.Text("TLS certificate PEM"))
 		key := fs.String("key", "", i18n.Text("TLS private key PEM"))
@@ -95,6 +97,7 @@ func main() {
 			}
 			user, password = config.Username, config.Password
 			*listen, *cert, *key = config.Listen, config.Certificate, config.PrivateKey
+			*h3Listen = config.H3Listen
 			*webRoot, *clusterFile = config.WebRoot, config.ClusterFile
 			*bondHub, *bondRelay, *bondCA = config.BondHub, config.BondUpstream, config.BondCA
 			*bondSNI, *bondPin = config.BondSNI, config.BondPin
@@ -158,6 +161,20 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if *h3Listen != "" {
+			pair, err := tls.LoadX509KeyPair(*cert, *key)
+			if err != nil {
+				log.Fatal(err)
+			}
+			udp, err := net.ListenPacket("udp", *h3Listen)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer udp.Close()
+			h3TLS := server.TLSConfig.Clone()
+			h3TLS.Certificates = []tls.Certificate{pair}
+			go func() { log.Fatal(handler.ServeHTTP3(context.Background(), udp, h3TLS, *maxConnections)) }()
+		}
 		log.Fatal(server.ServeTLS(netutil.LimitListener(listener, *maxConnections), *cert, *key))
 	case "client", "share":
 		fs := i18n.NewFlagSet("foxtunnel " + os.Args[1])
@@ -174,6 +191,7 @@ func main() {
 		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active"))
 		attemptTimeout := fs.Duration("fallback-attempt-timeout", 5*time.Second, i18n.Text("setup time per endpoint when fallbacks are configured"))
 		padding := fs.Bool("padding", false, i18n.Text("require experimental initial-record padding (server must enable it)"))
+		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post or wss (no external proxy)"))
 		tlsBackend := fs.String("tls-backend", "go", i18n.Text("TLS backend: go or experimental nss (requires -tags nss build)"))
 		sni := fs.String("sni", "", i18n.Text("verified TLS server name (default: URL hostname)"))
 		pin := fs.String("pin-sha256", "", i18n.Text("additional server SPKI pin: sha256/base64"))
@@ -217,6 +235,7 @@ func main() {
 			*server = imported.Servers[0]
 			fallbacks = serverURLs(imported.Servers[1:])
 			*tlsBackend = imported.TLSBackend
+			*nativeTransport = imported.Transport
 			*sni, *pin, *encryption = imported.SNI, imported.PinSHA256, imported.Encryption
 			*balance = imported.Balance
 			*bonded = imported.Bond
@@ -230,7 +249,7 @@ func main() {
 			if user == "" || password == "" {
 				log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 			}
-			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
+			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Transport: *nativeTransport, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -263,6 +282,9 @@ func main() {
 			log.Fatal(err)
 		}
 		if err := client.SetServerIdentity(*sni, *pin); err != nil {
+			log.Fatal(err)
+		}
+		if err := client.SetTransport(*nativeTransport); err != nil {
 			log.Fatal(err)
 		}
 		client.MaxConnections = *maxConnections

@@ -29,7 +29,7 @@ func setupEndpoint(t testing.TB, c *Client, handler http.Handler) *httptest.Serv
 	t.Helper()
 	s := httptest.NewUnstartedServer(handler)
 	s.EnableHTTP2 = true
-	s.TLS = &tls.Config{MinVersion: tls.VersionTLS13}
+	s.TLS = &tls.Config{MinVersion: tls.VersionTLS13, NextProtos: []string{"h2", "http/1.1"}}
 	s.StartTLS()
 	t.Cleanup(s.Close)
 	c.tlsConfig.RootCAs.AddCert(s.Certificate())

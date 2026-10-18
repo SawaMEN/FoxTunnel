@@ -111,3 +111,31 @@ func FuzzLinkDecoder(f *testing.F) {
 		}
 	})
 }
+
+func TestNativeTransportProfiles(t *testing.T) {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post"} {
+		c := Config{Version: 1, Servers: []string{"https://main.example"}, Username: "alice", Password: "secret", Transport: mode}
+		link, err := Encode(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		parsed, err := Decode(link)
+		if err != nil || parsed.Transport != mode {
+			t.Fatal("lost native transport", err)
+		}
+		c.TLSBackend = "nss"
+		_, err = Encode(c)
+		if (err != nil) != (mode == "h3-post") {
+			t.Fatal("unsafe TLS backend combination", mode, err)
+		}
+	}
+	c := Config{Version: 1, Servers: []string{"https://main.example"}, Username: "alice", Password: "secret", Transport: "xhttp"}
+	if _, err := Encode(c); err == nil {
+		t.Fatal("unimplemented XHTTP accepted")
+	}
+	legacy := "vetroff://" + base64.RawURLEncoding.EncodeToString([]byte(`{"v":1,"servers":["https://main.example"],"username":"alice","password":"secret"}`))
+	parsed, err := Decode(legacy)
+	if err != nil || parsed.Transport != "h2-connect" {
+		t.Fatal("legacy default changed", err)
+	}
+}

@@ -53,3 +53,9 @@ TLS behavior: H2 remains Go x/net/http2, and no browser-equivalent profile, H3,
 UDP, DNSTT or real-network TSPU test is provided by this adapter. Optional
 initial-record padding belongs to the tunnel layer and supports both backends;
 see [its specification](../../docs/PADDING.en.md).
+
+
+The adapter also verifies `http/1.1` ALPN for native WSS. NSS handles outer TLS;
+Go HTTP/2 runs inside WebSocket without a second TLS layer. This is not full
+Firefox. Native H3 uses a separate Go QUIC transport and cannot select NSS.
+See [native transports](../../docs/NATIVE-TRANSPORTS.en.md).

@@ -158,8 +158,8 @@ func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op b
 		status := 0
 		if err == nil {
 			status = resp.StatusCode
-			if resp.ProtoMajor != 2 {
-				err = errors.New(i18n.Text("bond requires HTTP/2"))
+			if resp.ProtoMajor != 2 && resp.ProtoMajor != 3 {
+				err = errors.New(i18n.Text("bond requires HTTP/2 or HTTP/3"))
 			} else {
 				data, err = readBoundedInto(resp.Body, resp.ContentLength, chunkSize, responseBuffer)
 				if len(data) > chunkSize {

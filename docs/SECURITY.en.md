@@ -73,3 +73,16 @@ weakened copy without cache isolation and passes on the delivered code.
 
 See [setup](SETUP.en.md), [Amnezia/TUIC review](AMNEZIA-TUIC-REVIEW.en.md)
 and [connection links](CONNECTION-LINKS.en.md).
+
+## Additional native transports
+
+H2 POST, WSS and H3 POST/QUIC retain CA/SNI/pin checks and authentication.
+WSS checks credentials before Upgrade and authenticates inner H2 requests again.
+WebSocket compression and QUIC 0-RTT are disabled. Messages, headers, streams,
+windows and incoming connections are bounded; this does not replace an audit.
+See [transport properties and limits](NATIVE-TRANSPORTS.en.md).
+
+After adding dependencies, govulncheck found no reachable vulnerabilities or
+vulnerabilities in imported packages. It reports module-level GO-2026-5932 for
+unused golang.org/x/crypto/openpgp; that package is not imported. Native NSS
+libraries still require separate maintenance.

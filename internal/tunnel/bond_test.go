@@ -34,6 +34,10 @@ func testBondedSOCKSDepth(t *testing.T, backend string, depth int) {
 func TestDiscoveredBondedSOCKSGo(t *testing.T) { testBondedSOCKSMode(t, "go", 8, true) }
 
 func testBondedSOCKSMode(t *testing.T, backend string, depth int, discover bool) {
+	testBondedSOCKSNative(t, backend, depth, discover, "h2-connect")
+}
+
+func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover bool, mode string) {
 	var destinations atomic.Int64
 	target := testDestination(t, func(c net.Conn) { destinations.Add(1); _, _ = io.Copy(c, c) })
 	client, addr := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
@@ -42,6 +46,9 @@ func testBondedSOCKSMode(t *testing.T, backend string, depth int, discover bool)
 	defer hub.Close()
 	exit.Bond = hub
 	hubServer := setupEndpoint(t, client, exit)
+	if mode == "h3-post" {
+		startNativeH3(t, hubServer, exit)
+	}
 	var calls [2]atomic.Int64
 	var lost, lostOpen, failed atomic.Bool
 	makeRelay := func(index int) *httptest.Server {
@@ -74,7 +81,11 @@ func testBondedSOCKSMode(t *testing.T, backend string, depth int, discover bool)
 			}
 			relay.ServeHTTP(w, r)
 		})
-		return setupEndpoint(t, client, node)
+		endpoint := setupEndpoint(t, client, node)
+		if mode == "h3-post" {
+			startNativeH3(t, endpoint, node)
+		}
+		return endpoint
 	}
 	a, b := makeRelay(0), makeRelay(1)
 	usePrimary(t, client, a.URL)
@@ -82,6 +93,9 @@ func testBondedSOCKSMode(t *testing.T, backend string, depth int, discover bool)
 		t.Fatal(err)
 	}
 	if err := client.SetTLSBackend(backend); err != nil {
+		t.Fatal(err)
+	}
+	if err := client.SetTransport(mode); err != nil {
 		t.Fatal(err)
 	}
 	client.FallbackAttemptTimeout = 250 * time.Millisecond

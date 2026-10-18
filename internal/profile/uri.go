@@ -27,6 +27,7 @@ type Config struct {
 	Servers        []string `json:"servers"`
 	Username       string   `json:"username"`
 	Password       string   `json:"password"`
+	Transport      string   `json:"transport,omitempty"`
 	TLSBackend     string   `json:"tls,omitempty"`
 	SNI            string   `json:"sni,omitempty"`
 	PinSHA256      string   `json:"pin_sha256,omitempty"`
@@ -72,6 +73,12 @@ func (c *Config) normalize() error {
 		}
 		seen[key] = true
 	}
+	if c.Transport == "" {
+		c.Transport = "h2-connect"
+	}
+	if c.Transport != "h2-connect" && c.Transport != "h2-post" && c.Transport != "wss" && c.Transport != "h3-post" {
+		return invalid()
+	}
 	if c.TLSBackend == "" {
 		c.TLSBackend = "go"
 	}
@@ -84,6 +91,9 @@ func (c *Config) normalize() error {
 		c.Encryption = "tls13"
 	}
 	if c.Encryption != "tls13" {
+		return invalid()
+	}
+	if c.Transport == "h3-post" && c.TLSBackend != "go" {
 		return invalid()
 	}
 	if c.TLSBackend != "go" && c.TLSBackend != "nss" {
@@ -173,7 +183,7 @@ func uniqueFields(data []byte) bool {
 		return false
 	}
 	seen := make(map[string]bool)
-	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "sni": true, "pin_sha256": true, "encryption": true, "balance": true, "bond": true, "discover": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
+	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "transport": true, "sni": true, "pin_sha256": true, "encryption": true, "balance": true, "bond": true, "discover": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
 	for decoder.More() {
 		token, err := decoder.Token()
 		if err != nil {

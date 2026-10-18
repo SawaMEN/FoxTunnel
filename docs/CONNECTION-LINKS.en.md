@@ -68,3 +68,10 @@ verification bypasses or commands are accepted.
 Tests cover multiple nodes, IPv6, Unicode credentials, special characters,
 ambiguous JSON, bounds, redacted errors and decoder fuzzing. CLI generation and
 stdin import were checked by starting a loopback SOCKS listener.
+
+## Native transport
+
+`transport` is `h2-connect` (default), `h2-post`, `wss` or `h3-post`.
+Use `share --transport wss` or `setup --transport wss`. NSS supports the first
+three; `h3-post` with `tls:nss` is rejected. Profiles launch no external programs.
+Old links retain H2 CONNECT. See [configuration and limits](NATIVE-TRANSPORTS.en.md).

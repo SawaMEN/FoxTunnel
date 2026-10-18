@@ -16,6 +16,8 @@
 - [x] SNI/SPKI/tls13 links and per-ingress policies, Go/NSS checks and ticket isolation.
 - [x] Generated setup/join bundles, private server configuration and atomic ingress registration.
 - [x] Pre-handshake socket admission, confined public site and govulncheck CI.
+- [x] Native H2 POST, WSS carrying H2, H3 POST/QUIC, shared discovery/bond, profile and setup settings.
+- [ ] Native ECH/REALITY, interoperable XHTTP and measured automatic transport selection.
 - [ ] TUN/UDP, system routing/DNS/kill switch and individual user credentials.
 - [ ] Persistent bond lanes instead of per-block RPC; delivery-based path estimates.
 - [ ] Global ingress telemetry and automatic allocation between clients.
@@ -39,7 +41,7 @@ Trusted multi-origin setup failover, round-robin and least-active scheduling
 are implemented for both TLS backends, with bounded network-failure cooldown.
 See [configuration and limits](ENDPOINTS.en.md) and the
 [NaiveProxy/Sudoku review](NAIVE-SUDOKU-REVIEW.en.md).
-HTTP/3, bandwidth-aware scheduling, warm pools and Firefox fingerprint parity
+Neqo HTTP/3, bandwidth-aware scheduling, warm pools and Firefox fingerprint parity
 remain experiments rather than delivered features.
 
 ## Experimental stream bonding

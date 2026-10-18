@@ -81,3 +81,10 @@ public node metadata. Pin mismatch never silently bypasses verification.
 Servers load certificates at startup and need a restart after renewal.
 Public site roots must exclude private configuration/keys; outward symlinks
 are rejected. See [security limits](SECURITY.en.md) and [cluster](CLUSTER.en.md).
+
+## Native transport
+
+Use `setup --transport h2-post`, `--transport wss` or `--transport h3-post`.
+The link retains the selection; H3 automatically enables the UDP `:443` listener
+in server.json. NSS supports H2/WSS; H3 requires Go. Joining preserves the main
+profile. See [native transports without Xray](NATIVE-TRANSPORTS.en.md).

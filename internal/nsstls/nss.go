@@ -88,6 +88,7 @@ type conn struct {
 	errMu                        sync.Mutex
 	readErr, writeErr, verifyErr error
 	serverName                   string
+	protocol                     string
 	roots                        *x509.CertPool
 	certificates                 []*x509.Certificate
 	verifiedChains               [][]*x509.Certificate
@@ -98,7 +99,17 @@ func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) 
 	return wrapConfig(ctx, raw, name, &tls.Config{RootCAs: roots})
 }
 func wrapConfig(ctx context.Context, raw net.Conn, name string, config *tls.Config) (*conn, error) {
-	c := &conn{raw: raw, serverName: name, roots: config.RootCAs, verifyConnection: config.VerifyConnection}
+	protocol := "h2"
+	if len(config.NextProtos) != 0 {
+		if len(config.NextProtos) != 1 || (config.NextProtos[0] != "h2" && config.NextProtos[0] != "http/1.1") {
+			raw.Close()
+			return nil, i18n.Error("unsupported NSS ALPN")
+		}
+		protocol = config.NextProtos[0]
+	}
+	cprotocol := C.CString(protocol)
+	defer C.free(unsafe.Pointer(cprotocol))
+	c := &conn{raw: raw, serverName: name, protocol: protocol, roots: config.RootCAs, verifyConnection: config.VerifyConnection}
 	c.handle = cgo.NewHandle(c)
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -109,7 +120,7 @@ func wrapConfig(ctx context.Context, raw net.Conn, name string, config *tls.Conf
 	cremote := C.CString(remote)
 	defer C.free(unsafe.Pointer(cremote))
 	var code C.int
-	c.fd = C.ft_new(C.uintptr_t(c.handle), cname, clocal, cremote, &code)
+	c.fd = C.ft_new(C.uintptr_t(c.handle), cname, clocal, cremote, cprotocol, &code)
 	if c.fd == nil {
 		c.handle.Delete()
 		raw.Close()
@@ -117,7 +128,7 @@ func wrapConfig(ctx context.Context, raw net.Conn, name string, config *tls.Conf
 	}
 	// Cancellation closes Go's socket, which unblocks any NSS I/O callback.
 	stop := context.AfterFunc(ctx, func() { _ = raw.Close() })
-	result := C.ft_handshake(c.fd, &code)
+	result := C.ft_handshake(c.fd, cprotocol, &code)
 	stopped := stop()
 	if result < 0 || !stopped || ctx.Err() != nil {
 		c.Close()
@@ -204,7 +215,7 @@ func (c *conn) SetDeadline(t time.Time) error      { return c.raw.SetDeadline(t)
 func (c *conn) SetReadDeadline(t time.Time) error  { return c.raw.SetReadDeadline(t) }
 func (c *conn) SetWriteDeadline(t time.Time) error { return c.raw.SetWriteDeadline(t) }
 func (c *conn) ConnectionState() tls.ConnectionState {
-	return tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, NegotiatedProtocol: "h2", ServerName: c.serverName, PeerCertificates: c.certificates, VerifiedChains: c.verifiedChains}
+	return tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, NegotiatedProtocol: c.protocol, ServerName: c.serverName, PeerCertificates: c.certificates, VerifiedChains: c.verifiedChains}
 }
 
 //export ft_go_read
@@ -289,3 +300,34 @@ func ft_go_verify(handle C.uintptr_t) C.int {
 
 // Version identifies the linked NSS library for measurement provenance.
 func Version() string { return C.GoString(C.ft_version()) }
+
+// DialTLSContext verifies TLS 1.3 and exactly the requested h2 or http/1.1 ALPN.
+// It is used by native WSS; it does not emulate the Firefox HTTP stack.
+func DialTLSContext(ctx context.Context, network, addr string, config *tls.Config) (net.Conn, error) {
+	if config.InsecureSkipVerify || config.VerifyPeerCertificate != nil {
+		return nil, i18n.Error("TLS verification cannot be disabled")
+	}
+	initOnce.Do(func() {
+		if code := C.ft_init(); code != 0 {
+			initError = fmt.Errorf(i18n.Text("NSS initialization failed: %d"), code)
+		}
+	})
+	if initError != nil {
+		return nil, initError
+	}
+	setup, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	raw, err := (&net.Dialer{KeepAlive: 30 * time.Second}).DialContext(setup, network, addr)
+	if err != nil {
+		return nil, err
+	}
+	name := config.ServerName
+	if name == "" {
+		name, _, err = net.SplitHostPort(addr)
+		if err != nil {
+			raw.Close()
+			return nil, err
+		}
+	}
+	return wrapConfig(setup, raw, name, config)
+}

@@ -80,7 +80,7 @@ int ft_init(void){
  methods.getsocketoption=get_option;methods.setsocketoption=set_option;
  return 0;
 }
-PRFileDesc *ft_new(uintptr_t handle,const char *name,const char *local,const char *remote,int *error){
+PRFileDesc *ft_new(uintptr_t handle,const char *name,const char *local,const char *remote,const char *protocol,int *error){
  PRFileDesc *fd=PR_CreateIOLayerStub(identity,&methods);
  if(!fd){*error=PR_GetError();return NULL;}
  Layer *data=calloc(1,sizeof(Layer));
@@ -91,23 +91,25 @@ PRFileDesc *ft_new(uintptr_t handle,const char *name,const char *local,const cha
  if(!secure){*error=PR_GetError();PR_Close(fd);return NULL;}
  fd=secure;
  SSLVersionRange range={SSL_LIBRARY_VERSION_TLS_1_3,SSL_LIBRARY_VERSION_TLS_1_3};
- const unsigned char alpn[]={2,'h','2'};
+ unsigned char alpn[10]; size_t protocol_len=strlen(protocol);
+ if(protocol_len!=2 && protocol_len!=8){*error=PR_PROTOCOL_NOT_SUPPORTED_ERROR;PR_Close(fd);return NULL;}
+ alpn[0]=(unsigned char)protocol_len;memcpy(alpn+1,protocol,protocol_len);
  if(SSL_OptionSet(fd,SSL_SECURITY,PR_TRUE)!=SECSuccess ||
     SSL_OptionSet(fd,SSL_HANDSHAKE_AS_CLIENT,PR_TRUE)!=SECSuccess ||
     SSL_OptionSet(fd,SSL_NO_CACHE,PR_TRUE)!=SECSuccess ||
     SSL_OptionSet(fd,SSL_ENABLE_SESSION_TICKETS,PR_FALSE)!=SECSuccess ||
     SSL_VersionRangeSet(fd,&range)!=SECSuccess ||
     SSL_SetURL(fd,name)!=SECSuccess ||
-    SSL_SetNextProtoNego(fd,alpn,sizeof(alpn))!=SECSuccess ||
+    SSL_SetNextProtoNego(fd,alpn,(unsigned int)protocol_len+1)!=SECSuccess ||
     SSL_AuthCertificateHook(fd,authenticate,(void *)handle)!=SECSuccess ||
     SSL_ResetHandshake(fd,PR_FALSE)!=SECSuccess){*error=PR_GetError();PR_Close(fd);return NULL;}
  return fd;
 }
-int ft_handshake(PRFileDesc *fd,int *error){
+int ft_handshake(PRFileDesc *fd,const char *protocol,int *error){
  if(SSL_ForceHandshake(fd)!=SECSuccess){*error=PR_GetError();return -1;}
  SSLNextProtoState state;unsigned char proto[16];unsigned int length=0;
  if(SSL_GetNextProto(fd,&state,proto,&length,sizeof(proto))!=SECSuccess ||
-    state!=SSL_NEXT_PROTO_SELECTED || length!=2 || memcmp(proto,"h2",2)!=0){*error=PR_PROTOCOL_NOT_SUPPORTED_ERROR;return -1;}
+    state!=SSL_NEXT_PROTO_SELECTED || length!=strlen(protocol) || memcmp(proto,protocol,length)!=0){*error=PR_PROTOCOL_NOT_SUPPORTED_ERROR;return -1;}
  return 0;
 }
 int ft_read(PRFileDesc *fd,void *buffer,int length,int *error){int n=PR_Read(fd,buffer,length);if(n<0)*error=PR_GetError();return n;}

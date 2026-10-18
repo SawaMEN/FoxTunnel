@@ -127,3 +127,11 @@ func TestBondedSOCKSNSS(t *testing.T)                { testBondedSOCKS(t, "nss")
 func TestDiscoveredBondedSOCKSNSS(t *testing.T)      { testBondedSOCKSMode(t, "nss", 8, true) }
 func TestDiscoveryRejectsUnverifiedNSS(t *testing.T) { testDiscoveryRejectsUnverifiedTLS(t, "nss") }
 func TestVerifiedSNIAndPinNSS(t *testing.T)          { testVerifiedSNIAndPin(t, "nss") }
+
+func TestNSSNativeTransports(t *testing.T)   { testNativeTransports(t, "nss") }
+func TestNSSNativeVerification(t *testing.T) { testNativeVerificationBeforeCredentials(t, "nss") }
+func TestNSSNativeDiscoveredBond(t *testing.T) {
+	for _, mode := range []string{"h2-post", "wss"} {
+		t.Run(mode, func(t *testing.T) { testBondedSOCKSNative(t, "nss", 8, true, mode) })
+	}
+}

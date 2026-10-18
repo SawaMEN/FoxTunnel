@@ -109,6 +109,49 @@ func TestSetupAndJoinProduceUsablePrivateProfiles(t *testing.T) {
 	}
 }
 
+func TestSetupNativeTransports(t *testing.T) {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post"} {
+		t.Run(mode, func(t *testing.T) {
+			o := fixture(t, "main.example")
+			o.Transport = mode
+			if err := Generate(o); err != nil {
+				t.Fatal(err)
+			}
+			config, err := ReadServer(filepath.Join(o.Output, "server.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			f, err := os.Open(filepath.Join(o.Output, "connection.txt"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			p, err := profile.Read(f)
+			f.Close()
+			if err != nil || p.Transport != mode || (config.H3Listen != "") != (mode == "h3-post") {
+				t.Fatal("inconsistent native profile", err)
+			}
+			join := fixture(t, "relay.example")
+			join.JoinLinkFile = filepath.Join(o.Output, "connection.txt")
+			if err := Generate(join); err != nil {
+				t.Fatal(err)
+			}
+			relay, err := ReadServer(filepath.Join(join.Output, "server.json"))
+			if err != nil || (relay.H3Listen != "") != (mode == "h3-post") {
+				t.Fatal("joined transport listener", err)
+			}
+		})
+	}
+	o := fixture(t, "main.example")
+	o.Transport = "h3-post"
+	o.TLSBackend = "nss"
+	if err := Generate(o); err == nil {
+		t.Fatal("NSS silently changed to Go QUIC")
+	}
+	if _, err := os.Stat(o.Output); !os.IsNotExist(err) {
+		t.Fatal("invalid combination wrote secrets")
+	}
+}
+
 func TestSetupRejectsBadIdentityBeforeWriting(t *testing.T) {
 	o := fixture(t, "main.example")
 	o.SNI = "other.example"

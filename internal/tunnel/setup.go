@@ -123,7 +123,7 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 		resp, err := c.transport.RoundTrip(req)
 		timedOut := !timer.Stop()
 		if err == nil && !timedOut && attemptCtx.Err() == nil {
-			if resp.ProtoMajor != 2 || resp.StatusCode != http.StatusOK {
+			if (resp.ProtoMajor != 2 && resp.ProtoMajor != 3) || resp.StatusCode != http.StatusOK {
 				err = fmt.Errorf(i18n.Text("CONNECT rejected (HTTP/%d status %d)"), resp.ProtoMajor, resp.StatusCode)
 			} else {
 				negotiated, paddingErr := paddingRequested(resp.Header)
@@ -179,7 +179,7 @@ func certificateFailure(err error) bool {
 	return errors.As(err, &verification) || errors.As(err, &authority) || errors.As(err, &hostname) || errors.As(err, &invalid) || errors.As(err, &roots)
 }
 func terminalSetupError(err error) bool {
-	if certificateFailure(err) || errors.Is(err, errH2Required) {
+	if certificateFailure(err) || errors.Is(err, errH2Required) || errors.Is(err, errWSHandshake) {
 		return true
 	}
 	var record tls.RecordHeaderError
