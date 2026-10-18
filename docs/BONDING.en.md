@@ -57,7 +57,8 @@ Selection uses outstanding request count and an EWMA of complete request duratio
 failures prefer other paths for five seconds; no background probing. This measures
 HTTP exchange time including exit waits, not pure RTT or available bandwidth.
 
-Up to four upload blocks and four fetches run concurrently, including small SOCKS
+Four upload/fetch slots are used at low delay; automatic mode can expand to eight,
+including small SOCKS
 reads. Blocks carry up to 32 KiB and retain sequence numbers on retry. The exit
 acknowledges upload only after writing to the same destination socket. Delivered
 sequence numbers are not written twice; conflicting pending duplicates fail.
@@ -72,7 +73,7 @@ bound requests before destination work. A lost initial open response can leave
 an unused socket until cleanup, but application data is not split across exits.
 
 The exit retains at most eight upload blocks and eight download-data blocks plus
-a possible EOF marker; the client retains four per direction. HTTP/TLS/socket
+a possible EOF marker; the client retains four to eight per direction. HTTP/TLS/socket
 buffers are additional. Default exit capacity is 256 active sessions.
 `--max-tunnels` also bounds concurrent authenticated CONNECT/RPC handlers.
 Closed sessions release payload but retain tombstones for at least two minutes after the last request, with lazy
@@ -119,3 +120,18 @@ The format and window sizes are unchanged. Client/exit buffers are reused with
 ACK-aware ownership; original/rewound HTTP readers finish before upload storage
 is overwritten. Relay buffers use a bounded, cleared 32-by-32-KiB cache.
 See [profile, before/after observations and limits](PERFORMANCE.en.md#bonding-buffer-optimization).
+
+### Automatic pipeline and attempt budget
+
+`--bond-pipeline auto` is the default. A fastest measured usable exchange duration
+of at least 25ms permits four-to-eight expansion. Empty 204 polls do not inflate
+this metric; it includes server/initial-handshake time and is not pure RTT or
+bandwidth. Fixed 4/8 modes are available. The server window remains eight and
+v1 framing is unchanged. Upload slots already allocated are not revoked within
+a stream; receive prefetch can reduce future work. Buffers allocate on demand.
+
+A measured usable alternative can shorten session-operation attempts to the
+minimum of the configured cap and max(250ms, four times its measured duration).
+Unknown/cooling alternatives do not shorten attempts. Open retains its full
+setup budget. Sequence numbers and verification remain unchanged, no background
+probing, and loss of all paths still terminates the stream.

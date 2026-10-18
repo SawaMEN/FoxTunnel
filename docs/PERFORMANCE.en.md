@@ -192,3 +192,25 @@ boundaries, invalidating original/rewound transport readers before upload reuse,
 and calls after Close. End-to-end data now varies across blocks, exposing reorder
 or overwrite bugs that repeated contents could hide. Lost ACKs, a blackholed entry,
 half-close and both TLS backends remain covered under the race detector.
+
+## Pipeline with synthetic RPC delay
+
+The same binary uses two HTTPS entries and a common exit. Each entry waits 40ms
+before forwarding a request. This models HTTP processing delay, not packet RTT,
+loss or bandwidth. One-MiB echo, three 500-ms repetitions, Go 1.26.9/AMD EPYC 9V74:
+
+| Pipeline | MB/s |
+| --- | --- |
+| 4 | 2.80–2.82 |
+| 8 | 5.04–5.41 |
+| auto | 5.37–5.80 |
+
+Automatic mode approaches eight-slot throughput in this model. Small samples do
+not establish Internet performance or independent-link gains. Real loss, TCP
+queues, bandwidth and TSPU are not modeled. Per-block RPC remains a limitation;
+a persistent streaming carrier is separate work. Eight slots retain more memory.
+
+```sh
+go test ./internal/tunnel -run '^$' -bench BenchmarkBondedDelayedRPC \
+  -benchmem -benchtime=500ms -count=3
+```

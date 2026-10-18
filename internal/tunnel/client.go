@@ -50,8 +50,10 @@ type Client struct {
 		http.RoundTripper
 		CloseIdleConnections()
 	}
-	bondClient *bond.Client
-	tlsConfig  *tls.Config
+	// BondPipeline is 0 (automatic), 4 or 8; set before EnableBond.
+	BondPipeline int
+	bondClient   *bond.Client
+	tlsConfig    *tls.Config
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {

@@ -30,9 +30,11 @@ type Client struct {
 	Username, Password string
 	AttemptTimeout     time.Duration
 	SetupTimeout       time.Duration
-	mu                 sync.Mutex
-	paths              []pathState
-	next               uint64
+	// Pipeline is 0 (automatic), 4, or 8. Configure before Open.
+	Pipeline int
+	mu       sync.Mutex
+	paths    []pathState
+	next     uint64
 }
 
 func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
@@ -79,6 +81,9 @@ func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
 			return
 		}
 		p.retryAt = time.Time{}
+		if elapsed <= 0 {
+			return
+		}
 		if p.latency == 0 {
 			p.latency = elapsed
 		} else {
@@ -114,10 +119,7 @@ func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op b
 		}
 		index, release := c.reserve(tried)
 		tried[index] = true
-		timeout := c.AttemptTimeout
-		if timeout <= 0 {
-			timeout = 3 * time.Second
-		}
+		timeout := c.attemptBudget(index, op)
 		attempt, cancel := context.WithTimeout(ctx, timeout)
 		endpoint := *c.Endpoints[index]
 		endpoint.Path = Path
@@ -167,7 +169,11 @@ func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op b
 		} else {
 			retry = status == 429 || status == 408 || status == 503 || status == 504
 		}
-		release(elapsed, err != nil || retry)
+		measured := elapsed
+		if op == opRead && status != http.StatusOK {
+			measured = 0
+		} // Long polls do not estimate path delay.
+		release(measured, err != nil || retry)
 		if err == nil && !retry {
 			switch status {
 			case 200:
@@ -195,7 +201,8 @@ var errPoll = errors.New("poll again")
 
 type result struct {
 	block
-	err error
+	err    error
+	buffer []byte
 }
 type Stream struct {
 	client                      *Client
@@ -214,19 +221,25 @@ type Stream struct {
 	readCancel                  context.CancelFunc
 	current                     []byte
 	futures                     map[uint64]chan result
-	receiveBuffers              [4][]byte
+	receivePool                 [][]byte
+	currentBuffer               []byte
+	uploadCapacity              int
 	workers                     sync.WaitGroup
 	ackMu                       sync.Mutex
 	ack                         uint64
 }
 
 func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
+	if c.Pipeline != 0 && c.Pipeline != 4 && c.Pipeline != window {
+		return nil, errors.New(i18n.Text("bond pipeline must be auto, 4 or 8"))
+	}
 	if len(c.Endpoints) < 2 || len(c.Endpoints) > 8 || c.Transport == nil {
 		return nil, errors.New(i18n.Text("bond requires two to eight trusted nodes"))
 	}
 	streamCtx, cancel := context.WithCancel(ctx)
-	s := &Stream{client: c, ctx: streamCtx, cancel: cancel, futures: make(map[uint64]chan result), uploadSlots: make(chan *[chunkSize]byte, 4)}
-	for range cap(s.uploadSlots) {
+	s := &Stream{client: c, ctx: streamCtx, cancel: cancel, futures: make(map[uint64]chan result), uploadSlots: make(chan *[chunkSize]byte, window)}
+	s.uploadCapacity = c.pipelineDepth()
+	for range s.uploadCapacity {
 		s.uploadSlots <- nil
 	}
 	s.readCtx, s.readCancel = context.WithCancel(streamCtx)
@@ -258,11 +271,13 @@ func (s *Stream) fetch() {
 	s.nextFetch++
 	out := make(chan result, 1)
 	s.futures[seq] = out
-	slot := seq % uint64(len(s.receiveBuffers))
-	if s.receiveBuffers[slot] == nil {
-		s.receiveBuffers[slot] = make([]byte, chunkSize+1)
+	var responseBuffer []byte
+	if n := len(s.receivePool); n > 0 {
+		responseBuffer = s.receivePool[n-1]
+		s.receivePool = s.receivePool[:n-1]
+	} else {
+		responseBuffer = make([]byte, chunkSize+1)
 	}
-	responseBuffer := s.receiveBuffers[slot]
 	s.workers.Go(func() {
 		for {
 			s.ackMu.Lock()
@@ -272,7 +287,7 @@ func (s *Stream) fetch() {
 			if errors.Is(err, errPoll) {
 				continue
 			}
-			out <- result{b, err}
+			out <- result{block: b, err: err, buffer: responseBuffer}
 			return
 		}
 	})
@@ -290,21 +305,24 @@ func (s *Stream) Read(p []byte) (int, error) {
 		return 0, err
 	}
 	if len(s.current) == 0 {
-		for s.nextFetch < s.nextRead+4 {
+		for s.nextFetch < s.nextRead+uint64(s.client.pipelineDepth()) {
 			s.fetch()
 		}
 		select {
 		case r := <-s.futures[s.nextRead]:
 			if r.err != nil {
+				s.receivePool = append(s.receivePool, r.buffer)
 				s.cancel()
 				return 0, r.err
 			}
 			if r.eof {
+				s.receivePool = append(s.receivePool, r.buffer)
 				s.readEOF = true
 				s.readCancel()
 				return 0, io.EOF
 			}
 			s.current = r.data
+			s.currentBuffer = r.buffer
 		case <-s.ctx.Done():
 			return 0, s.ctx.Err()
 		}
@@ -312,6 +330,8 @@ func (s *Stream) Read(p []byte) (int, error) {
 	n := copy(p, s.current)
 	s.current = s.current[n:]
 	if len(s.current) == 0 {
+		s.receivePool = append(s.receivePool, s.currentBuffer)
+		s.currentBuffer = nil
 		delete(s.futures, s.nextRead)
 		s.nextRead++
 		s.ackMu.Lock()
@@ -334,6 +354,11 @@ func (s *Stream) Write(p []byte) (int, error) {
 	}
 	written := 0
 	for len(p) > 0 {
+		// Capacity grows monotonically for this stream; there is no revocation of
+		// slots already owned by workers and no change to the server wire window.
+		for desired := s.client.pipelineDepth(); s.uploadCapacity < desired; s.uploadCapacity++ {
+			s.uploadSlots <- nil
+		}
 		var buffer *[chunkSize]byte
 		select {
 		case buffer = <-s.uploadSlots:
@@ -400,4 +425,59 @@ func (s *Stream) Close() error {
 		_, _ = s.client.request(ctx, s.token[:], s.hub, opClose, 0, 0, nil)
 	})
 	return nil
+}
+
+// pipelineDepth uses observed full-exchange duration, not a pure RTT estimate.
+// Ignore cooling/unknown paths and prefer the fastest measured usable path.
+// Four slots stay the low-latency default; high delay can use the existing
+// eight-record wire window. This is bounded tuning, not a bandwidth estimator.
+func (c *Client) pipelineDepth() int {
+	if c.Pipeline == 4 || c.Pipeline == window {
+		return c.Pipeline
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	now := time.Now()
+	fastest := time.Duration(0)
+	for _, p := range c.paths {
+		if p.latency <= 0 || now.Before(p.retryAt) {
+			continue
+		}
+		if fastest == 0 || p.latency < fastest {
+			fastest = p.latency
+		}
+	}
+	if fastest >= 25*time.Millisecond {
+		return window
+	}
+	return 4
+}
+
+// A measured usable alternative permits a bounded earlier retry of session-
+// scoped operations. Open keeps the full setup budget; idle poll wait is chosen
+// below this attempt budget. Unknown/cooling alternatives cannot shorten it.
+func (c *Client) attemptBudget(selected int, op byte) time.Duration {
+	budget := c.AttemptTimeout
+	if budget <= 0 {
+		budget = 3 * time.Second
+	}
+	if op == opOpen {
+		return budget
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	now := time.Now()
+	fastest := time.Duration(0)
+	for i, p := range c.paths {
+		if i == selected || p.latency <= 0 || now.Before(p.retryAt) {
+			continue
+		}
+		if fastest == 0 || p.latency < fastest {
+			fastest = p.latency
+		}
+	}
+	if fastest > 0 {
+		budget = min(budget, max(250*time.Millisecond, 4*fastest))
+	}
+	return budget
 }

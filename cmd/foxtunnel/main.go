@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"flag"
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 )
 
@@ -85,12 +87,15 @@ func main() {
 		}
 		log.Printf(i18n.Text("HTTPS CONNECT listener: %s"), *listen)
 		log.Fatal(server.ListenAndServeTLS(*cert, *key))
-	case "client":
-		fs := i18n.NewFlagSet("foxtunnel client")
+	case "client", "share":
+		fs := i18n.NewFlagSet("foxtunnel " + os.Args[1])
+		link := fs.String("link", "", i18n.Text("vetroff connection link (prefer --link-file for secrets)"))
+		linkFile := fs.String("link-file", "", i18n.Text("read vetroff connection link from file or - for stdin"))
 		listen := fs.String("listen", "127.0.0.1:1080", i18n.Text("local SOCKS5 listening address"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
 		var fallbacks serverURLs
 		fs.Var(&fallbacks, "fallback-server", i18n.Text("explicit trusted HTTPS proxy fallback (repeat up to seven times)"))
+		bondPipeline := fs.String("bond-pipeline", "auto", i18n.Text("bond pipeline: auto, 4 or 8 (higher depth uses more memory)"))
 		bonded := fs.Bool("bond", false, i18n.Text("experimental multi-node stream bonding; nodes must share one hub"))
 		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active"))
 		attemptTimeout := fs.Duration("fallback-attempt-timeout", 5*time.Second, i18n.Text("setup time per endpoint when fallbacks are configured"))
@@ -99,6 +104,60 @@ func main() {
 		connectTimeout := fs.Duration("connect-timeout", 15*time.Second, i18n.Text("maximum CONNECT setup time (does not limit stream lifetime)"))
 		ca := fs.String("ca-cert", "", i18n.Text("additional trusted certificate PEM"))
 		i18n.Parse(fs, os.Args[2:])
+		if *link != "" || *linkFile != "" {
+			if *link != "" && *linkFile != "" {
+				log.Fatal(i18n.Text("choose either --link or --link-file"))
+			}
+			conflict := false
+			fs.Visit(func(f *flag.Flag) {
+				switch f.Name {
+				case "listen", "ca-cert", "lang", "link", "link-file":
+				default:
+					conflict = true
+				}
+			})
+			if conflict {
+				log.Fatal(i18n.Text("connection link cannot be combined with connection-setting flags"))
+			}
+			var imported profile.Config
+			var importErr error
+			if *link != "" {
+				imported, importErr = profile.Decode(*link)
+			} else if *linkFile == "-" {
+				imported, importErr = profile.Read(os.Stdin)
+			} else {
+				file, err := os.Open(*linkFile)
+				if err != nil {
+					log.Fatal(i18n.Text("cannot read connection link file"))
+				}
+				imported, importErr = profile.Read(file)
+				file.Close()
+			}
+			if importErr != nil {
+				log.Fatal(importErr)
+			}
+			user, password = imported.Username, imported.Password
+			*server = imported.Servers[0]
+			fallbacks = serverURLs(imported.Servers[1:])
+			*tlsBackend = imported.TLSBackend
+			*balance = imported.Balance
+			*bonded = imported.Bond
+			*bondPipeline = imported.Pipeline
+			*padding = imported.Padding
+			*connectTimeout, _ = time.ParseDuration(imported.ConnectTimeout)
+			*attemptTimeout, _ = time.ParseDuration(imported.AttemptTimeout)
+		}
+		if os.Args[1] == "share" {
+			if user == "" || password == "" {
+				log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
+			}
+			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Balance: *balance, Bond: *bonded, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(exported)
+			return
+		}
 		if user == "" || password == "" {
 			log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 		}
@@ -124,6 +183,15 @@ func main() {
 		client.FallbackAttemptTimeout = *attemptTimeout
 		client.ConnectTimeout = *connectTimeout
 		client.Padding = *padding
+		switch *bondPipeline {
+		case "auto":
+		case "4":
+			client.BondPipeline = 4
+		case "8":
+			client.BondPipeline = 8
+		default:
+			log.Fatal(i18n.Text("bond pipeline must be auto, 4 or 8"))
+		}
 		if *bonded {
 			if err := client.EnableBond(); err != nil {
 				log.Fatal(err)
@@ -143,7 +211,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <server|client> [flags] (FOXTUNNEL_USER and FOXTUNNEL_PASSWORD must be set)"))
+	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <server|client|share> [flags] (credentials: environment or vetroff link)"))
 	os.Exit(2)
 }
 

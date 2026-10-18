@@ -19,5 +19,7 @@ jobs:
         run: go test -race ./... -count=1 -timeout=60s
       - name: Fuzz padding decoder
         run: go test ./internal/tunnel -run '^$' -fuzz FuzzPaddingDecoder -fuzztime=100000x -parallel=2 -timeout=120s
+      - name: Фаззинг ссылок vetroff
+        run: go test ./internal/profile -run '^$' -fuzz FuzzLinkDecoder -fuzztime=10000x -parallel=2 -timeout=60s
       - name: Build
         run: go build ./cmd/foxtunnel

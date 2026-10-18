@@ -35,12 +35,22 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
-	"bond attempt timeout must be at least 100ms": "В режиме объединения время попытки должно быть не меньше 100ms",
-	"invalid bond hub identity":                   "Некорректный идентификатор общего выхода",
-	"bond requires HTTP/2":                        "Объединение путей требует HTTP/2",
-	"oversized bond response":                     "Превышен размер ответа объединения путей",
-	"bond HTTP status %d":                         "HTTP-статус объединения путей: %d",
-	"bond requires two to eight trusted nodes":    "Для объединения нужны от двух до восьми доверенных нод",
+	"invalid vetroff connection link":                                                           "Некорректная ссылка подключения vetroff://",
+	"vetroff connection link (prefer --link-file for secrets)":                                  "Ссылка vetroff:// (для секретов предпочтительнее --link-file)",
+	"read vetroff connection link from file or - for stdin":                                     "Прочитать ссылку vetroff:// из файла или - для stdin",
+	"choose either --link or --link-file":                                                       "Выберите только --link или --link-file",
+	"connection link cannot be combined with connection-setting flags":                          "Ссылку нельзя сочетать с параметрами настройки подключения",
+	"cannot read connection link file":                                                          "Не удалось прочитать файл ссылки подключения",
+	"usage: foxtunnel <server|client|share> [flags] (credentials: environment or vetroff link)": "Использование: foxtunnel <server|client|share> [параметры] (учётные данные: окружение или ссылка vetroff://)",
+
+	"bond pipeline must be auto, 4 or 8":                          "Глубина конвейера объединения: auto, 4 или 8",
+	"bond pipeline: auto, 4 or 8 (higher depth uses more memory)": "Конвейер объединения: auto, 4 или 8 (большая глубина требует больше памяти)",
+	"bond attempt timeout must be at least 100ms":                 "В режиме объединения время попытки должно быть не меньше 100ms",
+	"invalid bond hub identity":                                   "Некорректный идентификатор общего выхода",
+	"bond requires HTTP/2":                                        "Объединение путей требует HTTP/2",
+	"oversized bond response":                                     "Превышен размер ответа объединения путей",
+	"bond HTTP status %d":                                         "HTTP-статус объединения путей: %d",
+	"bond requires two to eight trusted nodes":                    "Для объединения нужны от двух до восьми доверенных нод",
 
 	"bond requires at least two trusted nodes":                         "Для объединения нужны хотя бы две доверенные ноды",
 	"bond and initial-v1 padding cannot be combined":                   "Объединение путей нельзя сочетать с дополнением initial-v1",

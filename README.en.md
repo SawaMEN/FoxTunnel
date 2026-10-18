@@ -212,3 +212,10 @@ The separate opt-in `--bond` mode carries blocks of one stream through multiple
 entries to one common exit. Ordinary whole-stream scheduling remains available.
 See [deployment, acknowledgements, limits and tests](docs/BONDING.en.md).
 No speed advantage or TSPU resistance is established.
+
+## Connection links
+
+The scheme is `vetroff://`. `foxtunnel share --server https://node-a.example`
+exports settings and environment credentials. Import with
+`foxtunnel client --link-file connection.txt` or `--link-file -` for stdin.
+Links contain secrets. [Format and examples](docs/CONNECTION-LINKS.en.md).

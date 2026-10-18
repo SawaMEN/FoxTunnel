@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -16,6 +17,11 @@ import (
 
 func TestBondedSOCKSGo(t *testing.T) { testBondedSOCKS(t, "go") }
 func testBondedSOCKS(t *testing.T, backend string) {
+	for _, depth := range []int{4, 8} {
+		t.Run(strconv.Itoa(depth), func(t *testing.T) { testBondedSOCKSDepth(t, backend, depth) })
+	}
+}
+func testBondedSOCKSDepth(t *testing.T, backend string, depth int) {
 	var destinations atomic.Int64
 	target := testDestination(t, func(c net.Conn) { destinations.Add(1); _, _ = io.Copy(c, c) })
 	client, addr := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
@@ -67,6 +73,7 @@ func testBondedSOCKS(t *testing.T, backend string) {
 		t.Fatal(err)
 	}
 	client.FallbackAttemptTimeout = 250 * time.Millisecond
+	client.BondPipeline = depth
 	if err := client.EnableBond(); err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +154,18 @@ func TestBondAuthorizationAndConfiguration(t *testing.T) {
 	}
 }
 
-func BenchmarkBondedLoopback(b *testing.B) {
+func BenchmarkBondedLoopback(b *testing.B) { benchmarkBondedPath(b, 0, 0) }
+
+func BenchmarkBondedDelayedRPC(b *testing.B) {
+	for _, mode := range []struct {
+		name  string
+		depth int
+	}{{"4", 4}, {"8", 8}, {"auto", 0}} {
+		b.Run(mode.name, func(b *testing.B) { benchmarkBondedPath(b, 40*time.Millisecond, mode.depth) })
+	}
+}
+
+func benchmarkBondedPath(b *testing.B, delay time.Duration, pipeline int) {
 	target := testDestination(b, func(c net.Conn) { _, _ = io.Copy(c, c) })
 	client, addr := testClient(b, &Server{Username: "alice", Password: "secret"})
 	exit := &Server{Username: "alice", Password: "secret", AllowPrivate: true}
@@ -162,7 +180,19 @@ func BenchmarkBondedLoopback(b *testing.B) {
 			b.Fatal(err)
 		}
 		b.Cleanup(closeRelay)
-		node := setupEndpoint(b, client, &Server{Username: "alice", Password: "secret", Bond: relay})
+		var entry http.Handler = relay
+		if delay > 0 {
+			entry = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				timer := time.NewTimer(delay)
+				defer timer.Stop()
+				select {
+				case <-timer.C:
+					relay.ServeHTTP(w, r)
+				case <-r.Context().Done():
+				}
+			})
+		}
+		node := setupEndpoint(b, client, &Server{Username: "alice", Password: "secret", Bond: entry})
 		nodes = append(nodes, node.URL)
 	}
 	usePrimaryBenchmarkURL, err := url.Parse(nodes[0])
@@ -173,6 +203,7 @@ func BenchmarkBondedLoopback(b *testing.B) {
 	if err := client.SetFallbackServers(nodes[1:]); err != nil {
 		b.Fatal(err)
 	}
+	client.BondPipeline = pipeline
 	if err := client.EnableBond(); err != nil {
 		b.Fatal(err)
 	}

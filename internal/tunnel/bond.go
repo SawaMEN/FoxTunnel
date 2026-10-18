@@ -15,6 +15,9 @@ import (
 
 // EnableBond must be called after endpoint/TLS configuration, before Serve.
 func (c *Client) EnableBond() error {
+	if c.BondPipeline != 0 && c.BondPipeline != 4 && c.BondPipeline != 8 {
+		return errors.New(i18n.Text("bond pipeline must be auto, 4 or 8"))
+	}
 	if len(c.fallbackServers) == 0 {
 		return errors.New(i18n.Text("bond requires at least two trusted nodes"))
 	}
@@ -24,7 +27,7 @@ func (c *Client) EnableBond() error {
 	if c.Padding {
 		return errors.New(i18n.Text("bond and initial-v1 padding cannot be combined"))
 	}
-	c.bondClient = &bond.Client{Endpoints: append([]*url.URL{c.ServerURL}, c.fallbackServers...), Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout}
+	c.bondClient = &bond.Client{Endpoints: append([]*url.URL{c.ServerURL}, c.fallbackServers...), Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline}
 	return nil
 }
 func (c *Client) handleBond(conn net.Conn, target string) {
