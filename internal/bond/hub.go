@@ -45,6 +45,7 @@ type session struct {
 	touched                   time.Time
 	nextUp, nextDown, ackDown uint64
 	up, down                  map[uint64]block
+	receiveBuffers            [window][]byte
 }
 
 func (s *session) signal() { close(s.changed); s.changed = make(chan struct{}) }
@@ -54,6 +55,7 @@ func (s *session) stop(err error) {
 		s.closed = true
 		s.up = nil
 		s.down = nil
+		s.receiveBuffers = [window][]byte{}
 		if s.idle != nil {
 			s.idle.Stop()
 		}
@@ -395,8 +397,12 @@ func (s *session) download() {
 			s.mu.Unlock()
 			return
 		}
+		slot := s.nextDown % window
+		if s.receiveBuffers[slot] == nil {
+			s.receiveBuffers[slot] = make([]byte, chunkSize)
+		}
+		buf := s.receiveBuffers[slot]
 		s.mu.Unlock()
-		buf := make([]byte, chunkSize)
 		n, err := s.conn.Read(buf)
 		if n > 0 {
 			s.mu.Lock()

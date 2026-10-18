@@ -77,7 +77,12 @@ func testBondedSOCKS(t *testing.T, backend string) {
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(15 * time.Second))
 	exchange := func(seed byte) {
-		payload := bytes.Repeat([]byte{seed, seed + 1, seed + 2, seed + 3}, 256<<10)
+		payload := make([]byte, 1<<20)
+		state := uint64(seed) + 1
+		for i := range payload {
+			state = state*6364136223846793005 + 1
+			payload[i] = byte(state >> 56)
+		}
 		done := make(chan error, 1)
 		go func() { _, err := conn.Write(payload); done <- err }()
 		got := make([]byte, len(payload))

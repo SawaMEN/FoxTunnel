@@ -1,7 +1,6 @@
 package bond
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
@@ -99,12 +98,14 @@ func terminal(err error) bool {
 	return errors.As(err, &roots) || errors.As(err, &record) || errors.As(err, &alert) || (errors.As(err, &operation) && operation.Op == "remote error") || errors.As(err, &cert) || errors.As(err, &unknown) || errors.As(err, &host) || errors.As(err, &invalid)
 }
 func (c *Client) request(ctx context.Context, token []byte, hub string, op byte, seq, ack uint64, payload []byte) (block, error) {
-	frame := make([]byte, headerSize+len(payload))
+	return c.requestInto(ctx, token, hub, op, seq, ack, payload, nil)
+}
+func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op byte, seq, ack uint64, payload, responseBuffer []byte) (block, error) {
+	frame := make([]byte, headerSize)
 	frame[0] = op
 	copy(frame[1:33], token)
 	binary.BigEndian.PutUint64(frame[33:41], seq)
 	binary.BigEndian.PutUint64(frame[41:49], ack)
-	copy(frame[49:], payload)
 	tried := make([]bool, len(c.Endpoints))
 	var last error
 	for range tried {
@@ -120,12 +121,17 @@ func (c *Client) request(ctx context.Context, token []byte, hub string, op byte,
 		attempt, cancel := context.WithTimeout(ctx, timeout)
 		endpoint := *c.Endpoints[index]
 		endpoint.Path = Path
-		req, err := http.NewRequestWithContext(attempt, http.MethodPost, endpoint.String(), bytes.NewReader(frame))
+		frames := &frameSet{header: frame, payload: payload}
+		body, _ := frames.body()
+		req, err := http.NewRequestWithContext(attempt, http.MethodPost, endpoint.String(), body)
 		if err != nil {
 			cancel()
+			frames.close()
 			release(0, true)
 			return block{}, err
 		}
+		req.ContentLength = int64(headerSize + len(payload))
+		req.GetBody = frames.body
 		req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
 		req.Header.Set("Content-Type", "application/octet-stream")
 		if hub != "" {
@@ -141,7 +147,7 @@ func (c *Client) request(ctx context.Context, token []byte, hub string, op byte,
 			if resp.ProtoMajor != 2 {
 				err = errors.New(i18n.Text("bond requires HTTP/2"))
 			} else {
-				data, err = readBounded(resp.Body, resp.ContentLength, chunkSize)
+				data, err = readBoundedInto(resp.Body, resp.ContentLength, chunkSize, responseBuffer)
 				if len(data) > chunkSize {
 					err = errors.New(i18n.Text("oversized bond response"))
 				}
@@ -153,6 +159,7 @@ func (c *Client) request(ctx context.Context, token []byte, hub string, op byte,
 		}
 		elapsed := time.Since(started)
 		cancel()
+		frames.close() // Join any in-progress Read before an upload slot can be reused.
 		retry := false
 		if err != nil {
 			var network net.Error
@@ -200,13 +207,14 @@ type Stream struct {
 	writeMu, readMu             sync.Mutex
 	nextUp, nextRead, nextFetch uint64
 	writeClosed                 bool
-	uploadSlots                 chan struct{}
+	uploadSlots                 chan *[chunkSize]byte
 	uploadPending               sync.WaitGroup
 	readEOF                     bool
 	readCtx                     context.Context
 	readCancel                  context.CancelFunc
 	current                     []byte
 	futures                     map[uint64]chan result
+	receiveBuffers              [4][]byte
 	workers                     sync.WaitGroup
 	ackMu                       sync.Mutex
 	ack                         uint64
@@ -217,7 +225,10 @@ func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
 		return nil, errors.New(i18n.Text("bond requires two to eight trusted nodes"))
 	}
 	streamCtx, cancel := context.WithCancel(ctx)
-	s := &Stream{client: c, ctx: streamCtx, cancel: cancel, futures: make(map[uint64]chan result), uploadSlots: make(chan struct{}, 4)}
+	s := &Stream{client: c, ctx: streamCtx, cancel: cancel, futures: make(map[uint64]chan result), uploadSlots: make(chan *[chunkSize]byte, 4)}
+	for range cap(s.uploadSlots) {
+		s.uploadSlots <- nil
+	}
 	s.readCtx, s.readCancel = context.WithCancel(streamCtx)
 	binary.BigEndian.PutUint64(s.token[:8], uint64(time.Now().Unix()))
 	if _, err := rand.Read(s.token[8:]); err != nil {
@@ -247,12 +258,17 @@ func (s *Stream) fetch() {
 	s.nextFetch++
 	out := make(chan result, 1)
 	s.futures[seq] = out
+	slot := seq % uint64(len(s.receiveBuffers))
+	if s.receiveBuffers[slot] == nil {
+		s.receiveBuffers[slot] = make([]byte, chunkSize+1)
+	}
+	responseBuffer := s.receiveBuffers[slot]
 	s.workers.Go(func() {
 		for {
 			s.ackMu.Lock()
 			ack := s.ack
 			s.ackMu.Unlock()
-			b, err := s.client.request(s.readCtx, s.token[:], s.hub, opRead, seq, ack, nil)
+			b, err := s.client.requestInto(s.readCtx, s.token[:], s.hub, opRead, seq, ack, nil, responseBuffer)
 			if errors.Is(err, errPoll) {
 				continue
 			}
@@ -269,6 +285,9 @@ func (s *Stream) Read(p []byte) (int, error) {
 	}
 	if s.readEOF {
 		return 0, io.EOF
+	}
+	if err := s.ctx.Err(); err != nil {
+		return 0, err
 	}
 	if len(s.current) == 0 {
 		for s.nextFetch < s.nextRead+4 {
@@ -310,15 +329,23 @@ func (s *Stream) Write(p []byte) (int, error) {
 	if s.writeClosed {
 		return 0, io.ErrClosedPipe
 	}
+	if err := s.ctx.Err(); err != nil {
+		return 0, err
+	}
 	written := 0
 	for len(p) > 0 {
+		var buffer *[chunkSize]byte
 		select {
-		case s.uploadSlots <- struct{}{}:
+		case buffer = <-s.uploadSlots:
 		case <-s.ctx.Done():
 			return written, s.ctx.Err()
 		}
 		n := min(len(p), chunkSize)
-		payload := append([]byte(nil), p[:n]...)
+		if buffer == nil {
+			buffer = new([chunkSize]byte)
+		}
+		payload := buffer[:n]
+		copy(payload, p[:n])
 		p = p[n:]
 		seq := s.nextUp
 		s.nextUp++
@@ -326,7 +353,7 @@ func (s *Stream) Write(p []byte) (int, error) {
 		s.uploadPending.Add(1)
 		s.workers.Go(func() {
 			defer s.uploadPending.Done()
-			defer func() { <-s.uploadSlots }()
+			defer func() { s.uploadSlots <- buffer }()
 			for {
 				_, err := s.client.request(s.ctx, s.token[:], s.hub, opWrite, seq, 0, payload)
 				if errors.Is(err, errPoll) {

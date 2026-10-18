@@ -95,7 +95,31 @@ func NewBondRelay(raw, user, password, ca string) (http.Handler, func(), error) 
 		}
 		defer resp.Body.Close()
 		w.WriteHeader(resp.StatusCode)
-		_, _ = io.Copy(w, io.LimitReader(resp.Body, 64<<10))
+		if resp.ContentLength == 0 {
+			return
+		}
+		_, _ = copyBondResponse(w, io.LimitReader(resp.Body, 64<<10))
 	})
 	return handler, upstream.Close, nil
+}
+
+// One global bounded cache avoids allocating a copy buffer for every relay RPC.
+// Buffers are exclusively owned during CopyBuffer and cleared before reuse.
+var relayCopyBuffers = make(chan *[32 << 10]byte, 32)
+
+func copyBondResponse(w io.Writer, r io.Reader) (int64, error) {
+	var buffer *[32 << 10]byte
+	select {
+	case buffer = <-relayCopyBuffers:
+	default:
+		buffer = new([32 << 10]byte)
+	}
+	defer func() {
+		clear(buffer[:])
+		select {
+		case relayCopyBuffers <- buffer:
+		default:
+		}
+	}()
+	return io.CopyBuffer(w, r, buffer[:])
 }

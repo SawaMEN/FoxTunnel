@@ -154,3 +154,41 @@ is large; no Internet or superiority claim follows. CPU/allocation profiling and
 more economical streaming framing are next, preserving ACKs and bounded windows.
 
 [Bonding design and deployment](BONDING.en.md).
+
+## Bonding buffer optimization
+
+A three-second profile of `becd076` identified RPC-body reads, `io.Copy`, request
+payload copies, exit downloads and queued uploads as major allocation sites.
+Syscalls dominate CPU, with encryption, copying, scheduling and GC also visible.
+
+The v1 format, block sizes and windows are unchanged. Four upload/four receive
+buffers per client stream and eight exit receive slots are reused only after
+ownership permits it. HTTP bodies present immutable header/payload slices without
+a second full copy. `GetBody` supports transport retries; finishing an attempt
+joins reads and invalidates every reader before an upload slot can be reused.
+Relay copy buffers use a bounded 32-by-32-KiB cache, cleared on return; known-empty
+responses skip it. Live session buffers remain retained until teardown. Allocated
+bytes per exchange are not peak RSS; the relay cache is at most 1 MiB, separate
+from active-request and HTTP/TLS buffers.
+
+Both revisions ran sequentially on the same Go 1.26.9/Linux amd64/AMD EPYC 9V74
+runner: three one-second repetitions without concurrent checks. The old revision
+used a separate checkout. One-MiB echo counts payload once:
+
+| Bonding revision | MB/s | Total allocated bytes per exchange |
+| --- | --- | --- |
+| `becd076` | 143.90–149.54 | 9.97–10.11 MB |
+| Buffer reuse | 173.56–225.63 | 2.77–2.84 MB |
+
+Observed median throughput improved about 37% and allocated bytes fell about 72%.
+This small shared-runner sample provides no statistical guarantee. Ordinary
+CONNECT remained faster: 290.65–360.61 MB/s before and 296.69–348.22 MB/s after.
+Internet gains, independent-link aggregation and Russian TSPU resistance are not
+inferred. Per-block request/ACK budgets still limit a stream at high RTT; a more
+economical streaming carrier and real-route measurements remain necessary.
+
+Tests cover partial consumption across receive-slot reuse, composite-body read
+boundaries, invalidating original/rewound transport readers before upload reuse,
+and calls after Close. End-to-end data now varies across blocks, exposing reorder
+or overwrite bugs that repeated contents could hide. Lost ACKs, a blackholed entry,
+half-close and both TLS backends remain covered under the race detector.

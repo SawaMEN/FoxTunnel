@@ -112,3 +112,10 @@ References: [MPTCP RFC 8684](https://www.rfc-editor.org/rfc/rfc8684.html) and
 [Multipath QUIC tracker](https://datatracker.ietf.org/doc/draft-ietf-quic-multipath/).
 The observed tracker showed draft-21; this does not establish Neqo support or
 production readiness of this independent prototype.
+
+### Buffer reuse
+
+The format and window sizes are unchanged. Client/exit buffers are reused with
+ACK-aware ownership; original/rewound HTTP readers finish before upload storage
+is overwritten. Relay buffers use a bounded, cleared 32-by-32-KiB cache.
+See [profile, before/after observations and limits](PERFORMANCE.en.md#bonding-buffer-optimization).

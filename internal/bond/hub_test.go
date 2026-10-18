@@ -124,3 +124,53 @@ func TestBoundedBodyReader(t *testing.T) {
 		}
 	}
 }
+
+func TestFrameBodyChunkBoundaries(t *testing.T) {
+	header := bytes.Repeat([]byte{19}, headerSize)
+	payload := bytes.Repeat([]byte{37}, chunkSize)
+	expected := append(append([]byte(nil), header...), payload...)
+	for _, size := range []int{1, headerSize - 1, headerSize, headerSize + 1, 16 << 10, chunkSize + headerSize} {
+		frames := &frameSet{header: header, payload: payload}
+		reader, _ := frames.body()
+		var actual bytes.Buffer
+		buffer := make([]byte, size)
+		for {
+			n, err := reader.Read(buffer)
+			actual.Write(buffer[:n])
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		if !bytes.Equal(actual.Bytes(), expected) {
+			t.Fatalf("frame split with buffer size %d", size)
+		}
+	}
+}
+
+func TestFrameRewindAfterOriginalReaderClose(t *testing.T) {
+	frames := &frameSet{header: []byte("header"), payload: []byte("payload")}
+	original, _ := frames.body()
+	prefix := make([]byte, 3)
+	if _, err := io.ReadFull(original, prefix); err != nil {
+		t.Fatal(err)
+	}
+	original.Close()
+	rewound, err := frames.body()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := io.ReadAll(rewound)
+	if err != nil || string(data) != "headerpayload" {
+		t.Fatal(string(data), err)
+	}
+	frames.close()
+	if _, err := frames.body(); err != io.ErrClosedPipe {
+		t.Fatal("retry reader created after terminal close", err)
+	}
+	if _, err := rewound.Read(make([]byte, 1)); err != io.ErrClosedPipe {
+		t.Fatal("retry reader survived terminal close", err)
+	}
+}
