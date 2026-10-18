@@ -75,3 +75,5 @@ stdin import were checked by starting a loopback SOCKS listener.
 Use `share --transport wss` or `setup --transport wss`. NSS supports the first
 three; `h3-post` with `tls:nss` is rejected. Profiles launch no external programs.
 Old links retain H2 CONNECT. See [configuration and limits](NATIVE-TRANSPORTS.en.md).
+
+Fields `xhttp_path` / `xhttp_host` select a shared XHTTP cluster route independently of TLS SNI/pin; other transports reject them. See [XHTTP settings](XHTTP.en.md).

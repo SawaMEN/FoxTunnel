@@ -16,10 +16,41 @@ the complete Firefox fingerprint. There is no nested TLS inside the carrier.
 ./foxtunnel client --link-file main-node/connection.txt
 ```
 
-Setup produces a private `vetroff://` link with a random access secret, verified
+Setup produces a private `vetroff://` link with a random access secret, an independent
+random `/api/<nonce>/` route, verified
 SNI, an additive SPKI pin and the transport. Use `xhttp-stream-one` for a single
 duplex POST, `xhttp-packet-up` for packet upload, or explicitly select `--tls-backend go` without NSS. Upgrade both
 ends; the existing H2 POST mode is a different format.
+
+## Path, HTTP Host and SNI
+
+Add `--xhttp-path /api/relay-v1 --xhttp-host route.example` to setup for a custom
+route. Paths gain a trailing slash. New XHTTP clusters get a random route when
+no path is supplied; joined/legacy profiles keep their existing route. Manual
+share/client commands still default to the built-in route.
+
+Host affects only outer HTTP Host / H2 `:authority`, not the dial endpoint,
+TLS SNI, certificate name or SPKI pin. It defaults to verified SNI if configured,
+otherwise the endpoint host. Ports and IPs (bracketed IPv6) are accepted; the
+server compares case-insensitively but retains port significance. Host changes
+do not themselves enable domain fronting; the frontend must support the route.
+
+Fields `xhttp_path` / `xhttp_host` persist in links and server.json. Join inherits
+the cluster route and rejects conflicting overrides. All ingresses must support
+the same route; TLS policies remain independent per node. Manually registered
+nodes must be configured accordingly. Manual servers accept the same flags.
+Upgrade both ends before using the new fields.
+
+The path validator rejects percent encoding, query/fragment, empty or dot
+segments, backslashes, spaces and control characters. Host rejects URLs,
+credentials, CR/LF and invalid ports. XHTTP settings on another transport fail
+rather than being ignored. Wrong Host/path/authentication uses the public site
+with proxy credentials removed; the path is not authentication.
+
+Tests cover all three modes through a controlled HTTPS reverse proxy with an
+H2 backend and explicit forwarding of hop-by-hop Proxy-Authorization. Frontends
+must stream bodies/responses without buffering. This does not establish arbitrary
+CDN compatibility or Russian reachability.
 
 | Mode | Upload | Download |
 |---|---|---|
@@ -58,7 +89,7 @@ both directions and the inner session. Idle close retires carriers once their
 active inner bodies finish, without cutting off active streams.
 
 This implements the basic request shapes of **three XHTTP modes**.
-XMUX, custom path/HTTP Host, different upload/download endpoints and
+XMUX, different upload/download endpoints and
 cross-implementation tests remain pending. Payloads are FoxTunnel, not VLESS;
 full Xray XHTTP interoperability is not claimed. Local transfer, TLS rejection,
 setup/link, cancellation, admission, packet size/order/replay/gap/ACK failure, discovery and lost-ACK/node-failure tests

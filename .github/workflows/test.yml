@@ -29,3 +29,5 @@ jobs:
         run: go test ./internal/cluster -run '^$' -fuzz FuzzClusterDecoder -fuzztime=10000x -parallel=2 -timeout=60s
       - name: Фаззинг путей XHTTP
         run: go test ./internal/xhttp -run '^$' -fuzz FuzzCarrierPath -fuzztime=10000x -parallel=2 -timeout=60s
+      - name: Фаззинг настроек XHTTP
+        run: go test ./internal/xhttp -run '^$' -fuzz FuzzSettings -fuzztime=10000x -parallel=2 -timeout=60s

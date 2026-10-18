@@ -24,11 +24,12 @@ import (
 // Server terminates authenticated native H2 CONNECT, H2/H3 POST and WSS.
 // It has no Firefox fingerprint parity. Padding is an opt-in experiment.
 type Server struct {
-	Username     string
-	Password     string
-	AllowPrivate bool
-	Resolver     *net.Resolver
-	DialTimeout  time.Duration
+	XHTTPSettings xhttp.Settings // Configure before serving; common cluster route.
+	Username      string
+	Password      string
+	AllowPrivate  bool
+	Resolver      *net.Resolver
+	DialTimeout   time.Duration
 	// Padding enables support for explicitly negotiated initial-v1 records.
 	Padding bool
 	// MaxTunnels bounds authenticated dialing/relay work across this Server.
@@ -47,7 +48,8 @@ type Server struct {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if xhttp.Matches(r) && r.ProtoMajor == 2 && s.authorized(r) {
+	settings, settingsErr := xhttp.Normalize(s.XHTTPSettings.Path, s.XHTTPSettings.Host)
+	if settingsErr == nil && xhttp.MatchesAt(r, settings) && r.ProtoMajor == 2 && s.authorized(r) {
 		s.serveXHTTP(w, r)
 		return
 	}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 // Client exposes local SOCKS5 TCP over the selected native HTTPS transport.
@@ -61,6 +62,7 @@ type Client struct {
 	identity        tlsidentity.Policy
 	backend         string
 	nativeTransport string
+	xhttpSettings   xhttp.Settings
 }
 
 func NewClient(rawURL, user, password, caFile string) (*Client, error) {
@@ -120,12 +122,12 @@ func (c *Client) SetTLSBackend(name string) error {
 	default:
 		return fmt.Errorf(i18n.Text("unknown TLS backend %q (choose go or nss)"), name)
 	}
-	transport, err := makeNativeTransport(c.nativeTransport, name, c.tlsConfig, basicAuth(c.Username, c.Password))
+	transport, err := makeNativeTransport(c.nativeTransport, name, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings)
 	if err != nil {
 		return err
 	}
 	c.transport.CloseIdleConnections()
-	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: name, mode: c.nativeTransport, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: name, mode: c.nativeTransport, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
 	c.backend = name
 	return nil
 }

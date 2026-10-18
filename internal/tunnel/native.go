@@ -47,9 +47,12 @@ func (c *Client) SetTransport(mode string) error {
 	return nil
 }
 
-func makeNativeTransport(mode, backend string, config *tls.Config, auth string) (tlsTransport, error) {
+func makeNativeTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings) (tlsTransport, error) {
 	if mode == "xhttp-stream-one" || mode == "xhttp-stream-up" || mode == "xhttp-packet-up" {
-		return newXHTTPTransport(mode, backend, config, auth)
+		return newXHTTPTransport(mode, backend, config, auth, settings)
+	}
+	if settings != (xhttp.Settings{}) {
+		return nil, xhttp.ErrSettings
 	}
 	if mode == "h3-post" {
 		if backend != "go" {
@@ -202,7 +205,7 @@ func basicAuth(user, password string) string {
 
 // Mozilla NSS supplies the outer TLS handshake; Go supplies the HTTP/2 framing.
 // The inner connection is plaintext HTTP/2 inside the verified HTTPS carrier.
-func newXHTTPTransport(mode, backend string, config *tls.Config, auth string) (tlsTransport, error) {
+func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings) (tlsTransport, error) {
 	outer, err := makeTLStransport(backend, config)
 	if err != nil {
 		return nil, err
@@ -210,7 +213,7 @@ func newXHTTPTransport(mode, backend string, config *tls.Config, auth string) (t
 	inner := &http2.Transport{TLSClientConfig: config.Clone(), DisableCompression: true, IdleConnTimeout: 90 * time.Second}
 	t := &xhttpTransport{Transport: inner, outer: outer, carriers: make(map[net.Conn]bool)}
 	inner.DialTLSContext = func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-		conn, err := xhttp.Dial(ctx, outer, "https://"+addr, mode, auth, config.ServerName)
+		conn, err := xhttp.DialWithSettings(ctx, outer, "https://"+addr, mode, auth, config.ServerName, settings)
 		if err != nil {
 			return nil, err
 		}
@@ -297,11 +300,36 @@ func (b *carrierBody) Read(p []byte) (int, error) {
 func (b *carrierBody) Close() error { err := b.ReadCloser.Close(); b.once.Do(b.release); return err }
 func (s *Server) serveXHTTP(w http.ResponseWriter, r *http.Request) {
 	s.xhttpOnce.Do(func() {
-		s.xhttpServer = &xhttp.Server{MaxSessions: s.MaxTunnels, Authorized: s.authorized, ServeConn: func(conn net.Conn, outer *http.Request) {
+		s.xhttpServer = &xhttp.Server{Settings: s.XHTTPSettings, MaxSessions: s.MaxTunnels, Authorized: s.authorized, ServeConn: func(conn net.Conn, outer *http.Request) {
 			defer conn.Close()
 			inner := &http2.Server{MaxConcurrentStreams: 32, MaxUploadBufferPerConnection: 1 << 20, MaxUploadBufferPerStream: 64 << 10, IdleTimeout: 90 * time.Second}
 			inner.ServeConn(conn, &http2.ServeConnOpts{Context: context.Background(), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { r.TLS = outer.TLS; s.ServeHTTP(w, r) })})
 		}}
 	})
 	s.xhttpServer.ServeHTTP(w, r)
+}
+
+// SetXHTTPSettings applies a common carrier route to every cluster origin.
+// Select an XHTTP transport first; call before serving or enabling bond.
+func (c *Client) SetXHTTPSettings(path, host string) error {
+	if c.bondClient != nil || c.bondDiscovery != nil {
+		return i18n.Error("configure transport before enabling bond")
+	}
+	settings, err := xhttp.Normalize(path, host)
+	if err != nil {
+		return i18n.Error("invalid XHTTP path or Host")
+	}
+	if path == "" && host == "" {
+		settings = xhttp.Settings{}
+	}
+	if !xhttp.IsMode(c.nativeTransport) && settings != (xhttp.Settings{}) {
+		return i18n.Error("XHTTP settings require an XHTTP transport")
+	}
+	old := c.xhttpSettings
+	c.xhttpSettings = settings
+	if err := c.SetTLSBackend(c.backend); err != nil {
+		c.xhttpSettings = old
+		return err
+	}
+	return nil
 }

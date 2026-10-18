@@ -34,7 +34,7 @@ func TestSetupCLIAndServerConfig(t *testing.T) {
 	out := filepath.Join(dir, "generated")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	setup := helperCommand(ctx, "setup", "--server", "https://example.com", "--cert", certPath, "--key", keyPath, "--ca-cert", certPath, "--out", out)
+	setup := helperCommand(ctx, "setup", "--server", "https://example.com", "--cert", certPath, "--key", keyPath, "--ca-cert", certPath, "--out", out, "--transport", "xhttp-stream-up", "--xhttp-path", "/api/test", "--xhttp-host", "route.example")
 	setup.Env = helperEnv(false)
 	message, err := setup.CombinedOutput()
 	if err != nil {
@@ -44,6 +44,9 @@ func TestSetupCLIAndServerConfig(t *testing.T) {
 	config, err := bootstrap.ReadServer(configFile)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if config.XHTTPPath != "/api/test/" || config.XHTTPHost != "route.example" {
+		t.Fatal("setup flags were not saved")
 	}
 	if strings.Contains(string(message), config.Password) || strings.Contains(string(message), "vetroff://") {
 		t.Fatal("setup printed secrets")
@@ -153,5 +156,25 @@ func TestShareAndImportFromStdin(t *testing.T) {
 	rejected, err := conflict.CombinedOutput()
 	if err == nil || strings.Contains(string(rejected), link) || strings.Contains(string(rejected), "example-only-password") {
 		t.Fatal("conflicting settings accepted or link disclosed")
+	}
+}
+
+func TestShareXHTTPRouteCLI(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := helperCommand(ctx, "share", "--server", "https://main.example", "--transport", "xhttp-stream-up", "--xhttp-path", "/api/custom", "--xhttp-host", "route.example", "--sni", "tls.example")
+	cmd.Env = helperEnv(true)
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := profile.Decode(strings.TrimSpace(string(out)))
+	if err != nil || c.XHTTPPath != "/api/custom/" || c.XHTTPHost != "route.example" || c.SNI != "tls.example" {
+		t.Fatal("CLI route lost", err)
+	}
+	conflict := helperCommand(ctx, "share", "--link", strings.TrimSpace(string(out)), "--xhttp-path", "/other")
+	conflict.Env = helperEnv(false)
+	if msg, err := conflict.CombinedOutput(); err == nil || strings.Contains(string(msg), "vetroff://") || strings.Contains(string(msg), "example-only-password") {
+		t.Fatal("ambiguous import accepted or leaked credentials")
 	}
 }

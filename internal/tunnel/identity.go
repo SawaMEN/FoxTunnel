@@ -9,6 +9,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 type tlsTransport interface {
@@ -20,15 +21,16 @@ type identityEntry struct {
 	touched   time.Time
 }
 type identityPool struct {
-	mu      sync.Mutex
-	base    tlsTransport
-	config  *tls.Config
-	backend string
-	mode    string
-	auth    string
-	primary string
-	policy  tlsidentity.Policy
-	entries map[string]identityEntry
+	mu            sync.Mutex
+	base          tlsTransport
+	config        *tls.Config
+	backend       string
+	mode          string
+	xhttpSettings xhttp.Settings
+	auth          string
+	primary       string
+	policy        tlsidentity.Policy
+	entries       map[string]identityEntry
 }
 
 func makeTLStransport(backend string, config *tls.Config) (tlsTransport, error) {
@@ -76,7 +78,7 @@ func (p *identityPool) forPolicy(origin string, policy tlsidentity.Policy) (tlsT
 	// operators share ticket keys between servers using different certificates.
 	config.ClientSessionCache = tls.NewLRUClientSessionCache(8)
 	policy.Apply(config)
-	transport, err := makeNativeTransport(p.mode, p.backend, config, p.auth)
+	transport, err := makeNativeTransport(p.mode, p.backend, config, p.auth, p.xhttpSettings)
 	if err != nil {
 		return nil, err
 	}

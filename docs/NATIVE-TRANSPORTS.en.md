@@ -72,8 +72,7 @@ Native chains now include FoxTunnel over H2 POST/TLS, HTTP/2 over WSS/TLS, and
 H3 POST/QUIC. Their framing and authentication are FoxTunnel's. These POST
 transports are **not interoperable Xray XHTTP implementations**. Independent `xhttp-stream-one`, `xhttp-stream-up` and `xhttp-packet-up` carriers
 now implement the basic XHTTP request shapes. The payload remains FoxTunnel, not VLESS.
-They support NSS, setup, links, discovery and bonding. XMUX, custom
-path/Host and cross-implementation interoperability tests are still pending;
+They support NSS, setup, links, discovery and bonding. XMUX and cross-implementation interoperability tests are still pending;
 full XHTTP compatibility is not claimed. See [XHTTP and NSS](XHTTP.en.md).
 
 Native REALITY, ECH, gRPC, HTTPUpgrade, dnstt, Salamander/Gecko and AWG remain

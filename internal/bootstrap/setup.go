@@ -19,9 +19,12 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/safejson"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 type ServerConfig struct {
+	XHTTPPath      string `json:"xhttp_path,omitempty"`
+	XHTTPHost      string `json:"xhttp_host,omitempty"`
 	Version        int    `json:"v"`
 	H3Listen       string `json:"h3_listen,omitempty"`
 	Listen         string `json:"listen"`
@@ -41,7 +44,7 @@ type ServerConfig struct {
 }
 type Options struct {
 	Server, Certificate, PrivateKey, Output, SNI, CACertFile, JoinLinkFile, UpstreamCAFile, WebRoot string
-	TLSBackend, Transport                                                                           string
+	TLSBackend, Transport, XHTTPPath, XHTTPHost                                                     string
 }
 
 var ErrConfig = errors.New("invalid server configuration")
@@ -56,6 +59,13 @@ func ReadServer(path string) (ServerConfig, error) {
 	defer f.Close()
 	if safejson.Decode(f, 32<<10, &c) != nil || c.Version != 1 || c.Certificate == "" || c.PrivateKey == "" || c.Username == "" || strings.Contains(c.Username, ":") || len(c.Username) > 256 || c.Password == "" || len(c.Password) > 1024 || c.MaxTunnels < 1 || c.MaxTunnels > 65536 || c.MaxConnections < 1 || c.MaxConnections > 65536 {
 		return ServerConfig{}, ErrConfig
+	}
+	if c.XHTTPPath != "" || c.XHTTPHost != "" {
+		settings, err := xhttp.Normalize(c.XHTTPPath, c.XHTTPHost)
+		if err != nil {
+			return ServerConfig{}, ErrConfig
+		}
+		c.XHTTPPath, c.XHTTPHost = settings.Path, settings.Host
 	}
 	if _, _, err := net.SplitHostPort(c.Listen); err != nil {
 		return ServerConfig{}, ErrConfig
@@ -80,6 +90,9 @@ func ReadServer(path string) (ServerConfig, error) {
 }
 
 func Generate(o Options) error {
+	if o.JoinLinkFile != "" && (o.XHTTPPath != "" || o.XHTTPHost != "") {
+		return ErrSetup
+	}
 	u, err := cluster.Origin(o.Server)
 	if err != nil {
 		return ErrSetup
@@ -147,7 +160,7 @@ func Generate(o Options) error {
 		return ErrSetup
 	}
 	config.Password = base64.RawURLEncoding.EncodeToString(secret[:])
-	linkConfig := profile.Config{Version: 1, Servers: []string{u.String()}, Username: config.Username, Password: config.Password, SNI: policy.SNI, PinSHA256: policy.PinSHA256, Encryption: "tls13", TLSBackend: o.TLSBackend, Transport: o.Transport, Bond: true, Discover: true}
+	linkConfig := profile.Config{Version: 1, Servers: []string{u.String()}, Username: config.Username, Password: config.Password, SNI: policy.SNI, PinSHA256: policy.PinSHA256, Encryption: "tls13", TLSBackend: o.TLSBackend, Transport: o.Transport, XHTTPPath: o.XHTTPPath, XHTTPHost: o.XHTTPHost, Bond: true, Discover: true}
 	if o.WebRoot != "" {
 		config.WebRoot, err = filepath.Abs(o.WebRoot)
 		if err != nil {
@@ -193,6 +206,23 @@ func Generate(o Options) error {
 	}
 	if linkConfig.Transport == "h3-post" {
 		config.H3Listen = ":443"
+	}
+	if o.JoinLinkFile == "" && xhttp.IsMode(linkConfig.Transport) && linkConfig.XHTTPPath == "" {
+		// The route is independent of the access secret. Joined/legacy profiles
+		// retain their existing route rather than silently generating a new one.
+		var route [16]byte
+		if _, err := rand.Read(route[:]); err != nil {
+			return ErrSetup
+		}
+		linkConfig.XHTTPPath = "/api/" + base64.RawURLEncoding.EncodeToString(route[:]) + "/"
+	}
+	if linkConfig.XHTTPPath != "" || linkConfig.XHTTPHost != "" {
+		settings, err := xhttp.Normalize(linkConfig.XHTTPPath, linkConfig.XHTTPHost)
+		if err != nil {
+			return ErrSetup
+		}
+		linkConfig.XHTTPPath, linkConfig.XHTTPHost = settings.Path, settings.Host
+		config.XHTTPPath, config.XHTTPHost = settings.Path, settings.Host
 	}
 	link, err := profile.Encode(linkConfig)
 	if err != nil {

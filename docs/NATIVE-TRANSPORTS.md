@@ -83,7 +83,7 @@ SNI и pin координатора и каждого входа сохраня�
 Добавлены независимые carriers `xhttp-stream-one`, `xhttp-stream-up` и `xhttp-packet-up`.
 Они следуют базовой форме запросов XHTTP; внутри остаётся FoxTunnel, а не VLESS.
 Работают с Mozilla NSS, `setup`, `vetroff://`, discovery и объединением нод.
-XMUX, пользовательский path/Host и тесты совместимости с Xray пока
+XMUX и тесты совместимости с Xray пока
 не реализованы. Это не заявление о полной совместимости XHTTP. Подробнее:
 [XHTTP и Mozilla NSS](XHTTP.md).
 Отдельный исполняемый Xray для такой будущей реализации не обязателен.

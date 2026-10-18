@@ -38,6 +38,16 @@ func headers(w http.ResponseWriter) {
 // succeeded. A failed/cancelled setup closes every request and pipe. Redirects
 // are never followed because the supplied RoundTripper is used directly.
 func Dial(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host string) (net.Conn, error) {
+	return DialWithSettings(ctx, rt, origin, mode, auth, host, Settings{})
+}
+func DialWithSettings(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host string, settings Settings) (net.Conn, error) {
+	settings, err := Normalize(settings.Path, settings.Host)
+	if err != nil {
+		return nil, err
+	}
+	if settings.Host != "" {
+		host = settings.Host
+	}
 	if mode != "xhttp-stream-one" && mode != "xhttp-stream-up" && mode != "xhttp-packet-up" {
 		return nil, errHandshake
 	}
@@ -45,7 +55,7 @@ func Dial(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host st
 	if err != nil || u.Scheme != "https" || u.Host == "" {
 		return nil, errHandshake
 	}
-	u.Path = Path
+	u.Path = settings.Path
 	if mode != "xhttp-stream-one" {
 		var id [16]byte
 		if _, err := rand.Read(id[:]); err != nil {
@@ -68,7 +78,7 @@ func Dial(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host st
 		}
 	}()
 	request := func(method string, body io.Reader) (*http.Response, error) {
-		return sendRequest(life, rt, u, method, body, auth, host, true)
+		return sendRequestAt(life, rt, u, method, body, auth, host, true, settings.Path)
 	}
 	if mode == "xhttp-packet-up" {
 		down, err := request("GET", nil)
@@ -79,7 +89,7 @@ func Dial(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host st
 			down.Body.Close()
 			return nil, ctx.Err()
 		}
-		go sendPackets(c, life, rt, u, auth, host)
+		go sendPackets(c, life, rt, u, auth, host, settings.Path)
 		go func() { _, _ = io.Copy(peer, down.Body); _ = down.Body.Close(); _ = c.Close() }()
 		success = true
 		return c, nil
@@ -130,6 +140,7 @@ func (c *carrier) Close() error {
 // Server must not be copied after use. Authentication is required before any
 // state allocation. Unpaired carriers expire and do not spawn application work.
 type Server struct {
+	Settings    Settings
 	MaxSessions int
 	Authorized  func(*http.Request) bool
 	ServeConn   func(net.Conn, *http.Request)
@@ -230,13 +241,30 @@ func validID(id string) bool {
 }
 
 // Matches rejects escaped separators, query strings and ambiguous spellings.
-func Matches(r *http.Request) bool { _, _, ok := parsePath(r); return ok }
+func Matches(r *http.Request) bool { return MatchesAt(r, Settings{Path: Path}) }
+func MatchesAt(r *http.Request, settings Settings) bool {
+	normalized, err := Normalize(settings.Path, settings.Host)
+	if err != nil {
+		return false
+	}
+	settings = normalized
+	if !settings.Match(r.Host, r.URL.Path) {
+		return false
+	}
+	_, _, ok := parsePathAt(r, settings.Path)
+	return ok
+}
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !Matches(r) || r.ProtoMajor != 2 || s.Authorized == nil || !s.Authorized(r) || (r.Method != "GET" && r.Method != "POST") {
+	settings, err := Normalize(s.Settings.Path, s.Settings.Host)
+	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	id, seq, _ := parsePath(r)
+	if !MatchesAt(r, settings) || r.ProtoMajor != 2 || s.Authorized == nil || !s.Authorized(r) || (r.Method != "GET" && r.Method != "POST") {
+		http.NotFound(w, r)
+		return
+	}
+	id, seq, _ := parsePathAt(r, settings.Path)
 	if seq != nil {
 		if r.Method != "POST" {
 			http.NotFound(w, r)

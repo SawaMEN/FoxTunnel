@@ -19,6 +19,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 func TestBondedSOCKSGo(t *testing.T) { testBondedSOCKS(t, "go") }
@@ -41,7 +42,11 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 	var destinations atomic.Int64
 	target := testDestination(t, func(c net.Conn) { destinations.Add(1); _, _ = io.Copy(c, c) })
 	client, addr := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
-	exit := &Server{Username: "alice", Password: "secret", AllowPrivate: true}
+	route := xhttp.Settings{}
+	if xhttp.IsMode(mode) {
+		route, _ = xhttp.Normalize("/cluster/shared-api", "cluster-route.example")
+	}
+	exit := &Server{Username: "alice", Password: "secret", AllowPrivate: true, XHTTPSettings: route}
 	hub := exit.NewBondHub()
 	defer hub.Close()
 	exit.Bond = hub
@@ -57,7 +62,7 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 			t.Fatal(err)
 		}
 		t.Cleanup(closeRelay)
-		node := &Server{Username: "alice", Password: "secret"}
+		node := &Server{Username: "alice", Password: "secret", XHTTPSettings: route}
 		node.Bond = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			calls[index].Add(1)
 			if index == 0 && failed.Load() {
@@ -97,6 +102,11 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 	}
 	if err := client.SetTransport(mode); err != nil {
 		t.Fatal(err)
+	}
+	if xhttp.IsMode(mode) {
+		if err := client.SetXHTTPSettings(route.Path, route.Host); err != nil {
+			t.Fatal(err)
+		}
 	}
 	client.FallbackAttemptTimeout = 250 * time.Millisecond
 	client.BondPipeline = depth

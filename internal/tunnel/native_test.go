@@ -109,6 +109,11 @@ func testNativeVerificationBeforeCredentials(t *testing.T, backend string) {
 				if err := c.SetTransport(mode); err != nil {
 					t.Fatal(err)
 				}
+				if xhttp.IsMode(mode) {
+					if err := c.SetXHTTPSettings("/api/custom", "route.example"); err != nil {
+						t.Fatal(err)
+					}
+				}
 				stream, err := c.openTunnel(context.Background(), "example.com:443")
 				if err == nil {
 					stream.close()

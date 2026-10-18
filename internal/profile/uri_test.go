@@ -139,3 +139,24 @@ func TestNativeTransportProfiles(t *testing.T) {
 		t.Fatal("legacy default changed", err)
 	}
 }
+
+func TestXHTTPRouteProfile(t *testing.T) {
+	c := Config{Version: 1, Servers: []string{"https://main.example"}, Username: "alice", Password: "secret", Transport: "xhttp-packet-up", TLSBackend: "nss", SNI: "tls.example", XHTTPPath: "/api/custom", XHTTPHost: "Route.Example:8443", Bond: true, Discover: true}
+	link, err := Encode(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := Decode(link)
+	if err != nil || got.XHTTPPath != "/api/custom/" || got.XHTTPHost != "route.example:8443" || got.SNI != "tls.example" {
+		t.Fatal("route or TLS identity changed", err)
+	}
+	c.Transport = "h2-post"
+	if _, err := Encode(c); err == nil {
+		t.Fatal("ignored XHTTP settings accepted")
+	}
+	c.Transport = "xhttp-stream-one"
+	c.XHTTPHost = "route.example\r\nX-Test: bad"
+	if _, err := Encode(c); err == nil {
+		t.Fatal("unsafe Host accepted")
+	}
+}

@@ -24,11 +24,12 @@ type packet struct {
 	delivered chan struct{}
 }
 
-func parsePath(r *http.Request) (id string, seq *uint64, ok bool) {
-	if !strings.HasPrefix(r.URL.Path, Path) || r.URL.RawPath != "" || r.URL.RawQuery != "" || r.URL.ForceQuery {
+func parsePath(r *http.Request) (id string, seq *uint64, ok bool) { return parsePathAt(r, Path) }
+func parsePathAt(r *http.Request, prefix string) (id string, seq *uint64, ok bool) {
+	if !strings.HasPrefix(r.URL.Path, prefix) || r.URL.RawPath != "" || r.URL.RawQuery != "" || r.URL.ForceQuery {
 		return "", nil, false
 	}
-	tail := strings.TrimPrefix(r.URL.Path, Path)
+	tail := strings.TrimPrefix(r.URL.Path, prefix)
 	if tail == "" {
 		return "", nil, true
 	}
@@ -182,6 +183,9 @@ func (s *Server) deliverPackets(id string, p *session) {
 }
 
 func sendRequest(ctx context.Context, rt http.RoundTripper, u *url.URL, method string, body io.Reader, auth, host string, streaming bool) (*http.Response, error) {
+	return sendRequestAt(ctx, rt, u, method, body, auth, host, streaming, Path)
+}
+func sendRequestAt(ctx context.Context, rt http.RoundTripper, u *url.URL, method string, body io.Reader, auth, host string, streaming bool, prefix string) (*http.Response, error) {
 	r, err := http.NewRequestWithContext(ctx, method, u.String(), body)
 	if err != nil {
 		return nil, errHandshake
@@ -190,7 +194,7 @@ func sendRequest(ctx context.Context, rt http.RoundTripper, u *url.URL, method s
 		r.Host = host
 	}
 	r.Header.Set("Proxy-Authorization", auth)
-	r.Header.Set("Referer", u.Scheme+"://"+u.Host+Path+"?x_padding="+padding())
+	r.Header.Set("Referer", u.Scheme+"://"+r.Host+prefix+"?x_padding="+padding())
 	if method == "POST" {
 		r.Header.Set("Content-Type", "application/octet-stream")
 		if streaming {
@@ -210,7 +214,7 @@ func sendRequest(ctx context.Context, rt http.RoundTripper, u *url.URL, method s
 	}
 	return resp, nil
 }
-func sendPackets(c *carrier, ctx context.Context, rt http.RoundTripper, u *url.URL, auth, host string) {
+func sendPackets(c *carrier, ctx context.Context, rt http.RoundTripper, u *url.URL, auth, host, prefix string) {
 	defer c.Close()
 	buffer := make([]byte, clientPacketBytes)
 	var seq uint64
@@ -221,7 +225,7 @@ func sendPackets(c *carrier, ctx context.Context, rt http.RoundTripper, u *url.U
 			dest.Path += "/" + strconv.FormatUint(seq, 10)
 			attempt, cancel := context.WithTimeout(ctx, PairTimeout)
 			// Do not set GetBody: automatic HTTP replay after an ambiguous ACK is unsafe.
-			resp, sendErr := sendRequest(attempt, rt, &dest, "POST", packetBody{bytes.NewReader(buffer[:n])}, auth, host, false)
+			resp, sendErr := sendRequestAt(attempt, rt, &dest, "POST", packetBody{bytes.NewReader(buffer[:n])}, auth, host, false, prefix)
 			if sendErr == nil {
 				_, sendErr = io.Copy(io.Discard, io.LimitReader(resp.Body, 4097))
 				_ = resp.Body.Close()

@@ -16,6 +16,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 	"golang.org/x/net/netutil"
 )
 
@@ -35,6 +36,8 @@ func main() {
 	switch os.Args[1] {
 	case "setup":
 		fs := i18n.NewFlagSet("foxtunnel setup")
+		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (setup generates a random route by default)"))
+		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
 		cert := fs.String("cert", "", i18n.Text("TLS certificate PEM"))
 		key := fs.String("key", "", i18n.Text("TLS private key PEM"))
@@ -47,7 +50,7 @@ func main() {
 		upstreamCA := fs.String("bond-ca-cert", "", i18n.Text("additional trusted PEM for the common exit"))
 		web := fs.String("web-root", "", i18n.Text("public website directory for ordinary requests and rejected probes"))
 		i18n.Parse(fs, os.Args[2:])
-		if err := bootstrap.Generate(bootstrap.Options{Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport}); err != nil {
+		if err := bootstrap.Generate(bootstrap.Options{Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost}); err != nil {
 			log.Fatal(i18n.Text(err.Error()))
 		}
 		fmt.Println(i18n.Text("configuration created: server.json, connection.txt and node.json (secrets not printed)"))
@@ -64,6 +67,8 @@ func main() {
 		return
 	case "server":
 		fs := i18n.NewFlagSet("foxtunnel server")
+		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
+		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		configFile := fs.String("config", "", i18n.Text("private server configuration JSON"))
 		h3Listen := fs.String("h3-listen", "", i18n.Text("optional native HTTP/3 UDP listening address"))
 		listen := fs.String("listen", "127.0.0.1:8443", i18n.Text("HTTPS listening address"))
@@ -98,6 +103,7 @@ func main() {
 			user, password = config.Username, config.Password
 			*listen, *cert, *key = config.Listen, config.Certificate, config.PrivateKey
 			*h3Listen = config.H3Listen
+			*xhttpPath, *xhttpHost = config.XHTTPPath, config.XHTTPHost
 			*webRoot, *clusterFile = config.WebRoot, config.ClusterFile
 			*bondHub, *bondRelay, *bondCA = config.BondHub, config.BondUpstream, config.BondCA
 			*bondSNI, *bondPin = config.BondSNI, config.BondPin
@@ -129,7 +135,11 @@ func main() {
 		if *bondHub && *bondRelay != "" {
 			log.Fatal(i18n.Text("choose either --bond-hub or --bond-upstream"))
 		}
-		handler := &tunnel.Server{Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		carrierSettings, err := xhttp.Normalize(*xhttpPath, *xhttpHost)
+		if err != nil {
+			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
+		}
+		handler := &tunnel.Server{XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()
@@ -178,6 +188,8 @@ func main() {
 		log.Fatal(server.ServeTLS(netutil.LimitListener(listener, *maxConnections), *cert, *key))
 	case "client", "share":
 		fs := i18n.NewFlagSet("foxtunnel " + os.Args[1])
+		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
+		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		link := fs.String("link", "", i18n.Text("vetroff connection link (prefer --link-file for secrets)"))
 		linkFile := fs.String("link-file", "", i18n.Text("read vetroff connection link from file or - for stdin"))
 		listen := fs.String("listen", "127.0.0.1:1080", i18n.Text("local SOCKS5 listening address"))
@@ -236,6 +248,7 @@ func main() {
 			fallbacks = serverURLs(imported.Servers[1:])
 			*tlsBackend = imported.TLSBackend
 			*nativeTransport = imported.Transport
+			*xhttpPath, *xhttpHost = imported.XHTTPPath, imported.XHTTPHost
 			*sni, *pin, *encryption = imported.SNI, imported.PinSHA256, imported.Encryption
 			*balance = imported.Balance
 			*bonded = imported.Bond
@@ -249,7 +262,7 @@ func main() {
 			if user == "" || password == "" {
 				log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 			}
-			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Transport: *nativeTransport, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
+			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Transport: *nativeTransport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -285,6 +298,9 @@ func main() {
 			log.Fatal(err)
 		}
 		if err := client.SetTransport(*nativeTransport); err != nil {
+			log.Fatal(err)
+		}
+		if err := client.SetXHTTPSettings(*xhttpPath, *xhttpHost); err != nil {
 			log.Fatal(err)
 		}
 		client.MaxConnections = *maxConnections
