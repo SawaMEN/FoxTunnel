@@ -4,11 +4,27 @@ on:
     branches: [main]
     tags: ['v[0-9]*']
   pull_request:
-    paths: ['cmd/**', 'internal/**', 'foxtunnel*.go', 'scripts/**', 'LICENSE', 'go.*', '.github/workflows/release.yml']
+    paths: ['cmd/**', 'internal/**', 'foxtunnel*.go', 'scripts/**', 'LICENSE', 'go.*', '.github/workflows/release.yml', '.github/release-request.json', 'docs/releases/**']
 permissions:
   contents: read
 jobs:
+  request:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      publish: ${{ steps.resolve.outputs.publish }}
+      source: ${{ steps.resolve.outputs.source }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve reviewed version request
+        id: resolve
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: python3 scripts/release_request.py
   portable:
+    needs: [request]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +40,7 @@ jobs:
       - name: Build seven portable archives
         shell: bash
         env:
-          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.0.0-ci' }}
+          RELEASE_TAG: ${{ needs.request.outputs.version }}
         run: |
           set -euo pipefail
           for target in linux/amd64 linux/arm64 linux/armv7 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
@@ -36,6 +52,7 @@ jobs:
           path: dist/*
           if-no-files-found: error
   nss:
+    needs: [request]
     strategy:
       fail-fast: false
       matrix:
@@ -54,7 +71,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config unzip binutils
       - name: Build NSS archive and execute version check
         env:
-          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.0.0-ci' }}
+          RELEASE_TAG: ${{ needs.request.outputs.version }}
         run: python3 scripts/release.py build --version "$RELEASE_TAG" --os linux --arch '${{ matrix.arch }}' --backend nss --baseline ubuntu-24.04
       - name: Test pinned Mozilla runtime and isolated NSS data transfer
         shell: bash
@@ -76,7 +93,7 @@ jobs:
           path: dist/*
           if-no-files-found: error
   index:
-    needs: [portable, nss]
+    needs: [request, portable, nss]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -86,7 +103,7 @@ jobs:
           merge-multiple: true
       - name: Verify complete nine-target release
         env:
-          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.0.0-ci' }}
+          RELEASE_TAG: ${{ needs.request.outputs.version }}
         run: |
           python3 scripts/release.py index --version "$RELEASE_TAG"
           python3 scripts/release.py verify --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
@@ -101,12 +118,13 @@ jobs:
             dist/SHA256SUMS
           if-no-files-found: error
   publish:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [index]
+    if: needs.request.outputs.publish == 'true'
+    needs: [request, index]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: release-assets
@@ -115,7 +133,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ needs.request.outputs.version }}
+          RELEASE_SOURCE: ${{ needs.request.outputs.source }}
         shell: bash
         run: |
           set -euo pipefail
@@ -123,4 +142,16 @@ jobs:
             echo 'Refusing to overwrite an existing release.' >&2
             exit 1
           fi
-          gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --title "FoxTunnel $RELEASE_TAG" --notes 'Experimental standalone FoxTunnel. Select the exact version, OS, architecture and build flavor from manifest.json; verify SHA256SUMS before running. Linux NSS assets include a hash-pinned Mozilla runtime; keep lib/ beside the executable. This is not a production or censorship-resistance claim.'
+          tag_flags=(--verify-tag)
+          if [ "$RELEASE_SOURCE" = request ]; then
+            if gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+              echo 'Refusing to replace an existing tag for a release request.' >&2
+              exit 1
+            fi
+            tag_flags=(--target "$GITHUB_SHA")
+          fi
+          notes=(--notes 'Experimental standalone FoxTunnel. Verify manifest/checksums and archive contents. Linux NSS assets bundle Mozilla libraries; keep lib/ beside the executable. No production or censorship-resistance claim.')
+          if [ -f "docs/releases/$RELEASE_TAG.md" ]; then
+            notes=(--notes-file "docs/releases/$RELEASE_TAG.md")
+          fi
+          gh release create "$RELEASE_TAG" dist/* "${tag_flags[@]}" --prerelease --title "FoxTunnel $RELEASE_TAG" "${notes[@]}"

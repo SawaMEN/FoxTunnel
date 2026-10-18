@@ -7,13 +7,14 @@ FoxTunnel is an independent executable/protocol implementation. A panel such as
 binary. No panel code, database, Xray executable or private service is required.
 The public Go SDK is an additional integration route, not a prerequisite.
 
-This change prepares the release pipeline; it does not itself create a release
-tag. After this workflow is merged, a maintainer's `vMAJOR.MINOR.PATCH[-pre]` tag
-builds all targets, verifies their index, then publishes an experimental GitHub
-prerelease. Main and PR runs build the same artifacts without publishing a release. A
-failed/missing target prevents publication. Existing releases/assets are never
-overwritten by the pipeline. Until a reviewed tag exists, pin a reviewed commit;
-do not treat the CI version `v0.0.0-ci` as a supported public release.
+GitHub Releases supports two explicit triggers: an existing
+`vMAJOR.MINOR.PATCH[-pre]` tag, or a reviewed PR changing
+`.github/release-request.json` on main. For a request, CI builds and checks all
+assets before creating a tag at the exact tested source commit and publishing a
+prerelease. Ordinary main commits and PRs build `v0.0.0-ci` without publishing.
+Any failed/missing target blocks publication; existing tags/releases are never
+replaced. Until a reviewed release exists, pin a reviewed commit rather than a
+CI version.
 
 ## Artifact contract
 
@@ -145,3 +146,18 @@ schema-1 archives may omit this additional field. Tag publication requires Go
 race/vet, external SDK and Python checks inside the distribution workflow itself,
 both native NSS jobs, complete index and independent verify.
 [Compatibility and first-tag acceptance](COMPATIBILITY.en.md).
+
+## Release through a reviewed version change
+
+Set only `schema: 1` and a new `version` in `.github/release-request.json`; prepare
+notes in `docs/releases/VERSION.md`. PR validation builds CI assets without
+publishing. After merging to main, the workflow compares the request file between
+before/source commits; only a change enables publication. Full history is needed
+for this check; an unknown before commit cannot authorize publication.
+
+All nine archives are rebuilt with the requested version and one source commit,
+pass index/offline verify and native NSS tests before publication. The publish
+job creates the tag at that exact commit. Unchanged requests do not publish again
+on ordinary code pushes. Existing tags/releases cause failure rather than
+replacement. A subsequent release needs a new version. Existing-tag triggers
+remain supported; all releases from this workflow are prereleases.

@@ -20,7 +20,7 @@ Live Firefox 158/Go/NSS measurements are stored; full Firefox parity is absent.
 
 Stage 1 adds independent checks without executing archives and
 [compatibility/first-tag rules](COMPATIBILITY.en.md). Branch/PR CI builds without
-publishing. Publication requires a separate version tag. Linux NSS assets bundle
+publishing. Publication requires an explicit tag or a changed release request on main. Linux NSS assets bundle
 hash-pinned Mozilla libraries; macOS/Windows are still Go cross-builds. Determine
 release availability from GitHub Releases, not from the presence of a workflow.
 
