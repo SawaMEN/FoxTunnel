@@ -21,23 +21,24 @@ type identityEntry struct {
 	touched   time.Time
 }
 type identityPool struct {
-	mu            sync.Mutex
-	base          tlsTransport
-	config        *tls.Config
-	backend       string
-	mode          string
-	xhttpSettings xhttp.Settings
-	auth          string
-	primary       string
-	policy        tlsidentity.Policy
-	entries       map[string]identityEntry
+	mu               sync.Mutex
+	base             tlsTransport
+	config           *tls.Config
+	backend          string
+	mode             string
+	h2ReceiveProfile string
+	xhttpSettings    xhttp.Settings
+	auth             string
+	primary          string
+	policy           tlsidentity.Policy
+	entries          map[string]identityEntry
 }
 
-func makeTLStransport(backend string, config *tls.Config) (tlsTransport, error) {
+func makeTLStransport(backend string, config *tls.Config, receiveProfile string) (tlsTransport, error) {
 	if backend == "nss" {
-		return nsstls.NewTransport(config)
+		return nsstls.NewTransportWithProfile(config, receiveProfile)
 	}
-	return newGoTransport(config), nil
+	return newGoTransportWithProfile(config, receiveProfile)
 }
 
 // SetServerIdentity applies only to the primary origin. Other origins keep
@@ -78,7 +79,7 @@ func (p *identityPool) forPolicy(origin string, policy tlsidentity.Policy) (tlsT
 	// operators share ticket keys between servers using different certificates.
 	config.ClientSessionCache = tls.NewLRUClientSessionCache(8)
 	policy.Apply(config)
-	transport, err := makeNativeTransport(p.mode, p.backend, config, p.auth, p.xhttpSettings)
+	transport, err := makeNativeTransport(p.mode, p.backend, config, p.auth, p.xhttpSettings, p.h2ReceiveProfile)
 	if err != nil {
 		return nil, err
 	}

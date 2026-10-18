@@ -132,3 +132,5 @@ throughput cap. Write coalescing and persistent bond channels remain separate
 work. These local Go TLS measurements do not establish NSS, Internet or TSPU
 performance. [Live Firefox TLS/H2 profiles](WEB-PROFILE.en.md) measure a different
 question: the current transports still differ from a browser.
+
+[Optional HTTP/2 receive profile measured from Firefox](H2-RECEIVE-PROFILE.en.md).
