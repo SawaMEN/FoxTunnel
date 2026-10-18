@@ -187,6 +187,7 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 - [Измерения скорости и сетевые испытания](docs/PERFORMANCE.md).
 - [Выбор подходов из других протоколов](docs/TRANSPORT-STRATEGY.md).
 - [Разбор AmneziaWG и дополнительных проектов](docs/PROTOCOL-REVIEW-2026-10-18.md).
+- [Проверка исходников AnyTLS, Hysteria 2, Shadowsocks 2022, XHTTP, mieru и NaiveProxy](docs/SIX-PROTOCOL-AUDIT.md).
 - [Ограничения NaiveProxy и идеи Sudoku](docs/NAIVE-SUDOKU-REVIEW.md).
 
 Следующие этапы — эталонные записи реального Firefox, стабилизация NSS,

@@ -129,7 +129,8 @@ or retried automatically. Slots are returned on cancellation, errors and normal
 stream teardown. Website requests and rejected probes still use the public
 handler. This is a resource bound, not a complete TLS/HTTP or DDoS defense.
 
-See the [AmneziaWG 3.1 / AnyTLS / TUIC / WebTunnel / Outline review](docs/PROTOCOL-REVIEW-2026-10-18.en.md)
+See the [six-protocol source review](docs/SIX-PROTOCOL-AUDIT.en.md) and the
+[AmneziaWG 3.1 / AnyTLS / TUIC / WebTunnel / Outline review](docs/PROTOCOL-REVIEW-2026-10-18.en.md)
 for what can transfer to the Mozilla design and what still needs experiments.
 
 ## Multiple trusted servers
