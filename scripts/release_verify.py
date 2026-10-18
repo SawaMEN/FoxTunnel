@@ -86,8 +86,8 @@ def validate_metadata(p, version, commit):
         raise ValueError('unsupported release target')
     goos, arch, flavor = target.split('/')
     expected = dict(version=version, commit=commit, goos=goos,
-                    goarch='arm' if arch == 'armv7' else arch,
-                    variant='7' if arch == 'armv7' else '', build_flavor=flavor,
+                    goarch=arch,
+                    variant='', build_flavor=flavor,
                     protocol_draft=DRAFT, default_tls_backend='go',
                     tls_backends=['go', 'nss'] if flavor == 'nss' else ['go'])
     if type(p.get('schema')) is not int or p['schema'] != 1:

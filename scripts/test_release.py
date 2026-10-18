@@ -91,7 +91,6 @@ class ReleaseContract(unittest.TestCase):
         for path in self.entries:
             path.unlink()
         verify.verify(self.verify_args)
-        release.index(self.args)
 
     def test_selected_archive_only_and_full_release_checks(self):
         release.index(self.args)
@@ -171,7 +170,7 @@ class ReleaseContract(unittest.TestCase):
         self.pack(index, lambda files: files.pop('licenses/Mozilla-about-license.html'))
         self.expect_index_error('Mozilla license')
 
-    def test_unsafe_tar_and_zip_names_rejected(self):
+    def test_unsafe_tar_names_rejected(self):
         for target in ('linux/amd64/go',):
             index = self.find(target)
             for name in ('../outside', '/outside', 'licenses/../outside', 'licenses\\outside',

@@ -2,13 +2,13 @@
 
 # FoxTunnel
 
-[Standalone versioned binaries](docs/DISTRIBUTION.en.md) · [Public SDK](docs/SDK.en.md) · [Wire draft 0](docs/WIRE-DRAFT-0.md) · [Compatibility and release verification](docs/COMPATIBILITY.en.md) · [MIT](LICENSE)
+[Standalone versioned binaries](docs/reference/DISTRIBUTION.en.md) · [Public SDK](docs/reference/SDK.en.md) · [Wire draft 0](docs/reference/WIRE-DRAFT-0.md) · [Compatibility and release verification](docs/reference/COMPATIBILITY.en.md) · [MIT](LICENSE)
 
 An experimental encrypted tunneling project. It provides native **H2 CONNECT, H2 POST, WSS and H3 POST/QUIC** with a local SOCKS5 client and a TLS server. The longer-term research goal is to test Mozilla NSS and Neqo against this baseline, then assess whether Firefox-like networking behavior offers any measurable benefit.
 
 > **Status: experimental prototype; not ready for production.** The default client uses **Go crypto/tls**; Linux tagged builds can opt into an **experimental NSS TLS backend**. Neither is a complete Firefox stack. It does not reproduce Firefox TLS or HTTP/2 fingerprints and offers only opt-in experimental initial padding. HTTP/3 uses Go QUIC; NSS supports H2/WSS. Application UDP, TUN, censorship-resistance guarantees and 3x-ui integration are not implemented. Do not market it as superior to NaïveProxy.
 
-[Streaming XHTTP with Mozilla NSS](docs/XHTTP.en.md) · [Native transports without Xray](docs/NATIVE-TRANSPORTS.en.md) · [Simple main/ingress setup](docs/SETUP.en.md) · [Security properties](docs/SECURITY.en.md)
+[Streaming XHTTP with Mozilla NSS](docs/architecture/XHTTP.en.md) · [Native transports without Xray](docs/architecture/NATIVE-TRANSPORTS.en.md) · [Simple main/ingress setup](docs/guides/SETUP.en.md) · [Security properties](docs/reference/SECURITY.en.md)
 
 ## Language
 
@@ -89,21 +89,21 @@ IP family after 250 ms (immediately on first-family failure), using only resolve
 addresses that passed its destination policy. Stream cancellation releases the
 destination socket, while normal TCP half-close keeps the response readable.
 
-See [performance methodology](docs/PERFORMANCE.en.md) for reproducible local tests
+See [performance methodology](docs/research/PERFORMANCE.en.md) for reproducible local tests
 and the measurements still needed on real networks.
 
 ## Main node and one-address links
 
 `setup` generates private server configuration and a ready link with a random
 secret, SNI/TLS 1.3/SPKI pin. Join ingresses from the main link and register
-them with `cluster-add`. See [simple setup](docs/SETUP.en.md),
-[security limits](docs/SECURITY.en.md) and [Amnezia/TUIC review](docs/AMNEZIA-TUIC-REVIEW.en.md).
+them with `cluster-add`. See [simple setup](docs/guides/SETUP.en.md),
+[security limits](docs/reference/SECURITY.en.md) and [Amnezia/TUIC review](docs/research/AMNEZIA-TUIC-REVIEW.en.md).
 
 For a one-address bonded connection link, use
 `foxtunnel share --server https://main.example --bond --discover`.
 The main node publishes trusted ingress origins/capacity weights and reassembles
-their data into one destination TCP stream. See [cluster setup and limits](docs/CLUSTER.en.md)
-and the [Sudoku/dnstt source review](docs/SUDOKU-DNSTT-REVIEW.en.md).
+their data into one destination TCP stream. See [cluster setup and limits](docs/architecture/CLUSTER.en.md)
+and the [Sudoku/dnstt source review](docs/research/SUDOKU-DNSTT-REVIEW.en.md).
 
 ## Experimental Mozilla NSS data transport
 
@@ -123,7 +123,7 @@ NSS session resumption is disabled in this first adapter; the Go backend keeps
 its existing session cache.
 
 See [NSS build, lifecycle and limits](internal/nsstls/README.en.md) and the
-[transport strategy based on NaiveProxy, mieru, Hysteria 2, XHTTP and DNSTT](docs/TRANSPORT-STRATEGY.en.md).
+[transport strategy based on NaiveProxy, mieru, Hysteria 2, XHTTP and DNSTT](docs/architecture/TRANSPORT-STRATEGY.en.md).
 
 ## Experimental bounded initial padding
 
@@ -135,7 +135,7 @@ acknowledgement fails setup before application data is sent; it never silently
 retries unpadded. Both Go TLS and NSS clients are supported.
 
 This does not modify TLS/H2 fingerprints or prove resistance to DPI. See the
-[wire format, compatibility, limits and tests](docs/PADDING.en.md).
+[wire format, compatibility, limits and tests](docs/architecture/PADDING.en.md).
 
 ## Bounded server capacity
 
@@ -146,8 +146,8 @@ or retried automatically. Slots are returned on cancellation, errors and normal
 stream teardown. Website requests and rejected probes still use the public
 handler. This is a resource bound, not a complete TLS/HTTP or DDoS defense.
 
-See the [six-protocol source review](docs/SIX-PROTOCOL-AUDIT.en.md) and the
-[AmneziaWG 3.1 / AnyTLS / TUIC / WebTunnel / Outline review](docs/PROTOCOL-REVIEW-2026-10-18.en.md)
+See the [six-protocol source review](docs/research/SIX-PROTOCOL-AUDIT.en.md) and the
+[AmneziaWG 3.1 / AnyTLS / TUIC / WebTunnel / Outline review](docs/research/PROTOCOL-REVIEW-2026-10-18.en.md)
 for what can transfer to the Mozilla design and what still needs experiments.
 
 ## Multiple trusted servers
@@ -164,8 +164,8 @@ remain terminal. All origins receive the same credentials after TLS verification
   --fallback-server https://edge-b.example --balance least-active
 ```
 
-See [selection, recovery and limits](docs/ENDPOINTS.en.md) and the
-[NaiveProxy/Sudoku audit](docs/NAIVE-SUDOKU-REVIEW.en.md). Multiple servers do not
+See [selection, recovery and limits](docs/guides/ENDPOINTS.en.md) and the
+[NaiveProxy/Sudoku audit](docs/research/NAIVE-SUDOKU-REVIEW.en.md). Multiple servers do not
 combine bandwidth for one stream or establish resistance to TSPU detection.
 
 ## Roadmap
@@ -214,7 +214,7 @@ when any compared field differs. The JSON represents a *single handshake only*.
 This does not test HTTP/2 SETTINGS, timing, certificate validation, payload
 patterns or Firefox Necko behavior. No claim of fingerprint parity is made.
 
-See [architecture](docs/ARCHITECTURE.en.md) and [project milestones](docs/ROADMAP.en.md).
+See [architecture](docs/architecture/ARCHITECTURE.en.md) and [project milestones](docs/planning/ROADMAP.en.md).
 
 ## Native Mozilla NSS experiment
 
@@ -228,7 +228,7 @@ Go transport. See its README for build and comparison instructions.
 
 The separate opt-in `--bond` mode carries blocks of one stream through multiple
 entries to one common exit. Ordinary whole-stream scheduling remains available.
-See [deployment, acknowledgements, limits and tests](docs/BONDING.en.md).
+See [deployment, acknowledgements, limits and tests](docs/architecture/BONDING.en.md).
 No speed advantage or TSPU resistance is established.
 
 ## Connection links
@@ -236,6 +236,6 @@ No speed advantage or TSPU resistance is established.
 The scheme is `vetroff://`. `foxtunnel share --server https://node-a.example`
 exports settings and environment credentials. Import with
 `foxtunnel client --link-file connection.txt` or `--link-file -` for stdin.
-Links contain secrets. [Format and examples](docs/CONNECTION-LINKS.en.md).
+Links contain secrets. [Format and examples](docs/guides/CONNECTION-LINKS.en.md).
 
-[TLS/HTTP2: live Firefox/FoxTunnel comparison, commands and limitations](docs/WEB-PROFILE.en.md).
+[TLS/HTTP2: live Firefox/FoxTunnel comparison, commands and limitations](docs/research/WEB-PROFILE.en.md).

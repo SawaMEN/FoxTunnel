@@ -75,7 +75,7 @@ def build(a):
     epoch = int(os.environ.get('SOURCE_DATE_EPOCH', command(['git', 'show', '-s', '--format=%ct', 'HEAD'])))
     date = dt.datetime.fromtimestamp(epoch, dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     env = os.environ.copy()
-    env.update(GOOS=a.os, GOARCH='arm' if a.arch == 'armv7' else a.arch, GOARM='7', GOAMD64='v1', CGO_ENABLED='1' if a.backend == 'nss' else '0', GOWORK='off', GOFLAGS='')
+    env.update(GOOS=a.os, GOARCH=a.arch, GOAMD64='v1', CGO_ENABLED='1' if a.backend == 'nss' else '0', GOWORK='off', GOFLAGS='')
     host = json.loads(command([a.go, 'env', '-json', 'GOHOSTOS', 'GOHOSTARCH'], env))
     go_version = command([a.go, 'env', 'GOVERSION'], env)
     native = host['GOHOSTOS'] == env['GOOS'] and host['GOHOSTARCH'] == env['GOARCH']
@@ -88,7 +88,7 @@ def build(a):
     metadata = out / (archive.name + '.metadata.json')
     if archive.exists() or metadata.exists():
         raise ValueError('refusing to replace an existing versioned artifact')
-    variant = '7' if a.arch == 'armv7' else ''
+    variant = ''
     fields = {'Version': a.version, 'Commit': commit, 'BuildDate': date, 'Variant': variant, 'Dirty': str(dirty).lower()}
     ldflags = '-s -w -buildid= ' + ' '.join('-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.' + k + '=' + v for k, v in fields.items())
     with tempfile.TemporaryDirectory(prefix='foxtunnel-release-') as tmp:
@@ -174,7 +174,7 @@ def main():
     a = parser.parse_args()
     try:
         {'build': build, 'index': index, 'verify': verify}[a.command](a)
-    except (ValueError, KeyError, OSError, EOFError, tarfile.TarError, zipfile.BadZipFile, subprocess.CalledProcessError) as e:
+    except (ValueError, KeyError, OSError, EOFError, tarfile.TarError, subprocess.CalledProcessError) as e:
         parser.exit(1, str(e) + '\n')
 
 
