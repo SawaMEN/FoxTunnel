@@ -45,10 +45,10 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 	hub := exit.NewBondHub()
 	defer hub.Close()
 	exit.Bond = hub
-	hubServer := setupEndpoint(t, client, exit)
-	if mode == "h3-post" {
-		startNativeH3(t, hubServer, exit)
-	}
+	ready := make(chan struct{})
+	// Publish all server settings before a handler can read them. QUIC's
+	// goroutines must not race test-only late cluster initialization.
+	hubServer := setupEndpoint(t, client, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-ready; exit.ServeHTTP(w, r) }))
 	var calls [2]atomic.Int64
 	var lost, lostOpen, failed atomic.Bool
 	makeRelay := func(index int) *httptest.Server {
@@ -116,10 +116,18 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 		if err := client.SetServerIdentity("example.com", tlsidentity.Pin(hubServer.Certificate())); err != nil {
 			t.Fatal(err)
 		}
+		close(ready)
+		if mode == "h3-post" {
+			startNativeH3(t, hubServer, exit)
+		}
 		if err := client.EnableBondDiscovery(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 	} else {
+		close(ready)
+		if mode == "h3-post" {
+			startNativeH3(t, hubServer, exit)
+		}
 		if err := client.EnableBond(); err != nil {
 			t.Fatal(err)
 		}

@@ -141,7 +141,13 @@ type wsConn struct {
 	ws *websocket.Conn
 }
 
-func (c wsConn) Close() error { return c.ws.CloseNow() }
+func (c wsConn) Close() error {
+	// Abort network I/O first, then let NetConn stop deadline timers and release
+	// its read/write contexts without waiting for a peer close handshake.
+	err := c.ws.CloseNow()
+	_ = c.Conn.Close()
+	return err
+}
 
 func (c wsConn) Write(p []byte) (int, error) {
 	total := 0
