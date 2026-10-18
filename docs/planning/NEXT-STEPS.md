@@ -46,3 +46,12 @@ CDN — отдельные эксперименты, не условия пер�
 экспериментальный сервер Mozilla не заменяет сервер FoxTunnel в production.
 Стабильные адаптеры sing-box/Hiddify/3x-ui следуют после фиксации контрактов.
 Ни один этап сам по себе не доказывает устойчивости к ТСПУ.
+
+## Результат второго этапа Mozilla
+
+[Измеренный TLS-профиль и gap-report](../research/MOZILLA-CLIENT-PROFILE.md):
+реальные NSS groups/key shares/signature preferences, CLI/SDK, одинаковый тип HTML GET,
+подробные TLS/H2-различия, reuse/cold handshake и HRR-тест. Две группы параметров
+(groups и key shares) совпали; порядок signatures при TLS1.3-only и H2 SETTINGS
+остаётся иным. Полный Necko и NSS resumption не включены; решения и следующие
+критерии для них перечислены в исследовании. Полное соответствие Firefox не заявлено.

@@ -220,6 +220,11 @@ func main() {
 		padding := fs.Bool("padding", false, i18n.Text("require experimental initial-record padding (server must enable it)"))
 		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up (no external proxy)"))
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
+		tlsProfile := new(string)
+		*tlsProfile = "default"
+		if os.Args[1] == "client" {
+			fs.StringVar(tlsProfile, "tls-client-profile", "default", i18n.Text("TLS client profile: default or experimental firefox-158 (NSS 3.130)"))
+		}
 		h2Profile := fs.String("h2-receive-profile", "default", i18n.Text("HTTP/2 receive profile: default or experimental firefox-158"))
 		sni := fs.String("sni", "", i18n.Text("verified TLS server name (default: URL hostname)"))
 		pin := fs.String("pin-sha256", "", i18n.Text("additional server SPKI pin: sha256/base64"))
@@ -234,7 +239,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile":
+				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile":
 				default:
 					conflict = true
 				}
@@ -314,6 +319,9 @@ func main() {
 			log.Fatal(err)
 		}
 		if err := client.SetTransport(*nativeTransport); err != nil {
+			log.Fatal(err)
+		}
+		if err := client.SetTLSClientProfile(*tlsProfile); err != nil {
 			log.Fatal(err)
 		}
 		if err := client.SetHTTP2ReceiveProfile(*h2Profile); err != nil {

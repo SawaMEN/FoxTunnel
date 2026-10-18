@@ -204,3 +204,22 @@ func TestVersionMachineContract(t *testing.T) {
 		t.Fatal("version disclosed credentials")
 	}
 }
+
+func TestTLSClientProfileWithStdinLinkRejectsGoWithoutDisclosure(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	share := helperCommand(ctx, "share", "--server", "https://a.example", "--tls-backend", "go")
+	share.Env = helperEnv(true)
+	output, e := share.Output()
+	if e != nil {
+		t.Fatal(e)
+	}
+	link := strings.TrimSpace(string(output))
+	client := helperCommand(ctx, "client", "--link-file", "-", "--tls-client-profile", "firefox-158")
+	client.Env = helperEnv(false)
+	client.Stdin = strings.NewReader(link + "\n")
+	rejected, e := client.CombinedOutput()
+	if e == nil || !strings.Contains(string(rejected), "NSS") || strings.Contains(string(rejected), "vetroff://") || strings.Contains(string(rejected), "example-only-password") {
+		t.Fatal("profile ignored or credentials disclosed", e)
+	}
+}

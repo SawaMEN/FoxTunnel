@@ -35,6 +35,11 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
+	"TLS client profile: default or experimental firefox-158 (NSS 3.130)":  "Профиль TLS-клиента: default или экспериментальный firefox-158 (NSS 3.130)",
+	"unknown TLS client profile (choose default or firefox-158)":           "Неизвестный профиль TLS-клиента (выберите default или firefox-158)",
+	"TLS client profile requires NSS":                                      "Профиль TLS-клиента требует NSS",
+	"firefox-158 TLS client profile requires the pinned NSS 3.130 runtime": "Профиль TLS firefox-158 требует закреплённые библиотеки NSS 3.130",
+
 	"print machine-readable build information":                       "Вывести сведения о сборке в JSON",
 	"HTTP/2 receive profile: default or experimental firefox-158":    "Профиль приёма HTTP/2: default или экспериментальный firefox-158",
 	"unknown HTTP/2 receive profile (choose default or firefox-158)": "Неизвестный профиль приёма HTTP/2 (выберите default или firefox-158)",

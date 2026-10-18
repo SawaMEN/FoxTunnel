@@ -32,3 +32,8 @@ Padding использует тот же согласованный codec, чт�
 обмен через публичное API и не может импортировать `internal`. Дополнительно
 проверены Go/NSS, пять транспортов, padding, half-close, отмена контекста после
 setup, сброс дедлайна, закрытие клиента, лимит и владение SOCKS listener.
+
+Экспериментальные NSS-настройки: `TLSClientProfile: foxtunnel.TLSClientFirefox158`
+(только NSS 3.130), отдельно `HTTP2ReceiveProfile: foxtunnel.HTTP2ReceiveFirefox158`.
+Профиль локальный, применяется до создания потоков, сохраняется в пулах идентичностей.
+[Измерения и ограничения](../research/MOZILLA-CLIENT-PROFILE.md).

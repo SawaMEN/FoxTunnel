@@ -235,3 +235,5 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 Ссылка содержит секреты. [Формат, несколько нод и примеры](docs/guides/CONNECTION-LINKS.md).
 
 [TLS/HTTP2: живое сравнение Firefox и FoxTunnel, команды и ограничения](docs/research/WEB-PROFILE.md).
+
+[Профиль Mozilla TLS/H2 и отчёт различий](docs/research/MOZILLA-CLIENT-PROFILE.md).

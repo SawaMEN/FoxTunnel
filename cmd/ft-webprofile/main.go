@@ -13,9 +13,12 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"reflect"
+	"path/filepath"
 	"time"
 
+	"crypto/x509"
+	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/webprofile"
 	"golang.org/x/net/proxy"
@@ -36,6 +39,9 @@ func run() error {
 	source := fs.String("source", "", "browser/backend version, OS and scenario label")
 	duration := fs.Duration("duration", 3*time.Second, "post-handshake observation, at most 30s")
 	sample := fs.String("sample", "", "optional real FoxTunnel client: go or nss")
+	clientProfile := fs.String("tls-client-profile", "default", "NSS preferences: default or firefox-158 (NSS 3.130)")
+	scenario := fs.String("scenario", "tunnel", "sample workload: tunnel or page (direct H2 GET)")
+	comparisonOut := fs.String("comparison-out", "", "write field-by-field comparison JSON (requires --compare)")
 	receiveProfile := fs.String("h2-receive-profile", "default", "outer H2 receive profile: default or firefox-158")
 	transport := fs.String("transport", "xhttp-packet-up", "sample native H2/XHTTP transport (no WSS/H3)")
 	input := fs.String("input", "", "compare an existing report instead of capturing")
@@ -43,6 +49,36 @@ func run() error {
 	strict := fs.Bool("strict", false, "fail when compared fields differ")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		return err
+	}
+	if *comparisonOut != "" && *compare == "" {
+		return errors.New("--comparison-out requires --compare")
+	}
+	if *scenario != "tunnel" && *scenario != "page" {
+		return errors.New("scenario must be tunnel or page")
+	}
+	if *comparisonOut != "" && *out != "" {
+		a, e := filepath.Abs(*comparisonOut)
+		if e != nil {
+			return e
+		}
+		b, e := filepath.Abs(*out)
+		if e != nil {
+			return e
+		}
+		if a == b {
+			return errors.New("comparison and profile output must use different files")
+		}
+	}
+	if *scenario == "page" {
+		transportFlag := false
+		fs.Visit(func(f *flag.Flag) {
+			if f.Name == "transport" {
+				transportFlag = true
+			}
+		})
+		if transportFlag {
+			return errors.New("page scenario uses direct H2; --transport is for tunnel sampling")
+		}
 	}
 	var p webprofile.Profile
 	var err error
@@ -93,7 +129,12 @@ func run() error {
 		if *sample != "" {
 			done = make(chan error, 1)
 			go func() {
-				e := sampleClient(origin, *cert, *sample, *transport, *receiveProfile)
+				var e error
+				if *scenario == "page" {
+					e = samplePage(origin, *cert, *sample, *receiveProfile, *clientProfile)
+				} else {
+					e = sampleClient(origin, *cert, *sample, *transport, *receiveProfile, *clientProfile)
+				}
 				if e != nil {
 					_ = l.Close()
 				}
@@ -123,15 +164,24 @@ func run() error {
 		if e != nil {
 			return e
 		}
-		for _, f := range []struct {
-			name string
-			a, b any
-		}{{"hello", ref.Hello, p.Hello}, {"initial_h2_settings", ref.Settings, p.Settings}, {"initial_connection_window_updates", ref.ConnectionWindow, p.ConnectionWindow}, {"negotiated_alpn", ref.ALPN, p.ALPN}} {
-			if !reflect.DeepEqual(f.a, f.b) {
-				different = true
-				fmt.Fprintf(os.Stderr, "DIFF %s\n  reference: %v\n  candidate: %v\n", f.name, f.a, f.b)
+
+		result := webprofile.Compare(ref, p)
+		different = !result.InitialMetadataEqual
+		for _, f := range result.Checks {
+			if !f.Equal {
+				fmt.Fprintf(os.Stderr, "DIFF %s\n  reference: %v\n  candidate: %v\n", f.Field, f.Reference, f.Candidate)
 			}
 		}
+		if *comparisonOut != "" {
+			data, e := json.MarshalIndent(result, "", "  ")
+			if e != nil {
+				return e
+			}
+			if e = os.WriteFile(*comparisonOut, append(data, '\n'), 0600); e != nil {
+				return e
+			}
+		}
+
 		fmt.Fprintln(os.Stderr, "TLS/H2 comparison does not establish browsing-flow or censorship equivalence; record timing depends on workload.")
 	}
 	b, e := json.MarshalIndent(p, "", "  ")
@@ -183,7 +233,7 @@ func load(path string) (webprofile.Profile, error) {
 
 // Exercise the public Client/SOCKS API, including the selected real outer
 // transport, inner H2, authentication and destination relay. No external hosts.
-func sampleClient(origin, cert, backend, mode, receiveProfile string) error {
+func sampleClient(origin, cert, backend, mode, receiveProfile, clientProfile string) error {
 	echo, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return err
@@ -207,6 +257,9 @@ func sampleClient(origin, cert, backend, mode, receiveProfile string) error {
 		return err
 	}
 	if err = client.SetTransport(mode); err != nil {
+		return err
+	}
+	if err = client.SetTLSClientProfile(clientProfile); err != nil {
 		return err
 	}
 	if err = client.SetHTTP2ReceiveProfile(receiveProfile); err != nil {
@@ -246,6 +299,60 @@ func sampleClient(origin, cert, backend, mode, receiveProfile string) error {
 	}
 	if !bytes.Equal(received, payload) {
 		return errors.New("sample echo mismatch")
+	}
+	return nil
+}
+
+// samplePage isolates the outer stack: the same public HTML GET as Firefox,
+// without SOCKS/inner H2 or echo traffic. Browser headers/lifecycle still differ.
+func samplePage(origin, cert, backend, receiveProfile, clientProfile string) error {
+	pem, e := os.ReadFile(cert)
+	if e != nil {
+		return e
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM(pem) {
+		return errors.New("invalid page CA")
+	}
+	config := &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13, MaxVersion: tls.VersionTLS13, NextProtos: []string{"h2"}}
+	var transport interface {
+		http.RoundTripper
+		CloseIdleConnections()
+	}
+	if backend == "nss" {
+		transport, e = nsstls.NewTransportWithProfiles(config, receiveProfile, clientProfile)
+	} else {
+		if clientProfile != "" && clientProfile != "default" {
+			return errors.New("TLS client profile requires NSS")
+		}
+		t := &http.Transport{TLSClientConfig: config, ForceAttemptHTTP2: true, DisableCompression: true}
+		e = h2profile.Configure(t, receiveProfile)
+		transport = t
+	}
+	if e != nil {
+		return e
+	}
+	defer transport.CloseIdleConnections()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, e := http.NewRequestWithContext(ctx, "GET", origin+"/", nil)
+	if e != nil {
+		return e
+	}
+	response, e := transport.RoundTrip(req)
+	if e != nil {
+		return e
+	}
+	defer response.Body.Close()
+	if response.ProtoMajor != 2 || response.StatusCode != 200 {
+		return errors.New("page requires H2 and HTTP 200")
+	}
+	data, e := io.ReadAll(io.LimitReader(response.Body, 65537))
+	if e != nil {
+		return e
+	}
+	if len(data) > 65536 || !bytes.Contains(data, []byte("Controlled HTTPS fixture.")) {
+		return errors.New("unexpected fixture page")
 	}
 	return nil
 }

@@ -49,3 +49,8 @@ module**, tested in CI, that cannot import internal packages and performs a real
 TLS/XHTTP echo using only this public API. Root external-package tests cover five
 transports, Go/NSS, padding, upload half-close, setup-context cancellation,
 deadline reset, client shutdown, capacity and SOCKS ownership.
+
+Experimental NSS preferences: `TLSClientProfile: foxtunnel.TLSClientFirefox158`
+(NSS 3.130 only), separately `HTTP2ReceiveProfile: foxtunnel.HTTP2ReceiveFirefox158`.
+The local profile is applied before streams and retained in identity pools.
+[Measurements and limits](../research/MOZILLA-CLIENT-PROFILE.en.md).

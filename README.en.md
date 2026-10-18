@@ -239,3 +239,5 @@ exports settings and environment credentials. Import with
 Links contain secrets. [Format and examples](docs/guides/CONNECTION-LINKS.en.md).
 
 [TLS/HTTP2: live Firefox/FoxTunnel comparison, commands and limitations](docs/research/WEB-PROFILE.en.md).
+
+[Mozilla TLS/H2 profile and gap report](docs/research/MOZILLA-CLIENT-PROFILE.en.md).

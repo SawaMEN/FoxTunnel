@@ -1,0 +1,112 @@
+# Второй этап: измеримый профиль Mozilla TLS/H2
+
+**Русский** | [English и команды воспроизведения](MOZILLA-CLIENT-PROFILE.en.md)
+
+База — main `31001ff`, NSS 3.130 из закреплённого Firefox 158.0, Go 1.26.9,
+Linux amd64. NSS остаётся стандартным TLS backend, профиль ниже включается явно.
+Поставка остаётся Linux amd64/arm64 NSS. Формат туннелируемых данных не меняется.
+
+## Реализация
+
+```sh
+foxtunnel client --link-file connection.txt \
+  --tls-client-profile firefox-158 --h2-receive-profile firefox-158
+```
+
+Локальный `--tls-client-profile` не добавляется в ссылку, setup или серверный JSON.
+SDK: `ClientConfig.TLSClientProfile = foxtunnel.TLSClientFirefox158`; настройка
+`HTTP2ReceiveProfile = foxtunnel.HTTP2ReceiveFirefox158` задаётся отдельно.
+
+Профиль применяет socket-local `SSL_NamedGroupConfig`,
+`SSL_SendAdditionalKeyShares` и `SSL_SignatureSchemePrefSet`. Используются настоящие
+реализации криптографии NSS. Значения не подменяются в готовом ClientHello.
+Настройки сохраняются в отдельных пулах origin/SNI/pin и при пересоздании политики.
+Go backend, H3 и другая версия NSS отклоняются без автоматической замены backend.
+`default` возвращает прежние настройки; профиль не меняет глобальную политику NSS.
+
+| Поле | NSS по умолчанию | firefox-158 | Эталон Firefox 158 |
+|---|---|---|---|
+| supported_groups | 4588,29,23,24,25,4587,4589,256–260 | 4588,29,23,24,25 | Совпадает с профилем |
+| key_share groups | 4588 | 4588,29,23 | Совпадает с профилем |
+| signature algorithms | 14 значений, включая PSS-PSS | Те же 11 значений, что у Firefox; другой порядок | PKCS#1 перед ECDSA-SHA1 |
+| TLS versions | Только 1.3 | Только 1.3 | 1.3 и 1.2 |
+| ALPN H2 | h2 | h2 | h2, http/1.1 |
+| ClientHello TLS record body, этот стенд | 1390 Б | 1475 Б | 1882 Б в сохранённом замере |
+
+Группы: 4588 — X25519MLKEM768, 29 — X25519, 23 — P-256, 24 — P-384, 25 — P-521.
+Для WSS сохраняется единственный ALPN `http/1.1`, H2-профиль приёма там недоступен.
+
+NSS `ssl3_FilterSigAlgs` при минимальной версии TLS 1.3 перемещает PKCS#1-схемы
+подписей сертификатов в конец. Поэтому фактический порядок профиля:
+`1027,1283,1539,2052,2053,2054,515,1025,1281,1537,513`, а Firefox в эталоне:
+`1027,1283,1539,2052,2053,2054,1025,1281,1537,515,513`.
+Этот результат подтверждён захватом. TLS 1.2 не включается ради перестановки списка.
+
+## Отчёт различий и одинаковый сценарий
+
+`ft-webprofile --scenario page --sample nss` выполняет прямой H2 GET той же
+публичной HTML-страницы, которую открывает Firefox. Он отделяет TLS/H2 от SOCKS,
+inner H2 и TCP echo. Сценарий `tunnel` проверяет настоящий SOCKS и выбранный
+транспорт; эти два сценария нельзя смешивать при сравнении числа/времени записей.
+В `page` параметр `--transport` отклоняется. Заголовки и жизненный цикл браузера
+при этом ещё не воспроизводятся.
+
+`--comparison-out report.json` вместе с `--compare reference.json` сохраняет
+отдельные результаты для TLS-полей, H2 SETTINGS, отдельных настроек и окна
+соединения. При `--strict` различия по-прежнему дают ошибку, а отчёт сохраняется.
+Производные JA3/MD5, времена и число записей не превращаются в оценку сходства.
+Совпадение всех сравниваемых полей также не доказывает неотличимость или обход ТСПУ.
+
+[Исходные снимки и отчёт](../measurements/2026-10-19/): `nss-default-page.json`,
+`nss-firefox158-page.json`, `nss-firefox158-xhttp.json`, `firefox158-comparison.json`.
+Эталон Firefox — сохранённый [замер 18 октября](WEB-PROFILE.md), не новый запуск
+браузера 19 октября. Новые page-снимки используют тот же тип HTML GET; это ещё
+не синхронное сравнительное испытание браузера/туннеля на одном хосте и маршруте.
+JSON не содержит содержимого HTTP, паролей, ключей или имени SNI.
+
+## Повторное использование, HRR и цена
+
+Тест подтверждает два последовательных GET через одно H2/TLS-соединение; после
+закрытия idle-соединения создаётся новое полное TLS 1.3 рукопожатие. NSS tickets,
+resumption и 0-RTT остаются выключенными. Включение resumption потребует отдельного
+ограниченного cache с origin/SNI/pin/profile и обязательной перепроверки доверия
+на возобновлении: совпадение metadata не оправдывает обход CA/pin.
+
+На сервере, разрешающем только X25519, захват показывает два ClientHello у default
+(HelloRetryRequest) и один у профиля. Ответ HTTP при этом успешно проверяется.
+Это проверка пригодности дополнительных key shares; обычный сервер, выбирающий
+первую группу, такого выигрыша не получает.
+
+Короткий последовательный loopback benchmark: fresh TLS/H2 + маленький GET,
+Go 1.26.9, NSS 3.130, Linux amd64, общий AMD EPYC 9V74, по три прогона 300 мс:
+
+| Профиль | Время обмена | Go bytes/op | Go allocations/op |
+|---|---|---|---|
+| default | 2,38–2,49 мс | 87,7–89,2 КБ | 686–689 |
+| firefox-158 | 2,40–2,55 мс | 88,0–88,5 КБ | 688–689 |
+
+Диапазоны перекрываются; ускорение обычного рукопожатия не установлено. Аллокации
+не включают всю native-память NSS. Это не Интернет, throughput туннеля или DPI-тест.
+
+## Решения по оставшимся различиям
+
+| Область | Решение этого этапа | Что ещё проверить/реализовать |
+|---|---|---|
+| TLS версии и ALPN | Сохранить TLS 1.3 и реально поддерживаемый ALPN | Только отдельное обоснованное изменение политики с полноценными тестами negotiation |
+| OCSP/SCT/delegated credentials/compression/ECH | Не объявлять отсутствующую обработку ради расширений | Реальная поддержка и валидация, затем новый захват |
+| H2 окна и HPACK decoder | Сохранить настоящий receive-профиль | Encoding, порядок SETTINGS/заголовков, приоритеты и browser lifecycle |
+| H2 implementation | Сохранить проверенный Go/x/net engine | Не вендорить стек только ради порядка SETTINGS; выбор Necko/адаптера требует измерений и бюджета сопровождения |
+| NSS resumption | Оставить выключенным; проверить cold handshakes и reuse | Политически изолированный token/cache и отрицательные CA/pin-тесты |
+| QUIC | Отдельный этап Neqo | Не выдавать quic-go за Mozilla |
+
+Проверки включают реальные ClientHello для H2/WSS, отсутствие глобального изменения
+NSS, запрет TLS 1.2/неверного ALPN, CA/SNI/pin до HTTP, большие данные/half-close,
+публичный SDK, обновление H2 credit, отмену и откат несовместимых настроек.
+Полное соответствие Firefox остаётся незавершённым; профиль — измеренная часть
+его конфигурации, а не новый TLS/HTTP стек.
+
+Источники Mozilla на `FIREFOX_158_0_RELEASE`:
+[настройки NSS](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/security/manager/ssl/nsNSSIOLayer.cpp),
+[подписи](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/security/manager/ssl/EnabledSignatureSchemes.h),
+[фильтрация TLS 1.3](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/security/nss/lib/ssl/ssl3con.c),
+[публичные NSS API](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/security/nss/lib/ssl/ssl.h).

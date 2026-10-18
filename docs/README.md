@@ -27,6 +27,7 @@
 ## Исследования
 - [Исследовательские материалы](research/)
 - [План интеграции Mozilla Neqo/HTTP3](research/NEQO-INTEGRATION.md)
+- [Профиль Mozilla TLS/H2 и отчёт различий](research/MOZILLA-CLIENT-PROFILE.md)
 - [Методика измерений](research/PERFORMANCE.md)
 - [Измерения](measurements/)
 

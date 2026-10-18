@@ -45,3 +45,12 @@ Evaluate [Neqo](https://github.com/mozilla/neqo) as a client first (see [integra
 experimental server is not a production replacement for the FoxTunnel server.
 Stable sing-box/Hiddify/3x-ui adapters follow stabilized contracts. No individual
 stage proves Russian TSPU resistance.
+
+## Mozilla stage-two result
+
+[Measured TLS preferences and gap report](../research/MOZILLA-CLIENT-PROFILE.en.md):
+real NSS groups/key shares/signature preferences, CLI/SDK, aligned HTML GET workload,
+field-level TLS/H2 differences, reuse/cold-handshake and HRR tests. Supported groups
+and key shares match; TLS1.3-only signature order and H2 SETTINGS still differ.
+Necko and NSS resumption are not enabled; decisions and follow-up acceptance are
+recorded in the research document. Full Firefox conformance is not claimed.

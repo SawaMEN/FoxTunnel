@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"io"
 	"net"
 	"net/http"
@@ -65,6 +66,7 @@ type Client struct {
 	backend          string
 	nativeTransport  string
 	h2ReceiveProfile string
+	tlsClientProfile string
 	xhttpSettings    xhttp.Settings
 }
 
@@ -145,12 +147,12 @@ func (c *Client) SetTLSBackend(name string) error {
 			resolved = "nss"
 		}
 	}
-	transport, err := makeNativeTransport(c.nativeTransport, resolved, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile)
+	transport, err := makeNativeTransport(c.nativeTransport, resolved, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile, c.tlsClientProfile)
 	if err != nil {
 		return err
 	}
 	c.transport.CloseIdleConnections()
-	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, h2ReceiveProfile: c.h2ReceiveProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, h2ReceiveProfile: c.h2ReceiveProfile, tlsClientProfile: c.tlsClientProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
 	c.backend = name
 	return nil
 }
@@ -338,6 +340,26 @@ func (c *Client) SetHTTP2ReceiveProfile(name string) error {
 	c.h2ReceiveProfile = name
 	if err := c.SetTLSBackend(c.backend); err != nil {
 		c.h2ReceiveProfile = old
+		return err
+	}
+	return nil
+}
+
+// SetTLSClientProfile applies socket-local NSS preferences before serving.
+func (c *Client) SetTLSClientProfile(name string) error {
+	if err := nsstls.ValidateClientProfile(name); err != nil {
+		return err
+	}
+	if name == "default" {
+		name = ""
+	}
+	if c.bondClient != nil || c.bondDiscovery != nil {
+		return i18n.Error("configure TLS before enabling bond")
+	}
+	old := c.tlsClientProfile
+	c.tlsClientProfile = name
+	if err := c.SetTLSBackend(c.backend); err != nil {
+		c.tlsClientProfile = old
 		return err
 	}
 	return nil

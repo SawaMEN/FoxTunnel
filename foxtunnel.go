@@ -14,12 +14,16 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 const ProtocolDraft = buildinfo.ProtocolDraft
 const HTTP2ReceiveFirefox158 = h2profile.Firefox158
+
+// TLSClientFirefox158 opts into measured preferences on pinned NSS 3.130.
+const TLSClientFirefox158 = nsstls.Firefox158
 
 var ErrCapacity = errors.New("foxtunnel client connection limit reached")
 
@@ -33,6 +37,7 @@ type ClientConfig struct {
 	ServerName, SPKIPin  string
 	XHTTPPath, XHTTPHost string
 	HTTP2ReceiveProfile  string
+	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
 	Padding              bool
 	ConnectTimeout       time.Duration
 	MaxConnections       int // Combined active SOCKS/direct connections and pending direct dials; 0 uses 256.
@@ -77,6 +82,9 @@ func NewClient(config ClientConfig) (*Client, error) {
 		return nil, err
 	}
 	if err = core.SetTransport(config.Transport); err != nil {
+		return nil, err
+	}
+	if err = core.SetTLSClientProfile(config.TLSClientProfile); err != nil {
 		return nil, err
 	}
 	if err = core.SetHTTP2ReceiveProfile(config.HTTP2ReceiveProfile); err != nil {
