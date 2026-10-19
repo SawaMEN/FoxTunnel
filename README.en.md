@@ -1,251 +1,75 @@
-[Русский](README.md) | **English** · [Documentation index](docs/README.md)
-
 # FoxTunnel
 
-[Standalone versioned binaries](docs/reference/DISTRIBUTION.en.md) · [Public SDK](docs/reference/SDK.en.md) · [Wire draft 0](docs/reference/WIRE-DRAFT-0.md) · [Compatibility and release verification](docs/reference/COMPATIBILITY.en.md) · [MIT](LICENSE)
+[Русский](README.md) · **English** · [Documentation](docs/README.en.md) · [MIT](LICENSE)
 
-An experimental encrypted tunneling project. It provides native **H2 CONNECT, H2 POST, WSS and H3 POST/QUIC** with a local SOCKS5 client and a TLS server. The longer-term research goal is to test Mozilla NSS and Neqo against this baseline, then assess whether Firefox-like networking behavior offers any measurable benefit.
+FoxTunnel is an **experimental** client–server TCP tunnel: a local SOCKS5 proxy, an HTTPS server and several built-in transports. No Xray process or external proxy sidecar is required.
 
-> **Status: experimental prototype; not ready for production.** In NSS-tagged Linux builds **Mozilla NSS is the default for H2/WSS/XHTTP**. Go TLS remains an explicit diagnostic choice (`--tls-backend go`); H3 still uses Go QUIC. Neither is a complete Firefox stack. It does not reproduce Firefox TLS or HTTP/2 fingerprints and offers only opt-in experimental initial padding. HTTP/3 uses Go QUIC; NSS supports H2/WSS. Application UDP, TUN, censorship-resistance guarantees and 3x-ui integration are not implemented. Do not market it as superior to NaïveProxy.
+> **Status:** research prototype, not a general-purpose VPN. Application UDP, TUN, route management and a kill switch are not implemented. Firefox fingerprint equivalence and resistance to network filtering have not been demonstrated.
 
-[Streaming XHTTP with Mozilla NSS](docs/architecture/XHTTP.en.md) · [Native transports without Xray](docs/architecture/NATIVE-TRANSPORTS.en.md) · [Simple main/ingress setup](docs/guides/SETUP.en.md) · [Security properties](docs/reference/SECURITY.en.md)
+## Implemented features
 
-## Language
+| Area | Current implementation |
+|---|---|
+| Client | Local SOCKS5 for TCP; CA/SNI certificate validation and optional SPKI pin |
+| Server | HTTPS, TCP forwarding, authentication, destination controls and an optional static public site |
+| Transports | `h2-connect`, `h2-post`, `h3-post`, `wss`, `xhttp-stream-one`, `xhttp-stream-up`, `xhttp-packet-up` |
+| TCP TLS | Go TLS; Mozilla NSS is the default in supported `-tags nss` Linux builds |
+| HTTP/3 | `quic-go` by default; a **separate opt-in Mozilla Neqo experiment** on Linux amd64 |
+| Other | Cluster ingress nodes, bounded bond lanes, managed users/quotas and a Go SDK |
 
-Russian is the primary documentation and CLI language. Use `--lang en` on
-`foxtunnel` and `ft-fingerprint` for English help and operator messages, for example
-`foxtunnel client --lang en --help`. Help works without credentials. Command and
-flag names, protocol values and JSON keys stay unchanged. Underlying OS/library
-errors may retain their original language. The standalone C probe accepts
-`FOXTUNNEL_LANG=en`.
+NSS does not implement the entire Firefox stack; Neqo does not import Necko or guarantee Firefox-like network behavior. The HTTP/2 and server implementation still uses Go.
 
-## Build and test
+## Build and quick start
 
-Requires Go 1.26+.
+Requires **Go 1.26+** (CI pins 1.26.9). From the repository root:
 
 ```sh
-go test ./... -race
+go test ./...
 go build -o foxtunnel ./cmd/foxtunnel
+./foxtunnel version --json
 ```
 
-## Quick local example
-
-Generate a development certificate (do not use a self-signed certificate in a real deployment):
+Configure DNS and bring your **own valid TLS certificate and private key**. FoxTunnel does not issue certificates or configure the firewall.
 
 ```sh
-openssl req -x509 -newkey rsa:3072 -nodes -sha256 -days 2 \
-  -keyout server.key -out server.crt -subj '/CN=localhost' \
-  -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1'
+./foxtunnel setup --server https://proxy.example \
+  --cert /etc/ssl/proxy/fullchain.pem \
+  --key /etc/ssl/proxy/key.pem \
+  --out server-config
+./foxtunnel server --config server-config/server.json
 ```
 
-Server, terminal 1:
+Transfer `server-config/connection.txt` securely to the client machine:
 
 ```sh
-export FOXTUNNEL_USER='example-user'
-export FOXTUNNEL_PASSWORD='replace-with-a-long-random-password'
-./foxtunnel server --listen 127.0.0.1:8443 --cert server.crt --key server.key
+./foxtunnel client --link-file connection.txt
 ```
 
-Client, terminal 2, with the **same** environment variables:
+**Connection links contain credentials.** Never publish them in source control, URLs or logs. For private CAs, cluster ingress and detailed setup, follow the [setup guide](docs/guides/SETUP.en.md).
+
+## Builds and backend selection
+
+**Public release archives**, when available, target Linux amd64/arm64 with NSS. A CI workflow does not itself imply that a release exists. See [distribution and verification](docs/reference/DISTRIBUTION.en.md).
+
+The **Mozilla Neqo** H3 client is an **opt-in experiment built separately** on Linux amd64 with CA/SNI/SPKI verification before HTTP credentials and 0-RTT disabled. It is not in normal release archives. Follow [Neqo build and trust documentation](docs/research/NEQO-INTEGRATION.en.md). The older `experiments/neqo-ffi` probe is not a usable H3 client.
+
+`auto` selects NSS for supported TCP transports in tagged Linux binaries and `quic-go` for H3. Explicitly unsupported backends fail rather than silently downgrading.
+
+## Documentation
+
+- [Setup](docs/guides/SETUP.en.md) · [Connection links](docs/guides/CONNECTION-LINKS.en.md) · [Endpoints](docs/guides/ENDPOINTS.en.md)
+- [Architecture](docs/architecture/ARCHITECTURE.en.md) · [Transports](docs/architecture/NATIVE-TRANSPORTS.en.md) · [XHTTP](docs/architecture/XHTTP.en.md) · [Bonding](docs/architecture/BONDING.en.md)
+- [Security](docs/reference/SECURITY.en.md) · [Access and quotas](docs/reference/ACCESS.en.md) · [SDK](docs/reference/SDK.en.md) · [Wire draft](docs/reference/WIRE-DRAFT-0.md)
+- [Research](docs/research/README.en.md) · [Measurements](docs/measurements/README.en.md) · [Roadmap](docs/planning/ROADMAP.en.md)
+
+**Full documentation map and historical notes:** [docs/README.en.md](docs/README.en.md).
+
+## Validate and assess limitations
 
 ```sh
-./foxtunnel client --server https://localhost:8443 --ca-cert server.crt
+go test -race ./...
+go vet ./...
+python3 scripts/check_docs_links.py
 ```
 
-Local TCP applications can use `SOCKS5` at `127.0.0.1:1080` (remote DNS resolution is supported when the application sends a SOCKS5 hostname). For the local example only, the server denies loopback/private targets by default. To reach a TCP service on the local machine, restart it with `--allow-private` **only in an isolated test environment**.
-
-## Security properties and limits
-
-- All proxy CONNECT requests require HTTP Basic proxy authorization **inside TLS**. Empty credentials and usernames containing `:` are rejected. Ordinary requests and rejected probes use the public website handler (plain `404` by default).
-- The server requires HTTP/2 CONNECT, TLS 1.3 and a TLS certificate; no plaintext tunnel endpoint is exposed by the CLI.
-- The client validates the server hostname and certificate; `--ca-cert` adds a trusted CA/certificate without disabling verification.
-- The server resolves destination IPs before dialing, and rejects private, loopback, link-local, shared, and selected special-use addresses unless `--allow-private` is explicitly set.
-- SOCKS5 is unauthenticated; its default listening address is loopback. **Never expose the SOCKS5 port publicly.**
-- Credentials are supplied via environment variables, not command-line arguments; protect process environment and deployment secrets accordingly.
-- No UDP, HTTP/3, traffic shaping, domain fronting, browser fingerprint parity, or active-scanning proof is implemented. Initial-record padding is an opt-in experiment.
-- This prototype has not had an external security review. Do not use it as an anonymity solution.
-
-## Public website and connection behavior
-
-Serve your own public static website on the same HTTPS listener:
-
-```sh
-./foxtunnel server --listen :443 --cert server.crt --key server.key --web-root /srv/public-site
-```
-
-Put an `index.html` and only public assets in that directory. Dotfiles and
-unindexed directory listings are rejected; symlinks must also point to public
-assets. Requests without valid tunnel authentication go to the website handler,
-with proxy credentials removed. Without `--web-root`, the listener returns a
-plain 404 instead of a product-branded placeholder. This removes one obvious
-identifier; it is **not proof of resistance to active probing**. TLS and HTTP/2
-still use Go and retain their network fingerprints.
-
-The client reuses HTTP/2 connections and caches up to 32 TLS sessions in memory
-for reconnects. No TLS 0-RTT or certificate-verification bypass is enabled.
-`--connect-timeout 15s` limits CONNECT setup only, including an unresponsive
-server; established streams can last longer. The server races the alternative
-IP family after 250 ms (immediately on first-family failure), using only resolved
-addresses that passed its destination policy. Stream cancellation releases the
-destination socket, while normal TCP half-close keeps the response readable.
-
-See [performance methodology](docs/research/PERFORMANCE.en.md) for reproducible local tests
-and the measurements still needed on real networks.
-
-## Main node and one-address links
-
-`setup` generates private server configuration and a ready link with a random
-secret, SNI/TLS 1.3/SPKI pin. Join ingresses from the main link and register
-them with `cluster-add`. See [simple setup](docs/guides/SETUP.en.md),
-[security limits](docs/reference/SECURITY.en.md) and [Amnezia/TUIC review](docs/research/AMNEZIA-TUIC-REVIEW.en.md).
-
-For a one-address bonded connection link, use
-`foxtunnel share --server https://main.example --bond --discover`.
-The main node publishes trusted ingress origins/capacity weights and reassembles
-their data into one destination TCP stream. See [cluster setup and limits](docs/architecture/CLUSTER.en.md)
-and the [Sudoku/dnstt source review](docs/research/SUDOKU-DNSTT-REVIEW.en.md).
-
-## Experimental Mozilla NSS data transport
-
-Linux builds can now use NSS for the complete TLS 1.3 data connection:
-
-```sh
-go build -tags nss -o foxtunnel ./cmd/foxtunnel
-./foxtunnel client --tls-backend nss --server https://your-server.example
-```
-
-Requires NSS/NSPR headers, pkg-config and a C compiler. Credentials are still
-supplied by `FOXTUNNEL_USER` / `FOXTUNNEL_PASSWORD`; `--ca-cert` is supported.
-The backend verifies certificates and requires h2 ALPN. It does not fall back
-silently if unavailable. H2 is still Go x/net/http2, and certificate verification
-is Go x509; NSS alone does **not** make this a Firefox-equivalent client.
-NSS session resumption is disabled in this first adapter; the Go backend keeps
-its existing session cache.
-
-See [NSS build, lifecycle and limits](internal/nsstls/README.en.md) and the
-[transport strategy based on NaiveProxy, mieru, Hysteria 2, XHTTP and DNSTT](docs/architecture/TRANSPORT-STRATEGY.en.md).
-
-## Experimental bounded initial padding
-
-`--padding` on both server and client enables negotiated padding for the first
-eight application-data records per direction, followed by raw streaming. The
-mode adds at most 4128 bytes per bidirectional stream (excluding H2/TLS and
-capability headers), with no artificial delays. A missing/incorrect server
-acknowledgement fails setup before application data is sent; it never silently
-retries unpadded. Both Go TLS and NSS clients are supported.
-
-This does not modify TLS/H2 fingerprints or prove resistance to DPI. See the
-[wire format, compatibility, limits and tests](docs/architecture/PADDING.en.md).
-
-## Bounded server capacity
-
-The server defaults to at most 256 authenticated tunnels, including destination
-lookup/dial work. `--max-tunnels 128` changes this limit. Excess authenticated
-CONNECT requests fail with HTTP 503 before destination work; they are not queued
-or retried automatically. Slots are returned on cancellation, errors and normal
-stream teardown. Website requests and rejected probes still use the public
-handler. This is a resource bound, not a complete TLS/HTTP or DDoS defense.
-
-See the [six-protocol source review](docs/research/SIX-PROTOCOL-AUDIT.en.md) and the
-[AmneziaWG 3.1 / AnyTLS / TUIC / WebTunnel / Outline review](docs/research/PROTOCOL-REVIEW-2026-10-18.en.md)
-for what can transfer to the Mozilla design and what still needs experiments.
-
-## Multiple trusted servers
-
-The client can distribute **new streams** across up to eight configured HTTPS
-origins. `--balance failover` is the default; `round-robin` and `least-active`
-enable parallel use of independent servers. Repeat `--fallback-server` to add
-origins. Network setup failures trigger bounded retries and temporary cooldown;
-established streams are never replayed. Certificate, HTTP and padding failures
-remain terminal. All origins receive the same credentials after TLS verification.
-
-```sh
-./foxtunnel client --server https://edge-a.example \
-  --fallback-server https://edge-b.example --balance least-active
-```
-
-See [selection, recovery and limits](docs/guides/ENDPOINTS.en.md) and the
-[NaiveProxy/Sudoku audit](docs/research/NAIVE-SUDOKU-REVIEW.en.md). Multiple servers do not
-combine bandwidth for one stream or establish resistance to TSPU detection.
-
-## Roadmap
-
-1. Validate HTTP/2 baseline against packet captures, test HTTPS CONNECT behavior and error handling.
-2. Stabilize the experimental **NSS TLS adapter** and prove differences using packet-level capture and Firefox versioned reference traces.
-3. Integrate **Neqo** for experimental QUIC/HTTP/3, with fallback to HTTP/2. Do not deploy Neqo's experimental server in production.
-4. Evaluate HTTP/2 and HTTP/3 fingerprints, transport overhead, downtime, performance and censor behavior with reproducible benchmarks.
-5. After API stabilization: adapter for sing-box and lifecycle integration in 3x-ui.
-
-## Firefox TLS fingerprint research (second milestone)
-
-`ft-fingerprint` **does not implement Firefox TLS**. It extracts non-secret
-ClientHello metadata to establish measured differences against a real Firefox
-reference trace. No SNI hostname, session ID, client random, or key share bytes
-are persisted. JA3 is informational only and is not an anonymity or security score.
-
-Build the tool and generate a **Go TLS** baseline locally:
-
-```sh
-go build -o ft-fingerprint ./cmd/ft-fingerprint
-./ft-fingerprint --sample-go --out go.json
-```
-
-Capture a **real Firefox ClientHello** on the same computer (separate terminal):
-
-```sh
-./ft-fingerprint --listen 127.0.0.1:9443 --out firefox.json
-```
-
-Open `https://127.0.0.1:9443/` in Firefox. The browser will report a connection
-failure; **this is expected** because the probe only reads ClientHello and never
-performs a TLS handshake. For meaningful browser vs client comparisons, use a
-consistent host/SNI, OS and network environment, and record Firefox version,
-proxy configuration, HTTP settings and whether ECH is enabled.
-
-Compare the two samples:
-
-```sh
-./ft-fingerprint --input go.json --compare firefox.json --strict
-```
-
-The command reports differences in cipher suites, extension ordering, supported
-versions, key shares, ALPN, and legacy JA3 fingerprint. `--strict` exits nonzero
-when any compared field differs. The JSON represents a *single handshake only*.
-This does not test HTTP/2 SETTINGS, timing, certificate validation, payload
-patterns or Firefox Necko behavior. No claim of fingerprint parity is made.
-
-See [architecture](docs/architecture/ARCHITECTURE.en.md) and [project milestones](docs/planning/ROADMAP.en.md).
-
-## Native Mozilla NSS experiment
-
-A **standalone NSS/NSPR ClientHello generator** is available under
-[`experiments/nss-clienthello`](experiments/nss-clienthello/). It emits a
-real NSS TLS 1.3 ClientHello to a loopback-only capture listener, but does
-not complete TLS, validate certificates, proxy traffic or integrate with the
-Go transport. See its README for build and comparison instructions.
-
-## Experimental stream bonding
-
-The separate opt-in `--bond` mode carries blocks of one stream through multiple
-entries to one common exit. Ordinary whole-stream scheduling remains available.
-See [deployment, acknowledgements, limits and tests](docs/architecture/BONDING.en.md).
-No speed advantage or TSPU resistance is established.
-
-## Connection links
-
-The scheme is `vetroff://`. `foxtunnel share --server https://node-a.example`
-exports settings and environment credentials. Import with
-`foxtunnel client --link-file connection.txt` or `--link-file -` for stdin.
-Links contain secrets. [Format and examples](docs/guides/CONNECTION-LINKS.en.md).
-
-[TLS/HTTP2: live Firefox/FoxTunnel comparison, commands and limitations](docs/research/WEB-PROFILE.en.md).
-
-[Mozilla TLS/H2 profile and gap report](docs/research/MOZILLA-CLIENT-PROFILE.en.md).
-
-[Persistent bond channels, small-write batching and measurements](docs/research/DATA-PATH.en.md).
-
-Persistent channels require local `--bond-lanes` with `--bond`; RPC stays the default because throughput results are mixed.
-
-[Neqo HTTP3: experimental client and H2 fallback](docs/research/NEQO-INTEGRATION.en.md).
-
-[Managed users, revocation and quotas](docs/reference/ACCESS.en.md).
+Loopback experiments do not establish operator-network effectiveness. Read the [security model](docs/reference/SECURITY.en.md), [compatibility policy](docs/reference/COMPATIBILITY.en.md) and [distribution rules](docs/reference/DISTRIBUTION.en.md) before deployment.
