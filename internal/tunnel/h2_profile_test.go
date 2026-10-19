@@ -111,8 +111,22 @@ func testHTTP2ReceiveProfile(t *testing.T, backend string, clientProfiles ...str
 				if len(r.p.ConnectionWindow) != 1 || r.p.ConnectionWindow[0] != h2profile.ConnectionCredit {
 					t.Fatal("wire connection credit", r.p.ConnectionWindow)
 				}
-				if settings[6] != 10<<20 {
-					t.Fatal("response header limit removed")
+				if backend == "nss" {
+					// Firefox 158 does not advertise SETTINGS_MAX_HEADER_LIST_SIZE.
+					// Go still enforces its private header accounting limit.
+					if _, ok := settings[6]; ok {
+						t.Fatal("Mozilla H2 unexpectedly advertised the Go header cap", r.p.Settings)
+					}
+					if len(r.p.Settings) != 4 {
+						t.Fatal("Mozilla H2 initial SETTINGS count", r.p.Settings)
+					}
+					for i, id := range []uint16{1, 2, 4, 5} {
+						if r.p.Settings[i].ID != id {
+							t.Fatal("Mozilla H2 SETTINGS ordering", r.p.Settings)
+						}
+					}
+				} else if settings[6] != 10<<20 {
+					t.Fatal("Go H2 response header limit removed")
 				}
 			case <-time.After(3 * time.Second):
 				t.Fatal("capture did not end")

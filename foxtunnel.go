@@ -14,8 +14,10 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
@@ -28,11 +30,15 @@ const TLSClientFirefox158 = nsstls.Firefox158
 
 var ErrCapacity = errors.New("foxtunnel client connection limit reached")
 
+// TransportStatus contains only local aggregate transport counters and fixed codes.
+type TransportStatus = enginestatus.Snapshot
+
 type Credentials struct{ Username, Password string }
 type ClientConfig struct {
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
+	Engine               string // Empty/legacy preserves old selection; mozilla selects NSS and Neqo when available.
 	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for default H3); Neqo uses NSS.
 	Transport            string // Empty selects h2-connect.
 	QUICBackend          string // Empty/quic-go preserves the default; neqo is an opt-in build.
@@ -80,39 +86,16 @@ func NewClient(config ClientConfig) (*Client, error) {
 			core.Close()
 		}
 	}()
-	backend := config.TLSBackend
-	if backend == "" {
-		backend = "auto"
-	}
-	initialBackend := backend
-	if config.QUICBackend == "neqo" && backend == "nss" {
-		initialBackend = "auto"
-	}
-	if err = core.SetTLSBackend(initialBackend); err != nil {
+	plan, err := transportengine.Resolve(transportengine.Config{
+		Engine: config.Engine, Transport: config.Transport,
+		TLSBackend: config.TLSBackend, QUICBackend: config.QUICBackend,
+		H3Fallback: config.H3Fallback, QUICHandshakeTimeout: config.QUICHandshakeTimeout,
+		TLSClientProfile: config.TLSClientProfile, HTTP2ReceiveProfile: config.HTTP2ReceiveProfile,
+	})
+	if err != nil {
 		return nil, err
 	}
-	if err = core.SetServerIdentity(config.ServerName, config.SPKIPin); err != nil {
-		return nil, err
-	}
-	if err = core.SetTransport(config.Transport); err != nil {
-		return nil, err
-	}
-	fallback := config.H3Fallback
-	if fallback != "" && fallback != "none" && fallback != "h2" {
-		return nil, errors.New("H3Fallback must be none or h2")
-	}
-	if err = core.SetQUICBackend(config.QUICBackend, fallback == "h2", config.QUICHandshakeTimeout); err != nil {
-		return nil, err
-	}
-	if config.QUICBackend == "neqo" && backend == "nss" {
-		if err = core.SetTLSBackend("nss"); err != nil {
-			return nil, err
-		}
-	}
-	if err = core.SetTLSClientProfile(config.TLSClientProfile); err != nil {
-		return nil, err
-	}
-	if err = core.SetHTTP2ReceiveProfile(config.HTTP2ReceiveProfile); err != nil {
+	if err = plan.Apply(core, config.ServerName, config.SPKIPin); err != nil {
 		return nil, err
 	}
 	if err = core.SetXHTTPSettings(config.XHTTPPath, config.XHTTPHost); err != nil {
@@ -134,6 +117,26 @@ func NewClient(config ClientConfig) (*Client, error) {
 	success = true
 	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
 }
+
+// Status returns a concurrency-safe snapshot. No addresses or secrets.
+func (c *Client) Status() TransportStatus {
+	return c.core.TransportStatus()
+}
+
+// NotifyNetworkChange clears cached UDP unreachability after a confirmed
+// Wi-Fi/cellular route change. Omit it when the platform provides no such
+// signal: Mozilla mode retries HTTP/3 automatically after the cooldown.
+func (c *Client) NotifyNetworkChange() error {
+	c.mu.Lock()
+	closed := c.closed
+	c.mu.Unlock()
+	if closed {
+		return net.ErrClosed
+	}
+	c.core.NotifyNetworkChange()
+	return nil
+}
+
 func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	c.mu.Lock()
 	if c.closed {

@@ -168,3 +168,36 @@ func TestIdentityPoolDoesNotApplyPrimarySNIToFallback(t *testing.T) {
 	}
 	resp.Body.Close()
 }
+
+type auditRequestBody struct{ closed atomic.Bool }
+
+func (b *auditRequestBody) Read([]byte) (int, error) { return 0, io.EOF }
+func (b *auditRequestBody) Close() error             { b.closed.Store(true); return nil }
+
+func TestIdentityConstructionFailureClosesRequestBody(t *testing.T) {
+	base := fakeH2{round: func(*http.Request) (*http.Response, error) {
+		t.Fatal("unexpected request to network")
+		return nil, nil
+	}}
+	pool := &identityPool{
+		base: base, config: &tls.Config{}, backend: "go", mode: "h3-post",
+		quic: quicSettings{backend: "neqo"}, entries: make(map[string]identityEntry),
+	}
+	r, err := http.NewRequest(http.MethodPost, "https://proxy.example", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := &auditRequestBody{}
+	r.Body = body
+	_, err = pool.roundTrip(r, tlsidentity.Policy{SNI: "example.org"})
+	if err == nil || !body.closed.Load() {
+		t.Fatal("identity construction failure leaked request body", err)
+	}
+}
+
+func TestInvalidGoHTTP2ProfileReturnsNilTransport(t *testing.T) {
+	transport, err := makeTLStransport("go", &tls.Config{}, "unknown-profile", "")
+	if err == nil || transport != nil {
+		t.Fatalf("invalid Go H2 profile must return a real nil transport, got %T %v", transport, err)
+	}
+}

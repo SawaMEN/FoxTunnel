@@ -19,6 +19,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
+	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 	"golang.org/x/net/netutil"
@@ -273,10 +274,18 @@ func main() {
 		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active"))
 		attemptTimeout := fs.Duration("fallback-attempt-timeout", 5*time.Second, i18n.Text("setup time per endpoint when fallbacks are configured"))
 		padding := fs.Bool("padding", false, i18n.Text("require experimental initial-record padding (server must enable it)"))
-		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up (no external proxy)"))
+		engine := new(string)
+		if os.Args[1] == "client" {
+			fs.StringVar(engine, "engine", "legacy", i18n.Text("local transport engine: legacy (default) or mozilla (NSS/Neqo build required)"))
+		}
+		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up, xhttp-packet-up, or auto with --engine mozilla"))
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
 		quicBackend, h3Fallback := new(string), new(string)
 		quicTimeout := new(time.Duration)
+		engineStatusInterval := new(time.Duration)
+		if os.Args[1] == "client" {
+			fs.DurationVar(engineStatusInterval, "engine-status-interval", 0, i18n.Text("optional local engine status JSON log interval; 0 disables, minimum 1s"))
+		}
 		*quicBackend = "quic-go"
 		*h3Fallback = "none"
 		if os.Args[1] == "client" {
@@ -303,7 +312,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval":
 				default:
 					conflict = true
 				}
@@ -375,6 +384,9 @@ func main() {
 		if *udpStream && !*enableUDP {
 			log.Fatal("--udp-stream requires --enable-udp")
 		}
+		if *engineStatusInterval < 0 || (*engineStatusInterval > 0 && *engineStatusInterval < time.Second) {
+			log.Fatal("--engine-status-interval must be 0 or at least 1s")
+		}
 		if *bondLanes && !*bonded {
 			log.Fatal(i18n.Text("bond lanes require --bond"))
 		}
@@ -385,34 +397,32 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		initialBackend := *tlsBackend
-		if *quicBackend == "neqo" && initialBackend == "nss" {
-			initialBackend = "auto"
+		intent := transportengine.Config{
+			Engine: *engine, Transport: *nativeTransport,
+			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,
+			H3Fallback: *h3Fallback, QUICHandshakeTimeout: *quicTimeout,
+			TLSClientProfile: *tlsProfile, HTTP2ReceiveProfile: *h2Profile,
 		}
-		if err := client.SetTLSBackend(initialBackend); err != nil {
-			log.Fatal(err)
-		}
-		if err := client.SetServerIdentity(*sni, *pin); err != nil {
-			log.Fatal(err)
-		}
-		if err := client.SetTransport(*nativeTransport); err != nil {
-			log.Fatal(err)
-		}
-		if *h3Fallback != "none" && *h3Fallback != "h2" {
-			log.Fatal("--h3-fallback: none or h2")
-		}
-		if err := client.SetQUICBackend(*quicBackend, *h3Fallback == "h2", *quicTimeout); err != nil {
-			log.Fatal(err)
-		}
-		if *quicBackend == "neqo" && *tlsBackend == "nss" {
-			if err := client.SetTLSBackend("nss"); err != nil {
-				log.Fatal(err)
+		if *engine == "mozilla" {
+			explicit := map[string]bool{}
+			fs.Visit(func(f *flag.Flag) { explicit[f.Name] = true })
+			// A connection link pins a server-selected carrier; do not
+			// overwrite it with speculative H3 discovery.
+			if !explicit["transport"] && *link == "" && *linkFile == "" {
+				intent.Transport = "auto"
+			}
+			if !explicit["quic-backend"] {
+				intent.QUICBackend = ""
+			}
+			if !explicit["h3-fallback"] {
+				intent.H3Fallback = ""
 			}
 		}
-		if err := client.SetTLSClientProfile(*tlsProfile); err != nil {
+		plan, err := transportengine.Resolve(intent)
+		if err != nil {
 			log.Fatal(err)
 		}
-		if err := client.SetHTTP2ReceiveProfile(*h2Profile); err != nil {
+		if err := plan.Apply(client, *sni, *pin); err != nil {
 			log.Fatal(err)
 		}
 		if err := client.SetXHTTPSettings(*xhttpPath, *xhttpHost); err != nil {
@@ -452,6 +462,24 @@ func main() {
 			}
 		}
 		defer client.Close()
+		if *engineStatusInterval > 0 {
+			ticker := time.NewTicker(*engineStatusInterval)
+			defer ticker.Stop()
+			done := make(chan struct{})
+			defer close(done)
+			go func() {
+				for {
+					select {
+					case <-done:
+						return
+					case <-ticker.C:
+						if data, err := json.Marshal(client.TransportStatus()); err == nil {
+							log.Printf("engine_status=%s", data)
+						}
+					}
+				}
+			}()
+		}
 		listener, err := net.Listen("tcp", *listen)
 		if err != nil {
 			log.Fatal(err)

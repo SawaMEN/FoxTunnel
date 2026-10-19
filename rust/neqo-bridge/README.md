@@ -23,3 +23,8 @@ fallback rules](../../docs/research/NEQO-INTEGRATION.en.md).
 `scripts/neqo.lock.json` pin compiler and Mozilla revisions. The build exports
 Rust dependency license texts and attribution plus provenance; the generated
 C header also makes the external Rust archive visible to Go's build cache.
+
+A separate opt-in `linux/amd64/mozilla` **build-only** archive is now
+assembled by `scripts/build_mozilla.py` / the manually dispatched
+`Mozilla unified bundle` workflow. Normal NSS releases remain unchanged.
+This does not make Neqo production-ready or publish a GitHub Release.

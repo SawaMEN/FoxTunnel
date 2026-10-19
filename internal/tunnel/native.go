@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/neqo"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
@@ -83,13 +84,16 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 				return nil, err
 			}
 			var selected tlsTransport = transport
+			if !quic.fallback && quic.status != nil {
+				selected = observedTransport{tlsTransport: transport, status: quic.status, route: "h3"}
+			}
 			if quic.fallback {
-				h2, err := makeTLStransport("nss", config, "", "")
+				h2, err := makeTLStransport("nss", config, "firefox-158", nsstls.Firefox158)
 				if err != nil {
 					transport.CloseIdleConnections()
 					return nil, err
 				}
-				selected = &neqoFallbackTransport{h3: transport, h2: h2, until: make(map[string]time.Time)}
+				selected = &neqoFallbackTransport{h3: transport, h2: h2, until: make(map[string]time.Time), status: quic.status}
 			}
 			return postTransport{tlsTransport: selected, host: config.ServerName}, nil
 		}
@@ -105,10 +109,26 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 	if err != nil {
 		return nil, err
 	}
+	if quic.status != nil && (mode == "h2-connect" || mode == "h2-post") {
+		t = observedTransport{tlsTransport: t, status: quic.status, route: "h2"}
+	}
 	if mode == "h2-post" {
 		return postTransport{tlsTransport: t, host: config.ServerName}, nil
 	}
 	return t, nil
+}
+
+// observedTransport reports direct NSS/H2 and Neqo/H3 selections. It only
+// records fixed local route codes; it never inspects or copies the request.
+type observedTransport struct {
+	tlsTransport
+	status *enginestatus.Recorder
+	route  string
+}
+
+func (t observedTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	t.status.Route(t.route, "direct")
+	return t.tlsTransport.RoundTrip(r)
 }
 
 type postTransport struct {
@@ -116,9 +136,21 @@ type postTransport struct {
 	host string
 }
 
+// Forward network notifications through the HTTP/3-to-POST adapter.
+func (t postTransport) NetworkChanged() {
+	if notifier, ok := t.tlsTransport.(interface{ NetworkChanged() }); ok {
+		notifier.NetworkChanged()
+	} else {
+		t.tlsTransport.CloseIdleConnections()
+	}
+}
+
 func (t postTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	if r.Method == http.MethodConnect {
 		r = r.Clone(r.Context())
+		if r.Header == nil {
+			r.Header = make(http.Header)
+		}
 		u := *r.URL
 		u.Path = postPath
 		r.URL = &u

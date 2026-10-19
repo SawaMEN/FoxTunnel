@@ -15,3 +15,18 @@ Firefox 158, профили Go и NSS, включая H2 receive и XHTTP: [2026
 - [JSON-профили TLS/H2](2026-10-19/) — сравнения NSS/Firefox.
 
 **Методика:** [исследование производительности](../research/PERFORMANCE.md).
+
+## Stage 8 — field HTTP/2 vs HTTP/3
+
+The [field-probe runbook](STAGE8-FIELD-H2-H3.md) separates a working measurement
+harness from unavailable independent external measurements. No results are
+fabricated from CI loopback tests.
+
+## Stage 10 — Firefox / FoxTunnel / NaiveProxy
+
+[Сравнение TLS/H2 и протокол сбора QUIC/H3](STAGE10-FINGERPRINT.md).
+NaiveProxy и сопоставимые H3/QUIC захваты пока отсутствуют.
+
+## Stage 10: actual NSS/H2 measurement
+
+See [Stage 10 methodology and verified CI result](STAGE10-FINGERPRINT.md).

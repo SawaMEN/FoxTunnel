@@ -1,4 +1,4 @@
-//go:build nss && cgo && linux
+//go:build nss && cgo && linux && !mozilla
 
 package buildinfo
 

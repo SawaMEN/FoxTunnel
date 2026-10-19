@@ -17,6 +17,9 @@ const ConnectionCredit = 12517377
 const StreamWindow = 131072
 const HeaderTable = 65536
 
+// The Firefox receive profile caps HPACK encoding locally too. This does
+// not imply that Firefox request header ordering is reproduced.
+
 func Validate(name string) error {
 	if name != "" && name != "default" && name != Firefox158 {
 		return i18n.Error("unknown HTTP/2 receive profile (choose default or firefox-158)")
@@ -30,6 +33,13 @@ func Configure(t *http.Transport, name string) error {
 	if name != Firefox158 {
 		return nil
 	}
-	t.HTTP2 = &http.HTTP2Config{MaxDecoderHeaderTableSize: HeaderTable, MaxReadFrameSize: 16384, MaxReceiveBufferPerConnection: ConnectionCredit, MaxReceiveBufferPerStream: StreamWindow}
+	t.HTTP2 = &http.HTTP2Config{
+		MaxDecoderHeaderTableSize:     HeaderTable,
+		MaxEncoderHeaderTableSize:     HeaderTable,
+		MaxReadFrameSize:              16384,
+		MaxReceiveBufferPerConnection: ConnectionCredit,
+		MaxReceiveBufferPerStream:     StreamWindow,
+		StrictMaxConcurrentRequests:   true,
+	}
 	return nil
 }

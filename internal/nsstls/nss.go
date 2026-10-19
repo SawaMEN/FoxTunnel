@@ -45,6 +45,9 @@ func NewTransportWithProfile(config *tls.Config, profile string) (Transport, err
 	return NewTransportWithProfiles(config, profile, "")
 }
 func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string) (Transport, error) {
+	if config == nil {
+		return nil, errors.New("NSS TLS config is nil")
+	}
 	if err := h2profile.Validate(profile); err != nil {
 		return nil, err
 	}
@@ -56,6 +59,18 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 	}
 	if config.VerifyPeerCertificate != nil {
 		return nil, i18n.Error("unsupported NSS certificate callback (use VerifyConnection)")
+	}
+	// This constructor returns an HTTP/2-only transport. HTTP/1.1 ALPN
+	// belongs to DialTLSContextWithProfile (WSS); advertising h1 here
+	// would send H2 frames over a negotiated h1 TLS connection.
+	if len(config.NextProtos) != 0 && (len(config.NextProtos) != 1 || config.NextProtos[0] != "h2") {
+		return nil, errors.New("NSS HTTP/2 transport requires h2 ALPN")
+	}
+	if config.MinVersion > tls.VersionTLS13 || (config.MaxVersion != 0 && config.MaxVersion < tls.VersionTLS13) {
+		return nil, errors.New("NSS HTTP/2 transport requires TLS 1.3 within the configured version range")
+	}
+	if len(config.Certificates) > 0 || config.GetClientCertificate != nil {
+		return nil, errors.New("NSS adapter does not support TLS client certificates")
 	}
 	initOnce.Do(func() {
 		if code := C.ft_init(); code != 0 {
@@ -92,7 +107,11 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 		if config.ServerName != "" {
 			host = config.ServerName
 		}
-		return wrapConfigWithProfile(setup, raw, host, config, clientProfile)
+		secure, err := wrapConfigWithProfile(setup, raw, host, config, clientProfile)
+		if err != nil {
+			return nil, err
+		}
+		return h2profile.WrapNSSConn(secure, profile), nil
 	}
 	return transport, nil
 }
@@ -112,6 +131,7 @@ type conn struct {
 	certificates                 []*x509.Certificate
 	verifiedChains               [][]*x509.Certificate
 	verifyConnection             func(tls.ConnectionState) error
+	currentTime                  func() time.Time
 }
 
 func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) (*conn, error) {
@@ -139,7 +159,7 @@ func wrapConfigWithProfile(ctx context.Context, raw net.Conn, name string, confi
 	}
 	cprotocol := C.CString(protocol)
 	defer C.free(unsafe.Pointer(cprotocol))
-	c := &conn{raw: raw, serverName: name, protocol: protocol, roots: config.RootCAs, verifyConnection: config.VerifyConnection}
+	c := &conn{raw: raw, serverName: name, protocol: protocol, roots: config.RootCAs, verifyConnection: config.VerifyConnection, currentTime: config.Time}
 	c.handle = cgo.NewHandle(c)
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -315,7 +335,11 @@ func ft_go_verify(handle C.uintptr_t) C.int {
 	for _, cert := range c.certificates[1:] {
 		intermediates.AddCert(cert)
 	}
-	c.verifiedChains, c.verifyErr = c.certificates[0].Verify(x509.VerifyOptions{DNSName: c.serverName, Roots: c.roots, Intermediates: intermediates, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}})
+	options := x509.VerifyOptions{DNSName: c.serverName, Roots: c.roots, Intermediates: intermediates, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
+	if c.currentTime != nil {
+		options.CurrentTime = c.currentTime()
+	}
+	c.verifiedChains, c.verifyErr = c.certificates[0].Verify(options)
 	if c.verifyErr != nil {
 		return 0
 	}
@@ -347,11 +371,20 @@ func DialTLSContext(ctx context.Context, network, addr string, config *tls.Confi
 	return DialTLSContextWithProfile(ctx, network, addr, config, "")
 }
 func DialTLSContextWithProfile(ctx context.Context, network, addr string, config *tls.Config, profile string) (net.Conn, error) {
+	if config == nil {
+		return nil, errors.New("NSS TLS config is nil")
+	}
 	if err := checkClientProfile(profile); err != nil {
 		return nil, err
 	}
 	if config.InsecureSkipVerify || config.VerifyPeerCertificate != nil {
 		return nil, i18n.Error("TLS verification cannot be disabled")
+	}
+	if config.MinVersion > tls.VersionTLS13 || (config.MaxVersion != 0 && config.MaxVersion < tls.VersionTLS13) {
+		return nil, errors.New("NSS TLS connection requires TLS 1.3 within the configured version range")
+	}
+	if len(config.Certificates) > 0 || config.GetClientCertificate != nil {
+		return nil, errors.New("NSS adapter does not support TLS client certificates")
 	}
 	initOnce.Do(func() {
 		if code := C.ft_init(); code != 0 {
@@ -375,5 +408,11 @@ func DialTLSContextWithProfile(ctx context.Context, network, addr string, config
 			return nil, err
 		}
 	}
-	return wrapConfigWithProfile(setup, raw, name, config, profile)
+	secure, err := wrapConfigWithProfile(setup, raw, name, config, profile)
+	if err != nil {
+		// A typed nil *conn assigned directly to net.Conn is a non-nil
+		// interface. Always return a genuine nil on handshake failure.
+		return nil, err
+	}
+	return secure, nil
 }

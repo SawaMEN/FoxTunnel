@@ -101,3 +101,93 @@ func TestALPNRequired(t *testing.T) {
 
 var _ net.Conn = (*conn)(nil)
 var _ io.Closer = (*conn)(nil)
+
+func TestNilTLSConfigRejectsWithoutPanic(t *testing.T) {
+	transport, err := NewTransportWithProfiles(nil, "", "")
+	if err == nil || transport != nil {
+		t.Fatalf("nil NSS TLS config accepted: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	conn, err := DialTLSContextWithProfile(ctx, "tcp", "127.0.0.1:1", nil, "")
+	if err == nil || conn != nil {
+		t.Fatalf("nil NSS dial TLS config accepted: %v", err)
+	}
+}
+
+func TestNSSHTTP2RejectsIncompatibleALPNAndTLSVersions(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		config *tls.Config
+	}{
+		{"http11", &tls.Config{NextProtos: []string{"http/1.1"}}},
+		{"mixed", &tls.Config{NextProtos: []string{"h2", "http/1.1"}}},
+		{"tls12only", &tls.Config{MaxVersion: tls.VersionTLS12}},
+		{"tls14minimum", &tls.Config{MinVersion: tls.VersionTLS13 + 1}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			transport, err := NewTransportWithProfiles(tc.config, "", "")
+			if err == nil {
+				if transport != nil {
+					transport.CloseIdleConnections()
+				}
+				t.Fatal("accepted incompatible NSS HTTP/2 TLS settings")
+			}
+		})
+	}
+}
+func TestNSSDialRejectsTLS12OnlyBeforeNetworkIO(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	conn, err := DialTLSContextWithProfile(ctx, "tcp", "127.0.0.1:1",
+		&tls.Config{MaxVersion: tls.VersionTLS12}, "")
+	if err == nil || conn != nil {
+		t.Fatalf("unsupported NSS 1.2-only connection accepted: %v", err)
+	}
+}
+
+func TestNSSRejectsUnsupportedMutualTLSConfiguration(t *testing.T) {
+	configs := []*tls.Config{
+		{Certificates: []tls.Certificate{{Certificate: [][]byte{[]byte("test")}}}},
+		{GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			return &tls.Certificate{}, nil
+		}},
+	}
+	for _, config := range configs {
+		transport, err := NewTransportWithProfiles(config, "", "")
+		if err == nil {
+			if transport != nil {
+				transport.CloseIdleConnections()
+			}
+			t.Fatal("NSS accepted ignored client certificate policy")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		conn, err := DialTLSContextWithProfile(ctx, "tcp", "127.0.0.1:1", config, "")
+		cancel()
+		if err == nil || conn != nil {
+			t.Fatal("NSS direct dial accepted unsupported mTLS client certificate")
+		}
+	}
+}
+
+func TestNSSVerifierHonorsTLSConfigTime(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.NotFoundHandler())
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	defer server.Close()
+	roots := x509.NewCertPool()
+	roots.AddCert(server.Certificate())
+	config := &tls.Config{
+		RootCAs: roots,
+		Time:    func() time.Time { return server.Certificate().NotBefore.Add(-time.Hour) },
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	conn, err := DialTLSContextWithProfile(ctx, "tcp", server.Listener.Addr().String(), config, "")
+	if err == nil || conn != nil {
+		if err == nil && conn != nil {
+			conn.Close()
+		}
+		t.Fatalf("NSS trust failure must return nil connection, got conn=%T err=%v", conn, err)
+	}
+}

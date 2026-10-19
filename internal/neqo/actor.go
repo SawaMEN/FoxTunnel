@@ -78,6 +78,9 @@ func (c *connection) run() {
 		for _, s := range streams {
 			fail(s, fatal)
 		}
+		// Free the live-pool slot before announcing done to concurrent
+		// connection creators; prevents a capacity spin on an exited actor.
+		c.owner.forget(c)
 		close(c.done)
 	}()
 	setup, cancel := context.WithTimeout(c.ctx, c.owner.timeout)
@@ -251,9 +254,14 @@ func (c *connection) run() {
 					fail(s, errClosed)
 					delete(streams, id)
 				}
-			case 7, 8:
-				fatal = errProtocol
+			case 7:
+				fatal = errClosed
 				return
+			case 8:
+				// HTTP/3 GOAWAY is graceful drain, not a connection
+				// error. Existing streams finish; new ones use a
+				// separately authenticated QUIC connection.
+				c.owner.retire(c)
 			}
 		}
 		// Authentication and request creation can generate output without another
@@ -288,6 +296,10 @@ func (c *connection) run() {
 			if cmd.kind == 'o' {
 				if err := s.req.Context().Err(); err != nil {
 					cmd.reply <- result{err: err}
+					continue
+				}
+				if c.draining.Load() {
+					cmd.reply <- result{err: errDraining}
 					continue
 				}
 				if !connected || len(streams) >= maxStreams {

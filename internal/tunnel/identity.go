@@ -40,7 +40,13 @@ func makeTLStransport(backend string, config *tls.Config, receiveProfile, client
 	if backend == "nss" {
 		return nsstls.NewTransportWithProfiles(config, receiveProfile, clientProfile)
 	}
-	return newGoTransportWithProfile(config, receiveProfile)
+	goTransport, err := newGoTransportWithProfile(config, receiveProfile)
+	if err != nil {
+		// Preserve nil interface semantics on an invalid H2 profile:
+		// returning a typed nil *http.Transport as tlsTransport is non-nil.
+		return nil, err
+	}
+	return goTransport, nil
 }
 
 // SetServerIdentity applies only to the primary origin. Other origins keep
@@ -112,6 +118,11 @@ func (p *identityPool) RoundTrip(r *http.Request) (*http.Response, error) {
 func (p *identityPool) roundTrip(r *http.Request, policy tlsidentity.Policy) (*http.Response, error) {
 	transport, err := p.forPolicy(r.URL.Scheme+"://"+r.URL.Host, policy)
 	if err != nil {
+		// RoundTripper owns closing request bodies, even when selecting the
+		// identity-specific transport fails before any network I/O.
+		if r.Body != nil {
+			_ = r.Body.Close()
+		}
 		return nil, err
 	}
 	if policy.SNI != "" && r.Method != http.MethodConnect {
@@ -140,4 +151,24 @@ func (v identityView) RoundTrip(r *http.Request) (*http.Response, error) {
 		return v.pool.RoundTrip(r)
 	}
 	return v.pool.roundTrip(r, policy)
+}
+
+// NetworkChanged refreshes cached reachability across primary and pinned
+// identity-specific transports without changing TLS trust, SNI or SPKI policy.
+// New per-policy transports created after this snapshot have no stale cache.
+func (p *identityPool) NetworkChanged() {
+	p.mu.Lock()
+	transports := make([]tlsTransport, 0, len(p.entries)+1)
+	transports = append(transports, p.base)
+	for _, entry := range p.entries {
+		transports = append(transports, entry.transport)
+	}
+	p.mu.Unlock()
+	for _, transport := range transports {
+		if notifier, ok := transport.(interface{ NetworkChanged() }); ok {
+			notifier.NetworkChanged()
+		} else {
+			transport.CloseIdleConnections()
+		}
+	}
 }
