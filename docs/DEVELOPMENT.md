@@ -47,21 +47,35 @@ python3 scripts/build_mozilla.py --version v0.0.0-ci
 Основная точка входа:
 
 ~~~go
-import foxtunnel "github.com/SawaMEN/FoxTunnel"
+package main
 
-client, err := foxtunnel.NewClient(foxtunnel.ClientConfig{
-    ServerURL: "https://vpn.example.com",
-    Credentials: foxtunnel.Credentials{
-        Username: "user",
-        Password: "replace-with-real-secret",
-    },
-})
-if err != nil {
-    // handle error
+import (
+    "context"
+    "log"
+
+    foxtunnel "github.com/SawaMEN/FoxTunnel"
+)
+
+func main() {
+    client, err := foxtunnel.NewClient(foxtunnel.ClientConfig{
+        ServerURL: "https://vpn.example.com",
+        Credentials: foxtunnel.Credentials{
+            Username: "user",
+            Password: "replace-with-real-secret",
+        },
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer client.Close()
+
+    conn, err := client.DialContext(context.Background(), "tcp", "example.com:443")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer conn.Close()
+    // Используйте conn для TCP-обмена.
 }
-defer client.Close()
-
-conn, err := client.DialContext(ctx, "tcp", "example.com:443")
 ~~~
 
 Точный состав полей и интерфейсов определён в \`foxtunnel.go\` — это единственный источник истины для сборки с данным коммитом. В клиенте доступны выбор движка/транспорта, политика TLS, прямой dial, SOCKS, локальная диагностика \`Status()\` и хук смены сети \`NotifyNetworkChange()\`. Объект нужно сконфигурировать **до параллельных вызовов**. Экспериментальные функции могут меняться между prerelease-версиями.
