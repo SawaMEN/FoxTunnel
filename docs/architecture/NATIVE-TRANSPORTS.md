@@ -1,6 +1,8 @@
 # Встроенные транспорты без Xray
 
-**Русский** | [English](NATIVE-TRANSPORTS.en.md)
+**Русский** · [English](NATIVE-TRANSPORTS.en.md) · [Каталог](../README.md) · [План](../planning/ROADMAP.md)
+
+> **Назначение:** Режимы H2, H3, WSS и XHTTP и доступные TLS/QUIC backend.
 
 FoxTunnel сам принимает и создаёт семь вариантов соединения. Xray, sing-box,
 внешний SOCKS-транспорт и отдельный клиент другого протокола не требуются.

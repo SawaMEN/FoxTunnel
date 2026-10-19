@@ -1,6 +1,8 @@
 # Native transports without Xray
 
-[Русский](NATIVE-TRANSPORTS.md) | **English**
+[Русский](NATIVE-TRANSPORTS.md) · **English** · [Docs](../README.en.md) · [Roadmap](../planning/ROADMAP.en.md)
+
+> **Scope:** H2, H3, WSS and XHTTP modes and their supported TLS/QUIC backends.
 
 FoxTunnel implements and terminates seven transports itself. No Xray, sing-box,
 external SOCKS carrier or separate protocol client is required. The Go WebSocket
