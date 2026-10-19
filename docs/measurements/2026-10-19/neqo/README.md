@@ -1,5 +1,9 @@
 # Neqo: проверка совместимости и отказов
 
+[Измерения](../../README.md) · [Исследования](../../../research/README.md)
+
+> **Исторические замеры Neqo.** Локальные сценарии QUIC и потерь; не испытания ТСПУ.
+
 Методика/сборка: [RU](../../../research/NEQO-INTEGRATION.md) /
 [EN](../../../research/NEQO-INTEGRATION.en.md).
 

@@ -1,5 +1,9 @@
 # FoxTunnel Neqo ABI 1
 
+[Documentation](../../docs/README.en.md) · [Neqo HTTP/3](../../docs/research/NEQO-INTEGRATION.en.md)
+
+> **Opt-in Neqo HTTP/3 client (ABI 1).** Linux amd64 only, separate pinned Rust/NSS toolchain, CA/SNI/SPKI validation before HTTP credentials. Not in public archives.
+
 Build with `python3 scripts/build_neqo.py` from the repository root. Source the
 reported env.sh before Go `-tags nss,neqo` builds/tests. Linux amd64 is the initial
 supported target; regular release archives exclude this experiment.
