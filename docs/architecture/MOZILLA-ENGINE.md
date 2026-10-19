@@ -217,3 +217,10 @@ Stage 6 is diagnostic instrumentation only: active streams are not replayed,
 TLS identity checks remain mandatory, and no network fingerprint parity or
 operational reliability has been established. Build and tests were deferred
 as requested.
+
+
+Direct NSS/H2 and Neqo/H3 transports without a fallback policy also report
+a fixed "direct" route selection. This makes the status counters useful for
+both opt-in automatic H3/H2 and explicitly pinned transports; WSS/XHTTP
+remain reported by their configured carrier mode, not misrepresented as
+ordinary direct H2.
