@@ -4,6 +4,8 @@
 
 `foxtunnel client --tun ftun0` starts a **native in-process Linux TUN**. An embedded gVisor Go TCP/IP stack (MIT-licensed tun2socks/v2 core library) handles IPv4/IPv6 TCP and UDP and forwards connections to the same FoxTunnel process's local SOCKS5 listener, then its authenticated TLS transport. **No sing-box process or executable is involved.**
 
+Building from sources requires Go **1.26.3**; gVisor and tun2socks/v2 dependencies are pinned in `go.mod`/`go.sum`.
+
 Run on an isolated Linux test workstation with `/dev/net/tun`, CAP_NET_ADMIN, numeric upstream server IP with verified TLS SNI/CA/pin, and UDP streaming enabled on both client and server:
 
 ~~~sh
