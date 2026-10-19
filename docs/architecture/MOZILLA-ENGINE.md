@@ -224,3 +224,25 @@ a fixed "direct" route selection. This makes the status counters useful for
 both opt-in automatic H3/H2 and explicitly pinned transports; WSS/XHTTP
 remain reported by their configured carrier mode, not misrepresented as
 ordinary direct H2.
+
+## Stage 7: build audit and integration gate
+
+GitHub Actions on the update branch previously reported an unformatted Go
+working tree in the standard Tests workflow, and failures in NSS/Neqo H2
+profile tests: those assertions expected Go's SETTINGS_MAX_HEADER_LIST_SIZE
+advertisement even for the Firefox-specific NSS wire profile introduced in
+stage 3. Stage 7 updates the *existing* assertion to distinguish standard
+Go H2 from opt-in Firefox/NSS H2 and to check the measured four SETTINGS IDs
+in order, without deleting local header-size enforcement.
+
+The new Stage 7 integration build audit workflow runs automatically for code
+changes pushed to update. It has independent Go formatting, portable Go build
+and native NSS/Neqo Mozilla-bundle build jobs. No job invokes go test,
+cargo test, or the generated proxy executable. Native outputs are uploaded
+as explicitly untested, expiring GitHub Actions artifacts, not releases.
+
+A successful compiler build is necessary but insufficient: pending a
+separately authorized test phase, NSS/Neqo compatibility, HTTP/2 wire
+behavior, stream cancellation, UDP recovery, error classification and race
+safety remain unverified by this build-only gate. Keep main and public
+release workflows unchanged.

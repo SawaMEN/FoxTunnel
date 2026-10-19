@@ -50,6 +50,9 @@ HTTP-запроса. QUIC-параметры Firefox ещё требуют из�
 сигналов ОС о смене сети; проверка TLS не ослабляется.
 Этап 6 добавляет безопасный `Client.Status()` в SDK и опциональные локальные
 JSON-логи через `--engine-status-interval 10s` без адресов и секретов.
+Седьмой этап добавляет независимую проверку форматирования и сборок Go/NSS/Neqo
+в GitHub Actions для ветки update, без ручного запуска тестов. Исправлено
+устаревшее ожидание SETTINGS_MAX_HEADER_LIST_SIZE для NSS-профиля Firefox.
 Подробности и ограничения: [Mozilla Transport Engine](docs/architecture/MOZILLA-ENGINE.md).
 
 ## Быстрый старт из исходников
