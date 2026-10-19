@@ -112,6 +112,11 @@ func (p *identityPool) RoundTrip(r *http.Request) (*http.Response, error) {
 func (p *identityPool) roundTrip(r *http.Request, policy tlsidentity.Policy) (*http.Response, error) {
 	transport, err := p.forPolicy(r.URL.Scheme+"://"+r.URL.Host, policy)
 	if err != nil {
+		// RoundTripper owns closing request bodies, even when selecting the
+		// identity-specific transport fails before any network I/O.
+		if r.Body != nil {
+			_ = r.Body.Close()
+		}
 		return nil, err
 	}
 	if policy.SNI != "" && r.Method != http.MethodConnect {

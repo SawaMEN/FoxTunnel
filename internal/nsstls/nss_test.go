@@ -114,3 +114,34 @@ func TestNilTLSConfigRejectsWithoutPanic(t *testing.T) {
 		t.Fatalf("nil NSS dial TLS config accepted: %v", err)
 	}
 }
+
+func TestNSSHTTP2RejectsIncompatibleALPNAndTLSVersions(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		config *tls.Config
+	}{
+		{"http11", &tls.Config{NextProtos: []string{"http/1.1"}}},
+		{"mixed", &tls.Config{NextProtos: []string{"h2", "http/1.1"}}},
+		{"tls12only", &tls.Config{MaxVersion: tls.VersionTLS12}},
+		{"tls14minimum", &tls.Config{MinVersion: tls.VersionTLS13 + 1}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			transport, err := NewTransportWithProfiles(tc.config, "", "")
+			if err == nil {
+				if transport != nil {
+					transport.CloseIdleConnections()
+				}
+				t.Fatal("accepted incompatible NSS HTTP/2 TLS settings")
+			}
+		})
+	}
+}
+func TestNSSDialRejectsTLS12OnlyBeforeNetworkIO(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	conn, err := DialTLSContextWithProfile(ctx, "tcp", "127.0.0.1:1",
+		&tls.Config{MaxVersion: tls.VersionTLS12}, "")
+	if err == nil || conn != nil {
+		t.Fatalf("unsupported NSS 1.2-only connection accepted: %v", err)
+	}
+}

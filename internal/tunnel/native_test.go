@@ -321,3 +321,29 @@ func TestNativeBondedLanesGo(t *testing.T) {
 		t.Run(mode, func(t *testing.T) { testBondedSOCKSNativeLanes(t, "go", 8, true, mode, true) })
 	}
 }
+
+func TestPostTransportCONNECTWithNilHeaders(t *testing.T) {
+	var seen bool
+	downstream := fakeH2{round: func(r *http.Request) (*http.Response, error) {
+		seen = true
+		if r.Method != http.MethodPost || r.URL.Path != postPath ||
+			r.Header.Get(targetHeader) != "example.org:443" {
+			t.Fatalf("CONNECT POST rewrite failed: %v", r)
+		}
+		return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}, nil
+	}}
+	r, err := http.NewRequest(http.MethodConnect, "https://proxy.example", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Host = "example.org:443"
+	r.Header = nil
+	response, err := (postTransport{tlsTransport: downstream}).RoundTrip(r)
+	if err != nil || !seen || response == nil {
+		t.Fatalf("nil Header caused failed CONNECT: %v", err)
+	}
+	response.Body.Close()
+	if r.Header != nil {
+		t.Fatal("RoundTrip unexpectedly mutated source request")
+	}
+}

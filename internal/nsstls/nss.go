@@ -60,6 +60,15 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 	if config.VerifyPeerCertificate != nil {
 		return nil, i18n.Error("unsupported NSS certificate callback (use VerifyConnection)")
 	}
+	// This constructor returns an HTTP/2-only transport. HTTP/1.1 ALPN
+	// belongs to DialTLSContextWithProfile (WSS); advertising h1 here
+	// would send H2 frames over a negotiated h1 TLS connection.
+	if len(config.NextProtos) != 0 && (len(config.NextProtos) != 1 || config.NextProtos[0] != "h2") {
+		return nil, errors.New("NSS HTTP/2 transport requires h2 ALPN")
+	}
+	if config.MinVersion > tls.VersionTLS13 || (config.MaxVersion != 0 && config.MaxVersion < tls.VersionTLS13) {
+		return nil, errors.New("NSS HTTP/2 transport requires TLS 1.3 within the configured version range")
+	}
 	initOnce.Do(func() {
 		if code := C.ft_init(); code != 0 {
 			initError = fmt.Errorf(i18n.Text("NSS initialization failed: %d"), code)
@@ -362,6 +371,9 @@ func DialTLSContextWithProfile(ctx context.Context, network, addr string, config
 	}
 	if config.InsecureSkipVerify || config.VerifyPeerCertificate != nil {
 		return nil, i18n.Error("TLS verification cannot be disabled")
+	}
+	if config.MinVersion > tls.VersionTLS13 || (config.MaxVersion != 0 && config.MaxVersion < tls.VersionTLS13) {
+		return nil, errors.New("NSS TLS connection requires TLS 1.3 within the configured version range")
 	}
 	initOnce.Do(func() {
 		if code := C.ft_init(); code != 0 {

@@ -148,6 +148,9 @@ func (t postTransport) NetworkChanged() {
 func (t postTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	if r.Method == http.MethodConnect {
 		r = r.Clone(r.Context())
+		if r.Header == nil {
+			r.Header = make(http.Header)
+		}
 		u := *r.URL
 		u.Path = postPath
 		r.URL = &u
