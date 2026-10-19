@@ -11,7 +11,7 @@ import unittest
 class VPNFixtureTests(unittest.TestCase):
     def test_dual_stack_tcp_udp_and_dns(self):
         script = Path(__file__).with_name("test_linux_vpn_network.py")
-        proc = subprocess.Popen([sys.executable, str(script), "--fixture", "--dns-port", "1053"],
+        proc = subprocess.Popen([sys.executable, str(script), "--fixture", "--dns-port", "1053", "--loopback"],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         try:
             ready, _, _ = select.select([proc.stdout], [], [], 4)

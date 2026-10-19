@@ -24,7 +24,7 @@ V6 = "2606:4700:abcd::2"
 SCRIPT = str(Path(__file__).resolve())
 
 
-def fixture(dns_port=53):
+def fixture(dns_port=53, loopback=False):
     class TCP(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
         daemon_threads = True
@@ -74,11 +74,15 @@ def fixture(dns_port=53):
             answer = b"\xc0\x0c" + struct.pack("!HHIH", qtype, 1, 10, len(packed)) + packed
             sock.sendto(header + question + answer, self.client_address)
     servers = []
-    for cls, host in ((TCP, "0.0.0.0"), (TCP6, "::")):
+    v4, v6 = ("127.0.0.1", "::1") if loopback else ("8.8.8.8", V6)
+    dns4, dns6 = (v4, v6) if loopback else ("9.9.9.9", "2620:fe::fe")
+    for cls, host in ((TCP, v4), (TCP6, v6)):
         servers.append(cls((host, 18080), EchoTCP))
-    for cls, host in ((UDP, "0.0.0.0"), (UDP6, "::")):
+    # Bind the actual destination address. A wildcard UDP sendto reply would
+    # select the underlay's primary source, bypassing the original NAT tuple.
+    for cls, host, dns_host in ((UDP, v4, dns4), (UDP6, v6, dns6)):
         servers.append(cls((host, 18081), EchoUDP))
-        servers.append(cls((host, dns_port), DNS))
+        servers.append(cls((dns_host, dns_port), DNS))
     for server in servers:
         threading.Thread(target=server.serve_forever, daemon=True).start()
     print("ready", flush=True)
@@ -271,11 +275,12 @@ if __name__ == "__main__":
     parser.add_argument("--binary")
     parser.add_argument("--fixture", action="store_true")
     parser.add_argument("--dns-port", type=int, default=53)
+    parser.add_argument("--loopback", action="store_true")
     parser.add_argument("--probe", action="store_true")
     parser.add_argument("--blocked", action="store_true")
     args = parser.parse_args()
     if args.fixture:
-        fixture(args.dns_port)
+        fixture(args.dns_port, args.loopback)
     elif args.probe:
         probe(args.blocked)
     elif args.binary:
