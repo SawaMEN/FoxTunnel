@@ -179,7 +179,7 @@ func TestNSSVerifierHonorsTLSConfigTime(t *testing.T) {
 	roots.AddCert(server.Certificate())
 	config := &tls.Config{
 		RootCAs: roots,
-		Time: func() time.Time { return time.Unix(1, 0) },
+		Time:    func() time.Time { return time.Unix(1, 0) },
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
