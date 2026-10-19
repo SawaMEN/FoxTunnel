@@ -14,7 +14,7 @@
 | 4. Mozilla Neqo/H3 | Экспериментальный Linux amd64 backend с CA/SNI/SPKI и ограниченным H2 fallback; стандартный H3 — quic-go | [Neqo](../research/NEQO-INTEGRATION.md) |
 | 6. UDP — два режима | Одноразовый HTTPS POST v1 и opt-in постоянный поток v2 с мультиплексированием до 16 UDP-направлений; без TUN, системных маршрутов и мобильной миграции | [UDP](../architecture/UDP.md) |
 | 5. Управление доступом | Локальные пользователи, отзыв, ротация и квоты; нет распределённого управления | [Access](../reference/ACCESS.md) |
-| 7. Linux TUN (интеграция) | Генератор sing-box, IPv4/IPv6-маршруты, DNS через SOCKS5 и nftables guard; **5 из 7 задач полностью, шестая частично: namespace-проверка nft guard, не TUN end-to-end** | [Linux TUN](../guides/LINUX-TUN.md) |
+| 7. Linux TUN (интеграция) | Генератор sing-box, IPv4/IPv6-маршруты, DNS через SOCKS5 и nftables guard; **6 из 7 задач: пройдены изолированные TUN/sing-box/FoxTunnel TCP/UDP/DNS и nft guard; нативного TUN нет** | [Linux TUN](../guides/LINUX-TUN.md) |
 
 Для следующего этапа полевых проверок добавлен [воспроизводимый SOCKS5-стенд сравнения с VLESS](../research/TRANSPORT-COMPARISON.md) с JSON-отчётами и офлайн-тестами. **Реальных полевых замеров, полного Firefox-паритета и прироста производительности это не подтверждает.**
 
