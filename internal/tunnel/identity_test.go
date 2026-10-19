@@ -170,6 +170,7 @@ func TestIdentityPoolDoesNotApplyPrimarySNIToFallback(t *testing.T) {
 }
 
 type auditRequestBody struct{ closed atomic.Bool }
+
 func (b *auditRequestBody) Read([]byte) (int, error) { return 0, io.EOF }
 func (b *auditRequestBody) Close() error             { b.closed.Store(true); return nil }
 
