@@ -40,3 +40,5 @@
 Исходный код остаётся в `cmd/`, `internal/` и `foxtunnel.go` в корне; `examples/` содержит примеры SDK, `experiments/` — отдельные прототипы. `scripts/` отвечает за сборку и проверку релизов, `.github/workflows/` — за CI.
 
 Не переносите файлы Go-пакетов произвольно: тесты `*_test.go` должны оставаться рядом с кодом, а путь публичного SDK является частью API.
+
+- [Neqo HTTP3: клиент и H2 fallback](research/NEQO-INTEGRATION.md)

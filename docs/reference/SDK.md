@@ -37,3 +37,5 @@ setup, сброс дедлайна, закрытие клиента, лимит 
 (только NSS 3.130), отдельно `HTTP2ReceiveProfile: foxtunnel.HTTP2ReceiveFirefox158`.
 Профиль локальный, применяется до создания потоков, сохраняется в пулах идентичностей.
 [Измерения и ограничения](../research/MOZILLA-CLIENT-PROFILE.md).
+
+Экспериментально для Linux amd64 после [закреплённой сборки Neqo](../research/NEQO-INTEGRATION.md): `Transport: "h3-post", QUICBackend: "neqo", H3Fallback: "h2", QUICHandshakeTimeout: 2*time.Second`. `TLSBackend` — auto/nss; CA/ServerName/SPKIPin сохраняют прежний смысл. Эти поля не включают Neqo в обычных релизах и не меняют формат ссылок.

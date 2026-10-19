@@ -62,3 +62,5 @@ See [deployment, acknowledgements, limits and tests](../architecture/BONDING.en.
 No speed advantage or TSPU resistance is established.
 
 Priorities and acceptance criteria: [NEXT-STEPS.en.md](NEXT-STEPS.en.md).
+
+- [x] Opt-in native Neqo HTTP3 client on Linux amd64, pinned ABI/runtime, verified pre-request H2 fallback and actual QUIC loss/UDP-blackhole tests.

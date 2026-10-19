@@ -224,6 +224,15 @@ func main() {
 		padding := fs.Bool("padding", false, i18n.Text("require experimental initial-record padding (server must enable it)"))
 		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up (no external proxy)"))
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
+		quicBackend, h3Fallback := new(string), new(string)
+		quicTimeout := new(time.Duration)
+		*quicBackend = "quic-go"
+		*h3Fallback = "none"
+		if os.Args[1] == "client" {
+			fs.StringVar(quicBackend, "quic-backend", "quic-go", i18n.Text("QUIC client: quic-go or experimental neqo (h3-post only)"))
+			fs.StringVar(h3Fallback, "h3-fallback", "none", i18n.Text("Neqo handshake fallback: none or h2 (before sending a request)"))
+			fs.DurationVar(quicTimeout, "quic-handshake-timeout", 0, i18n.Text("Neqo handshake budget (default 2s; 100ms through 10s)"))
+		}
 		tlsProfile := new(string)
 		*tlsProfile = "default"
 		if os.Args[1] == "client" {
@@ -243,7 +252,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes":
+				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
 				default:
 					conflict = true
 				}
@@ -319,7 +328,11 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := client.SetTLSBackend(*tlsBackend); err != nil {
+		initialBackend := *tlsBackend
+		if *quicBackend == "neqo" && initialBackend == "nss" {
+			initialBackend = "auto"
+		}
+		if err := client.SetTLSBackend(initialBackend); err != nil {
 			log.Fatal(err)
 		}
 		if err := client.SetServerIdentity(*sni, *pin); err != nil {
@@ -327,6 +340,17 @@ func main() {
 		}
 		if err := client.SetTransport(*nativeTransport); err != nil {
 			log.Fatal(err)
+		}
+		if *h3Fallback != "none" && *h3Fallback != "h2" {
+			log.Fatal("--h3-fallback: none or h2")
+		}
+		if err := client.SetQUICBackend(*quicBackend, *h3Fallback == "h2", *quicTimeout); err != nil {
+			log.Fatal(err)
+		}
+		if *quicBackend == "neqo" && *tlsBackend == "nss" {
+			if err := client.SetTLSBackend("nss"); err != nil {
+				log.Fatal(err)
+			}
 		}
 		if err := client.SetTLSClientProfile(*tlsProfile); err != nil {
 			log.Fatal(err)

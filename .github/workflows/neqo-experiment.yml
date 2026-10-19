@@ -1,0 +1,62 @@
+name: Mozilla Neqo client experiment
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  neqo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install build tools and libclang
+        run: sudo apt-get update -qq && sudo apt-get install -y pkg-config libclang-dev gcc g++ binutils unzip
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt,clippy
+      - name: Build pinned bridge, runtime and license inventory
+        run: python3 scripts/build_neqo.py
+      - name: Rust format, clippy and ABI tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          cd rust/neqo-bridge
+          cargo fmt --all --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked --release
+      - name: Neqo interop, trust and UDP fallback with race detector
+        shell: bash
+        run: |
+          set -euo pipefail
+          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          go vet -tags nss,neqo ./...
+          go test -race -tags nss,neqo ./... -count=1 -timeout=180s
+          (cd integration/external && go test -race -tags nss,neqo ./... -count=1 -timeout=30s)
+          go test -race -tags nss,neqo ./internal/neqo ./internal/tunnel -run 'TestNeqo|TestQUIC|TestIndependentH3|TestBlockedUDP|TestALPNFailure|TestConcurrentDuplex|TestTrustBeforeCredentials|TestRealQUIC|TestPeerReset|TestMalformed' -count=3 -timeout=60s
+      - name: Verify explicit backend reporting
+        shell: bash
+        run: |
+          set -euo pipefail
+          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          go build -tags nss,neqo -o /tmp/foxtunnel-neqo ./cmd/foxtunnel
+          /tmp/foxtunnel-neqo version --json > /tmp/neqo-version.json
+          python3 - <<'PY'
+          import json
+          v=json.load(open('/tmp/neqo-version.json'))
+          assert v['neqo_version']=='0.33.0' and v['nss_version']=='3.130'
+          assert v['quic_backends']==['quic-go','neqo']
+          PY
+      - name: Retain provenance and dependency license inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: neqo-experiment-provenance
+          path: |
+            scripts/neqo.lock.json
+            rust/neqo-bridge/Cargo.lock
+            rust/neqo-bridge/target/foxtunnel-build/provenance.json
+            rust/neqo-bridge/target/foxtunnel-build/rust-dependencies.json
+            rust/neqo-bridge/target/foxtunnel-build/licenses/
+            rust/neqo-bridge/target/foxtunnel-build/mozilla-runtime/licenses/

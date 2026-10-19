@@ -239,3 +239,27 @@ func TestBondLanesRequiresBondAndIsLocal(t *testing.T) {
 		t.Fatal("local lane option accepted by share or credentials disclosed")
 	}
 }
+
+func TestQUICOptionsAreLocalAndAcceptImportedH3Link(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	share := helperCommand(ctx, "share", "--server", "https://example.org", "--transport", "h3-post", "--tls-backend", "auto")
+	share.Env = helperEnv(true)
+	output, err := share.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := helperCommand(ctx, "client", "--link-file", "-", "--quic-backend", "invalid", "--h3-fallback", "h2", "--quic-handshake-timeout", "150ms")
+	client.Env = helperEnv(false)
+	client.Stdin = strings.NewReader(strings.TrimSpace(string(output)))
+	rejected, err := client.CombinedOutput()
+	if err == nil || !strings.Contains(string(rejected), "QUIC backend") || strings.Contains(string(rejected), "example-only-password") {
+		t.Fatal("local options ignored, rejected as link settings, or secret disclosed", err, string(rejected))
+	}
+	share = helperCommand(ctx, "share", "--server", "https://example.org", "--quic-backend", "neqo")
+	share.Env = helperEnv(true)
+	rejected, err = share.CombinedOutput()
+	if err == nil || strings.Contains(string(rejected), "example-only-password") {
+		t.Fatal("local QUIC option exported or secret disclosed")
+	}
+}

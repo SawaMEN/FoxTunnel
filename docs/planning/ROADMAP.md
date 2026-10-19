@@ -61,3 +61,5 @@
 Это прототип: преимущество скорости и устойчивость к ТСПУ не доказаны.
 
 Приоритеты и критерии следующего этапа: [NEXT-STEPS.md](NEXT-STEPS.md).
+
+- [x] Нативный Neqo HTTP3-клиент Linux amd64 opt-in, pinned ABI/runtime, проверенный H2 fallback до запроса и настоящие QUIC loss/UDP blackhole-тесты.

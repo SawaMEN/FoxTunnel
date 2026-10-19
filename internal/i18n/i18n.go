@@ -35,6 +35,10 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
+	"QUIC client: quic-go or experimental neqo (h3-post only)":       "Клиент QUIC: quic-go или экспериментальный neqo (только h3-post)",
+	"Neqo handshake fallback: none or h2 (before sending a request)": "При недоступности Neqo: none или h2 (до отправки запроса)",
+	"Neqo handshake budget (default 2s; 100ms through 10s)":          "Срок рукопожатия Neqo (по умолчанию 2с; от 100мс до 10с)",
+
 	"TLS client profile: default or experimental firefox-158 (NSS 3.130)":  "Профиль TLS-клиента: default или экспериментальный firefox-158 (NSS 3.130)",
 	"unknown TLS client profile (choose default or firefox-158)":           "Неизвестный профиль TLS-клиента (выберите default или firefox-158)",
 	"TLS client profile requires NSS":                                      "Профиль TLS-клиента требует NSS",

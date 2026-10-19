@@ -1,7 +1,10 @@
 // Package buildinfo describes the executable contract consumed by integrations.
 package buildinfo
 
-import "runtime"
+import (
+	"github.com/SawaMEN/FoxTunnel/internal/neqo"
+	"runtime"
+)
 
 const ProtocolDraft = "foxtunnel-draft-0"
 
@@ -12,6 +15,9 @@ var Variant = ""
 var Dirty = "true"
 
 type Info struct {
+	QUICBackends      []string `json:"quic_backends"`
+	NeqoVersion       string   `json:"neqo_version,omitempty"`
+	NeqoRevision      string   `json:"neqo_revision,omitempty"`
 	NSSVersion        string   `json:"nss_version,omitempty"`
 	Schema            int      `json:"schema"`
 	Version           string   `json:"version"`
@@ -38,5 +44,11 @@ func Current() Info {
 	if NSSAvailable {
 		defaultBackend = "nss"
 	}
-	return Info{NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
+	quicBackends := []string{"quic-go"}
+	var neqoVersion, neqoRevision string
+	if neqo.Available {
+		quicBackends = append(quicBackends, "neqo")
+		neqoVersion, neqoRevision = neqo.Version, neqo.Revision
+	}
+	return Info{QUICBackends: quicBackends, NeqoVersion: neqoVersion, NeqoRevision: neqoRevision, NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
 }

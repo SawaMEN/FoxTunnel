@@ -65,3 +65,12 @@ available-bandwidth scheduling still require validation; this is not a field
 performance result. Neqo remains the separate fourth stage.
 
 Persistent channels require local `--bond-lanes` with `--bond`; RPC stays the default because throughput results are mixed.
+
+## Stage four: implemented experimental Neqo client
+
+The [native Neqo backend](../research/NEQO-INTEGRATION.en.md) uses pinned Rust/C
+ABI 1 and NSS 3.130 against the independent Go HTTP3 server. Linux amd64 opt-in,
+CA/SNI/pin before credentials, actual packet-loss/delay tests, UDP-blackhole budget,
+request-free H2 fallback, SOCKS/SDK and pinned CI are implemented. Default H3 stays
+quic-go; ordinary Linux NSS archives exclude Neqo. Browser fingerprint equivalence,
+arm64/other OS and sustained/native-sanitizer work remain follow-up validation.

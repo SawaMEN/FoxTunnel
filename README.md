@@ -241,3 +241,5 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 [Постоянные bond-каналы, объединение мелких записей и измерения](docs/research/DATA-PATH.md).
 
 Постоянные каналы включаются локально через `--bond-lanes` вместе с `--bond`; RPC остаётся по умолчанию из-за неоднозначных результатов скорости.
+
+[Neqo HTTP3: экспериментальный клиент и H2 fallback](docs/research/NEQO-INTEGRATION.md).

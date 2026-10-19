@@ -54,3 +54,5 @@ Experimental NSS preferences: `TLSClientProfile: foxtunnel.TLSClientFirefox158`
 (NSS 3.130 only), separately `HTTP2ReceiveProfile: foxtunnel.HTTP2ReceiveFirefox158`.
 The local profile is applied before streams and retained in identity pools.
 [Measurements and limits](../research/MOZILLA-CLIENT-PROFILE.en.md).
+
+Experimental Linux amd64: set `Transport: "h3-post", QUICBackend: "neqo", H3Fallback: "h2", QUICHandshakeTimeout: 2*time.Second` after the [pinned Neqo build](../research/NEQO-INTEGRATION.en.md). `TLSBackend` is auto/nss; CA/ServerName/SPKIPin keep their existing meanings. These options do not enable Neqo in ordinary releases or change connection-link encoding.

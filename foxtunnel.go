@@ -32,8 +32,11 @@ type ClientConfig struct {
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
-	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for H3); explicit go/nss allowed.
+	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for default H3); Neqo uses NSS.
 	Transport            string // Empty selects h2-connect.
+	QUICBackend          string // Empty/quic-go preserves the default; neqo is an opt-in build.
+	H3Fallback           string // Empty/none or h2; only before a Neqo HTTP request is created.
+	QUICHandshakeTimeout time.Duration
 	ServerName, SPKIPin  string
 	XHTTPPath, XHTTPHost string
 	HTTP2ReceiveProfile  string
@@ -75,7 +78,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if backend == "" {
 		backend = "auto"
 	}
-	if err = core.SetTLSBackend(backend); err != nil {
+	initialBackend := backend
+	if config.QUICBackend == "neqo" && backend == "nss" {
+		initialBackend = "auto"
+	}
+	if err = core.SetTLSBackend(initialBackend); err != nil {
 		return nil, err
 	}
 	if err = core.SetServerIdentity(config.ServerName, config.SPKIPin); err != nil {
@@ -83,6 +90,18 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 	if err = core.SetTransport(config.Transport); err != nil {
 		return nil, err
+	}
+	fallback := config.H3Fallback
+	if fallback != "" && fallback != "none" && fallback != "h2" {
+		return nil, errors.New("H3Fallback must be none or h2")
+	}
+	if err = core.SetQUICBackend(config.QUICBackend, fallback == "h2", config.QUICHandshakeTimeout); err != nil {
+		return nil, err
+	}
+	if config.QUICBackend == "neqo" && backend == "nss" {
+		if err = core.SetTLSBackend("nss"); err != nil {
+			return nil, err
+		}
 	}
 	if err = core.SetTLSClientProfile(config.TLSClientProfile); err != nil {
 		return nil, err

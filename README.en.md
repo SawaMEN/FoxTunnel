@@ -245,3 +245,5 @@ Links contain secrets. [Format and examples](docs/guides/CONNECTION-LINKS.en.md)
 [Persistent bond channels, small-write batching and measurements](docs/research/DATA-PATH.en.md).
 
 Persistent channels require local `--bond-lanes` with `--bond`; RPC stays the default because throughput results are mixed.
+
+[Neqo HTTP3: experimental client and H2 fallback](docs/research/NEQO-INTEGRATION.en.md).

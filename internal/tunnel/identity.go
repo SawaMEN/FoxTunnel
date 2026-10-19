@@ -26,6 +26,7 @@ type identityPool struct {
 	config           *tls.Config
 	backend          string
 	mode             string
+	quic             quicSettings
 	h2ReceiveProfile string
 	tlsClientProfile string
 	xhttpSettings    xhttp.Settings
@@ -80,7 +81,7 @@ func (p *identityPool) forPolicy(origin string, policy tlsidentity.Policy) (tlsT
 	// operators share ticket keys between servers using different certificates.
 	config.ClientSessionCache = tls.NewLRUClientSessionCache(8)
 	policy.Apply(config)
-	transport, err := makeNativeTransport(p.mode, p.backend, config, p.auth, p.xhttpSettings, p.h2ReceiveProfile, p.tlsClientProfile)
+	transport, err := makeNativeTransport(p.mode, p.backend, config, p.auth, p.xhttpSettings, p.h2ReceiveProfile, p.tlsClientProfile, p.quic)
 	if err != nil {
 		return nil, err
 	}

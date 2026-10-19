@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/neqo"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 	"github.com/coder/websocket"
@@ -47,7 +48,7 @@ func (c *Client) SetTransport(mode string) error {
 	return nil
 }
 
-func makeNativeTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings, receiveProfile, clientProfile string) (tlsTransport, error) {
+func makeNativeTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings, receiveProfile, clientProfile string, quic quicSettings) (tlsTransport, error) {
 	if err := nsstls.ValidateClientProfile(clientProfile); err != nil {
 		return nil, err
 	}
@@ -55,6 +56,9 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 		return nil, i18n.Error("TLS client profile requires NSS")
 	}
 
+	if quic.backend == "neqo" && mode != "h3-post" {
+		return nil, errors.New("Neqo requires h3-post")
+	}
 	if mode == "xhttp-stream-one" || mode == "xhttp-stream-up" || mode == "xhttp-packet-up" {
 		return newXHTTPTransport(mode, backend, config, auth, settings, receiveProfile, clientProfile)
 	}
@@ -65,6 +69,29 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 		return nil, xhttp.ErrSettings
 	}
 	if mode == "h3-post" {
+		if quic.backend == "neqo" {
+			if backend != "nss" || clientProfile != "" {
+				return nil, errors.New("Neqo requires NSS and cannot use the TCP Firefox TLS profile")
+			}
+			timeout := quic.timeout
+			if timeout == 0 {
+				timeout = 2 * time.Second
+			}
+			transport, err := neqo.NewTransport(neqo.Config{TLS: config, HandshakeTimeout: timeout})
+			if err != nil {
+				return nil, err
+			}
+			var selected tlsTransport = transport
+			if quic.fallback {
+				h2, err := makeTLStransport("nss", config, "", "")
+				if err != nil {
+					transport.CloseIdleConnections()
+					return nil, err
+				}
+				selected = &neqoFallbackTransport{h3: transport, h2: h2, until: make(map[string]time.Time)}
+			}
+			return postTransport{tlsTransport: selected, host: config.ServerName}, nil
+		}
 		if backend != "go" {
 			return nil, i18n.Error("HTTP/3 requires Go QUIC TLS; NSS cannot be selected")
 		}

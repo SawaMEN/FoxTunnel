@@ -12,7 +12,8 @@ INLINE_CODE = re.compile(r'\x60[^\x60\n]*\x60')
 
 def broken_links(root=ROOT):
     for document in sorted(root.rglob('*.md')):
-        if any(part in {'.git', 'dist', 'node_modules'} for part in document.parts):
+        if (any(part in {'.git', 'dist', 'node_modules'} for part in document.parts) or
+                document.is_relative_to(root / 'rust/neqo-bridge/target')):
             continue
         fence = None
         for line_number, line in enumerate(document.read_text(encoding='utf-8').splitlines(), 1):
