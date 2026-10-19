@@ -1,6 +1,6 @@
 # Mozilla NSS ClientHello experiment
 
-[Русский](README.md) · **English** · [Documentation](../../docs/README.en.md)
+[Русский](README.md) · **English** · [Documentation](../../docs/DEVELOPMENT.en.md)
 
 > **Scope:** Standalone NSS ClientHello probe for controlled fingerprint experiments.
 

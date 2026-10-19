@@ -1,6 +1,6 @@
 # FoxTunnel Neqo ABI 1
 
-[Documentation](../../docs/README.en.md) · [Neqo HTTP/3](../../docs/research/NEQO-INTEGRATION.en.md)
+[Documentation](../../docs/DEVELOPMENT.en.md) · [Neqo HTTP/3](../../docs/DEVELOPMENT.en.md)
 
 > **Opt-in Neqo HTTP/3 client (ABI 1).** Linux amd64 only, separate pinned Rust/NSS toolchain, CA/SNI/SPKI validation before HTTP credentials. Not in public archives.
 
@@ -17,7 +17,7 @@ CA/hostname/pin verification. There is no accepted HTTP request before that gate
 
 The C declarations and ownership contract are in
 [bridge.h](../../internal/neqo/bridge.h). [Full design, trust, queue limits and
-fallback rules](../../docs/research/NEQO-INTEGRATION.en.md).
+fallback rules](../../docs/DEVELOPMENT.en.md).
 
 `Cargo.lock` pins all dependencies. `rust-toolchain.toml` and
 `scripts/neqo.lock.json` pin compiler and Mozilla revisions. The build exports

@@ -1,6 +1,6 @@
 # Эксперимент захвата ClientHello Mozilla NSS
 
-**Русский** · [English](README.en.md) · [Документация](../../docs/README.md)
+**Русский** · [English](README.en.md) · [Документация](../../docs/DEVELOPMENT.md)
 
 > **Назначение:** Отдельный инструмент записи ClientHello NSS для контролируемых сравнений.
 

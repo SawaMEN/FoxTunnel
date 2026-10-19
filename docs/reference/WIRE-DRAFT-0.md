@@ -1,6 +1,6 @@
 # FoxTunnel wire draft 0
 
-[Каталог документации](../README.md) · [Совместимость и версии](COMPATIBILITY.md)
+[Каталог документации](../DEVELOPMENT.md) · [Совместимость и версии](../DEVELOPMENT.md)
 
 > **Статус:** экспериментальная спецификация формата обмена. Не является обещанием совместимости независимых реализаций или будущих версий.
 
@@ -13,7 +13,7 @@ contract; a build tag alone is not wire negotiation.
 This protocol/implementation is independent of any panel. A conforming peer may
 be implemented in another language. The initial interoperability scope is
 single-exit TCP streams. Discovery/bond/control extensions have separate existing
-[cluster](../architecture/CLUSTER.en.md) / [bond](../architecture/BONDING.en.md) documentation; they are not required
+[cluster](../FEATURES.en.md) / [bond](../FEATURES.en.md) documentation; they are not required
 for minimal stream peers. Test agreement between two uses of the reference SDK
 is not proof of independent implementation interoperability.
 
@@ -54,7 +54,7 @@ private/loopback/link-local destinations are denied unless explicitly enabled.
 WSS/XHTTP carry authenticated H2 CONNECT/POST session bytes, not VLESS; they do
 not invoke an Xray executable. Outer and inner authentication are both required.
 XHTTP HTTP Host may differ from dial endpoint/SNI; TLS identity is checked
-independently. [XHTTP.en.md](../architecture/XHTTP.en.md) specifies route/UUID/sequence parsing,
+independently. [XHTTP.en.md](../FEATURES.en.md) specifies route/UUID/sequence parsing,
 content types, headers, padding, bounded reservations and expiry. Client packet-up
 payloads are at most 32 KiB, four unacknowledged sequence positions; complete a
 POST body before starting the next. Server reserves at most eight packets, each
@@ -63,7 +63,7 @@ delivers exactly in order; duplicate/out-of-window/mixed-mode packets fail. ACK
 follows ordered delivery, not mere queuing. Missing/stalled bodies expire after
 30 seconds. Failed/ambiguous ACK closes the carrier without automatic HTTP replay.
 This is a FoxTunnel XHTTP-shaped subset; reference Xray interoperability/XMUX are
-not established. Existing [native transport notes](../architecture/NATIVE-TRANSPORTS.en.md) cover
+not established. Existing [native transport notes](../FEATURES.en.md) cover
 carrier details and limits.
 
 ## Optional initial-v1 padding
@@ -88,11 +88,11 @@ is inside encrypted transport and is not a Firefox traffic profile.
 
 ## Version and integration boundaries
 
-[Compatibility and first-tag acceptance](COMPATIBILITY.en.md) define version
+[Compatibility and first-tag acceptance](../DEVELOPMENT.en.md) define version
 pinning, incompatible-change requirements and offline archive verification.
 
-Standalone CLI/release artifacts: [DISTRIBUTION.en.md](DISTRIBUTION.en.md).
-Public Go embedding: [SDK.en.md](SDK.en.md). Binary metadata and release manifest
+Standalone CLI/release artifacts: [../DEVELOPMENT.en.md](../DEVELOPMENT.en.md).
+Public Go embedding: [../DEVELOPMENT.en.md](../DEVELOPMENT.en.md). Binary metadata and release manifest
 schema 1 are separate from this wire draft. Connection sharing, codec defaults,
 TLS backend, HPACK and scheduling can affect behavior without changing stream
 payload format; integrations must test their pinned implementation/transport.
