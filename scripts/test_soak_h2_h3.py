@@ -11,6 +11,16 @@ class Stage9Contracts(unittest.TestCase):
             with self.assertRaises(Exception):
                 soak.positive(invalid)
 
+    def test_ci_argument_contract(self):
+        args = soak.parser().parse_args([
+            "--binary", "foxtunnel", "--cert", "cert.pem",
+            "--key", "key.pem", "--out", "results.json",
+            "--seconds", "75", "--parallel", "3",
+            "--minimum-success", "98",
+        ])
+        self.assertEqual(args.minimum_success, 98)
+        self.assertEqual(args.parallel, 3)
+
     def test_summarize_healthy_samples(self):
         good = {"ok": True, "connect_ms": 12.0, "payload_mbps": 3.2}
         stats = soak.bench.summarize([good, good])

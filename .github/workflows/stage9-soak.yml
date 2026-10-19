@@ -54,7 +54,7 @@ jobs:
           python3 scripts/soak_h2_h3.py --binary "$work/foxtunnel" \
             --cert "$work/cert.pem" --key "$work/key.pem" \
             --seconds 75 --parallel 3 --bytes 131072 \
-            --recovery-seconds 100 --min-success 98 \
+            --recovery-seconds 100 --minimum-success 98 \
             --max-rss-mib 512 --max-growth-mib 192 --max-fds 512 \
             --out "$work/stage9-private.json"
           mkdir -p stage9-ci-output
