@@ -15,6 +15,7 @@ var Variant = ""
 var Dirty = "true"
 
 type Info struct {
+	TransportEngines  []string `json:"transport_engines"`
 	QUICBackends      []string `json:"quic_backends"`
 	NeqoVersion       string   `json:"neqo_version,omitempty"`
 	NeqoRevision      string   `json:"neqo_revision,omitempty"`
@@ -44,11 +45,15 @@ func Current() Info {
 	if NSSAvailable {
 		defaultBackend = "nss"
 	}
+	engines := []string{"legacy"}
+	if NSSAvailable {
+		engines = append(engines, "mozilla")
+	}
 	quicBackends := []string{"quic-go"}
 	var neqoVersion, neqoRevision string
 	if neqo.Available {
 		quicBackends = append(quicBackends, "neqo")
 		neqoVersion, neqoRevision = neqo.Version, neqo.Revision
 	}
-	return Info{QUICBackends: quicBackends, NeqoVersion: neqoVersion, NeqoRevision: neqoRevision, NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
+	return Info{TransportEngines: engines, QUICBackends: quicBackends, NeqoVersion: neqoVersion, NeqoRevision: neqoRevision, NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
 }

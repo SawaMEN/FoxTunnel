@@ -1,4 +1,4 @@
-# Unified Mozilla Transport Engine — Stage 1
+# Unified Mozilla Transport Engine — Stages 1–2
 
 Stage 1 is a **local client configuration/selection layer**, not a change to
 FoxTunnel's wire protocol, credential format, servers, or existing Go backends.
@@ -60,3 +60,39 @@ requires no migrations to connection links or server configurations.
 
 Stage 1 intentionally does not add or run tests. Changes must be validated
 before release.
+
+## Stage 2: standard Mozilla distribution flavor (build only)
+
+A separate \`linux/amd64/mozilla\` binary distribution can now be assembled
+directly by \`scripts/build_mozilla.py\`. Unlike regular \`nss\` archives, this
+variant is compiled with \`-tags nss,neqo,mozilla\` and therefore includes
+Go Core, real NSS TCP TLS, and the Neqo QUIC/H3 Rust static adapter together.
+
+The bundled NSS/NSPR/SQLite dynamic runtime is pinned to Firefox 158.0
+(NSS 3.130); Neqo 0.33.0, nss-rs, Rust 1.99.1 and the source revisions are
+locked in \`scripts/neqo.lock.json\` and Cargo.lock. A single application
+binary is provided alongside the pinned \`lib/\` directory: removing the
+shared libraries breaks TLS. No running sidecar is required.
+
+~~~sh
+# Linux amd64 prerequisites documented in scripts/build_neqo.py
+python3 scripts/build_mozilla.py --version v0.0.0-ci
+
+# After extracting the generated archive:
+./foxtunnel client --engine mozilla --server https://proxy.example
+~~~
+
+In GitHub Actions, run **Mozilla unified bundle (build only)** manually and
+select the \`update\` branch. It uploads an artifact containing the .tar.gz
+bundle and .metadata.json. This is **not a GitHub Release**. The existing
+\`release.yml\` still produces its original two NSS targets and keeps its
+existing versioned release checks. No tests were added or run as part of
+this stage. The build script links and inspects the binary but does not
+execute it. Check compatibility and perform security validation before
+shipping to end users.
+
+The archive includes \`build.json\`, \`mozilla-runtime.json\`,
+\`neqo-provenance.json\`, \`rust-dependencies.json\`, third-party notices,
+Go/Mozilla/Rust licenses, and per-asset SHA-256 in build.json.
+A hash stored *inside* an archive does not authenticate the artifact;
+obtain it from a trusted repository/CI run.

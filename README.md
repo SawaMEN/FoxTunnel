@@ -33,6 +33,10 @@ foxtunnel client --engine mozilla --link-file connection.txt
 
 Настройка также доступна через `foxtunnel.ClientConfig.Engine`.
 Старые клиенты и команды без флага сохраняют прежнее поведение.
+Для Linux amd64 добавлена **отдельная собираемая Mozilla-комплектация** с Go,
+NSS и Neqo; её сборка доступна через GitHub Actions `Mozilla unified bundle`
+или `python3 scripts/build_mozilla.py --version v0.0.0-ci`.
+Это пока артефакт сборки, **не опубликованный релиз**. Тесты на этом этапе не запускались.
 Подробности и ограничения: [Mozilla Transport Engine](docs/architecture/MOZILLA-ENGINE.md).
 
 ## Быстрый старт из исходников
