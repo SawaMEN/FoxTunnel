@@ -1,6 +1,8 @@
 # vetroff:// connection links
 
-[Русский](CONNECTION-LINKS.md) | **English**
+[Русский](CONNECTION-LINKS.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** vetroff:// format, safe credential exchange, SNI and optional pinning.
 
 `setup` generates complete server configuration and a link: [instructions](SETUP.en.md).
 Additional settings are --sni, --pin-sha256 and --encryption tls13, serialized

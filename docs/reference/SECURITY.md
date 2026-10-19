@@ -1,6 +1,8 @@
 # Свойства защиты и границы FoxTunnel
 
-**Русский** | [English](SECURITY.en.md)
+**Русский** · [English](SECURITY.en.md) · [Каталог](../README.md)
+
+> **Назначение:** Реальная модель угроз, TLS-проверки, ограничения и незащищённые сценарии.
 
 Это проверка конкретных механизмов прототипа, не внешний аудит и не заявление
 «не хуже любого VPN». Защита канала, обнаруживаемость и полнота VPN — разные
@@ -100,7 +102,7 @@ credential environment, присоединение/повторное добав
 также на намеренно ослабленной копии: без изоляции session cache он обнаруживает
 обход pin, с текущей реализацией проходит.
 
-См. [подготовку](../guides/SETUP.md), [Amnezia/TUIC](../research/AMNEZIA-TUIC-REVIEW.md)
+См. [подготовку](../guides/SETUP.md), [Amnezia/TUIC](../archive/reviews/AMNEZIA-TUIC-REVIEW.md)
 и [формат ссылок](../guides/CONNECTION-LINKS.md).
 Криптографическая основа: [TLS 1.3, RFC 8446](https://www.rfc-editor.org/rfc/rfc8446.html).
 

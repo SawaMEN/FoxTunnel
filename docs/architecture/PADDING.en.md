@@ -1,6 +1,8 @@
-[Русский](PADDING.md) | **English**
-
 # Experimental initial-v1 padding
+
+[Русский](PADDING.md) · **English** · [Docs](../README.en.md) · [Roadmap](../planning/ROADMAP.en.md)
+
+> **Scope:** Optional initial padding, negotiation and resource limits.
 
 This opt-in experiment addresses recognizable initial application-data lengths
 inside TLS tunnels. It is inspired by NaiveProxy's bounded initial-padding

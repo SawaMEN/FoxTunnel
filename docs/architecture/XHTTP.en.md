@@ -1,6 +1,8 @@
 # XHTTP and Mozilla NSS
 
-[Русский](XHTTP.md) | **English**
+[Русский](XHTTP.md) · **English** · [Docs](../README.en.md) · [Roadmap](../planning/ROADMAP.en.md)
+
+> **Scope:** XHTTP modes, routes, Host/SNI separation and TLS settings.
 
 FoxTunnel includes independent `xhttp-stream-one`, `xhttp-stream-up` and
 `xhttp-packet-up` carriers. No Xray executable or code dependency is required. Mozilla NSS can

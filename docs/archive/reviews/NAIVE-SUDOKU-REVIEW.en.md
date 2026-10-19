@@ -1,5 +1,7 @@
 [Русский](NAIVE-SUDOKU-REVIEW.md) | **English**
 
+> **Archived comparison.** Kept for historical research; versions and claims may be outdated. For current features read the [documentation](../../README.en.md).
+
 # NaiveProxy and Sudoku: limitations and transferable design
 
 ## Scope and pinned sources
@@ -74,5 +76,5 @@ future source reuse; architectural learning here does not import its code.
    repeatable observations on affected Russian networks. No current local test
    predicts TSPU resistance.
 
-See [endpoint configuration](../guides/ENDPOINTS.en.md), [transport strategy](../architecture/TRANSPORT-STRATEGY.en.md)
-and [measurement methodology](PERFORMANCE.en.md).
+See [endpoint configuration](../../guides/ENDPOINTS.en.md), [transport strategy](../../architecture/TRANSPORT-STRATEGY.en.md)
+and [measurement methodology](../../research/PERFORMANCE.en.md).

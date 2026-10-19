@@ -1,5 +1,7 @@
 # Six protocols: source review and decisions for FoxTunnel
 
+> **Archived comparison.** Kept for historical research; versions and claims may be outdated. For current features read the [documentation](../../README.en.md).
+
 [Русский](SIX-PROTOCOL-AUDIT.md) | **English**
 
 Reviewed October 18, 2026. FoxTunnel baseline:
@@ -117,6 +119,6 @@ Compare fixed modes before automatic selection, using identical servers and
 versioned configurations. Test latency, loss, bandwidth caps, UDP blocking,
 then multiple Russian networks. Measure connection/data success, recovery
 time, goodput, p95 latency, wire overhead, CPU and memory. Existing local
-[performance measurements](PERFORMANCE.en.md) do not rank protocols in Russia.
+[performance measurements](../../research/PERFORMANCE.en.md) do not rank protocols in Russia.
 This documentation commit does not implement the proposed transports or
 remaining work.

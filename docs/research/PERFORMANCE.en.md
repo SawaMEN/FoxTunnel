@@ -1,6 +1,8 @@
-[Русский](PERFORMANCE.md) | **English**
-
 # Performance and network validation
+
+[Русский](PERFORMANCE.md) · **English** · [Research](README.en.md) · [Raw measurements](../measurements/README.en.md)
+
+> **Scope:** Benchmark methodology and recorded experiments; localhost metrics are not field-network performance.
 
 ## What this milestone changes
 

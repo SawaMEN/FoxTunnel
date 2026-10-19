@@ -1,5 +1,9 @@
 # Experimental multi-node stream bonding
 
+[Русский](BONDING.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Persistent channels, recovery, operating modes and resource limits.
+
 For one-address links with coordinator-issued topology and capacity weights,
 see [main-node cluster management](CLUSTER.en.md). Explicit-node setup remains supported.
 

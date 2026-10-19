@@ -1,5 +1,9 @@
 # FoxTunnel wire draft 0
 
+[Каталог документации](../README.md) · [Совместимость и версии](COMPATIBILITY.md)
+
+> **Статус:** экспериментальная спецификация формата обмена. Не является обещанием совместимости независимых реализаций или будущих версий.
+
 Status: experimental description of the current implementation, not a final RFC.
 Identifier: `foxtunnel-draft-0` in binary/package metadata. The current wire does
 **not** carry an invented version header: deployments must pin compatible releases.

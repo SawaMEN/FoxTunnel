@@ -1,6 +1,8 @@
-[Русский](TRANSPORT-STRATEGY.md) | **English**
-
 # Firefox transport strategy
+
+[Русский](TRANSPORT-STRATEGY.md) · **English** · [Docs](../README.en.md) · [Roadmap](../planning/ROADMAP.en.md)
+
+> **Scope:** Transport selection and limitations; hypotheses are distinct from measured results.
 
 The target is a measured, fast Mozilla-based HTTPS tunnel with optional
 alternative carriers. No protocol can promise invisibility to all classifiers,
@@ -19,7 +21,7 @@ not a list of implemented features.
 | WebTunnel / Outline SDK | Real HTTPS frontends and modular carrier interfaces | Reference designs for frontend tests and stream/packet separation. Not integrated. |
 | DNSTT | End-to-end security through recursive DNS and transport/session separation | Optional explicit emergency carrier requiring domain delegation and server identity verification. Not a fast primary carrier, not automatic plaintext DNS fallback. Not implemented. |
 
-See the [AmneziaWG and additional-project review](../research/PROTOCOL-REVIEW-2026-10-18.en.md)
+See the [AmneziaWG and additional-project review](../archive/reviews/PROTOCOL-REVIEW-2026-10-18.en.md)
 for verified version identifiers, sources, transfer decisions and limits.
 
 ## Layer boundaries
@@ -76,7 +78,7 @@ source is not copied into FoxTunnel. Check licenses before any code reuse.
 Trusted multi-origin setup failover, round-robin and least-active scheduling
 are implemented for both TLS backends, with bounded network-failure cooldown.
 See [configuration and limits](../guides/ENDPOINTS.en.md) and the
-[NaiveProxy/Sudoku review](../research/NAIVE-SUDOKU-REVIEW.en.md).
+[NaiveProxy/Sudoku review](../archive/reviews/NAIVE-SUDOKU-REVIEW.en.md).
 HTTP/3, bandwidth-aware scheduling, warm pools and Firefox fingerprint parity
 remain experiments rather than delivered features.
 

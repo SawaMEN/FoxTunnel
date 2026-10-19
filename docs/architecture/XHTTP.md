@@ -1,6 +1,8 @@
 # XHTTP и Mozilla NSS
 
-**Русский** | [English](XHTTP.en.md)
+**Русский** · [English](XHTTP.en.md) · [Каталог](../README.md) · [План](../planning/ROADMAP.md)
+
+> **Назначение:** Режимы XHTTP, маршруты, Host/SNI и независимые настройки TLS.
 
 Встроенный транспорт не запускает Xray и не импортирует его код. На клиенте
 можно выбрать TLS Mozilla NSS; HTTP/2 при этом реализован Go. Использование NSS

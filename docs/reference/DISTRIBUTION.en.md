@@ -1,6 +1,8 @@
 # Standalone versioned distribution
 
-[Русский](DISTRIBUTION.md) | **English**
+[Русский](DISTRIBUTION.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Release targets, archive contents, provenance and offline verification.
 
 FoxTunnel is an independent executable/protocol implementation. A panel such as
 3x-ui, a desktop client or another language can download and supervise the same

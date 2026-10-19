@@ -1,5 +1,7 @@
 # Amnezia, AmneziaWG and TUIC v5: source review
 
+> **Archived comparison.** Kept for historical research; versions and claims may be outdated. For current features read the [documentation](../../README.en.md).
+
 [Русский](AMNEZIA-TUIC-REVIEW.md) | **English**
 
 Reviewed October 18, 2026: selected sources/specification, without running
@@ -53,4 +55,4 @@ fingerprint parity and needs another carrier when UDP is blocked.
 SNI/SPKI/tls13 link fields, per-ingress policies, additive CA/name/pin checks in
 Go/NSS, isolated identity pools/ticket caches, setup/join/registration/config-file
 commands, pre-handshake socket limits and public-site confinement. No external
-protocol source was copied. See [security matrix](../reference/SECURITY.en.md) and [setup](../guides/SETUP.en.md).
+protocol source was copied. See [security matrix](../../reference/SECURITY.en.md) and [setup](../../guides/SETUP.en.md).

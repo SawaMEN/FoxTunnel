@@ -1,6 +1,8 @@
 # Measuring browser resemblance
 
-[Русский](WEB-PROFILE.md) | **English**
+[Русский](WEB-PROFILE.md) · **English** · [Research](README.en.md) · [Evidence](../measurements/README.en.md)
+
+> **Scope:** Observed ClientHello and HTTP/2 comparisons with Firefox.
 
 FoxTunnel is not yet indistinguishable from browsing. The goal is to measure
 observable differences before changing TLS, HTTP/2, connection reuse or pacing.

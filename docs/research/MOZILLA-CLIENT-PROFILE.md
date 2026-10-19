@@ -1,6 +1,8 @@
 # Второй этап: измеримый профиль Mozilla TLS/H2
 
-**Русский** | [English и команды воспроизведения](MOZILLA-CLIENT-PROFILE.en.md)
+**Русский** · [English](MOZILLA-CLIENT-PROFILE.en.md) · [Исследования](README.md) · [Измерения](../measurements/README.md)
+
+> **Назначение:** Экспериментальные профили TLS/H2 NSS и зафиксированные расхождения Firefox.
 
 База — main `31001ff`, NSS 3.130 из закреплённого Firefox 158.0, Go 1.26.9,
 Linux amd64. NSS остаётся стандартным TLS backend, профиль ниже включается явно.

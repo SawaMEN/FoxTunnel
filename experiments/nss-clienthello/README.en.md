@@ -1,6 +1,8 @@
-[Русский](README.md) | **English**
-
 # Mozilla NSS ClientHello experiment
+
+[Русский](README.md) · **English** · [Documentation](../../docs/README.en.md)
+
+> **Scope:** Standalone NSS ClientHello probe for controlled fingerprint experiments.
 
 This is a **capture-only**, standalone C program linked against Mozilla NSS/NSPR.
 It connects **only to `127.0.0.1`**, emits an NSS ClientHello (TLS 1.3,
