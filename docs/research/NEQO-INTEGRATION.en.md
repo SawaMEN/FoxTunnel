@@ -1,6 +1,8 @@
 # Neqo / HTTP3: experimental native client
 
-[Русский](NEQO-INTEGRATION.md) | **English**
+[Русский](NEQO-INTEGRATION.md) · **English** · [Research](README.en.md) · [Roadmap](../planning/ROADMAP.en.md)
+
+> **Scope:** Opt-in Mozilla Neqo HTTP/3 client: pinned build, TLS trust policy, limits, interoperability and fallback. The UDP-only probe uses a different ABI.
 
 Stage four adds Mozilla Neqo 0.33.0 through a Rust static library and C ABI 1.
 The first tested target is **Linux amd64**. The server remains the independent

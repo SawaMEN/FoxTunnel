@@ -1,6 +1,8 @@
 # Neqo / HTTP3: экспериментальный клиент
 
-**Русский** | [English](NEQO-INTEGRATION.en.md)
+**Русский** · [English](NEQO-INTEGRATION.en.md) · [Исследования](README.md) · [План](../planning/ROADMAP.md)
+
+> **Назначение:** Opt-in клиент Mozilla Neqo HTTP/3: сборка, проверка CA/SNI/SPKI, лимиты, интероперабельность и fallback. Отдельный UDP-пробник использует другой ABI.
 
 Четвёртый этап добавляет настоящий Mozilla Neqo 0.33.0 через Rust staticlib и
 версионированный C ABI 1. Первый проверяемый target — **Linux amd64**. Сервер

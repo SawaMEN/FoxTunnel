@@ -1,6 +1,8 @@
 # Stage two: measured Mozilla TLS/H2 preferences
 
-[Русский](MOZILLA-CLIENT-PROFILE.md) | **English**
+[Русский](MOZILLA-CLIENT-PROFILE.md) · **English** · [Research](README.en.md) · [Evidence](../measurements/README.en.md)
+
+> **Scope:** Experimental NSS TLS/H2 preferences and documented Firefox gaps.
 
 Baseline: main `31001ff`, pinned Firefox 158.0 / NSS 3.130, Go 1.26.9, Linux amd64.
 NSS remains the default backend; this additional profile is opt-in. Releases

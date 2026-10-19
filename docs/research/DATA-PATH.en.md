@@ -1,6 +1,8 @@
 # Stage three: bounded persistent bond channels
 
-[Русский](DATA-PATH.md) | **English**
+[Русский](DATA-PATH.md) · **English** · [Research](README.en.md) · [Measured data](../measurements/README.en.md)
+
+> **Scope:** Data-path tuning, bounded bond lanes, test fixtures and performance limitations.
 
 Built on the stage-two Mozilla profile branch (PR #13), without changing its TLS
 policy or release targets. Linux amd64/arm64 NSS remains the published matrix.
