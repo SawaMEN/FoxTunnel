@@ -94,8 +94,8 @@ func TestAdaptiveBondColdStartRotatesRealBlocks(t *testing.T) {
 func TestAdaptiveBondSmallOrFailedPayloadIsNotThroughput(t *testing.T) {
 	c := adaptiveTestClient()
 	for _, tc := range []struct {
-		size int
-		failed bool
+		size    int
+		failed  bool
 		elapsed time.Duration
 	}{
 		{500, false, 50 * time.Millisecond},
@@ -182,7 +182,6 @@ func TestAdaptiveBondRecordsAckedUploadOnly(t *testing.T) {
 		t.Fatalf("successful ACK did not record one upload sample: %+v", metrics)
 	}
 }
-
 
 func TestAdaptiveBondReplayDoesNotInflateGoodput(t *testing.T) {
 	c := adaptiveTestClient()

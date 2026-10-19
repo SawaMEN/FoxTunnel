@@ -57,13 +57,13 @@ type Client struct {
 	// RouteMode is empty (legacy bond) or smart (direct hub vs one trusted relay).
 	RouteMode string
 	// DirectOrigin is the verified coordinator origin in smart mode.
-	DirectOrigin  string
-	mu            sync.Mutex
-	qualityEpoch  uint64
-	paths         []pathState
-	routeMetrics  []multihop.Measurement
-	routeState    multihop.State
-	next          uint64
+	DirectOrigin string
+	mu           sync.Mutex
+	qualityEpoch uint64
+	paths        []pathState
+	routeMetrics []multihop.Measurement
+	routeState   multihop.State
+	next         uint64
 }
 
 func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
@@ -318,7 +318,9 @@ func (c *Client) requestVia(ctx context.Context, transport http.RoundTripper, to
 		// A failed authorization/protocol response is not a successful route
 		// measurement even when its HTTP round-trip itself succeeded.
 		invalidReply := c.RouteMode == "smart" && err == nil && status != 200 && status != 201 && status != 204
-		if invalidReply { measured = 0 }
+		if invalidReply {
+			measured = 0
+		}
 		accepted := err == nil && !retry && !invalidReply
 		delivered := 0
 		if accepted && attemptNumber == 0 && op == opWrite && status == http.StatusOK {

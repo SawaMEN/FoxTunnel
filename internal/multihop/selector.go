@@ -8,34 +8,34 @@ import (
 )
 
 const (
-	MinSamples = 3
+	MinSamples   = 3
 	MaxSampleAge = 2 * time.Minute
-	MinDwell = 30 * time.Second
+	MinDwell     = 30 * time.Second
 	ExploreEvery = 6
 )
 
 // Measurement is a per-ingress observation of complete bond operations.
 // The elapsed duration includes the entire relay-to-hub leg, if any.
 type Measurement struct {
-	Samples uint64
-	LatencyMS float64
-	JitterMS float64
-	FailurePct float64
+	Samples     uint64
+	LatencyMS   float64
+	JitterMS    float64
+	FailurePct  float64
 	LastSuccess time.Time
 }
 
 type Candidate struct {
-	ID string
-	Direct bool
-	Tried bool
-	Active int
+	ID      string
+	Direct  bool
+	Tried   bool
+	Active  int
 	RetryAt time.Time
 	Quality Measurement
 }
 
 type State struct {
 	Preferred string
-	Since time.Time
+	Since     time.Time
 	Decisions uint64
 }
 
@@ -137,7 +137,7 @@ func chooseUnknown(candidates []Candidate, unknown []int, decisions uint64) int 
 			}
 		}
 	}
-	start := int((decisions/ExploreEvery) % uint64(len(unknown)))
+	start := int((decisions / ExploreEvery) % uint64(len(unknown)))
 	best := unknown[start]
 	for _, i := range unknown {
 		if decisions%ExploreEvery == 0 && candidates[best].Direct && !candidates[i].Direct {
@@ -157,21 +157,21 @@ func chooseUnknown(candidates []Candidate, unknown []int, decisions uint64) int 
 func Update(m Measurement, elapsed time.Duration, failed bool, now time.Time) Measurement {
 	if failed {
 		// Clamp a bounded moving estimate; failed requests must not invent RTT.
-		m.FailurePct += (100-m.FailurePct)/8
+		m.FailurePct += (100 - m.FailurePct) / 8
 		return m
 	}
 	if elapsed <= 0 {
 		return m
 	}
-	ms := float64(elapsed)/float64(time.Millisecond)
+	ms := float64(elapsed) / float64(time.Millisecond)
 	if m.Samples == 0 {
 		m.LatencyMS = ms
 	} else {
-		delta := math.Abs(ms-m.LatencyMS)
-		m.JitterMS += (delta-m.JitterMS)/8
-		m.LatencyMS += (ms-m.LatencyMS)/8
+		delta := math.Abs(ms - m.LatencyMS)
+		m.JitterMS += (delta - m.JitterMS) / 8
+		m.LatencyMS += (ms - m.LatencyMS) / 8
 	}
-	m.FailurePct *= 7.0/8.0
+	m.FailurePct *= 7.0 / 8.0
 	m.Samples++
 	m.LastSuccess = now
 	return m

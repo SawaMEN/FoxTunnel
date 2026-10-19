@@ -67,11 +67,11 @@ type Client struct {
 	// BondPipeline is 0 (automatic), 4 or 8; set before EnableBond.
 	BondPipeline int
 	// BondLanes is an experimental local opt-in; set before enabling bond.
-	BondLanes        bool
+	BondLanes bool
 	// BondAdaptive opts into measured ACKed block throughput scheduling.
-	BondAdaptive     bool
+	BondAdaptive bool
 	// BondAutoTune opts into bounded 4/8-slot tuning from measured throughput.
-	BondAutoTune     bool
+	BondAutoTune bool
 	// BondRoute: legacy (default) or smart (discovered direct hub + relay).
 	BondRoute        string
 	bondClient       *bond.Client
@@ -218,7 +218,9 @@ func (c *Client) NotifyNetworkChange() {
 		c.bondDiscovery.mu.Lock()
 		current := c.bondDiscovery.current
 		c.bondDiscovery.mu.Unlock()
-		if current != nil { current.ResetRouteQuality() }
+		if current != nil {
+			current.ResetRouteQuality()
+		}
 	}
 	if pool, ok := c.transport.(*identityPool); ok {
 		pool.NetworkChanged()

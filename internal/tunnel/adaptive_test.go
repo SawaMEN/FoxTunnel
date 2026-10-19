@@ -94,7 +94,6 @@ func TestAdaptiveModeValidation(t *testing.T) {
 	}
 }
 
-
 func TestAdaptiveBondCombinationRejectedInCore(t *testing.T) {
 	c, err := NewClient("https://a.example", "alice", "secret", "")
 	if err != nil {

@@ -259,10 +259,10 @@ func (c *Client) reserveEndpoint(tried []bool) (int, func()) {
 		candidates := make([]nodeperf.Candidate, len(tried))
 		for i := range tried {
 			candidates[i] = nodeperf.Candidate{
-				Origin: endpoints[i].Scheme + "://" + endpoints[i].Host,
-				Active: c.activeEndpoints[i],
+				Origin:  endpoints[i].Scheme + "://" + endpoints[i].Host,
+				Active:  c.activeEndpoints[i],
 				RetryAt: c.endpointRetryAt[i],
-				Tried: tried[i],
+				Tried:   tried[i],
 			}
 		}
 		selected, next := nodeperf.Select(candidates, c.nodeMetrics.Snapshot(), c.adaptiveState, time.Now())

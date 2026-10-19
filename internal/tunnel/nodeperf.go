@@ -45,7 +45,7 @@ func monitoredRoundTrip(m *nodeperf.Monitor, base tlsTransport, r *http.Request)
 		req = r.Clone(r.Context())
 		req.Body = &meteredBody{
 			ReadCloser: r.Body,
-			onRead: func(n int) { m.Transfer(origin, n, 0) },
+			onRead:     func(n int) { m.Transfer(origin, n, 0) },
 		}
 	}
 	started := time.Now()
@@ -61,8 +61,8 @@ func monitoredRoundTrip(m *nodeperf.Monitor, base tlsTransport, r *http.Request)
 	}
 	resp.Body = &meteredBody{
 		ReadCloser: resp.Body,
-		onRead: func(n int) { m.Transfer(origin, 0, n) },
-		onClose: func() { m.End(origin) },
+		onRead:     func(n int) { m.Transfer(origin, 0, n) },
+		onClose:    func() { m.End(origin) },
 	}
 	return resp, nil
 }

@@ -161,7 +161,6 @@ func TestXHTTPRouteProfile(t *testing.T) {
 	}
 }
 
-
 func TestAdaptiveLinkRoundTrip(t *testing.T) {
 	c := Config{Version: 1, Servers: []string{"https://edge-a.example", "https://edge-b.example"}, Username: "alice", Password: "secret", Balance: "adaptive"}
 	link, err := Encode(c)
