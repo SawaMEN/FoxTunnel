@@ -69,6 +69,9 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 	if config.MinVersion > tls.VersionTLS13 || (config.MaxVersion != 0 && config.MaxVersion < tls.VersionTLS13) {
 		return nil, errors.New("NSS HTTP/2 transport requires TLS 1.3 within the configured version range")
 	}
+	if len(config.Certificates) > 0 || config.GetClientCertificate != nil {
+		return nil, errors.New("NSS adapter does not support TLS client certificates")
+	}
 	initOnce.Do(func() {
 		if code := C.ft_init(); code != 0 {
 			initError = fmt.Errorf(i18n.Text("NSS initialization failed: %d"), code)
@@ -374,6 +377,9 @@ func DialTLSContextWithProfile(ctx context.Context, network, addr string, config
 	}
 	if config.MinVersion > tls.VersionTLS13 || (config.MaxVersion != 0 && config.MaxVersion < tls.VersionTLS13) {
 		return nil, errors.New("NSS TLS connection requires TLS 1.3 within the configured version range")
+	}
+	if len(config.Certificates) > 0 || config.GetClientCertificate != nil {
+		return nil, errors.New("NSS adapter does not support TLS client certificates")
 	}
 	initOnce.Do(func() {
 		if code := C.ft_init(); code != 0 {

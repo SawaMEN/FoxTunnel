@@ -145,3 +145,27 @@ func TestNSSDialRejectsTLS12OnlyBeforeNetworkIO(t *testing.T) {
 		t.Fatalf("unsupported NSS 1.2-only connection accepted: %v", err)
 	}
 }
+
+func TestNSSRejectsUnsupportedMutualTLSConfiguration(t *testing.T) {
+	configs := []*tls.Config{
+		{Certificates: []tls.Certificate{{Certificate: [][]byte{[]byte("test")}}}},
+		{GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			return &tls.Certificate{}, nil
+		}},
+	}
+	for _, config := range configs {
+		transport, err := NewTransportWithProfiles(config, "", "")
+		if err == nil {
+			if transport != nil {
+				transport.CloseIdleConnections()
+			}
+			t.Fatal("NSS accepted ignored client certificate policy")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		conn, err := DialTLSContextWithProfile(ctx, "tcp", "127.0.0.1:1", config, "")
+		cancel()
+		if err == nil || conn != nil {
+			t.Fatal("NSS direct dial accepted unsupported mTLS client certificate")
+		}
+	}
+}
