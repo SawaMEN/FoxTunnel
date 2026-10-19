@@ -1,6 +1,8 @@
 # Experimental HTTP/2 receive profile
 
-[Русский](H2-RECEIVE-PROFILE.md) | **English**
+[Русский](H2-RECEIVE-PROFILE.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Actual HTTP/2 receive settings and Firefox-parity limits.
 
 `--h2-receive-profile firefox-158` configures three measured receive parameters
 from the [Firefox 158 Linux baseline](../research/WEB-PROFILE.en.md). This is a partial H2

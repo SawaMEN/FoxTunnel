@@ -1,6 +1,8 @@
 # Экспериментальный профиль приёма HTTP/2
 
-**Русский** | [English](H2-RECEIVE-PROFILE.en.md)
+**Русский** · [English](H2-RECEIVE-PROFILE.en.md) · [Каталог](../README.md)
+
+> **Назначение:** Реальные настройки приёма HTTP/2 и ограничения сходства с Firefox.
 
 Добавлен `--h2-receive-profile firefox-158`: реальные окна HTTP/2 и таблица
 декодирования HPACK настраиваются по [живому замеру Firefox 158](../research/WEB-PROFILE.md).

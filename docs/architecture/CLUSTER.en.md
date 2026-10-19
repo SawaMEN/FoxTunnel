@@ -1,6 +1,8 @@
 # Main node and one connection link
 
-[Русский](CLUSTER.md) | **English**
+[Русский](CLUSTER.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Ingress nodes, trust policy, discovery and common exit.
 
 The main node publishes the cluster topology and acts as the common exit,
 assembling ingress blocks into one destination TCP socket. A `vetroff://` link

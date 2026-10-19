@@ -1,6 +1,8 @@
 # Simple main-node and ingress preparation
 
-[Русский](SETUP.md) | **English**
+[Русский](SETUP.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Main node setup, configuration generation, ingress registration and client connection.
 
 `setup` generates a random 256-bit access secret, server configuration, public
 node descriptor and a `vetroff://` link carrying SNI, TLS 1.3 and an SPKI pin.
