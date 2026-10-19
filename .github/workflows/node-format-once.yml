@@ -1,0 +1,34 @@
+name: Format node integration branch (one-shot)
+
+on:
+  push:
+    branches: [node-main-integration]
+
+permissions:
+  contents: write
+
+jobs:
+  gofmt:
+    if: github.repository == 'SawaMEN/FoxTunnel' && github.ref == 'refs/heads/node-main-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+          cache: true
+      - name: Format node routing code only
+        shell: bash
+        run: |
+          set -euo pipefail
+          gofmt -w             internal/bond/client.go internal/bond/adaptive.go internal/bond/adaptive_test.go             internal/bond/autotune.go internal/bond/autotune_test.go             internal/bond/benchmark_node_test.go internal/bond/smart_route_test.go             internal/nodeperf internal/multihop internal/profile/uri.go internal/profile/uri_test.go             internal/tunnel/client.go internal/tunnel/identity.go internal/tunnel/setup.go             internal/tunnel/cluster.go internal/tunnel/bond.go internal/tunnel/nodeperf.go             internal/tunnel/nodeperf_test.go internal/tunnel/adaptive_test.go             internal/tunnel/smart_bond_test.go cmd/foxtunnel/main.go foxtunnel.go
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add cmd/foxtunnel/main.go foxtunnel.go internal/bond internal/nodeperf internal/multihop internal/profile/uri.go internal/profile/uri_test.go internal/tunnel
+            git commit -m 'style(node): gofmt integration files against current main'
+            git push origin HEAD:node-main-integration
+          fi
