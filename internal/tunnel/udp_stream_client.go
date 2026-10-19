@@ -76,7 +76,9 @@ func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socke
 	defer stream.close()
 
 	peerIP, ok := netip.AddrFromSlice(peer.IP)
-	if !ok { return }
+	if !ok {
+		return
+	}
 	peerIP = peerIP.Unmap()
 	var source atomic.Pointer[net.UDPAddr]
 	downloadDone := make(chan struct{})
@@ -89,7 +91,9 @@ func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socke
 				return
 			}
 			dst := source.Load()
-			if dst == nil || ctx.Err() != nil { continue }
+			if dst == nil || ctx.Err() != nil {
+				continue
+			}
 			_ = socket.SetWriteDeadline(time.Now().Add(2 * time.Second))
 			if _, err := socket.WriteToUDP(wire, dst); err != nil {
 				cancel()
@@ -107,17 +111,25 @@ func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socke
 	buf := make([]byte, udpproto.MaxDatagram+1)
 	for {
 		n, src, err := socket.ReadFromUDP(buf)
-		if err != nil { return }
+		if err != nil {
+			return
+		}
 		ip, ok := netip.AddrFromSlice(src.IP)
-		if !ok || ip.Unmap() != peerIP || n > udpproto.MaxDatagram { continue }
-		if _, err := udpproto.Parse(buf[:n]); err != nil { continue }
+		if !ok || ip.Unmap() != peerIP || n > udpproto.MaxDatagram {
+			continue
+		}
+		if _, err := udpproto.Parse(buf[:n]); err != nil {
+			continue
+		}
 		pinned := source.Load()
 		if pinned == nil {
 			s := *src
 			source.CompareAndSwap(nil, &s)
 			pinned = source.Load()
 		}
-		if pinned.Port != src.Port || !pinned.IP.Equal(src.IP) { continue }
+		if pinned.Port != src.Port || !pinned.IP.Equal(src.IP) {
+			continue
+		}
 		if err := udpproto.WriteFrame(stream.writer, buf[:n]); err != nil {
 			return
 		}

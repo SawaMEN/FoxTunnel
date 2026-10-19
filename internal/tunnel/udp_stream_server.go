@@ -17,11 +17,11 @@ import (
 // An association multiplexes destinations over one authenticated request;
 // each destination has one connected UDP socket until idle, evicted or closed.
 const (
-	udpStreamPath = "/.well-known/foxtunnel-udp-stream-v2"
+	udpStreamPath     = "/.well-known/foxtunnel-udp-stream-v2"
 	udpStreamLifetime = 10 * time.Minute
-	udpFlowIdle = 30 * time.Second
-	udpStreamFlows = 16
-	udpStreamQueued = 32
+	udpFlowIdle       = 30 * time.Second
+	udpStreamFlows    = 16
+	udpStreamQueued   = 32
 )
 
 type udpStreamFlow struct {
@@ -63,7 +63,9 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 			case <-ctx.Done():
 				return
 			case pkt, ok := <-out:
-				if !ok { return }
+				if !ok {
+					return
+				}
 				if err := udpproto.WriteFrame(w, pkt); err != nil {
 					cancel()
 					return
@@ -77,7 +79,9 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 	var readers sync.WaitGroup
 	defer func() {
 		cancel()
-		for _, f := range flows { _ = f.conn.Close() }
+		for _, f := range flows {
+			_ = f.conn.Close()
+		}
 		readers.Wait()
 		close(out)
 		<-writerDone
@@ -85,9 +89,13 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		raw, err := udpproto.ReadFrame(r.Body)
-		if err != nil { return } // malformed frames terminate this association
+		if err != nil {
+			return
+		} // malformed frames terminate this association
 		packet, err := udpproto.Parse(raw)
-		if err != nil { return }
+		if err != nil {
+			return
+		}
 		key := net.JoinHostPort(packet.Host, strconv.Itoa(int(packet.Port)))
 		now := time.Now()
 		f := flows[key]
@@ -98,7 +106,9 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 		}
 		if f == nil {
 			ip, err := s.resolveUDP(ctx, packet.Host) // Filter + pin DNS before dial.
-			if err != nil { continue }
+			if err != nil {
+				continue
+			}
 			// Evict the least recently used destination before admitting one more.
 			if len(flows) >= udpStreamFlows {
 				var oldestKey string
@@ -115,7 +125,9 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 			conn, err := access.Dial(ctx, func(ctx context.Context) (net.Conn, error) {
 				return (&net.Dialer{Timeout: s.timeout()}).DialContext(ctx, "udp", dest)
 			})
-			if err != nil { continue }
+			if err != nil {
+				continue
+			}
 			f = &udpStreamFlow{conn: conn, ip: ip.String(), port: packet.Port, last: now}
 			flows[key] = f
 			readers.Add(1)
@@ -126,14 +138,19 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 				buf := make([]byte, udpproto.MaxDatagram+1)
 				for {
 					n, err := flow.conn.Read(buf)
-					if err != nil { return }
+					if err != nil {
+						return
+					}
 					raw, err := udpproto.Encode(udpproto.Packet{
 						Host: flow.ip, Port: flow.port, Data: buf[:n],
 					})
-					if err != nil { continue }
+					if err != nil {
+						continue
+					}
 					select {
 					case out <- raw:
-					case <-ctx.Done(): return
+					case <-ctx.Done():
+						return
 					default: // bounded queue; drop instead of blocking a UDP reader
 					}
 				}
