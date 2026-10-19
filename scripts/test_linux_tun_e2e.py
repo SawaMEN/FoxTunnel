@@ -270,6 +270,30 @@ class TUNEndToEnd(unittest.TestCase):
                              "table", "inet", companion.TABLE).stdout
                 self.assertIn("policy drop", output)
                 self.assert_probe(cns, "dns", "9.9.9.9", 53, False)
+
+                # Explicitly stop sing-box: its TUN routes disappear, but the
+                # independently installed output guard must not disappear.
+                stop(sink)
+                rules_after_exit = cmd("ip", "netns", "exec", cns, "nft",
+                                       "list", "table", "inet",
+                                       companion.TABLE).stdout
+                self.assertIn("policy drop", rules_after_exit)
+
+                # Recreate a physical default route like a real link that
+                # comes back while VPN is DOWN. The target is on the server
+                # namespace; WITHOUT the guard, these probes would connect.
+                cmd("ip", "-n", cns, "route", "add", "default",
+                    "via", "198.18.0.1", "dev", "fcwan0")
+                cmd("ip", "-n", cns, "-6", "route", "add", "default",
+                    "via", "fd42:1::1", "dev", "fcwan0")
+                self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
+                self.assert_probe(cns, "udp", "198.18.0.9", 5656, False)
+                self.assert_probe(cns, "dns", "198.18.0.9", 53, False)
+                cmd("ip", "-n", cns, "link", "set", "fcwan0", "down")
+                self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
+                cmd("ip", "-n", cns, "link", "set", "fcwan0", "up")
+                self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
+                self.assert_probe(cns, "dns", "198.18.0.9", 53, False)
             except Exception:
                 for ns in created:
                     for suffix in (("route", "show", "table", "all"),
