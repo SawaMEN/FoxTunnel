@@ -131,6 +131,7 @@ type conn struct {
 	certificates                 []*x509.Certificate
 	verifiedChains               [][]*x509.Certificate
 	verifyConnection             func(tls.ConnectionState) error
+	currentTime                  func() time.Time
 }
 
 func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) (*conn, error) {
@@ -158,7 +159,7 @@ func wrapConfigWithProfile(ctx context.Context, raw net.Conn, name string, confi
 	}
 	cprotocol := C.CString(protocol)
 	defer C.free(unsafe.Pointer(cprotocol))
-	c := &conn{raw: raw, serverName: name, protocol: protocol, roots: config.RootCAs, verifyConnection: config.VerifyConnection}
+	c := &conn{raw: raw, serverName: name, protocol: protocol, roots: config.RootCAs, verifyConnection: config.VerifyConnection, currentTime: config.Time}
 	c.handle = cgo.NewHandle(c)
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -334,7 +335,11 @@ func ft_go_verify(handle C.uintptr_t) C.int {
 	for _, cert := range c.certificates[1:] {
 		intermediates.AddCert(cert)
 	}
-	c.verifiedChains, c.verifyErr = c.certificates[0].Verify(x509.VerifyOptions{DNSName: c.serverName, Roots: c.roots, Intermediates: intermediates, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}})
+	options := x509.VerifyOptions{DNSName: c.serverName, Roots: c.roots, Intermediates: intermediates, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
+	if c.currentTime != nil {
+		options.CurrentTime = c.currentTime()
+	}
+	c.verifiedChains, c.verifyErr = c.certificates[0].Verify(options)
 	if c.verifyErr != nil {
 		return 0
 	}

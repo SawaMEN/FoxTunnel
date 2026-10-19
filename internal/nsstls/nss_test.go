@@ -169,3 +169,25 @@ func TestNSSRejectsUnsupportedMutualTLSConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestNSSVerifierHonorsTLSConfigTime(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.NotFoundHandler())
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	defer server.Close()
+	roots := x509.NewCertPool()
+	roots.AddCert(server.Certificate())
+	config := &tls.Config{
+		RootCAs: roots,
+		Time: func() time.Time { return time.Unix(1, 0) },
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	conn, err := DialTLSContextWithProfile(ctx, "tcp", server.Listener.Addr().String(), config, "")
+	if conn != nil {
+		conn.Close()
+	}
+	if err == nil {
+		t.Fatal("NSS ignored caller TLS verification time and accepted a not-yet-valid cert")
+	}
+}
