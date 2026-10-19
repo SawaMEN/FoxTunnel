@@ -1,0 +1,31 @@
+name: One-time external SDK consumer module sync
+on:
+  push:
+    paths: [".github/workflows/native-tun-external-tidy-once.yml"]
+permissions:
+  contents: write
+jobs:
+  tidy-external:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Synchronize independent Go consumer module
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd integration/external
+          go mod tidy
+          go test ./... -count=1
+      - name: Commit pinned external dependencies and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -f .github/workflows/native-tun-external-tidy-once.yml
+          git add integration/external/go.mod integration/external/go.sum
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "build: sync independent SDK consumer dependencies for native TUN"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
