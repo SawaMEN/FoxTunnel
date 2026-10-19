@@ -26,3 +26,7 @@ fabricated from CI loopback tests.
 
 [Сравнение TLS/H2 и протокол сбора QUIC/H3](STAGE10-FINGERPRINT.md).
 NaiveProxy и сопоставимые H3/QUIC захваты пока отсутствуют.
+
+## Stage 10: actual NSS/H2 measurement
+
+See [Stage 10 methodology and verified CI result](STAGE10-FINGERPRINT.md).

@@ -54,6 +54,13 @@ class FingerprintAuditContract(unittest.TestCase):
             p.write_text('{"schema":1,"kind":"h3-quic-observation",'
                          '"quic":{"version":1,"tls_alpn":"h3"},'
                          '"h3":{"settings":[{"id":1,"value":3}]}}')
+            with self.assertRaises(ValueError):
+                audit.read_profile(p, "h3_quic")
+            p.write_text('{"schema":1,"kind":"h3-quic-observation",'
+                         '"capture_method":"endpoint","capture_scenario":"controlled local H3 GET",'
+                         '"quic":{"version":1,"tls_alpn":"h3","initial_datagram_size":1200,'
+                         '"transport_parameters":[{"id":1,"value":2000}]},'
+                         '"h3":{"settings":[{"id":1,"value":3}]}}')
             o, digest = audit.read_profile(p, "h3_quic")
             self.assertEqual(o["quic"]["version"], 1)
             self.assertEqual(len(digest), 64)

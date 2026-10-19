@@ -56,8 +56,22 @@ def read_profile(path: Path, kind: str) -> tuple[dict, str]:
             raise ValueError("H3/QUIC requires endpoint-decoded evidence")
         if not isinstance(raw.get("quic"), dict) or not isinstance(raw.get("h3"), dict):
             raise ValueError("missing QUIC/H3 observations")
-        if not raw["quic"] or not raw["h3"]:
-            raise ValueError("empty QUIC/H3 observation")
+        q, h3 = raw["quic"], raw["h3"]
+        if (type(q.get("version")) is not int or q["version"] <= 0
+                or not isinstance(q.get("tls_alpn"), str)
+                or not q["tls_alpn"]
+                or type(q.get("initial_datagram_size")) is not int
+                or not 1 <= q["initial_datagram_size"] <= 65527):
+            raise ValueError("QUIC version, ALPN and datagram size require actual capture")
+        if (not isinstance(q.get("transport_parameters"), list)
+                or not q["transport_parameters"]
+                or not isinstance(h3.get("settings"), list)
+                or not h3["settings"]):
+            raise ValueError("missing decoded QUIC transport parameters or H3 SETTINGS")
+        if (raw.get("capture_method") != "endpoint"
+                or not isinstance(raw.get("capture_scenario"), str)
+                or not raw["capture_scenario"].strip()):
+            raise ValueError("capture provenance must identify endpoint decoding and scenario")
     return raw, hashlib.sha256(data).hexdigest()
 
 

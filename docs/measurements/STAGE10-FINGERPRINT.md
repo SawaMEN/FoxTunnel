@@ -89,15 +89,21 @@ python3 scripts/fingerprint_audit.py \
 {
   "schema": 1,
   "kind": "h3-quic-observation",
+  "capture_method": "endpoint",
+  "capture_scenario": "controlled H3 GET, recording original endpoint",
   "quic": {
     "version": 1,
     "tls_alpn": "h3",
     "initial_datagram_size": 1200,
-    "transport_parameters": []
+    "transport_parameters": [{"id": 1, "value": 2000}]
   },
-  "h3": {"settings": []}
+  "h3": {"settings": [{"id": 1, "value": 3}]}
 }
 ~~~
+
+**Все числа здесь вымышлены исключительно для иллюстрации формы JSON и не являются захватом.**
+Пустые массивы SETTINGS/transport_parameters и неуказанный метод захвата
+инструмент теперь отклоняет, чтобы шаблон нельзя было принять за измерение.
 
 Реальные QUIC/H3 transport parameters, TLS внутри QUIC, H3 SETTINGS,
 QPACK, управление потоками, packetization, ACK и тайминги нужно измерять
@@ -115,3 +121,25 @@ QPACK, управление потоками, packetization, ACK и таймин
 **Полное тройное сетевое сравнение остаётся незавершённым**, пока не получены
 сопоставимые NaiveProxy/Firefox/FoxTunnel захваты, в том числе для H3/QUIC,
 и не проверена методика на реальных независимых сетевых путях.
+
+## Реальный замер 20 октября (по времени пользователя), коммит 0f654d8
+
+[CI Stage 10](https://github.com/SawaMEN/FoxTunnel/actions/runs/39327264239)
+создал настоящий NSS/H2 ClientHello и начальные фреймы с текущего `update`
+на Linux amd64 с pinned NSS 3.130, в сценарии локального HTML GET.
+
+- HTTP/2: **7 совпавших из 7 наблюдаемых полей**; SETTINGS в точном порядке
+  `(1,65536),(2,0),(4,131072),(5,16384)`; WINDOW_UPDATE = 12517377.
+- TLS: 6 совпали, **6 отличаются**, 1 не наблюдался/не экспортирован.
+  Различаются cipher suites, extensions, supported versions,
+  signature algorithms, ALPN и JA3. Список supported groups и key shares
+  совпал.
+- NaiveProxy: TLS/H2 не измерялся; все 13 TLS и 7 H2-проверок —
+  `not_measured`.
+- QUIC/H3: нет сопоставимых packet/endpoint-assisted captures;
+  все 5 полей — `not_measured`.
+
+Данные воспроизводимо сохранены в артефакте CI
+`stage10-current-nss-h2-vs-historical-firefox-not-naive`
+(не постоянный Release). Сравнение с Firefox — **историческое**,
+не одновременная сессия на одном маршруте.
