@@ -22,8 +22,8 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
+	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )

@@ -29,7 +29,7 @@ const (
 	chunkSize   = 32 << 10
 	maxMetadata = 1 << 20
 	maxHeaders  = 64 << 10
-	idleRetire = 75 * time.Second // below the pinned Neqo QUIC 90s idle timeout
+	idleRetire  = 75 * time.Second // below the pinned Neqo QUIC 90s idle timeout
 )
 
 type transport struct {
@@ -118,6 +118,7 @@ func newEngineCheck() (bool, error) {
 	}
 	return true, nil
 }
+
 // acquire never reuses a draining or expired native engine. A retired engine
 // may continue serving existing requests; live counts it until actor teardown.
 // When capacity is full, wait for one idle engine to stop rather than exceed

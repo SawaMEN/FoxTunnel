@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	maxInitialBuffer = 64 << 10
+	maxInitialBuffer  = 64 << 10
 	settingsFrameType = 4
 )
 
@@ -129,7 +129,7 @@ func rewriteInitial(data []byte) ([]byte, bool, error) {
 	}
 	expected := map[uint16]uint32{1: HeaderTable, 2: 0, 4: StreamWindow, 5: 16384}
 	seen := make(map[uint16]bool, 5)
-	for offset := pos+9; offset < end; offset += 6 {
+	for offset := pos + 9; offset < end; offset += 6 {
 		id := binary.BigEndian.Uint16(data[offset : offset+2])
 		value := binary.BigEndian.Uint32(data[offset+2 : offset+6])
 		if seen[id] {

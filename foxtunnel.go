@@ -17,8 +17,8 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
+	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
@@ -110,6 +110,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	success = true
 	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
 }
+
 // Status returns a concurrency-safe snapshot. No addresses or secrets.
 func (c *Client) Status() TransportStatus {
 	return c.core.TransportStatus()

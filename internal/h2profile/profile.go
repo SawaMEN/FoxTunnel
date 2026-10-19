@@ -34,12 +34,12 @@ func Configure(t *http.Transport, name string) error {
 		return nil
 	}
 	t.HTTP2 = &http.HTTP2Config{
-		MaxDecoderHeaderTableSize: HeaderTable,
-		MaxEncoderHeaderTableSize: HeaderTable,
-		MaxReadFrameSize: 16384,
+		MaxDecoderHeaderTableSize:     HeaderTable,
+		MaxEncoderHeaderTableSize:     HeaderTable,
+		MaxReadFrameSize:              16384,
 		MaxReceiveBufferPerConnection: ConnectionCredit,
-		MaxReceiveBufferPerStream: StreamWindow,
-		StrictMaxConcurrentRequests: true,
+		MaxReceiveBufferPerStream:     StreamWindow,
+		StrictMaxConcurrentRequests:   true,
 	}
 	return nil
 }

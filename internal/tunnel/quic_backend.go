@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
 	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
+	"github.com/SawaMEN/FoxTunnel/internal/neqo"
 )
 
 type quicSettings struct {
@@ -118,7 +118,7 @@ func (t *neqoFallbackTransport) selectTransport(ctx context.Context, target *url
 			t.probes = make(map[string]*neqoProbe)
 		}
 		probe := &neqoProbe{
-			done: make(chan struct{}),
+			done:       make(chan struct{}),
 			generation: t.generation,
 		}
 		t.probes[origin] = probe
