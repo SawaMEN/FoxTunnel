@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/nativetun"
 	"log"
 	"net"
 	"net/http"
@@ -252,6 +253,12 @@ func main() {
 			fs.BoolVar(udpStream, "udp-stream", false, i18n.Text("opt in to persistent multiplexed UDP stream v2 (requires --enable-udp)"))
 		}
 		listen := fs.String("listen", "127.0.0.1:1080", i18n.Text("local SOCKS5 listening address"))
+		tunName := new(string)
+		tunMTU := new(uint)
+		if os.Args[1] == "client" {
+			fs.StringVar(tunName, "tun", "", i18n.Text("experimental native Linux TUN device name (requires UDP streaming; does not configure routes or firewall)"))
+			fs.UintVar(tunMTU, "tun-mtu", 1400, i18n.Text("native TUN MTU 1280-9000"))
+		}
 		maxConnections := fs.Int("max-connections", 256, i18n.Text("maximum local SOCKS sockets including incomplete handshakes"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
 		var fallbacks serverURLs
@@ -296,7 +303,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
 				default:
 					conflict = true
 				}
@@ -450,6 +457,21 @@ func main() {
 			log.Fatal(err)
 		}
 		defer listener.Close()
+		if *tunName != "" {
+			if !*enableUDP || !*udpStream || *bonded {
+				log.Fatal("--tun requires --enable-udp --udp-stream without --bond")
+			}
+			options := nativetun.Options{Name: *tunName, MTU: uint32(*tunMTU), SOCKS: listener.Addr().String()}
+			if err := nativetun.Validate(options); err != nil {
+				log.Fatal(err)
+			}
+			runner, err := nativetun.Start(context.Background(), options)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer runner.Close()
+			log.Printf("native Linux TUN ready: %s (routes, DNS and firewall MUST be configured separately)", *tunName)
+		}
 		log.Printf(i18n.Text("SOCKS5 listener: %s"), listener.Addr())
 		log.Fatal(client.Serve(listener))
 	default:

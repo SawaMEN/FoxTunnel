@@ -161,9 +161,11 @@ class TUNEndToEnd(unittest.TestCase):
         for utility in ("ip", "nft", "openssl"):
             if not shutil.which(utility):
                 self.fail(f"missing {utility}")
+        native = os.environ.get("FOXTUNNEL_TUN_NATIVE") == "1"
         box = os.environ.get("FOXTUNNEL_LAB_SINGBOX", "")
         fox = os.environ.get("FOXTUNNEL_LAB_FOXTUNNEL", "")
-        if not box or not fox or not Path(box).is_file() or not Path(fox).is_file():
+        if (not fox or not Path(fox).is_file() or
+                (not native and (not box or not Path(box).is_file()))):
             self.fail("supply absolute FOXTUNNEL_LAB_SINGBOX and FOXTUNNEL_LAB_FOXTUNNEL")
 
         prefix = secrets.token_hex(3)
@@ -229,11 +231,13 @@ class TUNEndToEnd(unittest.TestCase):
                                    "--cert", str(cert), "--key", str(key),
                                    "--allow-private", "--enable-udp")
                 self.wait_alive(server, 0.5, "FoxTunnel server")
-                client = fox_start(cns, "client", "--server",
-                                   "https://198.18.0.1:8443",
-                                   "--listen", "127.0.0.1:1080",
-                                   "--ca-cert", str(cert), "--sni", "lab.test",
-                                   "--tls-backend", "go", "--enable-udp", "--udp-stream")
+                client_args = ["client", "--server", "https://198.18.0.1:8443",
+                               "--listen", "127.0.0.1:1080",
+                               "--ca-cert", str(cert), "--sni", "lab.test",
+                               "--tls-backend", "go", "--enable-udp", "--udp-stream"]
+                if native:
+                    client_args.extend(["--tun", "ftun0", "--tun-mtu", "1400"])
+                client = fox_start(cns, *client_args)
                 self.wait_alive(client, 0.5, "FoxTunnel client")
                 self.assert_probe(cns, "socks", "198.18.0.9", 5657, True)
 
@@ -248,19 +252,33 @@ class TUNEndToEnd(unittest.TestCase):
                 config["route"]["default_interface"] = "fcwan0"
                 profile = root / "sing-box.json"
                 profile.write_text(json.dumps(config), encoding="utf-8")
-                cmd(box, "check", "-c", str(profile))
+                if not native:
+                    cmd(box, "check", "-c", str(profile))
                 rules = root / "guard.nft"
                 rules.write_text(policy, encoding="utf-8")
                 cmd("ip", "netns", "exec", cns, "nft", "-c", "-f", str(rules))
                 cmd("ip", "netns", "exec", cns, "nft", "-f", str(rules))
                 self.assert_probe(cns, "socks", "198.18.0.9", 5657, True)
-                sink = start(cns, box, "run", "-c", str(profile))
-                self.wait_tun(cns, sink, timeout=15)
+                sink = None
+                if native:
+                    self.wait_tun(cns, client, timeout=15)
+                    cmd("ip", "-n", cns, "link", "set", "ftun0", "up")
+                    cmd("ip", "-n", cns, "addr", "add", "172.28.247.1/30", "dev", "ftun0")
+                    cmd("ip", "-n", cns, "-6", "addr", "add",
+                        "fdfe:dcba:9876::1/126", "dev", "ftun0", "nodad")
+                    cmd("ip", "-n", cns, "route", "add", "default", "dev", "ftun0")
+                    cmd("ip", "-n", cns, "-6", "route", "add", "default", "dev", "ftun0")
+                else:
+                    sink = start(cns, box, "run", "-c", str(profile))
+                    self.wait_tun(cns, sink, timeout=15)
 
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, True)
                 self.assert_probe(cns, "tcp", "fd42:2::9", 5657, True)
                 self.assert_probe(cns, "udp", "198.18.0.9", 5656, True)
-                self.assert_probe(cns, "dns", "9.9.9.9", 53, True)
+                # Native stack forwards numeric DNS via UDP without rewriting
+                # the original destination. sing-box offers DNS hijack.
+                dns_target = "198.18.0.9" if native else "9.9.9.9"
+                self.assert_probe(cns, "dns", dns_target, 53, True)
 
                 # A dropped tunnel must NOT fall back to direct Internet.
                 stop(client)
@@ -269,7 +287,7 @@ class TUNEndToEnd(unittest.TestCase):
                 output = cmd("ip", "netns", "exec", cns, "nft", "list",
                              "table", "inet", companion.TABLE).stdout
                 self.assertIn("policy drop", output)
-                self.assert_probe(cns, "dns", "9.9.9.9", 53, False)
+                self.assert_probe(cns, "dns", dns_target, 53, False)
 
                 # Explicitly stop sing-box: its TUN routes disappear, but the
                 # independently installed output guard must not disappear.
