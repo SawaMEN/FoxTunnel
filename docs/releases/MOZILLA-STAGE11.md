@@ -12,7 +12,7 @@ existing tags or releases. A normal source push cannot publish anything.
 
 Only **Linux x86_64 (amd64, glibc)** is supported for the combined Go,
 Mozilla NSS 3.130 and Rust Neqo 0.33.0 binary. macOS, Windows, ARM, and
-full-device TUN/UDP networking are not part of the release.
+production-grade system-wide VPN networking is not part of the release. The merged code does include opt-in experimental UDP ASSOCIATE and Linux TUN, but no managed routes or kill switch.
 
 ## Verification gates
 
@@ -51,7 +51,7 @@ publisher compromise can replace both binaries and sums.
 ## Supported scope
 
 This remains an experimental TCP SOCKS5 client/server, **not** a full
-VPN (no TUN interface, application UDP, route management or kill switch).
+VPN: opt-in UDP relay and Linux TUN exist experimentally, but automatic route management and a kill switch are not provided.
 Using NSS/Neqo does not reproduce Firefox's complete fingerprint, prove
 NaiveProxy equivalence or establish resistance to Russian TSPU/DPI.
 

@@ -47,8 +47,7 @@ The client flag is **local** and is not embedded into vetroff:// links.
 - H3->H2 fallback currently uses the existing default NSS H2 settings, not
   the full Firefox 158 H2 profile. Closing this gap belongs to later stages.
 
-This is **not** the Firefox Necko stack, browser fingerprint parity, TUN/UDP
-application support, or proven DPI bypass. See
+This is **not** the Firefox Necko stack, browser fingerprint parity, production-ready TUN/UDP networking, or proven DPI bypass. See
 docs/research/MOZILLA-CLIENT-PROFILE.md and
 docs/research/NEQO-INTEGRATION.md for measured limitations.
 

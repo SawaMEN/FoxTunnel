@@ -4,11 +4,13 @@
 
 Use this index as the **single entry point**. Guides explain operations; architecture explains implementation; reference defines contracts; research and raw measurements document experiments. Historical reviews live in the archive.
 
-> **Current status:** FoxTunnel remains an experimental TCP tunnel. NSS is the default for supported Linux TCP transports in tagged builds; H3 defaults to quic-go. Mozilla Neqo is a separately built Linux amd64 experiment. Not a full VPN or a Firefox clone.
+> **Current status:** FoxTunnel remains an experimental TCP tunnel. NSS is the default for supported Linux TCP transports in tagged builds; H3 defaults to quic-go. Mozilla Neqo is a separately built Linux amd64 experiment. An experimental opt-in UDP request/reply relay is available; not a full VPN or Firefox clone.
 
 ## Start here
 
 - [Setup and first run](guides/SETUP.en.md)
+- [Experimental Linux TUN: sing-box, DNS and nftables](guides/LINUX-TUN.en.md)
+- [Native Linux TUN: embedded gVisor TCP/IP](guides/NATIVE-LINUX-TUN.en.md)
 - [Connection links](guides/CONNECTION-LINKS.en.md)
 - [Ingress and endpoints](guides/ENDPOINTS.en.md)
 
@@ -17,6 +19,7 @@ Use this index as the **single entry point**. Guides explain operations; archite
 - [System architecture](architecture/ARCHITECTURE.en.md)
 - [Native transports and TLS backends](architecture/NATIVE-TRANSPORTS.en.md)
 - [XHTTP](architecture/XHTTP.en.md)
+- [UDP ASSOCIATE: scope, setup and limits](architecture/UDP.en.md)
 - [Cluster and discovery](architecture/CLUSTER.en.md)
 - [Bonded data paths](architecture/BONDING.en.md)
 - [HTTP/2 receive profile](architecture/H2-RECEIVE-PROFILE.en.md)

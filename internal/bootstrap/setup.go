@@ -29,6 +29,7 @@ type ServerConfig struct {
 	XHTTPHost      string `json:"xhttp_host,omitempty"`
 	Version        int    `json:"v"`
 	H3Listen       string `json:"h3_listen,omitempty"`
+	EnableUDP      bool   `json:"enable_udp,omitempty"`
 	Listen         string `json:"listen"`
 	Certificate    string `json:"cert"`
 	PrivateKey     string `json:"key"`
@@ -47,6 +48,7 @@ type ServerConfig struct {
 type Options struct {
 	Server, Certificate, PrivateKey, Output, SNI, CACertFile, JoinLinkFile, UpstreamCAFile, WebRoot string
 	TLSBackend, Transport, XHTTPPath, XHTTPHost                                                     string
+	EnableUDP                                                                                       bool
 }
 
 var ErrConfig = errors.New("invalid server configuration")
@@ -163,7 +165,7 @@ func Generate(o Options) error {
 		return ErrSetup
 	}
 	out = filepath.Join(parent, filepath.Base(out))
-	config := ServerConfig{Version: 1, Listen: ":443", Certificate: certPath, PrivateKey: keyPath, Username: "vetroff", MaxTunnels: 256, MaxConnections: 512}
+	config := ServerConfig{EnableUDP: o.EnableUDP, Version: 1, Listen: ":443", Certificate: certPath, PrivateKey: keyPath, Username: "vetroff", MaxTunnels: 256, MaxConnections: 512}
 	var secret [32]byte
 	if _, err := rand.Read(secret[:]); err != nil {
 		return ErrSetup

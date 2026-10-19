@@ -12,7 +12,9 @@ The **single current roadmap**, replacing the duplicated `NEXT-STEPS` file. Revi
 | 2. Mozilla TLS/H2 | NSS TCP and measured profile gaps; **no full Firefox parity** | [Mozilla profile](../research/MOZILLA-CLIENT-PROFILE.en.md) |
 | 3. Data path | Bounded bond lanes, coalescing and loopback benchmarks; no claimed Internet advantage | [Bond](../architecture/BONDING.en.md), [data path](../research/DATA-PATH.en.md) |
 | 4. Neqo/H3 | Experimental Linux amd64 client with CA/SNI/SPKI and narrowly scoped H2 fallback; quic-go remains the default | [Neqo](../research/NEQO-INTEGRATION.en.md) |
+| 6. UDP, two modes | One-shot HTTPS POST v1 plus opt-in persistent v2 stream multiplexing up to 16 UDP destinations; no TUN, system routing or network migration | [UDP](../architecture/UDP.en.md) |
 | 5. Access control | Local users, revocation/rotation and quotas; no distributed control plane | [Access](../reference/ACCESS.en.md) |
+| 7. Linux TUN companion | sing-box config generator, IPv4/IPv6 routing, DNS via SOCKS5, nftables guard; **7/7 tasks in isolated Linux lab: native gVisor TCP/IP inside FoxTunnel, TCP/UDP/DNS/TUN and nft guard tested; production audit remains** | [Linux TUN](../guides/LINUX-TUN.en.md) |
 
 A [reproducible SOCKS5 comparison harness against VLESS](../research/TRANSPORT-COMPARISON.en.md) is available for future field trials, with JSON samples and offline tests. **It is not an actual ISP measurement, Firefox-parity result or performance win.**
 
@@ -20,7 +22,7 @@ These stages are merged into `main`. Passing CI on their source branches does **
 
 ## Next
 
-1. **Full VPN:** application UDP, TUN, routes, DNS/IPv6 and kill switch; include leak and failure tests.
+1. **Full VPN:** production-grade UDP streaming with network migration and loss control, TUN, routes, DNS/IPv6 and kill switch; include leak and failure tests.
 2. **Operations:** installation, updates/rollback, target OS, soak and native-memory tests, independent security review.
 3. **Field measurements:** comparable Firefox/NaiveProxy/FoxTunnel workloads, packet captures, RTT/loss, networks and reproducible evidence.
 4. **Integrations:** further client/panel adapters after API and wire contracts are stabilized.

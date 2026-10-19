@@ -4,11 +4,13 @@
 
 Это **единая точка входа**. Руководства описывают настройку, архитектура — реализацию, справочники — контракты; исследования и замеры отделены от исторических материалов.
 
-> **Текущий статус:** FoxTunnel — экспериментальный TCP-туннель. NSS используется для TCP в поддерживаемых Linux-сборках; H3 по умолчанию — quic-go. Neqo собирается отдельно для Linux amd64. Это не полный VPN и не копия Firefox.
+> **Текущий статус:** FoxTunnel — экспериментальный TCP-туннель. NSS используется для TCP в поддерживаемых Linux-сборках; H3 по умолчанию — quic-go. Neqo собирается отдельно для Linux amd64. Экспериментальный UDP запрос/ответ включается отдельно; это не полный VPN и не копия Firefox.
 
 ## Начните здесь
 
 - [Установка и запуск](guides/SETUP.md)
+- [Экспериментальный Linux TUN: sing-box, DNS и nftables](guides/LINUX-TUN.md)
+- [Нативный Linux TUN: встроенный gVisor TCP/IP](guides/NATIVE-LINUX-TUN.md)
 - [Ссылки подключения](guides/CONNECTION-LINKS.md)
 - [Точки входа и публичный сайт](guides/ENDPOINTS.md)
 
@@ -17,6 +19,7 @@
 - [Общая архитектура](architecture/ARCHITECTURE.md)
 - [Семь транспортов и TLS backend](architecture/NATIVE-TRANSPORTS.md)
 - [XHTTP](architecture/XHTTP.md)
+- [UDP ASSOCIATE: возможности, настройки и ограничения](architecture/UDP.md)
 - [Кластер и обнаружение нод](architecture/CLUSTER.md)
 - [Объединение каналов](architecture/BONDING.md)
 - [HTTP/2 receive profile](architecture/H2-RECEIVE-PROFILE.md)
