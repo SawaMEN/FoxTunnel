@@ -16,7 +16,7 @@ Current limitations: maximum **256 TCP flows**, **128 UDP sessions**, UDP **30-s
 
 Native in-process means gVisor Go code is linked directly into FoxTunnel; it is an external **library**, not a separately launched proxy, and not a brand-new from-scratch TCP/IP stack.
 
-The [native Linux end-to-end CI](https://github.com/SawaMEN/FoxTunnel/actions/workflows/native-tun-e2e.yml) covers TCP IPv4/IPv6, UDP, numeric DNS, client failure, TUN shutdown, guard persistence and link down/up inside isolated network namespaces. **Until the CI is green, this remains task 7 in progress (6 of 7 completed).**
+The [native Linux end-to-end CI](https://github.com/SawaMEN/FoxTunnel/actions/workflows/native-tun-e2e.yml) covers TCP IPv4/IPv6, UDP, numeric DNS, client failure, TUN shutdown, guard persistence and link down/up inside isolated network namespaces. **Native Linux end-to-end CI passed: 7 of 7 stage tasks implemented and verified within an isolated Linux lab.** This is not a production leak-resistance audit.
 
 ~~~sh
 go test ./internal/nativetun

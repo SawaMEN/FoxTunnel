@@ -25,7 +25,7 @@ foxtunnel client --link-file connection.txt --enable-udp --udp-stream --tun ftun
 
 ## Испытания
 
-[Workflow Native FoxTunnel Linux TUN](https://github.com/SawaMEN/FoxTunnel/actions/workflows/native-tun-e2e.yml) собирает FoxTunnel со встроенным TCP/IP-стеком, запускает его в новых Linux network namespace, проверяет TCP IPv4/IPv6, UDP, DNS на настоящем тестовом выходе, отказ при остановке клиента, сохранение firewall после закрытия TUN и краткую смену интерфейса. **Пока CI не пройден, нативный режим не считается готовым: прогресс третьего этапа 6 из 7.**
+[Workflow Native FoxTunnel Linux TUN](https://github.com/SawaMEN/FoxTunnel/actions/workflows/native-tun-e2e.yml) собирает FoxTunnel со встроенным TCP/IP-стеком, запускает его в новых Linux network namespace, проверяет TCP IPv4/IPv6, UDP, DNS на настоящем тестовом выходе, отказ при остановке клиента, сохранение firewall после закрытия TUN и краткую смену интерфейса. **Интеграционный Linux CI пройден: 7 из 7 задач реализовано и проверено в рамках изолированного стенда.** Это не означает готовность к эксплуатации без отдельного аудита безопасности и утечек.
 
 ~~~sh
 go test ./internal/nativetun

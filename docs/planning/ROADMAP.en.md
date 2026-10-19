@@ -14,7 +14,7 @@ The **single current roadmap**, replacing the duplicated `NEXT-STEPS` file. Revi
 | 4. Neqo/H3 | Experimental Linux amd64 client with CA/SNI/SPKI and narrowly scoped H2 fallback; quic-go remains the default | [Neqo](../research/NEQO-INTEGRATION.en.md) |
 | 6. UDP, two modes | One-shot HTTPS POST v1 plus opt-in persistent v2 stream multiplexing up to 16 UDP destinations; no TUN, system routing or network migration | [UDP](../architecture/UDP.en.md) |
 | 5. Access control | Local users, revocation/rotation and quotas; no distributed control plane | [Access](../reference/ACCESS.en.md) |
-| 7. Linux TUN companion | sing-box config generator, IPv4/IPv6 routing, DNS via SOCKS5, nftables guard; **6/7 tasks complete: isolated TUN/sing-box/FoxTunnel TCP/UDP/DNS and nft guard pass CI; native TUN implementation added; dedicated CI acceptance pending** | [Linux TUN](../guides/LINUX-TUN.en.md) |
+| 7. Linux TUN companion | sing-box config generator, IPv4/IPv6 routing, DNS via SOCKS5, nftables guard; **7/7 tasks in isolated Linux lab: native gVisor TCP/IP inside FoxTunnel, TCP/UDP/DNS/TUN and nft guard tested; production audit remains** | [Linux TUN](../guides/LINUX-TUN.en.md) |
 
 A [reproducible SOCKS5 comparison harness against VLESS](../research/TRANSPORT-COMPARISON.en.md) is available for future field trials, with JSON samples and offline tests. **It is not an actual ISP measurement, Firefox-parity result or performance win.**
 

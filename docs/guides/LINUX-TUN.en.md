@@ -2,9 +2,9 @@
 
 **English** · [Русский](LINUX-TUN.md) · [Documentation](../README.en.md)
 
-This is an integration with **external sing-box 1.14+**, forwarding through FoxTunnel's local SOCKS5. It is **not native FoxTunnel TUN**. Generating a configuration does not change the system network or require root.
+This guide covers the **external sing-box 1.14+** option, forwarding through FoxTunnel's local SOCKS5. A separate **[native Linux TUN](NATIVE-LINUX-TUN.en.md)** implementation now embeds gVisor TCP/IP inside FoxTunnel without sing-box. Generating the companion configuration does not change the system network or require root.
 
-## Implemented 6 of 7 tasks (source and isolated Linux CI)
+## Implemented 7 of 7 tasks (source and isolated Linux CI)
 
 - [x] Linux sing-box TUN configuration generator
 - [x] TCP/UDP via local FoxTunnel SOCKS5; UDP v2 remains experimental
@@ -12,9 +12,9 @@ This is an integration with **external sing-box 1.14+**, forwarding through FoxT
 - [x] TUN DNS capture with upstream numeric DNS over SOCKS5
 - [x] nftables output DROP guard persisting after process crash, plus offline tests
 - [x] Isolated Linux network namespaces: **full app → sing-box TUN → SOCKS5 FoxTunnel → TLS 1.3 → exit** for TCP IPv4/IPv6, UDP v2, tunneled DNS; blocked direct traffic after stopping FoxTunnel and sing-box; link-down/link-up simulation. **Not a comprehensive leak audit of real production hosts.**
-- [ ] Native TUN without an external sing-box dependency
+- [x] Native TUN with embedded gVisor stack in FoxTunnel, without sing-box ([guide](NATIVE-LINUX-TUN.en.md)); isolated end-to-end CI passed
 
-**6/7 tasks are implemented and have passed their dedicated isolated Linux CI tests.** This does not prove leak resistance in all environments.
+**7/7 tasks are implemented and have passed dedicated isolated Linux CI tests.** This does not prove leak resistance in all environments.
 
 ## Generate
 
@@ -66,4 +66,4 @@ sudo -E env FOXTUNNEL_TUN_NETNS=1 python3 -m unittest discover -s scripts -p tes
 
 The [Linux TUN end-to-end workflow](https://github.com/SawaMEN/FoxTunnel/actions/workflows/tun-e2e.yml) builds the current FoxTunnel source, verifies a pinned SHA-256 of sing-box **1.14.1**, creates two new Linux network namespaces and runs an actual TUN and authenticated FoxTunnel TLS 1.3 carrier. It checks TCP IPv4/IPv6, UDP stream v2, intercepted DNS over the remote test resolver, denied direct egress after the FoxTunnel and sing-box processes stop, and uplink down/up. Only reserved 198.18.0.0/15 test addresses and local test certificates are used; host routes/firewall and the Internet are untouched.
 
-**Progress: 6/7.** Native TUN with its own TCP/IP stack (without external sing-box) is the remaining task in this stage. Production leak audits, multi-homed failover, native OS stub resolver behavior and field evidence are separate readiness work.
+**Progress: 7/7.** Native TUN with embedded TCP/IP is implemented in FoxTunnel and passed a separate CI without sing-box. Production leak audits, multi-homed failover, native OS stub resolver behavior and field evidence are separate readiness work.
