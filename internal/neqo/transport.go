@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/net/http/httpguts"
@@ -28,6 +29,7 @@ const (
 	chunkSize   = 32 << 10
 	maxMetadata = 1 << 20
 	maxHeaders  = 64 << 10
+	idleRetire = 75 * time.Second // below the pinned Neqo QUIC 90s idle timeout
 )
 
 type transport struct {
@@ -35,6 +37,7 @@ type transport struct {
 	timeout time.Duration
 	mu      sync.Mutex
 	origins map[string]*connection
+	live    map[*connection]struct{} // includes draining/evicted native engines
 }
 type connection struct {
 	tlsState           tls.ConnectionState
@@ -47,6 +50,7 @@ type connection struct {
 	commands           chan command
 	active             int
 	touched            time.Time
+	draining           atomic.Bool
 }
 type command struct {
 	kind   byte
@@ -106,7 +110,7 @@ func NewTransport(config Config) (Transport, error) {
 	if err := <-checked; err != nil {
 		return nil, err
 	}
-	return &transport{config: config.TLS.Clone(), timeout: timeout, origins: make(map[string]*connection)}, nil
+	return &transport{config: config.TLS.Clone(), timeout: timeout, origins: make(map[string]*connection), live: make(map[*connection]struct{})}, nil
 }
 func newEngineCheck() (bool, error) {
 	if err := checkABI(); err != nil {
@@ -114,64 +118,129 @@ func newEngineCheck() (bool, error) {
 	}
 	return true, nil
 }
-func (t *transport) acquire(u *url.URL) (*connection, error) {
+// acquire never reuses a draining or expired native engine. A retired engine
+// may continue serving existing requests; live counts it until actor teardown.
+// When capacity is full, wait for one idle engine to stop rather than exceed
+// maxOrigins with overlapping old/new QUIC connections.
+func (t *transport) acquire(ctx context.Context, u *url.URL) (*connection, error) {
 	if u == nil || u.Scheme != "https" || u.User != nil || u.Hostname() == "" {
 		return nil, errors.New("Neqo requires an HTTPS origin")
 	}
 	key := u.Scheme + "://" + u.Host
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	c := t.origins[key]
-	if c != nil {
-		select {
-		case <-c.done:
-			delete(t.origins, key)
-			c = nil
-		default:
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
-	}
-	if c == nil {
-		if len(t.origins) >= maxOrigins {
-			var old *connection
-			var oldKey string
-			for k, p := range t.origins {
-				if p.active == 0 && (old == nil || p.touched.Before(old.touched)) {
-					old = p
-					oldKey = k
+		t.mu.Lock()
+		c := t.origins[key]
+		if c != nil {
+			select {
+			case <-c.done:
+				delete(t.origins, key)
+				c = nil
+			default:
+			}
+		}
+		if c != nil && (c.draining.Load() || (c.active == 0 && time.Since(c.touched) >= idleRetire)) {
+			c.draining.Store(true)
+			delete(t.origins, key)
+			if c.active == 0 {
+				c.cancel()
+			}
+			c = nil
+		}
+		if c == nil {
+			if len(t.live) >= maxOrigins {
+				// Evict an idle engine only. Draining active streams must
+				// not be killed to make room for new connections.
+				var oldest *connection
+				for candidate := range t.live {
+					if candidate.active == 0 && (oldest == nil || candidate.touched.Before(oldest.touched)) {
+						oldest = candidate
+					}
+				}
+				if oldest == nil {
+					t.mu.Unlock()
+					return nil, ErrCapacity
+				}
+				oldest.draining.Store(true)
+				if t.origins[oldest.origin] == oldest {
+					delete(t.origins, oldest.origin)
+				}
+				oldest.cancel()
+				t.mu.Unlock()
+				select {
+				case <-oldest.done:
+					continue
+				case <-ctx.Done():
+					return nil, ctx.Err()
 				}
 			}
-			if old == nil {
-				return nil, ErrCapacity
+			port := u.Port()
+			if port == "" {
+				port = "443"
 			}
-			old.cancel()
-			delete(t.origins, oldKey)
+			name := t.config.ServerName
+			if name == "" {
+				name = u.Hostname()
+			}
+			connCtx, cancel := context.WithCancel(context.Background())
+			c = &connection{
+				owner: t, origin: key, addr: net.JoinHostPort(u.Hostname(), port),
+				name: name, ctx: connCtx, cancel: cancel, ready: make(chan struct{}),
+				done: make(chan struct{}), commands: make(chan command, 2*maxStreams),
+			}
+			c.touched = time.Now()
+			t.origins[key] = c
+			t.live[c] = struct{}{}
+			go c.run()
 		}
-		port := u.Port()
-		if port == "" {
-			port = "443"
+		if c.active >= maxStreams {
+			t.mu.Unlock()
+			return nil, ErrCapacity
 		}
-		name := t.config.ServerName
-		if name == "" {
-			name = u.Hostname()
-		}
-		ctx, cancel := context.WithCancel(context.Background())
-		c = &connection{owner: t, origin: key, addr: net.JoinHostPort(u.Hostname(), port), name: name, ctx: ctx, cancel: cancel, ready: make(chan struct{}), done: make(chan struct{}), commands: make(chan command, 2*maxStreams)}
-		t.origins[key] = c
-		go c.run()
+		c.active++
+		c.touched = time.Now()
+		t.mu.Unlock()
+		return c, nil
 	}
-	if c.active >= maxStreams {
-		return nil, ErrCapacity
-	}
-	c.active++
-	c.touched = time.Now()
-	return c, nil
 }
+
 func (c *connection) release() {
 	c.owner.mu.Lock()
 	c.active--
 	c.touched = time.Now()
+	if c.active == 0 && c.draining.Load() {
+		c.cancel()
+	}
 	c.owner.mu.Unlock()
 }
+
+// retire stops new HTTP/3 streams after GOAWAY but leaves existing streams
+// alive until their request/response bodies finish. No request is replayed.
+func (t *transport) retire(c *connection) {
+	t.mu.Lock()
+	c.draining.Store(true)
+	if t.origins[c.origin] == c {
+		delete(t.origins, c.origin)
+	}
+	if c.active == 0 {
+		c.cancel()
+	}
+	t.mu.Unlock()
+}
+
+// forget is called after the actor's native engine and UDP reader are closed.
+// Keep live independent of origin keys to bound overlapping draining engines.
+func (t *transport) forget(c *connection) {
+	t.mu.Lock()
+	delete(t.live, c)
+	if t.origins[c.origin] == c {
+		delete(t.origins, c.origin)
+	}
+	t.mu.Unlock()
+}
+
 func (c *connection) wait(ctx context.Context) error {
 	select {
 	case <-c.ready:
@@ -187,7 +256,7 @@ func (c *connection) wait(ctx context.Context) error {
 	}
 }
 func (t *transport) Probe(ctx context.Context, u *url.URL) error {
-	c, err := t.acquire(u)
+	c, err := t.acquire(ctx, u)
 	if err != nil {
 		return err
 	}
@@ -205,9 +274,12 @@ func (t *transport) Probe(ctx context.Context, u *url.URL) error {
 func (t *transport) CloseIdleConnections() {
 	t.mu.Lock()
 	var closing []*connection
-	for k, c := range t.origins {
+	for c := range t.live {
 		if c.active == 0 {
-			delete(t.origins, k)
+			c.draining.Store(true)
+			if t.origins[c.origin] == c {
+				delete(t.origins, c.origin)
+			}
 			c.cancel()
 			closing = append(closing, c)
 		}
@@ -228,49 +300,59 @@ func (t *transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	c, err := t.acquire(r.URL)
-	if err != nil {
-		return nil, err
-	}
-	if err = c.wait(r.Context()); err != nil {
-		if r.Context().Err() != nil {
-			t.mu.Lock()
-			if c.active == 1 {
-				c.cancel()
+	// A GOAWAY that races the first stream creation may be retried on a
+	// fresh engine once. No HTTP stream exists at that point and the
+	// request body remains unread. A broken in-flight stream is never
+	// replayed, even when its error looks like a network failure.
+	for attempt := 0; attempt < 2; attempt++ {
+		c, err := t.acquire(r.Context(), r.URL)
+		if err != nil {
+			return nil, err
+		}
+		if err = c.wait(r.Context()); err != nil {
+			if r.Context().Err() != nil {
+				t.mu.Lock()
+				if c.active == 1 {
+					c.cancel()
+				}
+				t.mu.Unlock()
 			}
-			t.mu.Unlock()
+			c.release()
+			return nil, err
 		}
-		c.release()
-		return nil, err
-	}
-	s := &stream{conn: c, req: r, headers: make(chan headerResult, 1), uploadDone: make(chan struct{}), closed: make(chan struct{})}
-	out, err := c.call(r.Context(), command{kind: 'o', stream: s, data: metadata})
-	if err != nil || out.err != nil {
-		c.release()
-		return nil, errors.Join(err, out.err)
-	}
-	bodyOwned = true
-	go s.upload()
-	s.stopMu.Lock()
-	select {
-	case <-s.closed:
-	default:
-		s.stop = context.AfterFunc(r.Context(), func() { s.Close() })
-	}
-	s.stopMu.Unlock()
-	select {
-	case header := <-s.headers:
-		if header.err != nil {
+		s := &stream{conn: c, req: r, headers: make(chan headerResult, 1), uploadDone: make(chan struct{}), closed: make(chan struct{})}
+		out, callErr := c.call(r.Context(), command{kind: 'o', stream: s, data: metadata})
+		if callErr != nil || out.err != nil {
+			c.release()
+			if callErr == nil && errors.Is(out.err, errDraining) && attempt == 0 && r.Context().Err() == nil {
+				continue
+			}
+			return nil, errors.Join(callErr, out.err)
+		}
+		bodyOwned = true
+		go s.upload()
+		s.stopMu.Lock()
+		select {
+		case <-s.closed:
+		default:
+			s.stop = context.AfterFunc(r.Context(), func() { s.Close() })
+		}
+		s.stopMu.Unlock()
+		select {
+		case header := <-s.headers:
+			if header.err != nil {
+				s.Close()
+			}
+			return header.response, header.err
+		case <-r.Context().Done():
 			s.Close()
+			return nil, r.Context().Err()
+		case <-c.done:
+			s.Close()
+			return nil, errClosed
 		}
-		return header.response, header.err
-	case <-r.Context().Done():
-		s.Close()
-		return nil, r.Context().Err()
-	case <-c.done:
-		s.Close()
-		return nil, errClosed
 	}
+	return nil, errDraining
 }
 func (c *connection) call(ctx context.Context, cmd command) (result, error) {
 	cmd.reply = make(chan result, 1)

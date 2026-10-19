@@ -41,6 +41,9 @@ NSS и Neqo; её можно собрать через `python3 scripts/build_mo
 В NSS HTTP/2 профиль firefox-158 теперь включает порядок начальных SETTINGS,
 ограниченный HPACK и согласованный H2 fallback после Neqo. Полный Firefox
 fingerprint не подтверждён.
+Четвёртый этап добавил ограничение числа одновременно живых Neqo-соединений,
+корректное завершение после HTTP/3 GOAWAY и повтор только до создания
+HTTP-запроса. QUIC-параметры Firefox ещё требуют измерений.
 Подробности и ограничения: [Mozilla Transport Engine](docs/architecture/MOZILLA-ENGINE.md).
 
 ## Быстрый старт из исходников

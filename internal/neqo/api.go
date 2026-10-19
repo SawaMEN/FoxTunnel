@@ -17,6 +17,7 @@ var ErrUnavailable = errors.New("Neqo unavailable: build on Linux amd64 with CGO
 var ErrCapacity = errors.New("Neqo connection or stream capacity reached")
 var errProtocol = errors.New("Neqo TLS/HTTP3 protocol failure")
 var errClosed = errors.New("Neqo stream closed")
+var errDraining = errors.New("Neqo HTTP/3 connection draining before request creation")
 
 type Config struct {
 	TLS              *tls.Config

@@ -122,3 +122,34 @@ A pinned Go/x/net change that alters the initial SETTINGS causes a clear
 error instead of a silent profile mismatch. This is a measured profile
 adaptation, not an independent full HTTP/2 stack, Necko, or complete Firefox
 fingerprint. These changes were neither compiled nor tested at this stage.
+
+## Stage 4: Neqo connection lifecycle and graceful GOAWAY
+
+The Linux amd64 Neqo HTTP/3 client maintains a bounded pool of **at most
+eight simultaneously live QUIC engines**, including engines draining after
+GOAWAY or being evicted. A connection is reused only when its TLS identity
+policy matches, it remains healthy and it is not draining. Idle pool entries
+are retired after 75 seconds (before the current 90-second Neqo QUIC idle
+timeout), while active request bodies are not interrupted by idle expiry.
+
+A received HTTP/3 GOAWAY now retires the affected connection instead of
+treating it as a fatal protocol error: existing streams may finish naturally;
+new requests use a fresh Neqo connection with certificate verification.
+When no native slot is available, an idle connection can be retired and
+joined before replacing it. If every slot has active work, new requests
+receive a capacity error rather than exceeding the native-memory budget.
+
+The only automatically retried request is one rejected locally as
+"draining" **before Neqo created any HTTP/3 stream**; this is bounded
+to one retry and the request body has not been read. Network errors,
+TLS/ALPN trust failures, HTTP errors, and closed streams after request
+creation never cause automatic replay or a security downgrade.
+
+QUIC transport parameters, congestion control, resumption/0-RTT policy
+and the Rust C ABI remain unchanged at this stage. The result uses Mozilla
+Neqo but is not proven to match Firefox's QUIC or HTTP/3 fingerprint.
+It does not implement network-address migration, ECH or HTTP/3 datagrams.
+
+Stage 4 changes have not been compiled or tested yet, per the current
+no-tests development instruction. Native memory, packet timing, and
+real-network loss/recovery need subsequent independent validation.
