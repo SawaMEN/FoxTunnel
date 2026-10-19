@@ -90,9 +90,12 @@ func (t *neqoFallbackTransport) selectTransport(ctx context.Context, target *url
 			t.mu.Unlock()
 			select {
 			case <-existing.done:
-				if existing.retry {
-					// The previous owner was canceled or its result belongs
-					// to the network before NotifyNetworkChange.
+				// A network event may arrive after a completed probe but
+				// before this waiter observes it. Discard that result too.
+				t.mu.Lock()
+				stale := existing.retry || t.generation != existing.generation
+				t.mu.Unlock()
+				if stale {
 					continue
 				}
 				return existing.useH2, existing.err

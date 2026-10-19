@@ -180,7 +180,8 @@ macOS connectivity callback), the public Go SDK provides:
 err := client.NotifyNetworkChange()
 ~~~
 
-The CLI/core also expose the same local client hook to integrations.
+The tunnel core exposes the same local client hook to integrations;
+the standalone CLI does not yet subscribe to OS network change events.
 It invalidates cached UDP reachability and retires *idle* sockets so the
 next request uses a fresh transport. A generation number prevents probes
 started on the previous network from populating the new cache. Existing
