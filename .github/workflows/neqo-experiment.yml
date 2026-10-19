@@ -17,6 +17,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
       - name: Install pinned Rust compiler and NSS development libraries
         run: |
           rustup toolchain install 1.90.0 --profile minimal
@@ -52,3 +55,32 @@ jobs:
           set -euo pipefail
           cc -std=c11 -Wall -Wextra -Werror test_bridge.c -L target/debug -lfoxtunnel_neqo -Wl,-rpath,"$PWD/target/debug" -o target/debug/neqo-abi-test
           ./target/debug/neqo-abi-test
+      - name: Build UDP driver and loopback Go HTTP3 fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc -std=c11 -Wall -Wextra -Werror -O2 experiments/neqo-ffi/probe_udp.c \
+            -I experiments/neqo-ffi \
+            -L experiments/neqo-ffi/target/debug -lfoxtunnel_neqo \
+            -Wl,-rpath,"$PWD/experiments/neqo-ffi/target/debug" \
+            -o /tmp/neqo-udp-probe
+          go build -o /tmp/neqo-h3-fixture ./experiments/neqo-ffi/cmd/h3-fixture
+      - name: Neqo/Go HTTP3 handshake must reject untrusted certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/neqo-h3-fixture > /tmp/neqo-h3-port.txt 2>/tmp/neqo-h3-errors.txt &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 100); do
+            test -s /tmp/neqo-h3-port.txt && break
+            kill -0 "$pid"
+            sleep 0.1
+          done
+          test -s /tmp/neqo-h3-port.txt
+          port="$(head -n 1 /tmp/neqo-h3-port.txt)"
+          /tmp/neqo-udp-probe 127.0.0.1 "$port" example.org
+          if grep -q 'ERROR: unauthenticated HTTP request received' /tmp/neqo-h3-errors.txt; then
+            echo 'SECURITY FAILURE: sent HTTP request before verifying peer'
+            exit 1
+          fi
