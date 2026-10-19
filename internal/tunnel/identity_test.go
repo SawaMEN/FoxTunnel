@@ -194,3 +194,10 @@ func TestIdentityConstructionFailureClosesRequestBody(t *testing.T) {
 		t.Fatal("identity construction failure leaked request body", err)
 	}
 }
+
+func TestInvalidGoHTTP2ProfileReturnsNilTransport(t *testing.T) {
+	transport, err := makeTLStransport("go", &tls.Config{}, "unknown-profile", "")
+	if err == nil || transport != nil {
+		t.Fatalf("invalid Go H2 profile must return a real nil transport, got %T %v", transport, err)
+	}
+}

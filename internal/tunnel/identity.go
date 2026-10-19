@@ -40,7 +40,13 @@ func makeTLStransport(backend string, config *tls.Config, receiveProfile, client
 	if backend == "nss" {
 		return nsstls.NewTransportWithProfiles(config, receiveProfile, clientProfile)
 	}
-	return newGoTransportWithProfile(config, receiveProfile)
+	goTransport, err := newGoTransportWithProfile(config, receiveProfile)
+	if err != nil {
+		// Preserve nil interface semantics on an invalid H2 profile:
+		// returning a typed nil *http.Transport as tlsTransport is non-nil.
+		return nil, err
+	}
+	return goTransport, nil
 }
 
 // SetServerIdentity applies only to the primary origin. Other origins keep
