@@ -133,8 +133,12 @@ class NamespaceGuardTests(unittest.TestCase):
         cls.addClassCleanup(cls.stop_server)
         cls.server = proc
         ready, _, _ = select.select([proc.stdout], [], [], 5.0)
-        if not ready or proc.stdout.readline().strip() != "READY":
-            raise RuntimeError("isolated server failed to start")
+        first_line = proc.stdout.readline().strip() if ready else "(no output within 5s)"
+        if first_line != "READY":
+            raise RuntimeError(
+                f"isolated server failed to start: {first_line!r} "
+                f"(exit={proc.poll()})"
+            )
 
         cls.install("tcp")
         cls.addClassCleanup(cls.drop_guard)
