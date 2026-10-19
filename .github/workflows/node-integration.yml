@@ -1,0 +1,48 @@
+name: Node routing integration and benchmarks
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/node-integration.yml'
+      - 'internal/bond/**'
+      - 'internal/multihop/**'
+      - 'internal/nodeperf/**'
+      - 'internal/tunnel/**'
+      - 'internal/profile/**'
+      - 'cmd/foxtunnel/**'
+      - 'foxtunnel.go'
+      - 'go.mod'
+      - 'go.sum'
+  push:
+    branches: [node-main-integration]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-node-routing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+          cache: true
+      - name: All packages and new UDP/TUN compatibility
+        run: go test ./... -count=1 -timeout=120s
+      - name: Race detector for routing and core
+        run: go test -race ./internal/nodeperf ./internal/multihop ./internal/bond ./internal/tunnel ./internal/profile -count=1 -timeout=120s
+      - name: Build client
+        run: go build ./cmd/foxtunnel
+      - name: Go vet
+        run: go vet ./...
+      - name: Capture isolated selection microbenchmarks
+        run: |
+          go test ./internal/bond -run '^$' -bench 'BenchmarkBond(PathSelection|SkewAndQueue)' -benchmem -benchtime=300ms -count=3 | tee node-bench.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: node-benchmarks
+          path: node-bench.txt
+          if-no-files-found: ignore
