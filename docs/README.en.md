@@ -9,6 +9,7 @@ Use this index as the **single entry point**. Guides explain operations; archite
 ## Start here
 
 - [Setup and first run](guides/SETUP.en.md)
+- [Experimental Linux TUN: sing-box, DNS and nftables](guides/LINUX-TUN.en.md)
 - [Connection links](guides/CONNECTION-LINKS.en.md)
 - [Ingress and endpoints](guides/ENDPOINTS.en.md)
 

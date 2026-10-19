@@ -4,7 +4,7 @@
 
 FoxTunnel is an **experimental** client–server TCP tunnel: a local SOCKS5 proxy, an HTTPS server and several built-in transports. No Xray process or external proxy sidecar is required.
 
-> **Status:** research prototype, not a general-purpose VPN. Experimental SOCKS5 UDP ASSOCIATE is available (single-request HTTPS POST v1 and a separately enabled persistent multiplexed stream v2); system-wide VPN, TUN, routing and a kill switch remain unimplemented. Firefox fingerprint equivalence and resistance to network filtering have not been demonstrated.
+> **Status:** research prototype, not a general-purpose VPN. Experimental SOCKS5 UDP ASSOCIATE is available (single-request HTTPS POST v1 and a separately enabled persistent multiplexed stream v2); native system-wide VPN/TUN and validated leak protection remain unimplemented; an experimental external [Linux TUN companion](docs/guides/LINUX-TUN.en.md) is available (5/7 source tasks). Firefox fingerprint equivalence and resistance to network filtering have not been demonstrated.
 
 ## Implemented features
 
