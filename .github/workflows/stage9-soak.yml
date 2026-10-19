@@ -1,0 +1,68 @@
+name: Stage 9 native soak, restart and trust (isolated lab)
+
+on:
+  push:
+    branches: [update]
+    paths:
+      - 'scripts/soak_h2_h3.py'
+      - 'scripts/test_soak_h2_h3.py'
+      - '.github/workflows/stage9-soak.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harness-contracts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline soak helper validation
+        run: python3 -m unittest discover -s scripts -p test_soak_h2_h3.py -v
+
+  h2-h3-soak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install pinned build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y pkg-config libclang-dev gcc g++ binutils unzip
+          rustup toolchain install 1.99.1 --profile minimal
+      - name: Build pinned Mozilla Linux amd64 bundle
+        run: python3 scripts/build_mozilla.py --version v0.0.0-ci
+      - name: Run bounded real-socket soak, restart, TLS rejection and process RSS
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          bundle="$(find dist -maxdepth 1 -name '*_linux_amd64_mozilla.tar.gz' -print -quit)"
+          test -n "$bundle"
+          tar -xzf "$bundle" -C "$work"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' \
+            -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
+          export FOXTUNNEL_USER=stage9-ci
+          export FOXTUNNEL_PASSWORD
+          FOXTUNNEL_PASSWORD="$(openssl rand -hex 32)"
+          python3 scripts/soak_h2_h3.py --binary "$work/foxtunnel" \
+            --cert "$work/cert.pem" --key "$work/key.pem" \
+            --seconds 75 --parallel 3 --bytes 131072 \
+            --recovery-seconds 100 --min-success 98 \
+            --max-rss-mib 512 --max-growth-mib 192 --max-fds 512 \
+            --out "$work/stage9-private.json"
+          mkdir -p stage9-ci-output
+          cp "$work/stage9-private.json" stage9-ci-output/report.json
+      - name: Upload sanitized lab report, never keys or raw logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage9-native-soak-loopback-only
+          path: stage9-ci-output/report.json
+          if-no-files-found: error
+          retention-days: 7
