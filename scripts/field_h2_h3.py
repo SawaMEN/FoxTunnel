@@ -132,6 +132,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--binary", type=Path, required=True, help="built Mozilla Linux amd64 FoxTunnel executable")
     p.add_argument("--server", type=server_url, required=True, help="trusted HTTPS origin, with both TCP/H2 and UDP/H3")
     p.add_argument("--ca-cert", type=Path, help="optional local CA PEM, not stored in report")
+    p.add_argument("--sni", help="verified TLS DNS hostname when --server is an IP address")
     p.add_argument("--target", required=True, help="controlled remote TCP echo HOST:PORT (on server exit)")
     p.add_argument("--h2-port", type=listen_port, default=11080)
     p.add_argument("--h3-port", type=listen_port, default=11081)
@@ -182,6 +183,8 @@ def launch(args: argparse.Namespace, mode: str, port: int, logfile):
            "--engine-status-interval", "1s"]
     if args.ca_cert:
         cmd += ["--ca-cert", str(args.ca_cert.resolve())]
+    if args.sni:
+        cmd += ["--sni", args.sni]
     if mode == "h3-post":
         cmd += ["--h3-fallback", args.h3_fallback]
     return subprocess.Popen(cmd, stdin=subprocess.DEVNULL,

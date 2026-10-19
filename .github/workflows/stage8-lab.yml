@@ -79,7 +79,7 @@ jobs:
           PY
           python3 scripts/field_h2_h3.py \
             --binary "$work/foxtunnel" \
-            --server https://localhost:18443 --ca-cert "$work/cert.pem" \
+            --server https://127.0.0.1:18443 --sni localhost --ca-cert "$work/cert.pem" \
             --target 127.0.0.1:19000 --rounds 3 --warmup 1 --parallel 2 \
             --bytes 131072 --timeout 15 \
             --out "$work/stage8-loopback.json"

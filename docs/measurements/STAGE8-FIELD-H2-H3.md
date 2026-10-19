@@ -126,3 +126,9 @@ cleans them up and uploads only a sanitized JSON report.
 The workflow also exercises the Python harness's offline validation:
 URL safety, fallback opt-in, status parsing and error redaction. Real
 internet/VDS/mobile network measurements remain outstanding.
+
+If connecting to a numeric IPv4 address while the certificate contains a
+DNS name, add `--sni your-owned-server.example`. The client verifies that
+name against the certificate; SNI is not a trust-bypass switch. The CI
+laboratory uses an IPv4 loopback URL and `--sni localhost` deliberately so
+UDP does not resolve `localhost` ambiguously to IPv6.

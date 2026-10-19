@@ -16,6 +16,14 @@ class FieldH2H3Validation(unittest.TestCase):
                 f.server_url(url)
         self.assertEqual(f.server_url("https://example.org:443/"), "https://example.org:443")
 
+    def test_cli_supports_verified_name_for_numeric_ip(self):
+        args = f.build_parser().parse_args([
+            "--binary", "foxtunnel", "--server", "https://127.0.0.1:8443",
+            "--sni", "localhost", "--target", "127.0.0.1:9000",
+            "--out", "private.json",
+        ])
+        self.assertEqual(args.sni, "localhost")
+
     def test_fallback_requires_explicit_opt_in(self):
         with self.assertRaises(ValueError):
             f.expected_routes("none", "h2")
