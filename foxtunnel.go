@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"net"
 	"net/http"
 	"strings"
@@ -250,7 +251,20 @@ func (l *ownedListener) Accept() (net.Conn, error) {
 	}
 }
 
+// AccessUser configures an opaque stable account ID and a high-entropy Basic credential.
+type AccessUser = access.User
+type AccessPolicy = access.Document
+type AccessSnapshot = access.Snapshot
+type AccessController = access.Controller
+
+// NewAccessController uses a Linux durable ledger when stateFile is nonempty.
+// The caller owns Close. An empty stateFile explicitly selects volatile accounting.
+func NewAccessController(policy AccessPolicy, stateFile string) (*AccessController, error) {
+	return access.New(policy, stateFile)
+}
+
 type ServerConfig struct {
+	Access                   *AccessController // Alternative to Credentials; shared by all server transports.
 	Credentials              Credentials
 	XHTTPPath, XHTTPHost     string
 	AllowPrivateDestinations bool // False rejects private/loopback/link-local targets.
@@ -265,7 +279,7 @@ type ServerConfig struct {
 type Server struct{ core *tunnel.Server }
 
 func NewServer(config ServerConfig) (*Server, error) {
-	if config.Credentials.Username == "" || config.Credentials.Password == "" || strings.Contains(config.Credentials.Username, ":") {
+	if (config.Access == nil && (config.Credentials.Username == "" || config.Credentials.Password == "" || strings.Contains(config.Credentials.Username, ":"))) || (config.Access != nil && (config.Credentials.Username != "" || config.Credentials.Password != "")) {
 		return nil, errors.New("server credentials required")
 	}
 	if config.MaxTunnels < 0 || config.DialTimeout < 0 {
@@ -275,7 +289,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{core: &tunnel.Server{Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
+	return &Server{core: &tunnel.Server{Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || r.TLS.Version < tls.VersionTLS13 {

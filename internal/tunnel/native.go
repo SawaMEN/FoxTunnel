@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"io"
 	"net"
 	"net/http"
@@ -232,8 +233,10 @@ func (s *Server) serveWSS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.CloseNow()
+	stop := context.AfterFunc(access.Scope(r.Context()), func() { conn.CloseNow() })
+	defer stop()
 	inner := &http2.Server{MaxConcurrentStreams: 32, MaxUploadBufferPerConnection: 1 << 20, MaxUploadBufferPerStream: 64 << 10, IdleTimeout: 90 * time.Second}
-	inner.ServeConn(wsSocket(conn), &http2.ServeConnOpts{Context: context.Background(), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: s})
+	inner.ServeConn(wsSocket(conn), &http2.ServeConnOpts{Context: access.Scope(r.Context()), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: s})
 }
 
 func basicAuth(user, password string) string {
@@ -337,10 +340,10 @@ func (b *carrierBody) Read(p []byte) (int, error) {
 func (b *carrierBody) Close() error { err := b.ReadCloser.Close(); b.once.Do(b.release); return err }
 func (s *Server) serveXHTTP(w http.ResponseWriter, r *http.Request) {
 	s.xhttpOnce.Do(func() {
-		s.xhttpServer = &xhttp.Server{Settings: s.XHTTPSettings, MaxSessions: s.MaxTunnels, Authorized: s.authorized, ServeConn: func(conn net.Conn, outer *http.Request) {
+		s.xhttpServer = &xhttp.Server{Settings: s.XHTTPSettings, MaxSessions: s.MaxTunnels, Authorized: s.authorized, Owner: func(r *http.Request) string { return access.Owner(r.Context()) }, Lifetime: func(r *http.Request) context.Context { return access.Scope(r.Context()) }, ServeConn: func(conn net.Conn, outer *http.Request) {
 			defer conn.Close()
 			inner := &http2.Server{MaxConcurrentStreams: 32, MaxUploadBufferPerConnection: 1 << 20, MaxUploadBufferPerStream: 64 << 10, IdleTimeout: 90 * time.Second}
-			inner.ServeConn(conn, &http2.ServeConnOpts{Context: context.Background(), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { r.TLS = outer.TLS; s.ServeHTTP(w, r) })})
+			inner.ServeConn(conn, &http2.ServeConnOpts{Context: access.Scope(outer.Context()), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { r.TLS = outer.TLS; s.ServeHTTP(w, r) })})
 		}}
 	})
 	s.xhttpServer.ServeHTTP(w, r)

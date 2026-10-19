@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
@@ -36,6 +37,11 @@ func main() {
 	password := os.Getenv("FOXTUNNEL_PASSWORD")
 
 	switch os.Args[1] {
+	case "access":
+		if err := accessCommand(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		return
 	case "version":
 		fs := i18n.NewFlagSet("foxtunnel version")
 		asJSON := fs.Bool("json", false, i18n.Text("print machine-readable build information"))
@@ -85,6 +91,8 @@ func main() {
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		configFile := fs.String("config", "", i18n.Text("private server configuration JSON"))
+		usersFile := fs.String("users-file", "", i18n.Text("private access policy JSON; reload with SIGHUP"))
+		usersState := fs.String("users-state", "", i18n.Text("durable access ledger in a private directory"))
 		h3Listen := fs.String("h3-listen", "", i18n.Text("optional native HTTP/3 UDP listening address"))
 		listen := fs.String("listen", "127.0.0.1:8443", i18n.Text("HTTPS listening address"))
 		cert := fs.String("cert", "", i18n.Text("TLS certificate PEM"))
@@ -116,6 +124,7 @@ func main() {
 				log.Fatal(i18n.Text(err.Error()))
 			}
 			user, password = config.Username, config.Password
+			*usersFile, *usersState = config.UsersFile, config.UsersState
 			*listen, *cert, *key = config.Listen, config.Certificate, config.PrivateKey
 			*h3Listen = config.H3Listen
 			*xhttpPath, *xhttpHost = config.XHTTPPath, config.XHTTPHost
@@ -124,9 +133,27 @@ func main() {
 			*bondSNI, *bondPin = config.BondSNI, config.BondPin
 			*maxTunnels, *maxConnections = config.MaxTunnels, config.MaxConnections
 		}
-		if user == "" || password == "" {
+		var controller *access.Controller
+		if *usersFile != "" || *usersState != "" {
+			if *usersFile == "" || *usersState == "" || user != "" || password != "" {
+				log.Fatal("users-file and users-state require exclusive access mode")
+			}
+			if err := checkAccessPaths(*usersFile, *usersState); err != nil {
+				log.Fatal(err)
+			}
+			policy, err := readAccessPolicy(*usersFile, *bondRelay != "")
+			if err != nil {
+				log.Fatal(err)
+			}
+			controller, err = access.New(policy, *usersState)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer controller.Close()
+		} else if user == "" || password == "" {
 			log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 		}
+
 		if *maxTunnels <= 0 {
 			log.Fatal(i18n.Text("--max-tunnels must be positive"))
 		}
@@ -138,7 +165,7 @@ func main() {
 		}
 		var cover http.Handler
 		if *webRoot != "" {
-			if err := tunnel.CheckPublicRoot(*webRoot, *key, *configFile, *clusterFile); err != nil {
+			if err := tunnel.CheckPublicRoot(*webRoot, *key, *configFile, *clusterFile, *usersFile, *usersState); err != nil {
 				log.Fatal(i18n.Text("public website overlaps private configuration"))
 			}
 			var err error
@@ -154,14 +181,18 @@ func main() {
 		if err != nil {
 			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
 		}
-		handler := &tunnel.Server{XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		handler := &tunnel.Server{Access: controller, XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()
 			handler.Bond = hub
 		}
 		if *bondRelay != "" {
-			relay, closeRelay, err := tunnel.NewBondRelayIdentity(*bondRelay, user, password, *bondCA, *bondSNI, *bondPin)
+			relayUser, relayPassword := user, password
+			if controller != nil {
+				relayUser, relayPassword = "transport-only", "not-forwarded"
+			}
+			relay, closeRelay, err := tunnel.NewBondRelayIdentity(*bondRelay, relayUser, relayPassword, *bondCA, *bondSNI, *bondPin)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -172,6 +203,10 @@ func main() {
 			if err := handler.ConfigureCluster(*clusterFile); err != nil {
 				log.Fatal(err)
 			}
+		}
+		if controller != nil {
+			stop := watchAccess(controller, *usersFile, *bondRelay != "")
+			defer stop()
 		}
 		server := &http.Server{
 			Addr:              *listen,
@@ -406,7 +441,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add> [flags] (credentials: environment or vetroff link)"))
+	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access> [flags] (credentials: environment or vetroff link)"))
 	os.Exit(2)
 }
 

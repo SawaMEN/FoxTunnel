@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
@@ -24,6 +25,9 @@ import (
 // Server terminates authenticated native H2 CONNECT, H2/H3 POST and WSS.
 // It has no Firefox fingerprint parity. Padding is an opt-in experiment.
 type Server struct {
+	// Access is mutually exclusive with legacy credentials; set before serving.
+	Access *access.Controller
+
 	XHTTPSettings xhttp.Settings // Configure before serving; common cluster route.
 	Username      string
 	Password      string
@@ -47,7 +51,7 @@ type Server struct {
 	Cluster http.Handler
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	settings, settingsErr := xhttp.Normalize(s.XHTTPSettings.Path, s.XHTTPSettings.Host)
 	if settingsErr == nil && xhttp.MatchesAt(r, settings) && r.ProtoMajor == 2 && s.authorized(r) {
 		s.serveXHTTP(w, r)
@@ -115,7 +119,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	upstream, err := s.dialTarget(ctx, host, port)
 	cancel()
 	if err != nil {
-		http.Error(w, "destination unavailable", http.StatusBadGateway)
+		status := http.StatusBadGateway
+		if errors.Is(err, access.ErrLimited) || errors.Is(err, access.ErrQuota) {
+			status = http.StatusTooManyRequests
+		}
+		http.Error(w, "destination unavailable", status)
 		return
 	}
 	defer upstream.Close()
@@ -149,7 +157,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			_ = upstream.Close()
 			return
 		}
-		if tcp, ok := upstream.(*net.TCPConn); ok {
+		if tcp, ok := upstream.(interface{ CloseWrite() error }); ok {
 			_ = tcp.CloseWrite()
 		}
 	}()
@@ -162,6 +170,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) authorized(r *http.Request) bool {
+	if s.Access != nil {
+		return access.Authenticated(r.Context())
+	}
+
 	auth := r.Header.Get("Proxy-Authorization")
 	if len(auth) < 7 || !strings.EqualFold(auth[:6], "Basic ") {
 		return false
@@ -200,6 +212,9 @@ func splitTarget(address string) (string, string, error) {
 }
 
 func (s *Server) dialTarget(ctx context.Context, host, port string) (net.Conn, error) {
+	return access.Dial(ctx, func(ctx context.Context) (net.Conn, error) { return s.dialRawTarget(ctx, host, port) })
+}
+func (s *Server) dialRawTarget(ctx context.Context, host, port string) (net.Conn, error) {
 	resolver := s.Resolver
 	if resolver == nil {
 		resolver = net.DefaultResolver

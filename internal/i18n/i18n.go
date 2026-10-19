@@ -99,7 +99,7 @@ var translations = map[string]string{
 	"choose either --link or --link-file":                                                    "Выберите только --link или --link-file",
 	"connection link cannot be combined with connection-setting flags":                       "Ссылку нельзя сочетать с параметрами настройки подключения",
 	"cannot read connection link file":                                                       "Не удалось прочитать файл ссылки подключения",
-	"usage: foxtunnel <version|setup|server|client|share|cluster-add> [flags] (credentials: environment or vetroff link)": "Использование: foxtunnel <version|setup|server|client|share|cluster-add> [параметры] (учётные данные: окружение или ссылка vetroff://)",
+	"usage: foxtunnel <version|setup|server|client|share|cluster-add|access> [flags] (credentials: environment or vetroff link)": "Использование: foxtunnel <version|setup|server|client|share|cluster-add|access> [параметры] (учётные данные: окружение или ссылка vetroff://)",
 
 	"experimental persistent bond channels and small-write batching (requires --bond)": "Экспериментальные постоянные bond-каналы и объединение мелких записей (нужен --bond)",
 	"bond lanes require --bond":                                   "Для постоянных bond-каналов нужен --bond",
@@ -218,4 +218,6 @@ var translations = map[string]string{
 	"unknown language %q (choose ru or en)":               "Неизвестный язык %q (выберите ru или en)",
 	"--lang requires ru or en":                            "--lang требует значения ru или en",
 	"invalid arguments: %v":                               "Некорректные параметры: %v",
+	"private access policy JSON; reload with SIGHUP":      "Закрытый JSON-файл пользователей; перечитать по SIGHUP",
+	"durable access ledger in a private directory":        "Журнал квот в закрытом каталоге",
 }

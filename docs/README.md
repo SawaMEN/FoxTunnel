@@ -42,3 +42,5 @@
 Не переносите файлы Go-пакетов произвольно: тесты `*_test.go` должны оставаться рядом с кодом, а путь публичного SDK является частью API.
 
 - [Neqo HTTP3: клиент и H2 fallback](research/NEQO-INTEGRATION.md)
+
+Пользователи, отзыв и квоты: [RU](reference/ACCESS.md) / [EN](reference/ACCESS.en.md).

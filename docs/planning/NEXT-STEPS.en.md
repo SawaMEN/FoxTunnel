@@ -74,3 +74,7 @@ CA/SNI/pin before credentials, actual packet-loss/delay tests, UDP-blackhole bud
 request-free H2 fallback, SOCKS/SDK and pinned CI are implemented. Default H3 stays
 quic-go; ordinary Linux NSS archives exclude Neqo. Browser fingerprint equivalence,
 arm64/other OS and sustained/native-sanitizer work remain follow-up validation.
+
+## Stage five: managed access
+
+[Users, revocation and quotas](../reference/ACCESS.en.md): stable accounts, atomic local reload, generation-bound XHTTP/bond, live revocation, per-user/global request budgets, target-socket quota metering and conservative durable reservations. Legacy credentials remain separate. Billing periods, distributed identity sync and external audit remain future work.
