@@ -105,3 +105,24 @@ operator measurement**. Stage 8 does not include credentials or deploy a
 public measurement server. Its offline harness unit tests verify parsing,
 route expectations and privacy; actual field JSON files belong in private
 operator storage unless independently reviewed and redacted.
+
+
+## Stage 8 real-socket CI laboratory
+
+A dedicated [Stage-8 laboratory workflow](../../.github/workflows/stage8-lab.yml)
+runs an independent private-CA TLS endpoint, a FoxTunnel Go server with
+real TCP/H2 and UDP/H3 listeners, the pinned NSS/Neqo Mozilla binary,
+two SOCKS5 clients and byte-verified echo traffic. The loopback-only
+artifact is marked **not independent field evidence**. The harness
+must observe direct H2 and H3 route counters and successful full echo
+before reporting pass.
+
+The server's `--allow-private` flag is used exclusively inside the
+isolated localhost CI runner so the controlled echo target is reachable;
+it is never a recommendation for a public FoxTunnel installation.
+The CI job generates temporary credentials and a short-lived certificate,
+cleans them up and uploads only a sanitized JSON report.
+
+The workflow also exercises the Python harness's offline validation:
+URL safety, fallback opt-in, status parsing and error redaction. Real
+internet/VDS/mobile network measurements remain outstanding.
