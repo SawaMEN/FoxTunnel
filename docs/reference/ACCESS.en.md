@@ -1,6 +1,8 @@
 # Users, revocation and quotas
 
-[Русский](ACCESS.md) | **English**
+[Русский](ACCESS.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Users, revocation, rotation, rate limits and durable quotas.
 
 Stage five adds explicit managed access on Linux. There is no network admin API.
 Legacy single-user environment credentials remain supported, mutually exclusive

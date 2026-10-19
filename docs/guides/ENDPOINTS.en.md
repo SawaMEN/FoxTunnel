@@ -1,6 +1,8 @@
-[Русский](ENDPOINTS.md) | **English**
-
 # Trusted endpoints and new-stream scheduling
+
+[Русский](ENDPOINTS.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** HTTPS endpoints, public site, DNS policy and TLS identity.
 
 Configure up to eight HTTPS proxy origins owned or trusted by the operator:
 

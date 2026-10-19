@@ -1,6 +1,8 @@
 # Security properties and limits
 
-[Русский](SECURITY.md) | **English**
+[Русский](SECURITY.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Threat model, enforced TLS checks, limitations and uncovered use cases.
 
 This is an implementation review, not an external audit or a claim to match
 every VPN. Channel protection, detectability and full-device VPN behavior are
@@ -72,7 +74,7 @@ jobs now run the pinned scanner. This cannot rule out unknown bugs or scan
 native NSS. The shared-ticket-key regression test fails on a deliberately
 weakened copy without cache isolation and passes on the delivered code.
 
-See [setup](../guides/SETUP.en.md), [Amnezia/TUIC review](../research/AMNEZIA-TUIC-REVIEW.en.md)
+See [setup](../guides/SETUP.en.md), [Amnezia/TUIC review](../archive/reviews/AMNEZIA-TUIC-REVIEW.en.md)
 and [connection links](../guides/CONNECTION-LINKS.en.md).
 
 ## Additional native transports
