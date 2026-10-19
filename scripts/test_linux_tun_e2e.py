@@ -64,7 +64,8 @@ while True:
         question_end = 25
         if request[question_end - 4:question_end] != b"\x00\x01\x00\x01":
             continue
-        header = request[:2] + b"\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00"
+        # DNS header is exactly 12 bytes total, including the 2-byte ID.
+        header = request[:2] + b"\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00"
         answer = b"\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x01\x00\x04" + bytes([198,18,0,9])
         sock.sendto(header + request[12:question_end] + answer, peer)
 """
