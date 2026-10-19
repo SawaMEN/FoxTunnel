@@ -1,6 +1,7 @@
 name: Neqo Rust FFI experiment
 on:
   push:
+    branches: [main]
     paths:
       - 'experiments/neqo-ffi/**'
       - '.github/workflows/neqo-experiment.yml'
@@ -22,6 +23,17 @@ jobs:
           rustup default 1.90.0
           sudo apt-get update -qq
           sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config build-essential clang libclang-dev
+      - name: Resolve upstream-compatible nss-rs lock revision
+        working-directory: experiments/neqo-ffi
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo update -p nss-rs --precise ba8a3f6acffc7e25749054969ccbbb3ca615df7f
+          cargo metadata --locked --format-version 1 --no-deps >/dev/null
+          echo 'FOXTUNNEL_CARGO_LOCK_BEGIN'
+          base64 -w0 Cargo.lock
+          echo
+          echo 'FOXTUNNEL_CARGO_LOCK_END'
       - name: Install hash-pinned NSS 3.126 required by nss-rs
         uses: mozilla/actions/nss@a2f86e00e93d54a5c56689e15633eeb3ef1bf671
         with:
