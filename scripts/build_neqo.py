@@ -131,7 +131,7 @@ def main():
         raise ValueError('initial Neqo build supports Linux amd64 only')
     lock = json.loads(LOCK.read_text())
     validate_lock(lock)
-    version = subprocess.check_output(['rustc', '--version'], text=True).split()[1]
+    version = subprocess.check_output(['rustc', '--version'], cwd=CRATE, text=True).split()[1]
     if version != lock['rust_toolchain']:
         raise ValueError('use pinned Rust ' + lock['rust_toolchain'])
     out = args.out.resolve()
