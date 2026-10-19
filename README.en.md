@@ -1,75 +1,65 @@
 # FoxTunnel
 
-[Русский](README.md) · **English** · [Documentation](docs/README.en.md) · [MIT](LICENSE)
+**[Русский](README.md)**
 
-FoxTunnel is an **experimental** client–server TCP tunnel: a local SOCKS5 proxy, an HTTPS server and several built-in transports. No Xray process or external proxy sidecar is required.
+FoxTunnel is an experimental HTTPS tunnel with a local **SOCKS5 proxy**. It forwards application connections through a FoxTunnel server using HTTP/2, HTTP/3, WebSocket or XHTTP.
 
-> **Status:** research prototype, not a general-purpose VPN. Experimental SOCKS5 UDP ASSOCIATE is available (single-request HTTPS POST v1 and a separately enabled persistent multiplexed stream v2); experimental native Linux TUN has been added but end-to-end verification is pending; production leak protection is not guaranteed; an experimental external [Linux TUN companion](docs/guides/LINUX-TUN.en.md) is available (7/7 Linux lab tasks; native TUN end-to-end CI passed). Firefox fingerprint equivalence and resistance to network filtering have not been demonstrated.
+**Important:** FoxTunnel is not a production-ready, system-wide VPN. UDP and Linux TUN are experimental. Firefox fingerprint equivalence, resistance to network filtering and complete leak protection have **not** been demonstrated.
 
-## Implemented features
+## Quick start
 
-| Area | Current implementation |
-|---|---|
-| Client | Local SOCKS5 for TCP and experimental UDP; CA/SNI certificate validation and optional SPKI pin |
-| Server | HTTPS, TCP forwarding and experimental UDP relay, authentication, destination controls and an optional static public site |
-| Transports | `h2-connect`, `h2-post`, `h3-post`, `wss`, `xhttp-stream-one`, `xhttp-stream-up`, `xhttp-packet-up` |
-| TCP TLS | Go TLS; Mozilla NSS is the default in supported `-tags nss` Linux builds |
-| HTTP/3 | `quic-go` by default; a **separate opt-in Mozilla Neqo experiment** on Linux amd64 |
-| Other | Cluster ingress nodes, bounded bond lanes, managed users/quotas and a Go SDK |
+**1. Get the binary.** Check [GitHub Releases](https://github.com/SawaMEN/FoxTunnel/releases) for your platform, or build using Go 1.26+:
 
-NSS does not implement the entire Firefox stack; Neqo does not import Necko or guarantee Firefox-like network behavior. The HTTP/2 and server implementation still uses Go.
-
-## Build and quick start
-
-Requires **Go 1.26+** (CI pins 1.26.9). From the repository root:
-
-```sh
-go test ./...
+~~~bash
 go build -o foxtunnel ./cmd/foxtunnel
 ./foxtunnel version --json
-```
+~~~
 
-Configure DNS and bring your **own valid TLS certificate and private key**. FoxTunnel does not issue certificates or configure the firewall.
+The experimental **Go + NSS + Neqo** bundle is available as [v0.1.0-alpha.2](https://github.com/SawaMEN/FoxTunnel/releases/tag/v0.1.0-alpha.2) for **Linux amd64**. It was built before the branches were merged and should not be mistaken for a build of the latest \`main\`.
 
-```sh
-./foxtunnel setup --server https://proxy.example \
-  --cert /etc/ssl/proxy/fullchain.pem \
-  --key /etc/ssl/proxy/key.pem \
+**2. Set up a server.** Supply your own DNS name and valid TLS certificate:
+
+~~~bash
+./foxtunnel setup --server https://vpn.example.com \
+  --cert /path/to/fullchain.pem \
+  --key /path/to/privkey.pem \
   --out server-config
+
 ./foxtunnel server --config server-config/server.json
-```
+~~~
 
-Transfer `server-config/connection.txt` securely to the client machine:
+**3. Start a client.** Securely transfer \`server-config/connection.txt\` to the client:
 
-```sh
+~~~bash
 ./foxtunnel client --link-file connection.txt
-```
+~~~
 
-**Connection links contain credentials.** Never publish them in source control, URLs or logs. For private CAs, cluster ingress and detailed setup, follow the [setup guide](docs/guides/SETUP.en.md).
+Configure your application to use SOCKS5 at \`127.0.0.1:1080\`.
 
-## Builds and backend selection
+**Keep the connection file private:** it contains credentials. Never commit it or post it in an issue.
 
-**Public release archives**, when available, target Linux amd64/arm64 with NSS. A CI workflow does not itself imply that a release exists. See [distribution and verification](docs/reference/DISTRIBUTION.en.md).
+## Features
 
-The **Mozilla Neqo** H3 client is an **opt-in experiment built separately** on Linux amd64 with CA/SNI/SPKI verification before HTTP credentials and 0-RTT disabled. It is not in normal release archives. Follow [Neqo build and trust documentation](docs/research/NEQO-INTEGRATION.en.md). The older `experiments/neqo-ffi` probe is not a usable H3 client.
+- TCP forwarding via SOCKS5 and HTTPS
+- HTTP/2, HTTP/3, WebSocket and XHTTP transports
+- Opt-in Mozilla engine (NSS for TLS/H2 and experimental Neqo for QUIC/H3)
+- Experimental UDP ASSOCIATE and Linux TUN (host routes, DNS and leak prevention require separate configuration)
+- Multi-server features, bonding, access controls and a Go SDK
 
-`auto` selects NSS for supported TCP transports in tagged Linux binaries and `quic-go` for H3. Explicitly unsupported backends fail rather than silently downgrading.
+To opt into the Mozilla engine on a compatible build:
+
+~~~bash
+./foxtunnel client --engine mozilla --link-file connection.txt
+~~~
+
+The connection file's selected transport is preserved; Mozilla mode does **not** automatically force HTTP/3.
 
 ## Documentation
 
-- [Setup](docs/guides/SETUP.en.md) · [Connection links](docs/guides/CONNECTION-LINKS.en.md) · [Endpoints](docs/guides/ENDPOINTS.en.md)
-- [Architecture](docs/architecture/ARCHITECTURE.en.md) · [Transports](docs/architecture/NATIVE-TRANSPORTS.en.md) · [XHTTP](docs/architecture/XHTTP.en.md) · [Bonding](docs/architecture/BONDING.en.md)
-- [Security](docs/reference/SECURITY.en.md) · [Access and quotas](docs/reference/ACCESS.en.md) · [SDK](docs/reference/SDK.en.md) · [Wire draft](docs/reference/WIRE-DRAFT-0.md)
-- [Research](docs/research/README.en.md) · [Measurements](docs/measurements/README.en.md) · [Roadmap](docs/planning/ROADMAP.en.md)
+1. **[Getting started](docs/START.en.md)** — installation, first server and client, troubleshooting.
+2. **[Features and configuration](docs/FEATURES.en.md)** — transports, UDP/TUN, Mozilla, security.
+3. **[For developers](docs/DEVELOPMENT.en.md)** — architecture, Go SDK, builds, CI and releases.
 
-**Full documentation map and historical notes:** [docs/README.en.md](docs/README.en.md).
+FoxTunnel remains experimental. Passing local CI is not proof of mobile-carrier compatibility, Firefox impersonation or production readiness.
 
-## Validate and assess limitations
-
-```sh
-go test -race ./...
-go vet ./...
-python3 scripts/check_docs_links.py
-```
-
-Loopback experiments do not establish operator-network effectiveness. Read the [security model](docs/reference/SECURITY.en.md), [compatibility policy](docs/reference/COMPATIBILITY.en.md) and [distribution rules](docs/reference/DISTRIBUTION.en.md) before deployment.
+License: [MIT](LICENSE).
