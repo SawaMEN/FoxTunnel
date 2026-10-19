@@ -97,6 +97,8 @@ var translations = map[string]string{
 	"cannot read connection link file":                                                       "Не удалось прочитать файл ссылки подключения",
 	"usage: foxtunnel <version|setup|server|client|share|cluster-add> [flags] (credentials: environment or vetroff link)": "Использование: foxtunnel <version|setup|server|client|share|cluster-add> [параметры] (учётные данные: окружение или ссылка vetroff://)",
 
+	"experimental persistent bond channels and small-write batching (requires --bond)": "Экспериментальные постоянные bond-каналы и объединение мелких записей (нужен --bond)",
+	"bond lanes require --bond":                                   "Для постоянных bond-каналов нужен --bond",
 	"bond pipeline must be auto, 4 or 8":                          "Глубина конвейера объединения: auto, 4 или 8",
 	"bond pipeline: auto, 4 or 8 (higher depth uses more memory)": "Конвейер объединения: auto, 4 или 8 (большая глубина требует больше памяти)",
 	"bond attempt timeout must be at least 100ms":                 "В режиме объединения время попытки должно быть не меньше 100ms",

@@ -11,6 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/quic-go/quic-go/http3"
+	"golang.org/x/net/http2"
 	"io"
 	"net"
 	"net/http"
@@ -32,6 +34,9 @@ type Client struct {
 	SetupTimeout       time.Duration
 	// Pipeline is 0 (automatic), 4, or 8. Configure before Open.
 	Pipeline int
+	// PersistentLanes opts into negotiated records-v1 channels and coalescing.
+	// Default RPC is retained until relay throughput regressions are resolved.
+	PersistentLanes bool
 	// Weights are relative configured capacities (1..100), not traffic quotas.
 	// ExpectedHub optionally pins the exit before the first destination dial.
 	Weights     []int
@@ -118,6 +123,10 @@ func (c *Client) request(ctx context.Context, token []byte, hub string, op byte,
 	return c.requestInto(ctx, token, hub, op, seq, ack, payload, nil)
 }
 func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op byte, seq, ack uint64, payload, responseBuffer []byte) (block, error) {
+	return c.requestVia(ctx, c.Transport, token, hub, op, seq, ack, payload, responseBuffer)
+}
+
+func (c *Client) requestVia(ctx context.Context, transport http.RoundTripper, token []byte, hub string, op byte, seq, ack uint64, payload, responseBuffer []byte) (block, error) {
 	frame := make([]byte, headerSize)
 	frame[0] = op
 	copy(frame[1:33], token)
@@ -166,7 +175,12 @@ func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op b
 		}
 		req.Header.Set("X-FoxTunnel-Bond-Wait", min(timeout/3, time.Second).String())
 		started := time.Now()
-		resp, err := c.Transport.RoundTrip(req)
+		var resp *http.Response
+		if lanes, ok := transport.(*laneTransport); ok {
+			resp, err = lanes.roundTripInto(req, responseBuffer)
+		} else {
+			resp, err = transport.RoundTrip(req)
+		}
 		var data []byte
 		status := 0
 		if err == nil {
@@ -190,7 +204,11 @@ func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op b
 		retry := false
 		if err != nil {
 			var network net.Error
-			retry = !terminal(err) && (errors.As(err, &network) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, context.DeadlineExceeded))
+			var h3 *http3.Error
+			h3Retry := errors.As(err, &h3) && (h3.ErrorCode == http3.ErrCodeInternalError || h3.ErrorCode == http3.ErrCodeRequestCanceled || h3.ErrorCode == http3.ErrCodeRequestRejected || h3.ErrorCode == http3.ErrCodeRequestIncomplete)
+			var stream http2.StreamError
+			streamRetry := errors.As(err, &stream) && (stream.Code == http2.ErrCodeInternal || stream.Code == http2.ErrCodeCancel || stream.Code == http2.ErrCodeRefusedStream)
+			retry = !terminal(err) && (h3Retry || streamRetry || errors.As(err, &network) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, context.DeadlineExceeded))
 		} else {
 			retry = status == 429 || status == 408 || status == 503 || status == 504
 		}
@@ -202,7 +220,7 @@ func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op b
 		if err == nil && !retry {
 			switch status {
 			case 200:
-				return block{data: data}, nil
+				return block{data: data, lanes: resp.Header.Get(LaneHeader) == LaneVersion}, nil
 			case 201:
 				return block{eof: true}, nil
 			case 204:
@@ -231,6 +249,10 @@ type result struct {
 }
 type Stream struct {
 	client                      *Client
+	transport                   http.RoundTripper
+	lanes                       *laneTransport
+	small                       []byte
+	flushTimer                  *time.Timer
 	token                       [32]byte
 	hub                         string
 	ctx                         context.Context
@@ -278,7 +300,7 @@ func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
 		}
 	}
 	streamCtx, cancel := context.WithCancel(ctx)
-	s := &Stream{client: c, ctx: streamCtx, cancel: cancel, futures: make(map[uint64]chan result), uploadSlots: make(chan *[chunkSize]byte, window)}
+	s := &Stream{client: c, transport: c.Transport, ctx: streamCtx, cancel: cancel, futures: make(map[uint64]chan result), uploadSlots: make(chan *[chunkSize]byte, window)}
 	s.uploadCapacity = c.pipelineDepth()
 	for range s.uploadCapacity {
 		s.uploadSlots <- nil
@@ -309,6 +331,10 @@ func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
 		cancel()
 		return nil, errors.New(i18n.Text("invalid bond hub identity"))
 	}
+	if opened.lanes && c.PersistentLanes {
+		s.lanes = &laneTransport{base: c.Transport, ctx: streamCtx}
+		s.transport = s.lanes
+	}
 	return s, nil
 }
 func (s *Stream) fetch() {
@@ -328,7 +354,7 @@ func (s *Stream) fetch() {
 			s.ackMu.Lock()
 			ack := s.ack
 			s.ackMu.Unlock()
-			b, err := s.client.requestInto(s.readCtx, s.token[:], s.hub, opRead, seq, ack, nil, responseBuffer)
+			b, err := s.client.requestVia(s.readCtx, s.transport, s.token[:], s.hub, opRead, seq, ack, nil, responseBuffer)
 			if errors.Is(err, errPoll) {
 				continue
 			}
@@ -386,7 +412,8 @@ func (s *Stream) Read(p []byte) (int, error) {
 	return n, nil
 }
 
-// Write buffers at most four upload blocks. Workers can use independent nodes
+// Write buffers at most eight upload blocks and one small-write accumulator.
+// Workers can use independent nodes
 // concurrently even when SOCKS/TCP supplies one small read at a time.
 func (s *Stream) Write(p []byte) (int, error) {
 	s.writeMu.Lock()
@@ -397,6 +424,14 @@ func (s *Stream) Write(p []byte) (int, error) {
 	if err := s.ctx.Err(); err != nil {
 		return 0, err
 	}
+	if s.lanes != nil && (len(s.small) > 0 || len(p) < chunkSize) {
+		return s.coalesce(p)
+	}
+	return s.writeBlocks(p)
+}
+
+// writeBlocks runs under writeMu. Each slot owns one immutable retry payload.
+func (s *Stream) writeBlocks(p []byte) (int, error) {
 	written := 0
 	for len(p) > 0 {
 		// Capacity grows monotonically for this stream; there is no revocation of
@@ -425,7 +460,7 @@ func (s *Stream) Write(p []byte) (int, error) {
 			defer s.uploadPending.Done()
 			defer func() { s.uploadSlots <- buffer }()
 			for {
-				_, err := s.client.request(s.ctx, s.token[:], s.hub, opWrite, seq, 0, payload)
+				_, err := s.client.requestVia(s.ctx, s.transport, s.token[:], s.hub, opWrite, seq, 0, payload, nil)
 				if errors.Is(err, errPoll) {
 					continue
 				}
@@ -445,12 +480,15 @@ func (s *Stream) CloseWrite() error {
 		return nil
 	}
 	s.writeClosed = true
+	if err := s.flushSmall(); err != nil {
+		return err
+	}
 	s.uploadPending.Wait()
 	if err := s.ctx.Err(); err != nil {
 		return err
 	}
 	for {
-		_, err := s.client.request(s.ctx, s.token[:], s.hub, opFin, s.nextUp, 0, nil)
+		_, err := s.client.requestVia(s.ctx, s.transport, s.token[:], s.hub, opFin, s.nextUp, 0, nil, nil)
 		if !errors.Is(err, errPoll) {
 			return err
 		}
@@ -459,9 +497,16 @@ func (s *Stream) CloseWrite() error {
 func (s *Stream) Close() error {
 	s.once.Do(func() {
 		s.cancel()
+		if s.lanes != nil {
+			s.lanes.close()
+		}
 		// Serialize with Read/Write before waiting: no worker can be added after Wait.
 		s.readMu.Lock()
 		s.writeMu.Lock()
+		if s.flushTimer != nil {
+			s.flushTimer.Stop()
+		}
+		s.small = nil
 		s.workers.Wait()
 		s.writeMu.Unlock()
 		s.readMu.Unlock()

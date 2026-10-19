@@ -315,3 +315,9 @@ func TestXHTTPIdleClosePreservesActiveStream(t *testing.T) {
 		})
 	}
 }
+
+func TestNativeBondedLanesGo(t *testing.T) {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+		t.Run(mode, func(t *testing.T) { testBondedSOCKSNativeLanes(t, "go", 8, true, mode, true) })
+	}
+}

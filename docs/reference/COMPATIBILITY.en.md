@@ -61,3 +61,7 @@ baseline is Ubuntu 24.04; older glibc needs separate testing. Mozilla and Go
 updates require ongoing maintenance.
 
 [Distribution](DISTRIBUTION.en.md) · [Wire draft](WIRE-DRAFT-0.md) · [Next steps](../planning/NEXT-STEPS.en.md)
+
+Bond `records-v1` is an explicitly negotiated extension of the existing bond endpoint.
+The [data-path specification](../research/DATA-PATH.en.md) defines per-entry legacy
+fallback before any operation is sent; original RPC requests remain accepted.

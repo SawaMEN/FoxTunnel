@@ -1,0 +1,31 @@
+goos: linux
+goarch: amd64
+pkg: github.com/SawaMEN/FoxTunnel/internal/tunnel
+cpu: INTEL(R) XEON(R) PLATINUM 8573C
+BenchmarkBondedDataPath/rpc/write137-8         	      16	  32387142 ns/op	  32.38 MB/s	       477.9 cgo/op	        62.05 p95-ms	 3928202 B/op	   19644 allocs/op
+BenchmarkBondedDataPath/rpc/write137-8         	      18	  32379165 ns/op	  32.38 MB/s	       496.1 cgo/op	        57.16 p95-ms	 3943562 B/op	   20558 allocs/op
+BenchmarkBondedDataPath/rpc/write137-8         	      20	  32691454 ns/op	  32.07 MB/s	       511.8 cgo/op	        54.77 p95-ms	 4050770 B/op	   21715 allocs/op
+BenchmarkBondedDataPath/rpc/write32768-8       	      32	  18692665 ns/op	  56.10 MB/s	       413.8 cgo/op	        28.00 p95-ms	 2764629 B/op	   15208 allocs/op
+BenchmarkBondedDataPath/rpc/write32768-8       	      30	  21814591 ns/op	  48.07 MB/s	       414.0 cgo/op	        37.80 p95-ms	 2767207 B/op	   15259 allocs/op
+BenchmarkBondedDataPath/rpc/write32768-8       	      32	  18991197 ns/op	  55.21 MB/s	       412.4 cgo/op	        26.81 p95-ms	 2711845 B/op	   15056 allocs/op
+BenchmarkBondedDataPath/lanes/write137-8       	2026/10/18 17:06:40 http: TLS handshake error from 127.0.0.1:51370: read tcp 127.0.0.1:38293->127.0.0.1:51370: use of closed network connection
+      21	  32541362 ns/op	  32.22 MB/s	       415.6 cgo/op	        69.65 p95-ms	 1941893 B/op	    6425 allocs/op
+BenchmarkBondedDataPath/lanes/write137-8       	      22	  26246585 ns/op	  39.95 MB/s	       464.2 cgo/op	        36.36 p95-ms	 3067293 B/op	    7928 allocs/op
+BenchmarkBondedDataPath/lanes/write137-8       	      30	  29116784 ns/op	  36.01 MB/s	       459.5 cgo/op	        49.45 p95-ms	 3371252 B/op	    7878 allocs/op
+BenchmarkBondedDataPath/lanes/write32768-8     	      25	  29133389 ns/op	  35.99 MB/s	       441.2 cgo/op	        82.48 p95-ms	 3445098 B/op	    7988 allocs/op
+BenchmarkBondedDataPath/lanes/write32768-8     	      25	  33916869 ns/op	  30.92 MB/s	       448.9 cgo/op	        64.37 p95-ms	 3451930 B/op	    8134 allocs/op
+BenchmarkBondedDataPath/lanes/write32768-8     	      14	  38403143 ns/op	  27.30 MB/s	       447.4 cgo/op	        88.81 p95-ms	 4104164 B/op	    8289 allocs/op
+BenchmarkNSSBondedDataPath/rpc/write137-8      	      12	  56276533 ns/op	  18.63 MB/s	       935.2 cgo/op	        88.70 p95-ms	 3424360 B/op	   18896 allocs/op
+BenchmarkNSSBondedDataPath/rpc/write137-8      	       3	 255027500 ns/op	   4.11 MB/s	       906.7 cgo/op	       383.0 p95-ms	 3770474 B/op	   18284 allocs/op
+BenchmarkNSSBondedDataPath/rpc/write137-8      	       6	 117851339 ns/op	   8.90 MB/s	       907.5 cgo/op	       208.6 p95-ms	 3401633 B/op	   17881 allocs/op
+BenchmarkNSSBondedDataPath/rpc/write32768-8    	       7	  90662900 ns/op	  11.57 MB/s	       843.6 cgo/op	       171.6 p95-ms	 2829734 B/op	   15670 allocs/op
+BenchmarkNSSBondedDataPath/rpc/write32768-8    	       9	 130408854 ns/op	   8.04 MB/s	       840.4 cgo/op	       197.0 p95-ms	 2840896 B/op	   15603 allocs/op
+BenchmarkNSSBondedDataPath/rpc/write32768-8    	      13	 108105798 ns/op	   9.70 MB/s	       836.9 cgo/op	       215.3 p95-ms	 2757707 B/op	   15474 allocs/op
+BenchmarkNSSBondedDataPath/lanes/write137-8    	       4	 166374934 ns/op	   6.30 MB/s	       944.8 cgo/op	       289.2 p95-ms	 5508114 B/op	   11051 allocs/op
+BenchmarkNSSBondedDataPath/lanes/write137-8    	       4	 156382789 ns/op	   6.71 MB/s	       940.0 cgo/op	       244.1 p95-ms	 4804396 B/op	    9776 allocs/op
+BenchmarkNSSBondedDataPath/lanes/write137-8    	       7	 107297638 ns/op	   9.77 MB/s	       955.3 cgo/op	       211.9 p95-ms	 4197308 B/op	   10248 allocs/op
+BenchmarkNSSBondedDataPath/lanes/write32768-8  	      15	  58845602 ns/op	  17.82 MB/s	       886.5 cgo/op	       164.6 p95-ms	 3782905 B/op	    9075 allocs/op
+BenchmarkNSSBondedDataPath/lanes/write32768-8  	      21	  37940746 ns/op	  27.64 MB/s	       864.6 cgo/op	        58.57 p95-ms	 3346392 B/op	    8332 allocs/op
+BenchmarkNSSBondedDataPath/lanes/write32768-8  	       9	 116858389 ns/op	   8.97 MB/s	       913.0 cgo/op	       199.7 p95-ms	 4387016 B/op	    9602 allocs/op
+PASS
+ok  	github.com/SawaMEN/FoxTunnel/internal/tunnel	28.078s

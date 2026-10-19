@@ -29,6 +29,7 @@
 - [План интеграции Mozilla Neqo/HTTP3](research/NEQO-INTEGRATION.md)
 - [Профиль Mozilla TLS/H2 и отчёт различий](research/MOZILLA-CLIENT-PROFILE.md)
 - [Методика измерений](research/PERFORMANCE.md)
+- [Передача данных и постоянные bond-каналы](research/DATA-PATH.md)
 - [Измерения](measurements/)
 
 ## Развитие проекта

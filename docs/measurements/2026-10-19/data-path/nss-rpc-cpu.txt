@@ -1,0 +1,29 @@
+File: bond.test
+Build ID: 7cbc951a0e63db299c4207bac1fa5de5a7c2d2cc
+Type: cpu
+Time: 2026-10-18 17:07:04 PDT
+Duration: 4.06s, Total samples = 2.28s (56.16%)
+Showing nodes accounting for 1.62s, 71.05% of 2.28s total
+Dropped 221 nodes (cum <= 0.01s)
+Showing top 20 nodes out of 281
+      flat  flat%   sum%        cum   cum%
+     0.32s 14.04% 14.04%      0.64s 28.07%  runtime.cgocall
+     0.31s 13.60% 27.63%      0.56s 24.56%  syscall.Syscall
+     0.30s 13.16% 40.79%      0.30s 13.16%  internal/runtime/syscall/linux.Syscall6
+     0.20s  8.77% 49.56%      0.20s  8.77%  runtime.futex
+     0.05s  2.19% 51.75%      0.06s  2.63%  runtime.lock2
+     0.05s  2.19% 53.95%      0.05s  2.19%  runtime.memmove
+     0.05s  2.19% 56.14%      0.05s  2.19%  runtime.unlock2
+     0.04s  1.75% 57.89%      0.04s  1.75%  runtime.(*mspan).writeHeapBitsSmall
+     0.04s  1.75% 59.65%      0.04s  1.75%  runtime.nextFreeFast (inline)
+     0.03s  1.32% 60.96%      0.03s  1.32%  crypto/internal/fips140/aes/gcm.gcmAesDec
+     0.03s  1.32% 62.28%      0.03s  1.32%  memeqbody
+     0.03s  1.32% 63.60%      0.03s  1.32%  runtime.asyncPreempt
+     0.03s  1.32% 64.91%      0.03s  1.32%  runtime.nanotime
+     0.02s  0.88% 65.79%      0.02s  0.88%  aeshashbody
+     0.02s  0.88% 66.67%      0.02s  0.88%  internal/runtime/maps.ctrlGroup.matchH2
+     0.02s  0.88% 67.54%      0.02s  0.88%  net/textproto.canonicalMIMEHeaderKey
+     0.02s  0.88% 68.42%      0.03s  1.32%  runtime.casgstatus
+     0.02s  0.88% 69.30%      0.02s  0.88%  runtime.cheaprand (inline)
+     0.02s  0.88% 70.18%      0.16s  7.02%  runtime.mallocgc
+     0.02s  0.88% 71.05%      0.02s  0.88%  runtime.memclrNoHeapPointers

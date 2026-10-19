@@ -30,8 +30,9 @@ const (
 )
 
 type block struct {
-	data []byte
-	eof  bool
+	data  []byte
+	eof   bool
+	lanes bool
 }
 type session struct {
 	mu                        sync.Mutex
@@ -46,6 +47,7 @@ type session struct {
 	nextUp, nextDown, ackDown uint64
 	up, down                  map[uint64]block
 	receiveBuffers            [window][]byte
+	lanes                     map[io.ReadCloser]struct{}
 }
 
 func (s *session) signal() { close(s.changed); s.changed = make(chan struct{}) }
@@ -53,6 +55,9 @@ func (s *session) stop(err error) {
 	s.mu.Lock()
 	if !s.closed {
 		s.closed = true
+		for body := range s.lanes {
+			body.Close()
+		}
 		s.up = nil
 		s.down = nil
 		s.receiveBuffers = [window][]byte{}
@@ -201,11 +206,20 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if r.Header.Get(LaneHeader) == LaneVersion {
+		h.serveLane(w, r)
+		return
+	}
 	body, err := readBounded(r.Body, r.ContentLength, headerSize+chunkSize)
 	if err != nil || len(body) < headerSize || len(body) > headerSize+chunkSize {
 		http.Error(w, "bad frame", 400)
 		return
 	}
+	h.serveFrame(w, r, body)
+}
+
+func (h *Hub) serveFrame(w http.ResponseWriter, r *http.Request, body []byte) {
+	expected := r.Header.Get("X-FoxTunnel-Bond-Hub")
 	op, token := body[0], body[1:33]
 	seq := binary.BigEndian.Uint64(body[33:41])
 	ack := binary.BigEndian.Uint64(body[41:49])
@@ -252,6 +266,7 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch op {
 	case opOpen:
+		w.Header().Set(LaneHeader, LaneVersion)
 		w.WriteHeader(200)
 		w.Write(h.identity[:])
 	case opWrite, opFin:

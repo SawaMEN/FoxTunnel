@@ -213,6 +213,10 @@ func main() {
 		var fallbacks serverURLs
 		fs.Var(&fallbacks, "fallback-server", i18n.Text("explicit trusted HTTPS proxy fallback (repeat up to seven times)"))
 		bondPipeline := fs.String("bond-pipeline", "auto", i18n.Text("bond pipeline: auto, 4 or 8 (higher depth uses more memory)"))
+		bondLanes := new(bool)
+		if os.Args[1] == "client" {
+			fs.BoolVar(bondLanes, "bond-lanes", false, i18n.Text("experimental persistent bond channels and small-write batching (requires --bond)"))
+		}
 		bonded := fs.Bool("bond", false, i18n.Text("experimental multi-node stream bonding; nodes must share one hub"))
 		discover := fs.Bool("discover", false, i18n.Text("obtain trusted bond nodes and capacity weights from the main HTTPS node"))
 		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active"))
@@ -239,7 +243,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile":
+				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes":
 				default:
 					conflict = true
 				}
@@ -305,6 +309,9 @@ func main() {
 		if *connectTimeout <= 0 {
 			log.Fatal(i18n.Text("--connect-timeout must be positive"))
 		}
+		if *bondLanes && !*bonded {
+			log.Fatal(i18n.Text("bond lanes require --bond"))
+		}
 		if *discover && !*bonded {
 			log.Fatal(i18n.Text("cluster discovery requires --bond"))
 		}
@@ -349,6 +356,7 @@ func main() {
 		default:
 			log.Fatal(i18n.Text("bond pipeline must be auto, 4 or 8"))
 		}
+		client.BondLanes = *bondLanes
 		if *bonded {
 			var err error
 			if *discover {

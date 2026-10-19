@@ -136,7 +136,7 @@ func TestShareAndImportFromStdin(t *testing.T) {
 	if !strings.HasPrefix(link, "vetroff://") {
 		t.Fatal("wrong connection scheme")
 	}
-	client := helperCommand(ctx, "client", "--link-file", "-", "--listen", "127.0.0.1:0", "--h2-receive-profile", "firefox-158")
+	client := helperCommand(ctx, "client", "--link-file", "-", "--listen", "127.0.0.1:0", "--h2-receive-profile", "firefox-158", "--bond-lanes")
 	client.Env = helperEnv(false)
 	client.Stdin = strings.NewReader(link + "\n")
 	stderr, err := client.StderrPipe()
@@ -221,5 +221,21 @@ func TestTLSClientProfileWithStdinLinkRejectsGoWithoutDisclosure(t *testing.T) {
 	rejected, e := client.CombinedOutput()
 	if e == nil || !strings.Contains(string(rejected), "NSS") || strings.Contains(string(rejected), "vetroff://") || strings.Contains(string(rejected), "example-only-password") {
 		t.Fatal("profile ignored or credentials disclosed", e)
+	}
+}
+
+func TestBondLanesRequiresBondAndIsLocal(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := helperCommand(ctx, "client", "--server", "https://example.org", "--bond-lanes")
+	cmd.Env = helperEnv(true)
+	output, err := cmd.CombinedOutput()
+	if err == nil || (!strings.Contains(string(output), "--bond") && !strings.Contains(string(output), "объедин")) {
+		t.Fatal("lane flag did not require bond", err, string(output))
+	}
+	cmd = helperCommand(ctx, "share", "--server", "https://example.org", "--bond-lanes")
+	cmd.Env = helperEnv(true)
+	if output, err = cmd.CombinedOutput(); err == nil || strings.Contains(string(output), "example-only-password") {
+		t.Fatal("local lane option accepted by share or credentials disclosed")
 	}
 }

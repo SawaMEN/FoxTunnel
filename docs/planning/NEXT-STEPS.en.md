@@ -54,3 +54,14 @@ field-level TLS/H2 differences, reuse/cold-handshake and HRR tests. Supported gr
 and key shares match; TLS1.3-only signature order and H2 SETTINGS still differ.
 Necko and NSS resumption are not enabled; decisions and follow-up acceptance are
 recorded in the research document. Full Firefox conformance is not claimed.
+
+## Stage-three implementation
+
+[Persistent channels and data-path report](../research/DATA-PATH.en.md): negotiated
+bounded channels, small-write batching, mixed legacy relays, delivery-ACK loss,
+entry failure, Go/NSS and transport tests, CPU/allocation/cgo/p95 measurements.
+The code path is implemented. Actual packet RTT/loss, sustained/native memory and
+available-bandwidth scheduling still require validation; this is not a field
+performance result. Neqo remains the separate fourth stage.
+
+Persistent channels require local `--bond-lanes` with `--bond`; RPC stays the default because throughput results are mixed.

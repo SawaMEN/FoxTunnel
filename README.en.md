@@ -241,3 +241,7 @@ Links contain secrets. [Format and examples](docs/guides/CONNECTION-LINKS.en.md)
 [TLS/HTTP2: live Firefox/FoxTunnel comparison, commands and limitations](docs/research/WEB-PROFILE.en.md).
 
 [Mozilla TLS/H2 profile and gap report](docs/research/MOZILLA-CLIENT-PROFILE.en.md).
+
+[Persistent bond channels, small-write batching and measurements](docs/research/DATA-PATH.en.md).
+
+Persistent channels require local `--bond-lanes` with `--bond`; RPC stays the default because throughput results are mixed.

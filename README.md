@@ -237,3 +237,7 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 [TLS/HTTP2: живое сравнение Firefox и FoxTunnel, команды и ограничения](docs/research/WEB-PROFILE.md).
 
 [Профиль Mozilla TLS/H2 и отчёт различий](docs/research/MOZILLA-CLIENT-PROFILE.md).
+
+[Постоянные bond-каналы, объединение мелких записей и измерения](docs/research/DATA-PATH.md).
+
+Постоянные каналы включаются локально через `--bond-lanes` вместе с `--bond`; RPC остаётся по умолчанию из-за неоднозначных результатов скорости.

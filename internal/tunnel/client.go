@@ -58,7 +58,9 @@ type Client struct {
 		CloseIdleConnections()
 	}
 	// BondPipeline is 0 (automatic), 4 or 8; set before EnableBond.
-	BondPipeline     int
+	BondPipeline int
+	// BondLanes is an experimental local opt-in; set before enabling bond.
+	BondLanes        bool
 	bondClient       *bond.Client
 	bondDiscovery    *bondDiscovery
 	tlsConfig        *tls.Config

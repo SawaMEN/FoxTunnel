@@ -155,3 +155,14 @@ dial, unchanged bytes and retained session identity. Additional tests bound the
 attempt count and verify cancellation and terminal TLS/authentication failures.
 This covers a temporary failure of all paths; it does not replicate exit state
 or guarantee recovery from arbitrary-duration outages.
+
+## Persistent channels
+
+Updated clients/entries/hubs negotiate bounded `records-v1` HTTP body channels,
+replacing one POST per block. Legacy and mixed relays retain per-entry RPC
+compatibility. Small writes use one 32 KiB / 1 ms accumulator; the session owns
+at most 16 lanes and the original eight-block windows. Each persistent HTTP
+handler consumes one server `--max-tunnels` slot. See the [stage-three format,
+memory limits, measurements and remaining checks](../research/DATA-PATH.en.md).
+
+Persistent channels require local `--bond-lanes` with `--bond`; RPC stays the default because throughput results are mixed.

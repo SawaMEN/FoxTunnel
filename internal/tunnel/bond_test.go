@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -39,6 +42,12 @@ func testBondedSOCKSMode(t *testing.T, backend string, depth int, discover bool)
 }
 
 func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover bool, mode string) {
+	testBondedSOCKSNativeLanes(t, backend, depth, discover, mode, false)
+}
+func TestBondedLanesSOCKSGo(t *testing.T) {
+	testBondedSOCKSNativeLanes(t, "go", 8, false, "h2-connect", true)
+}
+func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discover bool, mode string, lanes bool) {
 	var destinations atomic.Int64
 	target := testDestination(t, func(c net.Conn) { destinations.Add(1); _, _ = io.Copy(c, c) })
 	client, addr := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
@@ -69,6 +78,10 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 				<-r.Context().Done()
 				return
 			}
+			if r.Header.Get(bond.LaneHeader) == bond.LaneVersion {
+				relay.ServeHTTP(&faultBondLane{ResponseWriter: w, ctx: r.Context(), lost: &lost, failed: &failed, index: index}, r)
+				return
+			}
 			data, _ := io.ReadAll(r.Body)
 			r.Body = io.NopCloser(bytes.NewReader(data))
 			if len(data) > 0 && data[0] == 0 && lostOpen.CompareAndSwap(false, true) {
@@ -84,7 +97,11 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 				w.WriteHeader(504)
 				return
 			}
-			relay.ServeHTTP(w, r)
+			if !lanes {
+				relay.ServeHTTP(hideBondCapability{w}, r)
+			} else {
+				relay.ServeHTTP(w, r)
+			}
 		})
 		endpoint := setupEndpoint(t, client, node)
 		if mode == "h3-post" {
@@ -109,6 +126,7 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 		}
 	}
 	client.FallbackAttemptTimeout = 250 * time.Millisecond
+	client.BondLanes = lanes
 	client.BondPipeline = depth
 	if discover {
 		file := filepath.Join(t.TempDir(), "cluster.json")
@@ -231,6 +249,20 @@ func BenchmarkBondedDelayedRPC(b *testing.B) {
 }
 
 func benchmarkBondedPath(b *testing.B, delay time.Duration, pipeline int) {
+	benchmarkBondedProfile(b, delay, pipeline, false, "go", 32<<10)
+}
+func BenchmarkBondedDataPath(b *testing.B) {
+	for _, lanes := range []bool{false, true} {
+		name := "rpc"
+		if lanes {
+			name = "lanes"
+		}
+		for _, size := range []int{137, 32 << 10} {
+			b.Run(fmt.Sprintf("%s/write%d", name, size), func(b *testing.B) { benchmarkBondedProfile(b, 0, 8, lanes, "go", size) })
+		}
+	}
+}
+func benchmarkBondedProfile(b *testing.B, delay time.Duration, pipeline int, lanes bool, backend string, writeSize int) {
 	target := testDestination(b, func(c net.Conn) { _, _ = io.Copy(c, c) })
 	client, addr := testClient(b, &Server{Username: "alice", Password: "secret"})
 	exit := &Server{Username: "alice", Password: "secret", AllowPrivate: true}
@@ -268,10 +300,14 @@ func benchmarkBondedPath(b *testing.B, delay time.Duration, pipeline int) {
 	if err := client.SetFallbackServers(nodes[1:]); err != nil {
 		b.Fatal(err)
 	}
+	if err := client.SetTLSBackend(backend); err != nil {
+		b.Fatal(err)
+	}
 	client.BondPipeline = pipeline
 	if err := client.EnableBond(); err != nil {
 		b.Fatal(err)
 	}
+	client.bondClient.PersistentLanes = lanes
 	conn, code := connectSOCKS(b, addr, target)
 	if code != 0 {
 		b.Fatal(code)
@@ -281,16 +317,64 @@ func benchmarkBondedPath(b *testing.B, delay time.Duration, pipeline int) {
 	got := make([]byte, len(payload))
 	b.SetBytes(int64(len(payload)))
 	b.ReportAllocs()
+	durations := make([]float64, 0, b.N)
+	cgoStart := runtime.NumCgoCall()
 	b.ResetTimer()
 	for range b.N {
+		started := time.Now()
 		done := make(chan error, 1)
-		go func() { _, err := conn.Write(payload); done <- err }()
+		go func() {
+			for p := payload; len(p) > 0; {
+				n := min(writeSize, len(p))
+				if _, err := conn.Write(p[:n]); err != nil {
+					done <- err
+					return
+				}
+				p = p[n:]
+			}
+			done <- nil
+		}()
 		if _, err := io.ReadFull(conn, got); err != nil {
 			b.Fatal(err)
 		}
 		if err := <-done; err != nil {
 			b.Fatal(err)
 		}
+		if !bytes.Equal(payload, got) {
+			b.Fatal("corrupted transfer")
+		}
+		durations = append(durations, float64(time.Since(started))/float64(time.Millisecond))
 	}
 	b.StopTimer()
+	slices.Sort(durations)
+	b.ReportMetric(durations[(95*len(durations)+99)/100-1], "p95-ms")
+	b.ReportMetric(float64(runtime.NumCgoCall()-cgoStart)/float64(b.N), "cgo/op")
+}
+
+// Preserve legacy lost-ACK coverage while testing negotiated lanes separately.
+type hideBondCapability struct{ http.ResponseWriter }
+
+func (w hideBondCapability) WriteHeader(status int) {
+	w.Header().Del(bond.LaneHeader)
+	w.ResponseWriter.WriteHeader(status)
+}
+
+type faultBondLane struct {
+	http.ResponseWriter
+	ctx          context.Context
+	lost, failed *atomic.Bool
+	index        int
+}
+
+func (w *faultBondLane) Flush() { _ = http.NewResponseController(w.ResponseWriter).Flush() }
+func (w *faultBondLane) Write(p []byte) (int, error) {
+	if w.index == 0 && w.failed.Load() {
+		<-w.ctx.Done()
+		return 0, w.ctx.Err()
+	}
+	// A successful empty reply acknowledges destination delivery (write/FIN).
+	if len(p) == 6 && p[0] == 0 && p[1] == 200 && p[2] == 0 && p[3] == 0 && p[4] == 0 && p[5] == 0 && w.lost.CompareAndSwap(false, true) {
+		panic(http.ErrAbortHandler)
+	}
+	return w.ResponseWriter.Write(p)
 }
