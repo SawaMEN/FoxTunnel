@@ -1,0 +1,201 @@
+name: Stage 11 Mozilla Linux amd64 prerelease
+
+# Only a new reviewed version request on update can publish.
+# The original main/tag NSS release workflow is not modified.
+on:
+  push:
+    branches: [update]
+    paths:
+      - '.github/mozilla-release-candidate.json'
+
+permissions:
+  contents: read
+
+jobs:
+  request:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.gate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: gate
+        name: Verify version, branch and new one-shot request
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+        run: python3 scripts/mozilla_release_candidate.py
+
+  quality:
+    needs: request
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Go, documentation, offline release contracts and race tests
+        run: |
+          set -euo pipefail
+          test -z "$(gofmt -l cmd internal examples foxtunnel*.go integration/external)"
+          python3 scripts/check_docs_links.py
+          python3 -m unittest discover -s scripts -p 'test_*.py'
+          go vet ./...
+          go test -race ./... -count=1 -timeout=120s
+          (cd integration/external && go test -race ./... -count=1 -timeout=60s)
+
+  mozilla-bundle:
+    needs: [request, quality]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install pinned Linux amd64 native dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y pkg-config libclang-dev gcc g++ binutils unzip
+          rustup toolchain install 1.99.1 --profile minimal
+      - name: Package Mozilla NSS 3.130 and Neqo 0.33.0
+        env:
+          RELEASE_VERSION: ${{ needs.request.outputs.version }}
+        run: python3 scripts/build_mozilla.py --version "$RELEASE_VERSION"
+      - name: Verify release bundle against the exact source commit
+        env:
+          RELEASE_VERSION: ${{ needs.request.outputs.version }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 scripts/mozilla_release_verify.py \
+            --version "$RELEASE_VERSION" --commit "$GITHUB_SHA" \
+            --input dist --report dist/mozilla-verification.json
+      - name: Smoke-test extracted release binary over real H2 and H3 sockets
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.request.outputs.version }}
+        run: |
+          set -euo pipefail
+          umask 077
+          work="$(mktemp -d)"
+          echo_pid=""
+          server_pid=""
+          cleanup() {
+            if [[ -n "$server_pid" ]]; then kill "$server_pid" 2>/dev/null || true; fi
+            if [[ -n "$echo_pid" ]]; then kill "$echo_pid" 2>/dev/null || true; fi
+            rm -rf "$work"
+          }
+          trap cleanup EXIT
+          package="dist/foxtunnel_${RELEASE_VERSION#v}_linux_amd64_mozilla.tar.gz"
+          tar -xzf "$package" -C "$work"
+          "$work/foxtunnel" version --json > "$work/version.json"
+          python3 - "$work/version.json" "$RELEASE_VERSION" "$GITHUB_SHA" <<'PY'
+          import json, sys
+          v = json.load(open(sys.argv[1]))
+          assert v["version"] == sys.argv[2] and v["commit"] == sys.argv[3], v
+          assert v["nss_version"] == "3.130" and v["neqo_version"] == "0.33.0", v
+          assert v["quic_backends"] == ["quic-go", "neqo"], v
+          PY
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' \
+            -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
+          export FOXTUNNEL_USER=stage11-ci
+          export FOXTUNNEL_PASSWORD
+          FOXTUNNEL_PASSWORD="$(openssl rand -hex 32)"
+          python3 scripts/echo_server.py --host 127.0.0.1 --port 19000 \
+            > "$work/echo.log" 2>&1 &
+          echo_pid=$!
+          "$work/foxtunnel" server --listen 127.0.0.1:18443 \
+            --h3-listen 127.0.0.1:18443 --cert "$work/cert.pem" \
+            --key "$work/key.pem" --allow-private > "$work/server.log" 2>&1 &
+          server_pid=$!
+          python3 - <<'PY'
+          import socket, time
+          for _ in range(100):
+              try:
+                  with socket.create_connection(("127.0.0.1", 18443), .2):
+                      break
+              except OSError:
+                  time.sleep(.1)
+          else:
+              raise SystemExit("release server TCP listener was not ready")
+          PY
+          python3 scripts/field_h2_h3.py --binary "$work/foxtunnel" \
+            --server https://127.0.0.1:18443 --sni localhost \
+            --ca-cert "$work/cert.pem" --target 127.0.0.1:19000 \
+            --rounds 3 --warmup 1 --parallel 2 --bytes 131072 \
+            --timeout 15 --out "$work/release-h2-h3.json"
+          python3 - "$work/release-h2-h3.json" <<'PY'
+          import json, sys
+          proof = json.load(open(sys.argv[1]))
+          assert proof["passed"]
+          assert proof["route_evidence"]["h2_client"]["observed"]
+          assert proof["route_evidence"]["h3_client"]["observed"]
+          PY
+          python3 - "$GITHUB_SHA" "$RELEASE_VERSION" <<'PY'
+          import json, pathlib, sys
+          pathlib.Path("dist/mozilla-release-gate.json").write_text(json.dumps({
+              "schema": 1, "commit": sys.argv[1], "version": sys.argv[2],
+              "checks": ["go-race", "go-vet", "sdk-external",
+                         "offline-archive-verification", "binary-version",
+                         "nss-h2-echo", "neqo-h3-echo"],
+              "scope": "GitHub runner loopback; not external DPI/operator validation",
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+      - name: Generate SHA256SUMS from the verified tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd dist && sha256sum foxtunnel_*_linux_amd64_mozilla.tar.gz > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage11-verified-mozilla-release-assets
+          path: |
+            dist/*.tar.gz
+            dist/*.metadata.json
+            dist/SHA256SUMS
+            dist/mozilla-verification.json
+            dist/mozilla-release-gate.json
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    needs: [request, quality, mozilla-bundle]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: stage11-verified-mozilla-release-assets
+          path: dist
+      - name: Publish a new immutable experimental prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.request.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
+            echo "Refusing to replace an existing release" >&2
+            exit 1
+          fi
+          if gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_VERSION" >/dev/null 2>&1; then
+            echo "Refusing to retarget an existing tag" >&2
+            exit 1
+          fi
+          python3 scripts/mozilla_release_verify.py --version "$RELEASE_VERSION" \
+            --commit "$GITHUB_SHA" --input dist
+          (cd dist && sha256sum --check SHA256SUMS)
+          gh release create "$RELEASE_VERSION" \
+            dist/foxtunnel_*_linux_amd64_mozilla.tar.gz \
+            dist/foxtunnel_*_linux_amd64_mozilla.tar.gz.metadata.json \
+            dist/SHA256SUMS dist/mozilla-verification.json \
+            dist/mozilla-release-gate.json \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "FoxTunnel $RELEASE_VERSION (experimental Mozilla Linux amd64)" \
+            --notes-file "docs/releases/$RELEASE_VERSION.md"
