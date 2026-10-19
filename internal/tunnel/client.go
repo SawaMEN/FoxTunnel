@@ -162,6 +162,19 @@ func (c *Client) SetTLSBackend(name string) error {
 
 func (c *Client) Close() { c.transport.CloseIdleConnections() }
 
+// NotifyNetworkChange is an optional integration hook for OS connectivity
+// changes (e.g. switching Wi-Fi/mobile networks). It clears stale negative
+// Neqo reachability observations and retires idle sockets without terminating
+// active streams or weakening TLS identity verification. Otherwise, H3 will
+// be probed automatically when the 30-second cooldown expires.
+func (c *Client) NotifyNetworkChange() {
+	if pool, ok := c.transport.(*identityPool); ok {
+		pool.NetworkChanged()
+	} else {
+		c.transport.CloseIdleConnections()
+	}
+}
+
 func (c *Client) Serve(listener net.Listener) error {
 	return c.ServeContext(context.Background(), listener)
 }

@@ -141,3 +141,24 @@ func (v identityView) RoundTrip(r *http.Request) (*http.Response, error) {
 	}
 	return v.pool.roundTrip(r, policy)
 }
+
+
+// NetworkChanged refreshes cached reachability across primary and pinned
+// identity-specific transports without changing TLS trust, SNI or SPKI policy.
+// New per-policy transports created after this snapshot have no stale cache.
+func (p *identityPool) NetworkChanged() {
+	p.mu.Lock()
+	transports := make([]tlsTransport, 0, len(p.entries)+1)
+	transports = append(transports, p.base)
+	for _, entry := range p.entries {
+		transports = append(transports, entry.transport)
+	}
+	p.mu.Unlock()
+	for _, transport := range transports {
+		if notifier, ok := transport.(interface{ NetworkChanged() }); ok {
+			notifier.NetworkChanged()
+		} else {
+			transport.CloseIdleConnections()
+		}
+	}
+}

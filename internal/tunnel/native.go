@@ -116,6 +116,15 @@ type postTransport struct {
 	host string
 }
 
+// Forward network notifications through the HTTP/3-to-POST adapter.
+func (t postTransport) NetworkChanged() {
+	if notifier, ok := t.tlsTransport.(interface{ NetworkChanged() }); ok {
+		notifier.NetworkChanged()
+	} else {
+		t.tlsTransport.CloseIdleConnections()
+	}
+}
+
 func (t postTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	if r.Method == http.MethodConnect {
 		r = r.Clone(r.Context())

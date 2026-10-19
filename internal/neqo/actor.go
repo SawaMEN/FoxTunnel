@@ -78,8 +78,10 @@ func (c *connection) run() {
 		for _, s := range streams {
 			fail(s, fatal)
 		}
-		close(c.done)
+		// Free the live-pool slot before announcing done to concurrent
+		// connection creators; prevents a capacity spin on an exited actor.
 		c.owner.forget(c)
+		close(c.done)
 	}()
 	setup, cancel := context.WithTimeout(c.ctx, c.owner.timeout)
 	defer cancel()

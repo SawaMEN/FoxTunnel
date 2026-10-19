@@ -106,6 +106,20 @@ func NewClient(config ClientConfig) (*Client, error) {
 	success = true
 	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
 }
+// NotifyNetworkChange clears cached UDP unreachability after a confirmed
+// Wi-Fi/cellular route change. Omit it when the platform provides no such
+// signal: Mozilla mode retries HTTP/3 automatically after the cooldown.
+func (c *Client) NotifyNetworkChange() error {
+	c.mu.Lock()
+	closed := c.closed
+	c.mu.Unlock()
+	if closed {
+		return net.ErrClosed
+	}
+	c.core.NotifyNetworkChange()
+	return nil
+}
+
 func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	c.mu.Lock()
 	if c.closed {

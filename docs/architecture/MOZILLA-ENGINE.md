@@ -153,3 +153,44 @@ It does not implement network-address migration, ECH or HTTP/3 datagrams.
 Stage 4 changes have not been compiled or tested yet, per the current
 no-tests development instruction. Native memory, packet timing, and
 real-network loss/recovery need subsequent independent validation.
+
+
+## Stage 5: coordinated H3/H2 selection and network recovery
+
+For Mozilla/Neqo with H2 fallback enabled, the transport now coordinates
+concurrent preflight QUIC probes **per origin and per TLS identity pool**:
+at most one probe is outstanding for a given origin, while other request
+contexts can independently cancel. A canceled probe owner never marks an
+origin unreachable for waiting clients. The HTTP request body is untouched
+while selecting a carrier.
+
+A typed Neqo *pre-request reachability* failure starts a bounded 30-second
+H2 preference for that origin. Other requests use NSS/H2 during this window,
+rather than creating new UDP handshakes on every SOCKS request. After the
+window expires the next request probes H3 again and returns to Neqo if
+reachable. At most eight negative origin entries are retained per transport.
+An H3 probe success clears a negative observation; unsuccessful TLS
+authentication, SPKI/CA verification, ALPN or HTTP processing **never**
+trigger H2 fallback.
+
+When a platform knows that the active network changed (e.g. Android or
+macOS connectivity callback), the public Go SDK provides:
+
+~~~go
+err := client.NotifyNetworkChange()
+~~~
+
+The CLI/core also expose the same local client hook to integrations.
+It invalidates cached UDP reachability and retires *idle* sockets so the
+next request uses a fresh transport. A generation number prevents probes
+started on the previous network from populating the new cache. Existing
+streams are not replayed or forcefully disconnected. If the platform
+cannot signal a network change, the 30-second re-probe works on its own.
+
+These controls apply only to the existing opt-in Neqo/H2 fallback. Explicit
+`--h3-fallback none`, the original Go/quic-go backend, and the legacy
+transport behavior are unchanged. Selection is per HTTPS origin/identity;
+there is no HTTP retry on an unsuccessful H3 request, no redirect,
+no speculative credential transmission, and no hidden Go TLS downgrade.
+Both H3 and H2 must be enabled on the trusted server origin for fallback
+to succeed. Stage 5 code has not been built or tested yet.
