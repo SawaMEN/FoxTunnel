@@ -1,6 +1,8 @@
-[Русский](ARCHITECTURE.md) | **English**
-
 # FoxTunnel technical design
+
+[Русский](ARCHITECTURE.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Client/server topology, transports, trust boundaries and implemented traffic flows.
 
 ## Baseline data path (implemented)
 
