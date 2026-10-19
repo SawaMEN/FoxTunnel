@@ -47,6 +47,8 @@ type Server struct {
 	Cover http.Handler
 	// Bond is an opt-in hub or relay, behind the same authentication boundary.
 	Bond http.Handler
+	// BondRelayOnly prevents managed relays from becoming unmetered direct exits.
+	BondRelayOnly bool
 	// Cluster is authenticated coordinator discovery on the common exit.
 	Cluster http.Handler
 }
@@ -84,6 +86,10 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		defer s.activeTunnels.Add(-1)
 		s.Bond.ServeHTTP(w, r)
+		return
+	}
+	if s.BondRelayOnly {
+		s.cover(w, r)
 		return
 	}
 	// Select the tunnel only after authentication; rejected requests use the

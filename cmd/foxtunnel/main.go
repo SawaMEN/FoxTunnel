@@ -181,7 +181,7 @@ func main() {
 		if err != nil {
 			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
 		}
-		handler := &tunnel.Server{Access: controller, XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		handler := &tunnel.Server{Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()

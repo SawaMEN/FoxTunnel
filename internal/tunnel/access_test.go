@@ -297,3 +297,87 @@ func TestAccessQuotaStopsOnlyExhaustedUser(t *testing.T) {
 	defer b.Close()
 	accessEcho(t, b)
 }
+
+func TestAccessManagedRelayCannotBypassExitQuota(t *testing.T) {
+	exitAccess := accessController(t)
+	policy := accessPolicy()
+	policy.Users[0].QuotaBytes = 64 << 10
+	if err := exitAccess.Replace(policy); err != nil {
+		t.Fatal(err)
+	}
+	exit := &Server{Access: exitAccess, AllowPrivate: true}
+	hub := exit.NewBondHub()
+	defer hub.Close()
+	exit.Bond = hub
+	client, _ := testClient(t, exit)
+	accessClient(t, client, "alice", accessAlice, "h2-connect")
+	forward, closeForward, err := NewBondRelayIdentity(client.ServerURL.String(), "transport-only", "not-forwarded", client.CACertFile, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeForward()
+	relayAccess := accessController(t)
+	relay := &Server{Access: relayAccess, AllowPrivate: true, Bond: forward, BondRelayOnly: true}
+	endpoint := setupEndpoint(t, client, relay)
+	target := testDestination(t, func(c net.Conn) { _, _ = io.Copy(c, c) })
+	var token [32]byte
+	binary.BigEndian.PutUint64(token[:8], uint64(time.Now().Unix()))
+	rand.Read(token[8:])
+	identity := ""
+	rpc := func(op byte, payload []byte) []byte {
+		t.Helper()
+		body := make([]byte, 49)
+		body[0] = op
+		copy(body[1:33], token[:])
+		body = append(body, payload...)
+		req, _ := http.NewRequest("POST", endpoint.URL+bond.Path, bytes.NewReader(body))
+		req.Header.Set("Proxy-Authorization", basicAuth("alice", accessAlice))
+		if identity != "" {
+			req.Header.Set("X-FoxTunnel-Bond-Hub", identity)
+		}
+		resp, err := client.transport.RoundTrip(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		got, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode != 200 {
+			t.Fatal("original user credential was not preserved", resp.StatusCode)
+		}
+		return got
+	}
+	id := rpc(0, []byte(target))
+	identity = fmtHex(id)
+	rpc(1, []byte("abc"))
+	if got := rpc(2, nil); string(got) != "abc" {
+		t.Fatal("relay data", string(got))
+	}
+	if exitAccess.Snapshot().Users[0].Bytes != 6 || relayAccess.Snapshot().Users[0].Bytes != 0 {
+		t.Fatal("metering authority is not common exit")
+	}
+	for _, method := range []string{"CONNECT", "POST"} {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		path := ""
+		if method == "POST" {
+			path = postPath
+		}
+		req, _ := http.NewRequestWithContext(ctx, method, endpoint.URL+path, nil)
+		req.Header.Set("Proxy-Authorization", basicAuth("alice", accessAlice))
+		req.Host = target
+		if method == "POST" {
+			req.Host = req.URL.Host
+			req.Header.Set(targetHeader, target)
+		}
+		resp, err := client.transport.RoundTrip(req)
+		if err != nil {
+			cancel()
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		cancel()
+		if resp.StatusCode != 404 {
+			t.Fatal("managed relay became an unmetered direct exit", method, resp.StatusCode)
+		}
+	}
+	rpc(4, nil)
+}

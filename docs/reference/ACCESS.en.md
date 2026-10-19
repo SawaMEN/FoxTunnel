@@ -120,7 +120,9 @@ errors do not quote input. Configure any host/reverse-proxy logs separately.
 Configure unique-payload quotas on the **common exit** using `--bond-hub`. A
 `--bond-upstream` relay enforces credentials/HTTP limits, but must use quota_bytes=0;
 nonzero relay quotas are rejected to avoid advertising a bypassable limit. Relays
-forward the original user credential. Independent exits do not share budgets.
+forward the original user credential. Managed relays reject ordinary CONNECT/POST
+exits (including inner carriers), so clients cannot bypass the common exit quota
+by disabling bond. Independent exits do not share budgets.
 
 SDK: create `NewAccessController(AccessPolicy{Version:1, Users:[]AccessUser{...}},
 stateFile)` and `NewServer(ServerConfig{Access: controller, ...})` without Credentials.
