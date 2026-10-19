@@ -112,7 +112,7 @@ func (c *Config) normalize() error {
 	if c.Balance == "" {
 		c.Balance = "failover"
 	}
-	if c.Balance != "failover" && c.Balance != "round-robin" && c.Balance != "least-active" {
+	if c.Balance != "failover" && c.Balance != "round-robin" && c.Balance != "least-active" && c.Balance != "adaptive" {
 		return invalid()
 	}
 	if c.Pipeline == "" {
@@ -124,7 +124,7 @@ func (c *Config) normalize() error {
 	if c.Discover && (!c.Bond || len(c.Servers) != 1) {
 		return invalid()
 	}
-	if c.Bond && ((!c.Discover && len(c.Servers) < 2) || c.Padding) {
+	if c.Bond && ((!c.Discover && len(c.Servers) < 2) || c.Padding || c.Balance == "adaptive") {
 		return invalid()
 	}
 	if c.ConnectTimeout == "" {
