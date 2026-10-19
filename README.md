@@ -38,6 +38,9 @@ NSS и Neqo; её можно собрать через `python3 scripts/build_mo
 Отдельный GitHub Actions workflow станет доступен для ручного запуска после
 появления его файла в основной ветке.
 Это пока артефакт сборки, **не опубликованный релиз**. Тесты на этом этапе не запускались.
+В NSS HTTP/2 профиль firefox-158 теперь включает порядок начальных SETTINGS,
+ограниченный HPACK и согласованный H2 fallback после Neqo. Полный Firefox
+fingerprint не подтверждён.
 Подробности и ограничения: [Mozilla Transport Engine](docs/architecture/MOZILLA-ENGINE.md).
 
 ## Быстрый старт из исходников

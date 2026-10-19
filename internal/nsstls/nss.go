@@ -92,7 +92,11 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 		if config.ServerName != "" {
 			host = config.ServerName
 		}
-		return wrapConfigWithProfile(setup, raw, host, config, clientProfile)
+		secure, err := wrapConfigWithProfile(setup, raw, host, config, clientProfile)
+		if err != nil {
+			return nil, err
+		}
+		return h2profile.WrapNSSConn(secure, profile), nil
 	}
 	return transport, nil
 }

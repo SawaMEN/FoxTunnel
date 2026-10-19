@@ -98,3 +98,27 @@ The archive includes `build.json`, `mozilla-runtime.json`,
 Go/Mozilla/Rust licenses, and per-asset SHA-256 in build.json.
 A hash stored *inside* an archive does not authenticate the artifact;
 obtain it from a trusted repository/CI run.
+
+## Stage 3: Firefox 158 initial HTTP/2 SETTINGS (opt-in)
+
+The NSS/H2 firefox-158 profile now validates Go's actual initial client
+preface and SETTINGS, then transmits the measured Firefox order:
+HEADER_TABLE_SIZE=65536, ENABLE_PUSH=0, INITIAL_WINDOW_SIZE=131072,
+MAX_FRAME_SIZE=16384. The Go-only SETTINGS_MAX_HEADER_LIST_SIZE advertisement
+is omitted; the independent Go response-header limit remains enforced.
+
+HPACK encoder-table maximum is set to 65536 alongside the decoder-table
+maximum, subject to peer SETTINGS. Strict concurrent stream admission avoids
+opening extra connections simply to exceed a server stream limit.
+The standard Go HTTP/2 implementation still generates and processes all
+other frames, HPACK, outgoing header ordering and lifecycle. Those attributes
+have not been shown to match the Firefox browser.
+
+The network-only Neqo H3-to-H2 fallback now uses the same firefox-158 NSS
+client and HTTP/2 receive profiles as direct Mozilla H2. The fallback policy
+is unchanged: only before creating a request after QUIC network failure.
+
+A pinned Go/x/net change that alters the initial SETTINGS causes a clear
+error instead of a silent profile mismatch. This is a measured profile
+adaptation, not an independent full HTTP/2 stack, Necko, or complete Firefox
+fingerprint. These changes were neither compiled nor tested at this stage.

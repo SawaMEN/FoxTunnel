@@ -84,7 +84,7 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 			}
 			var selected tlsTransport = transport
 			if quic.fallback {
-				h2, err := makeTLStransport("nss", config, "", "")
+				h2, err := makeTLStransport("nss", config, "firefox-158", nsstls.Firefox158)
 				if err != nil {
 					transport.CloseIdleConnections()
 					return nil, err

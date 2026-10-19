@@ -112,3 +112,22 @@ NSS, запрет TLS 1.2/неверного ALPN, CA/SNI/pin до HTTP, бол�
 [подписи](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/security/manager/ssl/EnabledSignatureSchemes.h),
 [фильтрация TLS 1.3](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/security/nss/lib/ssl/ssl3con.c),
 [публичные NSS API](https://github.com/mozilla-firefox/firefox/blob/FIREFOX_158_0_RELEASE/security/nss/lib/ssl/ssl.h).
+
+## Этап 3: изменение начального профиля HTTP/2 (ветка update)
+
+Включённый в NSS HTTP/2 профиль firefox-158 проверяет префейс и SETTINGS,
+после чего отправляет SETTINGS по зафиксированному образцу Firefox 158:
+(1,65536), (2,0), (4,131072), (5,16384). Дополнительное объявление
+SETTINGS_MAX_HEADER_LIST_SIZE удаляется без отключения локальной проверки
+размера заголовков в Go. Следующий WINDOW_UPDATE и остальные HTTP/2 кадры
+остаются за библиотекой x/net/http2.
+
+Максимум таблицы HPACK encoder задан равным 65536 (но фактический размер
+также зависит от сервера); передача параллельных запросов ограничивается
+договорённым лимитом потоков. Резервный H2 после сетевой ошибки Neqo
+получает тот же профиль NSS/H2. Смена версии библиотеки с другими
+начальными SETTINGS вызывает явную ошибку.
+
+Остались расхождения по браузерным заголовкам, HPACK-последовательности,
+повторному использованию соединений, приоритетам, временным интервалам
+и TLS-отпечатку. Новый packet capture и тесты не выполнялись.
