@@ -24,17 +24,23 @@ V6 = "2606:4700:abcd::2"
 SCRIPT = str(Path(__file__).resolve())
 
 
-def fixture():
+def fixture(dns_port=53):
     class TCP(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
         daemon_threads = True
     class TCP6(TCP):
         address_family = socket.AF_INET6
+        def server_bind(self):
+            self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+            super().server_bind()
     class UDP(socketserver.ThreadingUDPServer):
         allow_reuse_address = True
         daemon_threads = True
     class UDP6(UDP):
         address_family = socket.AF_INET6
+        def server_bind(self):
+            self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+            super().server_bind()
     class EchoTCP(socketserver.BaseRequestHandler):
         def handle(self):
             self.request.settimeout(5)
@@ -72,7 +78,7 @@ def fixture():
         servers.append(cls((host, 18080), EchoTCP))
     for cls, host in ((UDP, "0.0.0.0"), (UDP6, "::")):
         servers.append(cls((host, 18081), EchoUDP))
-        servers.append(cls((host, 53), DNS))
+        servers.append(cls((host, dns_port), DNS))
     for server in servers:
         threading.Thread(target=server.serve_forever, daemon=True).start()
     print("ready", flush=True)
@@ -83,7 +89,14 @@ def probe(blocked):
     def tcp(host):
         with socket.create_connection((host, 18080), timeout=1.5) as sock:
             sock.sendall(b"kernel-TCP-through-TUN")
-            assert sock.recv(64) == b"kernel-TCP-through-TUN"
+            expected = b"kernel-TCP-through-TUN"
+            received = b""
+            while len(received) < len(expected):
+                chunk = sock.recv(len(expected)-len(received))
+                if not chunk:
+                    break
+                received += chunk
+            assert received == expected
     def udp(host):
         family = socket.AF_INET6 if ":" in host else socket.AF_INET
         with socket.socket(family, socket.SOCK_DGRAM) as sock:
@@ -137,10 +150,11 @@ def integration(binary):
         return p
     def wait_log(path, word, proc):
         for _ in range(150):
-            if word in path.read_text():
-                return
             if proc.poll() is not None:
                 raise AssertionError("fixture exited before readiness: " + path.read_text())
+            lines = path.read_text().splitlines()
+            if (word == "ready" and "ready" in lines) or (word != "ready" and any(word in line for line in lines)):
+                return
             time.sleep(0.1)
         raise AssertionError("fixture readiness timed out: " + path.read_text())
     resolv = Path("/etc/netns/ft-client")
@@ -256,11 +270,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary")
     parser.add_argument("--fixture", action="store_true")
+    parser.add_argument("--dns-port", type=int, default=53)
     parser.add_argument("--probe", action="store_true")
     parser.add_argument("--blocked", action="store_true")
     args = parser.parse_args()
     if args.fixture:
-        fixture()
+        fixture(args.dns_port)
     elif args.probe:
         probe(args.blocked)
     elif args.binary:

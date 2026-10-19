@@ -18,6 +18,8 @@ jobs:
         run: go vet ./...
       - name: Test with race detector
         run: go test -race ./... -count=1 -timeout=60s
+      - name: Fuzz IP envelope and framing
+        run: go test ./internal/ippacket -run '^$' -fuzz FuzzEnvelope -fuzztime=10000x -parallel=2 -timeout=60s
       - name: Fuzz padding decoder
         run: go test ./internal/tunnel -run '^$' -fuzz FuzzPaddingDecoder -fuzztime=100000x -parallel=2 -timeout=120s
       - name: Фаззинг ссылок vetroff
