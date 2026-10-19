@@ -188,3 +188,62 @@ func TestIPNegotiationFailsClosed(t *testing.T) {
 		t.Fatal("IP padding accepted")
 	}
 }
+
+func TestIPRejectsSpoofedPrivateAndOversizedBeforeInjection(t *testing.T) {
+	for _, kind := range []string{"source", "private", "length", "quota"} {
+		t.Run(kind, func(t *testing.T) {
+			secret := "packet-attack-012345678901234567890123456789"
+			policy := access.Document{Version: 1, Users: []access.User{{ID: "alice", Username: "alice", Password: secret}}}
+			if kind == "quota" {
+				policy.Users[0].QuotaBytes = 27
+			}
+			manager, err := access.New(policy, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer manager.Close()
+			var injected atomic.Int64
+			hub := &linuxvpn.Hub{Peers: map[string]linuxvpn.Peer{"alice": {ID: "alice", IPv4: "100.96.0.2", IPv6: "fd62:666f:78::2"}}, Open: func(context.Context, linuxvpn.Peer) (linuxvpn.Device, error) {
+				return &ipEchoDevice{packets: make(chan []byte, 1), done: make(chan struct{}), injected: &injected}, nil
+			}}
+			c, _ := testClient(t, &Server{Access: manager, IP: hub})
+			c.Password = secret
+			if err := c.SetTLSBackend("go"); err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			conn, err := c.DialIP(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+			conn.SetDeadline(time.Now().Add(time.Second))
+			stream := &ippacket.Stream{Reader: conn, Writer: conn}
+			packet := testIP(false)
+			if kind == "source" {
+				packet[15] = 3
+			}
+			if kind == "private" {
+				copy(packet[16:20], []byte{10, 0, 0, 1})
+			}
+			packet[10] = 0
+			packet[11] = 0
+			ipChecksum(packet)
+			if kind == "length" {
+				conn.Write([]byte{0xff, 0xff})
+			} else if err := stream.WritePacket(packet); err != nil {
+				t.Fatal(err)
+			}
+			var buf [ippacket.MTU]byte
+			if _, err := stream.ReadPacket(buf[:]); err == nil {
+				t.Fatal("rejected packet produced a reply")
+			} else if e, ok := err.(net.Error); ok && e.Timeout() {
+				t.Fatal("invalid packet did not close session")
+			}
+			if injected.Load() != 0 {
+				t.Fatal("rejected packet reached TUN")
+			}
+		})
+	}
+}

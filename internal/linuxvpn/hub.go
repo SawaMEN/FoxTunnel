@@ -119,7 +119,9 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		src, dst, err := ippacket.Addresses(packet[:n])
 		if err != nil || (dst != v4 && dst != v6) || (!h.AllowPrivate && !ippacket.Public(src)) {
-			break
+			// Kernel-generated multicast/link control is outside the routed peer
+			// policy. Drop it without tearing down an otherwise valid VPN session.
+			continue
 		}
 		if access.ChargePacket(ctx, n) != nil || stream.WritePacket(packet[:n]) != nil {
 			break

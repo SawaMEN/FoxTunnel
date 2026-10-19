@@ -118,8 +118,11 @@ def integration(binary):
     names = ("ft-client", "ft-server", "ft-world")
     procs, logs = [], []
     def run(*cmd, env=None):
-        return subprocess.run(cmd, check=True, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE, env=env)
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        if result.returncode:
+            print(result.stderr.decode(errors="replace")[-5000:], file=sys.stderr)
+            result.check_returncode()
+        return result
     def ns(name, *cmd):
         return run("ip", "netns", "exec", name, *cmd)
     def private(path, data):
@@ -224,6 +227,17 @@ def integration(binary):
             ns(names[0], binary, "vpn-down", "--config", str(clientcfg), "--link-file", str(link))
             ns(names[0], sys.executable, SCRIPT, "--probe")
             print("PASS: real TUN TCP/UDP, IPv4/IPv6, tunneled DNS, freeze/resume, link loss/recovery, crash kill switch and explicit disconnect")
+    except Exception:
+        # Only offline fixture addresses and generic daemon outcomes are shown;
+        # credentials/link files and request payloads are never printed.
+        for name in names:
+            for args in (("ip", "-s", "link"), ("ip", "route"), ("ip", "-6", "route"), ("nft", "list", "ruleset")):
+                result = subprocess.run(["ip", "netns", "exec", name, *args], capture_output=True)
+                print(name, args, result.stdout.decode(errors="replace")[-10000:], file=sys.stderr)
+        for log in logs:
+            log.flush(); log.seek(0)
+            print(log.read()[-10000:], file=sys.stderr)
+        raise
     finally:
         for p in reversed(procs):
             if p.poll() is None:
