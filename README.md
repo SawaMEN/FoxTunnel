@@ -59,6 +59,9 @@ JSON-логи через `--engine-status-interval 10s` без адресов и
 Для этапа 9/11 добавлен [нагрузочный лабораторный прогон](docs/measurements/STAGE9-SOAK-SECURITY.md):
 RSS NSS/Neqo, число дескрипторов, нагрузочные echo-потоки, перезапуск сервера,
 проверка отказа при неверном TLS-имени. CI работает в loopback, не в операторской сети.
+Этап 10/11: [аудит Firefox, FoxTunnel и NaiveProxy](docs/measurements/STAGE10-FINGERPRINT.md)
+с обновлением текущего NSS/H2 захвата, отдельными статусами отсутствующих
+NaiveProxy/QUIC измерений и без выдуманного процента похожести.
 Подробности и ограничения: [Mozilla Transport Engine](docs/architecture/MOZILLA-ENGINE.md).
 
 ## Быстрый старт из исходников

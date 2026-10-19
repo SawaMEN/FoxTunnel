@@ -21,3 +21,8 @@ Firefox 158, профили Go и NSS, включая H2 receive и XHTTP: [2026
 The [field-probe runbook](STAGE8-FIELD-H2-H3.md) separates a working measurement
 harness from unavailable independent external measurements. No results are
 fabricated from CI loopback tests.
+
+## Stage 10 — Firefox / FoxTunnel / NaiveProxy
+
+[Сравнение TLS/H2 и протокол сбора QUIC/H3](STAGE10-FINGERPRINT.md).
+NaiveProxy и сопоставимые H3/QUIC захваты пока отсутствуют.
