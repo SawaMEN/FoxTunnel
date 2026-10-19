@@ -229,7 +229,7 @@ func (c *Client) discoveredBond(ctx context.Context) (*bond.Client, error) {
 					RouteMode: bondRouteMode(c.BondRoute), DirectOrigin: bondOriginKey(c.ServerURL),
 					Transport: transport, Username: c.Username, Password: c.Password,
 					AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout,
-					Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune
+					Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune}
 				d.manifest = m
 			}
 			d.expires = now.Add(time.Duration(m.ValidFor) * time.Second)
