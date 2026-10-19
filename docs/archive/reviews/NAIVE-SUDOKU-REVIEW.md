@@ -1,5 +1,7 @@
 # Ограничения NaiveProxy и полезные идеи Sudoku
 
+> **Архивный обзор.** Сохранён для истории; версии и выводы могли устареть. Текущие возможности описаны в [документации](../../README.md).
+
 **Русский** | [English](NAIVE-SUDOKU-REVIEW.en.md)
 
 ## Исходники
@@ -63,5 +65,5 @@ Sudoku не копировались.
 4. Neqo/H3 против Naive QUIC на одном маршруте, включая запрет UDP, с проверенным H2.
 5. Версионированные эталоны Firefox и повторяемые наблюдения у операторов РФ.
 
-См. [настройку узлов](../guides/ENDPOINTS.md), [стратегию](../architecture/TRANSPORT-STRATEGY.md)
-и [методику измерений](PERFORMANCE.md).
+См. [настройку узлов](../../guides/ENDPOINTS.md), [стратегию](../../architecture/TRANSPORT-STRATEGY.md)
+и [методику измерений](../../research/PERFORMANCE.md).

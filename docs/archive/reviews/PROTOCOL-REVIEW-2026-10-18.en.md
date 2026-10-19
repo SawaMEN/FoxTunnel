@@ -1,5 +1,7 @@
 [Русский](PROTOCOL-REVIEW-2026-10-18.md) | **English**
 
+> **Archived comparison.** Kept for historical research; versions and claims may be outdated. For current features read the [documentation](../../README.en.md).
+
 # Protocol review: 18 October 2026
 
 ## Verified AmneziaWG snapshot
@@ -48,7 +50,7 @@ The entries below are candidate design lessons, not implemented transports.
 | [Tor WebTunnel deployment](https://community.torproject.org/relay/setup/webtunnel/) | Ordinary website and HTTPS frontend with a routed tunnel endpoint | Test a real independent frontend and probe-response equivalence. The existing static website is only a first step; WebTunnel compatibility and Tor are not integrated. |
 | [Outline SDK](https://github.com/OutlineFoundation/outline-sdk) | Separate stream/packet connections and dialers; compose transport adapters | Preserve independent carrier interfaces and test connectivity/throughput outside the UI. Do not nest transports merely to accumulate features. |
 
-The prior [transport strategy](../architecture/TRANSPORT-STRATEGY.en.md) covers NaiveProxy, mieru,
+The prior [transport strategy](../../architecture/TRANSPORT-STRATEGY.en.md) covers NaiveProxy, mieru,
 Hysteria 2, XHTTP/VLESS and DNSTT. Those modes have different network assumptions:
 UDP may be unavailable, DNS has a constrained packet budget, and HTTP streaming
 requires specific frontend behavior. Combining their wire formats does not

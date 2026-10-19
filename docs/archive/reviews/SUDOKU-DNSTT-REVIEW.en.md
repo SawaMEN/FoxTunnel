@@ -1,5 +1,7 @@
 # Sudoku and dnstt: follow-up review
 
+> **Archived comparison.** Kept for historical research; versions and claims may be outdated. For current features read the [documentation](../../README.en.md).
+
 [Русский](SUDOKU-DNSTT-REVIEW.md) | **English**
 
 Reviewed October 18, 2026: selected source paths and official descriptions,
@@ -50,7 +52,7 @@ change implements no DNS carrier.
 
 ## Delivered decision
 
-[Main-node cluster management](../architecture/CLUSTER.en.md) adds one-address links,
+[Main-node cluster management](../../architecture/CLUSTER.en.md) adds one-address links,
 authenticated bounded topology/weights, expiry, demand refresh and exit-process
 binding before destination work. The main node retains reassembly. Existing
 sessions retain their paths; new sessions receive updated topology. This is
