@@ -114,68 +114,121 @@ func TestSOCKSConnectRefusesNonNumericAndFailure(t *testing.T) {
 	}
 }
 
-
 func TestSOCKSUDPAssociateRelaysLoopback(t *testing.T) {
- relay,err:=net.ListenUDP("udp4",&net.UDPAddr{IP:net.IPv4(127,0,0,1)})
- if err!=nil{t.Fatal(err)}
- defer relay.Close()
- _=relay.SetReadDeadline(time.Now().Add(3*time.Second))
- tcp,err:=net.Listen("tcp","127.0.0.1:0")
- if err!=nil{t.Fatal(err)}
- defer tcp.Close()
- done:=make(chan error,1)
- go func(){
-   c,err:=tcp.Accept()
-   if err!=nil{done<-err;return}
-   defer c.Close()
-   var greet[3]byte
-   if _,err=io.ReadFull(c,greet[:]);err!=nil{done<-err;return}
-   if greet!=[3]byte{5,1,0}{done<-io.ErrUnexpectedEOF;return}
-   if _,err=c.Write([]byte{5,0});err!=nil{done<-err;return}
-   var request[10]byte
-   if _,err=io.ReadFull(c,request[:]);err!=nil{done<-err;return}
-   if request!=[10]byte{5,3,0,1,0,0,0,0,0,0}{done<-io.ErrUnexpectedEOF;return}
-   addr:=relay.LocalAddr().(*net.UDPAddr)
-   reply:=[]byte{5,0,0,1,127,0,0,1,byte(addr.Port>>8),byte(addr.Port)}
-   if _,err=c.Write(reply);err!=nil{done<-err;return}
-   var dummy[1]byte
-   _,_=c.Read(dummy[:])
-   done<-nil
- }()
- ctx,cancel:=context.WithTimeout(context.Background(),time.Second)
- defer cancel()
- control,packet,err:=dialUDPSOCKS(ctx,tcp.Addr().String())
- if err!=nil{t.Fatal(err)}
- _=packet.SetDeadline(time.Now().Add(time.Second))
- if _,err:=packet.Write([]byte("ping"));err!=nil{t.Fatal(err)}
- var payload[8]byte
- n,source,err:=relay.ReadFromUDP(payload[:])
- if err!=nil{t.Fatal(err)}
- if string(payload[:n])!="ping"{t.Fatalf("got %q",payload[:n])}
- if _,err:=relay.WriteToUDP([]byte("pong"),source);err!=nil{t.Fatal(err)}
- if n,err=packet.Read(payload[:]);err!=nil||string(payload[:n])!="pong"{t.Fatalf("got %q, %v",payload[:n],err)}
- control.Close()
- packet.Close()
- if err:=<-done;err!=nil{t.Fatal(err)}
+	relay, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer relay.Close()
+	_ = relay.SetReadDeadline(time.Now().Add(3 * time.Second))
+	tcp, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tcp.Close()
+	done := make(chan error, 1)
+	go func() {
+		c, err := tcp.Accept()
+		if err != nil {
+			done <- err
+			return
+		}
+		defer c.Close()
+		var greet [3]byte
+		if _, err = io.ReadFull(c, greet[:]); err != nil {
+			done <- err
+			return
+		}
+		if greet != [3]byte{5, 1, 0} {
+			done <- io.ErrUnexpectedEOF
+			return
+		}
+		if _, err = c.Write([]byte{5, 0}); err != nil {
+			done <- err
+			return
+		}
+		var request [10]byte
+		if _, err = io.ReadFull(c, request[:]); err != nil {
+			done <- err
+			return
+		}
+		if request != [10]byte{5, 3, 0, 1, 0, 0, 0, 0, 0, 0} {
+			done <- io.ErrUnexpectedEOF
+			return
+		}
+		addr := relay.LocalAddr().(*net.UDPAddr)
+		reply := []byte{5, 0, 0, 1, 127, 0, 0, 1, byte(addr.Port >> 8), byte(addr.Port)}
+		if _, err = c.Write(reply); err != nil {
+			done <- err
+			return
+		}
+		var dummy [1]byte
+		_, _ = c.Read(dummy[:])
+		done <- nil
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	control, packet, err := dialUDPSOCKS(ctx, tcp.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = packet.SetDeadline(time.Now().Add(time.Second))
+	if _, err := packet.Write([]byte("ping")); err != nil {
+		t.Fatal(err)
+	}
+	var payload [8]byte
+	n, source, err := relay.ReadFromUDP(payload[:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(payload[:n]) != "ping" {
+		t.Fatalf("got %q", payload[:n])
+	}
+	if _, err := relay.WriteToUDP([]byte("pong"), source); err != nil {
+		t.Fatal(err)
+	}
+	if n, err = packet.Read(payload[:]); err != nil || string(payload[:n]) != "pong" {
+		t.Fatalf("got %q, %v", payload[:n], err)
+	}
+	control.Close()
+	packet.Close()
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
 }
 
-func TestSOCKSUDPAssociateRejectsPublicRelay(t *testing.T){
- tcp,err:=net.Listen("tcp","127.0.0.1:0")
- if err!=nil{t.Fatal(err)}
- defer tcp.Close()
- go func(){
-  c,err:=tcp.Accept();if err!=nil{return};defer c.Close()
-  var greet[3]byte
-  if _,err=io.ReadFull(c,greet[:]);err!=nil{return}
-  _,_=c.Write([]byte{5,0})
-  var req[10]byte
-  if _,err=io.ReadFull(c,req[:]);err!=nil{return}
-  // A hostile local proxy must not induce packets to a public UDP relay.
-  _,_=c.Write([]byte{5,0,0,1,8,8,8,8,0,53})
- }()
- ctx,cancel:=context.WithTimeout(context.Background(),time.Second);defer cancel()
- ctrl,packet,err:=dialUDPSOCKS(ctx,tcp.Addr().String())
- if err==nil{packet.Close();ctrl.Close();t.Fatal("accepted non-loopback UDP relay")}
+func TestSOCKSUDPAssociateRejectsPublicRelay(t *testing.T) {
+	tcp, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tcp.Close()
+	go func() {
+		c, err := tcp.Accept()
+		if err != nil {
+			return
+		}
+		defer c.Close()
+		var greet [3]byte
+		if _, err = io.ReadFull(c, greet[:]); err != nil {
+			return
+		}
+		_, _ = c.Write([]byte{5, 0})
+		var req [10]byte
+		if _, err = io.ReadFull(c, req[:]); err != nil {
+			return
+		}
+		// A hostile local proxy must not induce packets to a public UDP relay.
+		_, _ = c.Write([]byte{5, 0, 0, 1, 8, 8, 8, 8, 0, 53})
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	ctrl, packet, err := dialUDPSOCKS(ctx, tcp.Addr().String())
+	if err == nil {
+		packet.Close()
+		ctrl.Close()
+		t.Fatal("accepted non-loopback UDP relay")
+	}
 }
 
 func TestNativeReadSOCKSReplyRejectsMalformed(t *testing.T) {
