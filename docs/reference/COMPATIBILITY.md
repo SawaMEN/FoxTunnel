@@ -1,6 +1,8 @@
 # Совместимость и первый экспериментальный выпуск
 
-**Русский** | [English](COMPATIBILITY.en.md)
+**Русский** · [English](COMPATIBILITY.en.md) · [Каталог](../README.md)
+
+> **Назначение:** Контракты версий CLI/SDK/wire и критерии выпуска.
 
 FoxTunnel остаётся экспериментальным. До стабилизации wire/API интегратор
 закрепляет точную версию, source commit, транспорт и TLS backend. Одинаковый
@@ -58,6 +60,6 @@ python3 scripts/release.py verify --input downloaded \
 идентичности на разных компиляторах/ОС. База Linux NSS — Ubuntu 24.04; старые glibc
 требуют отдельной проверки. План обновления Mozilla и Go входит в сопровождение.
 
-[Поставка](DISTRIBUTION.md) · [Wire draft](WIRE-DRAFT-0.md) · [Следующие этапы](../planning/NEXT-STEPS.md)
+[Поставка](DISTRIBUTION.md) · [Wire draft](WIRE-DRAFT-0.md) · [Следующие этапы](../planning/ROADMAP.md)
 
 Bond `records-v1` — явно согласуемое расширение существующего endpoint. [Спецификация передачи](../research/DATA-PATH.md) определяет переключение на старый RPC отдельно для каждого входа до отправки операции; прежние RPC-запросы по-прежнему принимаются.

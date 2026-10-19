@@ -1,6 +1,8 @@
 # Public embedding API
 
-[Русский](SDK.md) | **English**
+[Русский](SDK.md) · **English** · [Docs](../README.en.md)
+
+> **Scope: Go public API and embedding, with version and compatibility requirements.**
 
 The primary integration route is the [standalone versioned executable](DISTRIBUTION.en.md).
 Go projects may additionally import `github.com/SawaMEN/FoxTunnel`. Its public

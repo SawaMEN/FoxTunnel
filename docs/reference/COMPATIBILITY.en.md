@@ -1,6 +1,8 @@
 # Compatibility and the first experimental release
 
-[Русский](COMPATIBILITY.md) | **English**
+[Русский](COMPATIBILITY.md) · **English** · [Docs](../README.en.md)
+
+> **Scope:** Version and wire/SDK compatibility policy, checks and release acceptance.
 
 FoxTunnel remains experimental. Until wire/API stabilization, integrations pin
 an exact version, source commit, transport and TLS backend. The shared
@@ -60,7 +62,7 @@ bit-for-bit reproducibility guarantee across compilers/OSes. The Linux NSS
 baseline is Ubuntu 24.04; older glibc needs separate testing. Mozilla and Go
 updates require ongoing maintenance.
 
-[Distribution](DISTRIBUTION.en.md) · [Wire draft](WIRE-DRAFT-0.md) · [Next steps](../planning/NEXT-STEPS.en.md)
+[Distribution](DISTRIBUTION.en.md) · [Wire draft](WIRE-DRAFT-0.md) · [Next steps](../planning/ROADMAP.en.md)
 
 Bond `records-v1` is an explicitly negotiated extension of the existing bond endpoint.
 The [data-path specification](../research/DATA-PATH.en.md) defines per-entry legacy
