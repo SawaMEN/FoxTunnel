@@ -4,7 +4,7 @@
 
 ## Current verified architecture
 
-Firefox uses [Neqo](https://github.com/mozilla/neqo) (Rust QUIC/HTTP/3/QPACK with NSS) through Necko and `neqo_glue`. FoxTunnel **does not yet embed Neqo**: H3 POST uses `quic-go` and Go TLS, while NSS serves TCP H2/WSS/XHTTP. Replacing TLS alone does not reproduce Firefox networking behavior.
+Firefox uses [Neqo](https://github.com/mozilla/neqo) (Rust QUIC/HTTP/3/QPACK with NSS) through Necko and `neqo_glue`. The standalone `experiments/neqo-ffi` bridge now creates Neqo QUIC Initial packets, but FoxTunnel **does not yet use Neqo for actual HTTP/3**: H3 POST uses `quic-go` and Go TLS, while NSS serves TCP H2/WSS/XHTTP. Replacing TLS alone does not reproduce Firefox networking behavior.
 
 Primary references: [Firefox HTTP/3 architecture](https://firefox-source-docs.mozilla.org/networking/http/http3.html), [Mozilla Neqo](https://github.com/mozilla/neqo).
 
@@ -24,4 +24,4 @@ Primary references: [Firefox HTTP/3 architecture](https://firefox-source-docs.mo
 * Neqo's server is experimental and does not replace the existing FoxTunnel server without review.
 * Network fingerprint parity, superior performance and censorship resistance remain unproven.
 
-This is a design and acceptance plan; a working Rust FFI bridge is **not yet implemented**.
+The first Rust/C ABI probe is at [experiments/neqo-ffi](../../experiments/neqo-ffi/README.md); it generates real Neqo QUIC Initial packets but **has no network receive, certificate authentication or HTTP request handling**. A production-ready Go/Neqo HTTP/3 transport is not implemented.

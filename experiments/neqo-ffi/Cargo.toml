@@ -1,0 +1,18 @@
+[package]
+name = "foxtunnel-neqo-ffi"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90.0"
+publish = false
+license = "MIT"
+
+[lib]
+name = "foxtunnel_neqo"
+crate-type = ["cdylib", "rlib"]
+
+# Pinned Neqo source revision; the generated Cargo.lock pins transitive crates.
+# The bridge is an isolated, experimental library, not part of release binaries.
+[dependencies]
+neqo-http3 = { git = "https://github.com/mozilla/neqo", rev = "ad7d629eaa67ab16e42e704a51f59fb14bdffb1e" }
+neqo-transport = { git = "https://github.com/mozilla/neqo", rev = "ad7d629eaa67ab16e42e704a51f59fb14bdffb1e" }
+nss = { package = "nss-rs", git = "https://github.com/mozilla/nss-rs" }

@@ -12,7 +12,7 @@ Live Firefox 158/Go/NSS measurements are stored; full Firefox parity is absent.
 | 1. Reproducible baseline | Inspect archive contents, pin build environment, align documentation and compatibility | Both Linux NSS targets pass index and offline verify; Go/NSS/SDK checks on the same commit; experimental tag only after review |
 | 2. Mozilla TLS/H2 | Address measured NSS/H2 differences; resumption/identity isolation; decide which Mozilla components are needed | Reproducible agreement/gap report against pinned Firefox/OS, matched workloads and preserved TLS checks |
 | 3. Data path | Small-write coalescing, Go/C/copy profiling, persistent bounded bond lanes | Same RTT/loss workload: throughput/p95/CPU/memory; ordered duplicate-free failure handling and bounded queues |
-| 4. Neqo | Mozilla QUIC/H3 client against an independent server, controlled H2 fallback | Transfer/CA/SNI/pin and blocked-UDP switching-time tests without weakening TLS policy |
+| 4. Neqo | Rust/C ABI Initial packet probe, then Mozilla QUIC/H3 client against an independent server, controlled H2 fallback | Transfer/CA/SNI/pin and blocked-UDP switching-time tests without weakening TLS policy |
 | 5. Access | Per-user revocation/rotation, quotas, rate limits, safe diagnostics | One user's revocation leaves others intact; bounded resources; no secrets in logs |
 | 6. Full VPN | UDP, then TUN, routes, DNS/IPv6, kill switch for the first OS | TCP/UDP policy and leak/failure/sleep/network-change tests |
 | 7. Operations | Native OS tests, soak load, certificates, shutdown, updates/rollback, signing | Reproducible installation and recovery on real target systems |

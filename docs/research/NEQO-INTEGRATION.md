@@ -4,7 +4,7 @@
 
 ## Подтверждённая архитектура
 
-Firefox использует [Neqo](https://github.com/mozilla/neqo) (Rust, QUIC/HTTP/3/QPACK, NSS) через Necko и `neqo_glue`. Текущий FoxTunnel **не использует Neqo**: H3 POST — `quic-go` + Go TLS; NSS обслуживает TCP-транспорты H2/WSS/XHTTP. Замена одного TLS-движка не переносит сетевой стек Firefox.
+Firefox использует [Neqo](https://github.com/mozilla/neqo) (Rust, QUIC/HTTP/3/QPACK, NSS) через Necko и `neqo_glue`. Эксперимент `experiments/neqo-ffi` создаёт QUIC Initial через Neqo, однако рабочий H3 FoxTunnel **пока не использует Neqo**: H3 POST — `quic-go` + Go TLS; NSS обслуживает TCP-транспорты H2/WSS/XHTTP. Замена одного TLS-движка не переносит сетевой стек Firefox.
 
 Официальная документация: [HTTP/3 в Firefox](https://firefox-source-docs.mozilla.org/networking/http/http3.html), [репозиторий Neqo](https://github.com/mozilla/neqo).
 
@@ -24,4 +24,4 @@ Firefox использует [Neqo](https://github.com/mozilla/neqo) (Rust, QUIC
 * Neqo-сервер Mozilla является экспериментальным и **не** заменяет сервер FoxTunnel без отдельного аудита.
 * «Лучше Firefox/NaiveProxy» или «обходит ТСПУ» можно утверждать только после корректных измерений, сейчас доказательств нет.
 
-Это проектный план; Rust FFI и полноценная работа Neqo в FoxTunnel пока **не реализованы**.
+Первый Rust/C ABI прототип доступен в [experiments/neqo-ffi](../../experiments/neqo-ffi/README.md): он генерирует настоящий QUIC Initial, но **не принимает сеть, не проверяет сертификат и не выполняет HTTP-запросы**. Рабочий Go/Neqo HTTP/3 транспорт пока не реализован.

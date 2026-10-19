@@ -1,0 +1,47 @@
+name: Neqo Rust FFI experiment
+on:
+  push:
+    paths:
+      - 'experiments/neqo-ffi/**'
+      - '.github/workflows/neqo-experiment.yml'
+  pull_request:
+    paths:
+      - 'experiments/neqo-ffi/**'
+      - '.github/workflows/neqo-experiment.yml'
+permissions:
+  contents: read
+jobs:
+  ffi:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Rust compiler and NSS development libraries
+        run: |
+          rustup toolchain install 1.90.0 --profile minimal
+          rustup default 1.90.0
+          sudo apt-get update -qq
+          sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config build-essential clang libclang-dev
+      - name: Resolve and capture standalone Cargo lock
+        working-directory: experiments/neqo-ffi
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo generate-lockfile
+          echo 'FOXTUNNEL_CARGO_LOCK_BEGIN'
+          base64 -w0 Cargo.lock
+          echo
+          echo 'FOXTUNNEL_CARGO_LOCK_END'
+      - name: Test actual Mozilla Neqo packet generation
+        working-directory: experiments/neqo-ffi
+        run: cargo test --locked --verbose
+      - name: Build C-compatible Neqo library
+        working-directory: experiments/neqo-ffi
+        run: cargo build --locked
+      - name: Smoke test C ABI consumer
+        working-directory: experiments/neqo-ffi
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc -std=c11 -Wall -Wextra -Werror test_bridge.c -L target/debug -lfoxtunnel_neqo -Wl,-rpath,"$PWD/target/debug" -o target/debug/neqo-abi-test
+          ./target/debug/neqo-abi-test
