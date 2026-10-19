@@ -14,6 +14,8 @@ The **single current roadmap**, replacing the duplicated `NEXT-STEPS` file. Revi
 | 4. Neqo/H3 | Experimental Linux amd64 client with CA/SNI/SPKI and narrowly scoped H2 fallback; quic-go remains the default | [Neqo](../research/NEQO-INTEGRATION.en.md) |
 | 5. Access control | Local users, revocation/rotation and quotas; no distributed control plane | [Access](../reference/ACCESS.en.md) |
 
+A [reproducible SOCKS5 comparison harness against VLESS](../research/TRANSPORT-COMPARISON.en.md) is available for future field trials, with JSON samples and offline tests. **It is not an actual ISP measurement, Firefox-parity result or performance win.**
+
 These stages are merged into `main`. Passing CI on their source branches does **not** prove every combined-commit check passed: review the current GitHub Actions checks. NSS and Neqo experiments are not production readiness claims.
 
 ## Next

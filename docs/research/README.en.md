@@ -9,5 +9,6 @@ Research describes verified observations and limitations, not supported product 
 - [Firefox HTTP/2 and TLS measurements](WEB-PROFILE.en.md)
 - [Data path and bounded channels](DATA-PATH.en.md)
 - [Performance methodology](PERFORMANCE.en.md)
+- [Reproducible FoxTunnel versus VLESS comparison](TRANSPORT-COMPARISON.en.md)
 
 **Source data:** [measurements](../measurements/README.en.md). **Earlier comparisons:** [historical archive](../archive/README.en.md).

@@ -35,6 +35,7 @@
 ## Исследования и план
 
 - [Актуальные исследования](research/README.md)
+- [Сравнение FoxTunnel и VLESS: методика и тестовый стенд](research/TRANSPORT-COMPARISON.md)
 - [Измерения и исходные результаты](measurements/README.md)
 - [Единая дорожная карта](planning/ROADMAP.md)
 - [Исторические обзоры](archive/README.md)

@@ -35,6 +35,7 @@ Use this index as the **single entry point**. Guides explain operations; archite
 ## Research and roadmap
 
 - [Current research](research/README.en.md)
+- [FoxTunnel versus VLESS: measurement harness](research/TRANSPORT-COMPARISON.en.md)
 - [Measurements and raw evidence](measurements/README.en.md)
 - [Single roadmap](planning/ROADMAP.en.md)
 - [Historical reviews](archive/README.en.md)

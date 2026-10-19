@@ -9,5 +9,6 @@
 - [HTTP/2 и TLS: контрольные измерения Firefox](WEB-PROFILE.md)
 - [Быстродействие и постоянные каналы](DATA-PATH.md)
 - [Методика производительности](PERFORMANCE.md)
+- [Воспроизводимое сравнение FoxTunnel и VLESS](TRANSPORT-COMPARISON.md)
 
 **Исходные результаты:** [измерения](../measurements/README.md). **Ранние сравнения:** [исторический архив](../archive/README.md).
