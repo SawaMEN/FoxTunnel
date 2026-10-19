@@ -21,7 +21,7 @@ These stages are merged into `main`. Passing CI on their source branches does **
 
 ## Next
 
-1. **Full VPN:** persistent application UDP associations, TUN, routes, DNS/IPv6 and kill switch; include leak and failure tests.
+1. **Full VPN:** production-grade UDP streaming with network migration and loss control, TUN, routes, DNS/IPv6 and kill switch; include leak and failure tests.
 2. **Operations:** installation, updates/rollback, target OS, soak and native-memory tests, independent security review.
 3. **Field measurements:** comparable Firefox/NaiveProxy/FoxTunnel workloads, packet captures, RTT/loss, networks and reproducible evidence.
 4. **Integrations:** further client/panel adapters after API and wire contracts are stabilized.

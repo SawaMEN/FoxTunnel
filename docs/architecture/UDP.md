@@ -1,4 +1,4 @@
-# Экспериментальный UDP ASSOCIATE (этап 1)
+# Экспериментальный UDP ASSOCIATE (этапы 1 и 2)
 
 **Русский** | [English](UDP.en.md) · [Документация](../README.md)
 
