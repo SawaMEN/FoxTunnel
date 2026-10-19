@@ -24,6 +24,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
@@ -67,6 +68,12 @@ type Client struct {
 	BondPipeline int
 	// BondLanes is an experimental local opt-in; set before enabling bond.
 	BondLanes        bool
+	// BondAdaptive opts into measured ACKed block throughput scheduling.
+	BondAdaptive     bool
+	// BondAutoTune opts into bounded 4/8-slot tuning from measured throughput.
+	BondAutoTune     bool
+	// BondRoute: legacy (default) or smart (discovered direct hub + relay).
+	BondRoute        string
 	bondClient       *bond.Client
 	bondDiscovery    *bondDiscovery
 	tlsConfig        *tls.Config
@@ -75,6 +82,8 @@ type Client struct {
 	nativeTransport  string
 	quic             quicSettings
 	status           *enginestatus.Recorder
+	nodeMetrics      *nodeperf.Monitor
+	adaptiveState    nodeperf.SelectionState
 	h2ReceiveProfile string
 	tlsClientProfile string
 	xhttpSettings    xhttp.Settings
@@ -101,9 +110,9 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 			return nil, errors.New(i18n.Text("CA file contains no PEM certificates"))
 		}
 	}
-	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile, status: enginestatus.New()}
+	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile, status: enginestatus.New(), nodeMetrics: nodeperf.New()}
 	c.tlsConfig = &tls.Config{MinVersion: tls.VersionTLS13, MaxVersion: tls.VersionTLS13, RootCAs: roots, ClientSessionCache: tls.NewLRUClientSessionCache(32)}
-	c.transport = &identityPool{base: newGoTransport(c.tlsConfig), config: c.tlsConfig.Clone(), backend: "go", primary: u.Scheme + "://" + u.Host, entries: make(map[string]identityEntry)}
+	c.transport = &identityPool{base: newGoTransport(c.tlsConfig), config: c.tlsConfig.Clone(), backend: "go", primary: u.Scheme + "://" + u.Host, entries: make(map[string]identityEntry), monitor: c.nodeMetrics}
 	c.backend = "auto"
 	// Initialize the selected backend eagerly: never conceal an unusable NSS build.
 	if buildinfo.NSSAvailable {
@@ -136,6 +145,16 @@ func newGoTransportWithProfile(config *tls.Config, profile string) (*http.Transp
 		return nil, err
 	}
 	return t, nil
+}
+
+// NodeStatus returns bounded per-origin passive measurements. It makes no probes.
+// RequestLatencyMS is time to HTTP response headers, not ICMP RTT.
+// RecentFailurePct counts failed requests, not packet loss.
+func (c *Client) NodeStatus() []nodeperf.Snapshot {
+	if c.nodeMetrics == nil {
+		return nil
+	}
+	return c.nodeMetrics.Snapshot()
 }
 
 // TransportStatus returns aggregate, privacy-safe engine observations.
@@ -172,7 +191,7 @@ func (c *Client) SetTLSBackend(name string) error {
 		return err
 	}
 	c.transport.CloseIdleConnections()
-	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, quic: c.quic, h2ReceiveProfile: c.h2ReceiveProfile, tlsClientProfile: c.tlsClientProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, quic: c.quic, h2ReceiveProfile: c.h2ReceiveProfile, tlsClientProfile: c.tlsClientProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry), monitor: c.nodeMetrics}
 	c.backend = name
 	return nil
 }
@@ -186,6 +205,21 @@ func (c *Client) Close() { c.transport.CloseIdleConnections() }
 // be probed automatically when the 30-second cooldown expires.
 func (c *Client) NotifyNetworkChange() {
 	c.status.NetworkChanged()
+	// A network switch invalidates latency observations and cooldowns from the old route.
+	c.schedulerMu.Lock()
+	c.adaptiveState = nodeperf.SelectionState{}
+	c.endpointRetryAt = [maxProxyEndpoints]time.Time{}
+	c.endpointFailures = [maxProxyEndpoints]uint8{}
+	if c.nodeMetrics != nil {
+		c.nodeMetrics.InvalidateQuality()
+	}
+	c.schedulerMu.Unlock()
+	if c.bondDiscovery != nil {
+		c.bondDiscovery.mu.Lock()
+		current := c.bondDiscovery.current
+		c.bondDiscovery.mu.Unlock()
+		if current != nil { current.ResetRouteQuality() }
+	}
 	if pool, ok := c.transport.(*identityPool); ok {
 		pool.NetworkChanged()
 	} else {
