@@ -160,3 +160,25 @@ func TestXHTTPRouteProfile(t *testing.T) {
 		t.Fatal("unsafe Host accepted")
 	}
 }
+
+
+func TestAdaptiveLinkRoundTrip(t *testing.T) {
+	c := Config{Version: 1, Servers: []string{"https://edge-a.example", "https://edge-b.example"}, Username: "alice", Password: "secret", Balance: "adaptive"}
+	link, err := Encode(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := Decode(link)
+	if err != nil || decoded.Balance != "adaptive" {
+		t.Fatalf("adaptive scheduling lost in connection link: %v", err)
+	}
+	c.Balance = "unknown"
+	if _, err := Encode(c); err == nil {
+		t.Fatal("unsupported scheduling accepted")
+	}
+	c.Balance = "adaptive"
+	c.Bond = true
+	if _, err := Encode(c); err == nil {
+		t.Fatal("adaptive bond profile accepted")
+	}
+}
