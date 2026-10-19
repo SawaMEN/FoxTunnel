@@ -10,21 +10,28 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
-	"github.com/quic-go/quic-go/http3"
-	"golang.org/x/net/http2"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/multihop"
+	"github.com/quic-go/quic-go/http3"
+	"golang.org/x/net/http2"
 )
 
 type pathState struct {
-	pending int
-	latency time.Duration
-	retryAt time.Time
+	pending                        int
+	latency                        time.Duration
+	retryAt                        time.Time
+	inflightBytes                  int64
+	uploadBps, downloadBps         float64
+	uploadSamples, downloadSamples uint64
+	lastUpload, lastDownload       time.Time
 }
 type Client struct {
 	Endpoints          []*url.URL
@@ -37,19 +44,41 @@ type Client struct {
 	// PersistentLanes opts into negotiated records-v1 channels and coalescing.
 	// Default RPC is retained until relay throughput regressions are resolved.
 	PersistentLanes bool
+	// Adaptive enables experimental throughput-aware data block scheduling.
+	// Default false retains the prior Bonding scheduler and wire protocol.
+	Adaptive bool
+	// AutoTune controls the bounded 4/8-slot pipeline from measured data.
+	// Requires Adaptive; disabled by default.
+	AutoTune bool
 	// Weights are relative configured capacities (1..100), not traffic quotas.
 	// ExpectedHub optionally pins the exit before the first destination dial.
 	Weights     []int
 	ExpectedHub string
-	mu          sync.Mutex
-	paths       []pathState
-	next        uint64
+	// RouteMode is empty (legacy bond) or smart (direct hub vs one trusted relay).
+	RouteMode string
+	// DirectOrigin is the verified coordinator origin in smart mode.
+	DirectOrigin  string
+	mu            sync.Mutex
+	qualityEpoch  uint64
+	paths         []pathState
+	routeMetrics  []multihop.Measurement
+	routeState    multihop.State
+	next          uint64
 }
 
 func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
+	index, complete := c.reserveFor(tried, opOpen, 0)
+	return index, func(elapsed time.Duration, failed bool) { complete(elapsed, failed, 0) }
+}
+
+// reserveFor schedules the specific Bond data operation; the legacy wrapper
+// above preserves control-plane callers and existing tests.
+func (c *Client) reserveFor(tried []bool, op byte, payloadBytes int) (int, func(time.Duration, bool, int)) {
 	c.mu.Lock()
 	if len(c.paths) != len(c.Endpoints) {
 		c.paths = make([]pathState, len(c.Endpoints))
+		c.routeMetrics = make([]multihop.Measurement, len(c.Endpoints))
+		c.routeState = multihop.State{}
 		// Independent clients must not all probe the first configured node first.
 		var seed [8]byte
 		if _, err := rand.Read(seed[:]); err == nil {
@@ -57,57 +86,127 @@ func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
 		}
 	}
 	now := time.Now()
+	qualityEpoch := c.qualityEpoch
 	selected := -1
 	best := time.Duration(1<<63 - 1)
 	start := int(c.next % uint64(len(tried)))
 	c.next++
-	for i := range tried {
-		index := (start + i) % len(tried)
-		if tried[index] {
-			continue
+	if c.Adaptive && (op == opWrite || op == opRead) {
+		selected = c.pickAdaptive(tried, op, payloadBytes, now)
+	} else if c.RouteMode == "smart" {
+		candidates := make([]multihop.Candidate, len(tried))
+		for i := range tried {
+			origin := bondOrigin(c.Endpoints[i])
+			candidates[i] = multihop.Candidate{
+				ID: origin, Direct: origin == c.DirectOrigin,
+				Tried: tried[i], Active: c.paths[i].pending,
+				RetryAt: c.paths[i].retryAt, Quality: c.routeMetrics[i],
+			}
 		}
-		p := c.paths[index]
-		delay := p.latency
-		if delay == 0 {
-			delay = 100 * time.Millisecond
-		}
-		score := delay * time.Duration(p.pending+1)
-		if len(c.Weights) == len(c.Endpoints) && c.Weights[index] > 0 {
-			score /= time.Duration(c.Weights[index])
-		}
-		if p.latency == 0 && p.pending == 0 {
-			score = 0
-		}
-		if now.Before(p.retryAt) {
-			score += time.Hour
-		}
-		if selected < 0 || score < best {
-			selected = index
-			best = score
+		selected, c.routeState = multihop.Select(candidates, c.routeState, now)
+	} else {
+		for i := range tried {
+			index := (start + i) % len(tried)
+			if tried[index] {
+				continue
+			}
+			p := c.paths[index]
+			delay := p.latency
+			if delay == 0 {
+				delay = 100 * time.Millisecond
+			}
+			score := delay * time.Duration(p.pending+1)
+			if len(c.Weights) == len(c.Endpoints) && c.Weights[index] > 0 {
+				score /= time.Duration(c.Weights[index])
+			}
+			if p.latency == 0 && p.pending == 0 {
+				score = 0
+			}
+			if now.Before(p.retryAt) {
+				score += time.Hour
+			}
+			if selected < 0 || score < best {
+				selected = index
+				best = score
+			}
 		}
 	}
 	c.paths[selected].pending++
+	reservedBytes := 0
+	if c.Adaptive && (op == opWrite || op == opRead) {
+		reservedBytes = payloadBytes
+		if op == opRead {
+			reservedBytes = chunkSize // reserve expected response size
+		}
+		c.paths[selected].inflightBytes += int64(reservedBytes)
+	}
 	c.mu.Unlock()
-	return selected, func(elapsed time.Duration, failed bool) {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		p := &c.paths[selected]
-		p.pending--
-		if failed {
-			p.retryAt = time.Now().Add(5 * time.Second)
-			return
-		}
-		p.retryAt = time.Time{}
-		if elapsed <= 0 {
-			return
-		}
-		if p.latency == 0 {
-			p.latency = elapsed
-		} else {
-			p.latency = (7*p.latency + elapsed) / 8
-		}
+	var once sync.Once
+	return selected, func(elapsed time.Duration, failed bool, deliveredBytes int) {
+		once.Do(func() {
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			p := &c.paths[selected]
+			p.pending--
+			if reservedBytes > 0 {
+				p.inflightBytes -= int64(reservedBytes)
+			}
+			// Old-network replies must not reintroduce stale route quality or
+			// cooldowns after NotifyNetworkChange reset the estimator.
+			if qualityEpoch != c.qualityEpoch {
+				return
+			}
+			if !failed {
+				c.recordAdaptiveSample(selected, op, deliveredBytes, elapsed, time.Now())
+			}
+			if c.RouteMode == "smart" && !(c.Adaptive && op == opRead) {
+				c.routeMetrics[selected] = multihop.Update(c.routeMetrics[selected], elapsed, failed, time.Now())
+			}
+			if failed {
+				p.retryAt = time.Now().Add(5 * time.Second)
+				return
+			}
+			p.retryAt = time.Time{}
+			// Download goodput can include a long server/application wait.
+			// Never confuse such waits with short control/write RTT estimates.
+			if elapsed <= 0 || (c.Adaptive && op == opRead) {
+				return
+			}
+			if p.latency == 0 {
+				p.latency = elapsed
+			} else {
+				p.latency = (7*p.latency + elapsed) / 8
+			}
+		})
 	}
 }
+
+func bondOrigin(u *url.URL) string {
+	port := u.Port()
+	if port == "" {
+		port = "443"
+	}
+	return net.JoinHostPort(strings.ToLower(u.Hostname()), port)
+}
+
+// ResetRouteQuality invalidates all measured route durations after a confirmed
+// OS network transition without disrupting established hub sessions.
+func (c *Client) ResetRouteQuality() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.routeMetrics = make([]multihop.Measurement, len(c.Endpoints))
+	c.routeState = multihop.State{}
+	c.qualityEpoch++
+	for i := range c.paths {
+		p := &c.paths[i]
+		p.latency = 0
+		p.retryAt = time.Time{}
+		p.uploadBps, p.downloadBps = 0, 0
+		p.uploadSamples, p.downloadSamples = 0, 0
+		p.lastUpload, p.lastDownload = time.Time{}, time.Time{}
+	}
+}
+
 func terminal(err error) bool {
 	var cert *tls.CertificateVerificationError
 	var unknown x509.UnknownAuthorityError
@@ -151,7 +250,7 @@ func (c *Client) requestVia(ctx context.Context, transport http.RoundTripper, to
 		if ctx.Err() != nil {
 			return block{}, ctx.Err()
 		}
-		index, release := c.reserve(tried)
+		index, release := c.reserveFor(tried, op, len(payload))
 		tried[index] = true
 		timeout := c.attemptBudget(index, op)
 		attempt, cancel := context.WithTimeout(ctx, timeout)
@@ -163,7 +262,7 @@ func (c *Client) requestVia(ctx context.Context, transport http.RoundTripper, to
 		if err != nil {
 			cancel()
 			frames.close()
-			release(0, true)
+			release(0, true, 0)
 			return block{}, err
 		}
 		req.ContentLength = int64(headerSize + len(payload))
@@ -213,10 +312,22 @@ func (c *Client) requestVia(ctx context.Context, transport http.RoundTripper, to
 			retry = status == 429 || status == 408 || status == 503 || status == 504
 		}
 		measured := elapsed
-		if op == opRead && status != http.StatusOK {
+		if op == opRead && (status != http.StatusOK || (c.RouteMode == "smart" && (!c.Adaptive || len(data) < adaptiveMinBytes))) {
 			measured = 0
-		} // Long polls do not estimate path delay.
-		release(measured, err != nil || retry)
+		} // Smart routing measures control/write ACKs, not long-poll idle delay.
+		// A failed authorization/protocol response is not a successful route
+		// measurement even when its HTTP round-trip itself succeeded.
+		invalidReply := c.RouteMode == "smart" && err == nil && status != 200 && status != 201 && status != 204
+		if invalidReply { measured = 0 }
+		accepted := err == nil && !retry && !invalidReply
+		delivered := 0
+		if accepted && attemptNumber == 0 && op == opWrite && status == http.StatusOK {
+			delivered = len(payload)
+		}
+		if accepted && attemptNumber == 0 && op == opRead && status == http.StatusOK {
+			delivered = len(data)
+		}
+		release(measured, !accepted, delivered)
 		if err == nil && !retry {
 			switch status {
 			case 200:
@@ -277,6 +388,31 @@ type Stream struct {
 }
 
 func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
+	if c.AutoTune && !c.Adaptive {
+		return nil, errors.New("bond auto-tuning requires adaptive scheduling")
+	}
+	if c.RouteMode != "" && c.RouteMode != "smart" {
+		return nil, errors.New("unknown bond route mode")
+	}
+	if c.RouteMode == "smart" {
+		if c.ExpectedHub == "" || c.DirectOrigin == "" || len(c.Endpoints) < 2 {
+			return nil, errors.New("smart bond route requires discovered hub and relay")
+		}
+		direct, relay := false, false
+		for _, endpoint := range c.Endpoints {
+			if endpoint == nil || endpoint.Scheme != "https" || endpoint.Hostname() == "" || endpoint.User != nil {
+				return nil, errors.New("smart bond routes require trusted HTTPS endpoints")
+			}
+			if bondOrigin(endpoint) == c.DirectOrigin {
+				direct = true
+			} else {
+				relay = true
+			}
+		}
+		if !direct || !relay {
+			return nil, errors.New("smart bond route requires direct hub and relay")
+		}
+	}
 	if c.Pipeline != 0 && c.Pipeline != 4 && c.Pipeline != window {
 		return nil, errors.New(i18n.Text("bond pipeline must be auto, 4 or 8"))
 	}
@@ -528,6 +664,9 @@ func (c *Client) pipelineDepth() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	now := time.Now()
+	if c.AutoTune && c.Adaptive {
+		return c.pipelineTargetLocked(now)
+	}
 	fastest := time.Duration(0)
 	for _, p := range c.paths {
 		if p.latency <= 0 || now.Before(p.retryAt) {
