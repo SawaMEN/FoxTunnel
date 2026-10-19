@@ -13,6 +13,7 @@ crate-type = ["cdylib", "rlib"]
 # Pinned Neqo source revision; the generated Cargo.lock pins transitive crates.
 # The bridge is an isolated, experimental library, not part of release binaries.
 [dependencies]
+neqo-common = { git = "https://github.com/mozilla/neqo", rev = "ad7d629eaa67ab16e42e704a51f59fb14bdffb1e" }
 neqo-http3 = { git = "https://github.com/mozilla/neqo", rev = "ad7d629eaa67ab16e42e704a51f59fb14bdffb1e" }
 neqo-transport = { git = "https://github.com/mozilla/neqo", rev = "ad7d629eaa67ab16e42e704a51f59fb14bdffb1e" }
 # Must resolve to Neqo upstream Cargo.lock nss-rs 0.16.1; pinned in Cargo.lock.

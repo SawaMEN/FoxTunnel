@@ -24,4 +24,4 @@ Primary references: [Firefox HTTP/3 architecture](https://firefox-source-docs.mo
 * Neqo's server is experimental and does not replace the existing FoxTunnel server without review.
 * Network fingerprint parity, superior performance and censorship resistance remain unproven.
 
-The first Rust/C ABI probe is at [experiments/neqo-ffi](../../experiments/neqo-ffi/README.md); it generates real Neqo QUIC Initial packets but **has no network receive, certificate authentication or HTTP request handling**. A production-ready Go/Neqo HTTP/3 transport is not implemented.
+The experimental Rust/C ABI v2 at [experiments/neqo-ffi](../../experiments/neqo-ffi/README.md) now handles UDP datagrams and timers, with a Go HTTP/3 loopback test. **All certificate authentication is deliberately rejected**, until CA/SPKI verification is implemented. It does not yet send HTTP/3 requests or integrate with the normal Go client.

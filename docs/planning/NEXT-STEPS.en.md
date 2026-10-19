@@ -45,3 +45,5 @@ Evaluate [Neqo](https://github.com/mozilla/neqo) as a client first (see [integra
 experimental server is not a production replacement for the FoxTunnel server.
 Stable sing-box/Hiddify/3x-ui adapters follow stabilized contracts. No individual
 stage proves Russian TSPU resistance.
+
+**Neqo experiment:** Rust/C ABI v2 can drive UDP and QUIC timers in an isolated client but rejects all certificate authentication. Do not connect it to the production transport until CA/SPKI verification and HTTP/3 streams are implemented (see [Neqo](../research/NEQO-INTEGRATION.en.md)).
