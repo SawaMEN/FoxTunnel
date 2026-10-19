@@ -79,7 +79,23 @@ kind = sys.argv[1]
 host = sys.argv[2]
 port = int(sys.argv[3])
 family = socket.AF_INET6 if ':' in host else socket.AF_INET
-if kind == "tcp":
+if kind == "socks":
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(3.0)
+    try:
+        s.connect(("127.0.0.1", 1080))
+        s.sendall(b"\x05\x01\x00")
+        greeting = s.recv(2)
+        s.sendall(b"\x05\x01\x00\x01" + socket.inet_aton(host) + struct.pack("!H", port))
+        reply = s.recv(10)
+        if greeting != b"\x05\x00" or len(reply) != 10 or reply[1] != 0:
+            raise OSError(f"SOCKS handshake refused: {greeting!r} {reply!r}")
+        s.sendall(b"fox-tun-e2e")
+        success = s.recv(64) == b"fox-tun-e2e"
+    except OSError as exc:
+        print(f"SOCKS probe failed: {exc!r}", file=sys.stderr)
+        success = False
+elif kind == "tcp":
     s = socket.socket(family, socket.SOCK_STREAM)
     s.settimeout(2.5)
     try:
@@ -221,6 +237,7 @@ class TUNEndToEnd(unittest.TestCase):
                                    "--ca-cert", str(cert), "--sni", "lab.test",
                                    "--tls-backend", "go", "--enable-udp", "--udp-stream")
                 self.wait_alive(client, 0.5, "FoxTunnel client")
+                self.assert_probe(cns, "socks", "198.18.0.9", 5657, True)
 
                 # Real sing-box validated config from *same* public generator.
                 config, policy = companion.make_config(
@@ -236,6 +253,7 @@ class TUNEndToEnd(unittest.TestCase):
                 rules.write_text(policy, encoding="utf-8")
                 cmd("ip", "netns", "exec", cns, "nft", "-c", "-f", str(rules))
                 cmd("ip", "netns", "exec", cns, "nft", "-f", str(rules))
+                self.assert_probe(cns, "socks", "198.18.0.9", 5657, True)
                 sink = start(cns, box, "run", "-c", str(profile))
                 self.wait_tun(cns, sink, timeout=15)
 
@@ -262,6 +280,12 @@ class TUNEndToEnd(unittest.TestCase):
                             text=True, timeout=5
                         )
                         sys.stderr.write(f"\n-- {ns} {suffix} --\n{probe.stdout[-3000:]}\n")
+                    for target in ("198.18.0.9", "198.18.0.1"):
+                        route_get = subprocess.run(
+                            ["ip", "netns", "exec", ns, "ip", "route", "get", target],
+                            capture_output=True, text=True, timeout=5
+                        )
+                        sys.stderr.write(f"\\n-- {ns} route get {target} --\\n{route_get.stdout} {route_get.stderr}\\n")
                     nft = subprocess.run(
                         ["ip", "netns", "exec", ns, "nft", "list", "ruleset"],
                         capture_output=True, text=True, timeout=5
