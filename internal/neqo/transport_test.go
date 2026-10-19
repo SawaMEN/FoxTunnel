@@ -338,3 +338,59 @@ func TestMalformedResponseDoesNotWaitForContext(t *testing.T) {
 		t.Fatal("malformed headers succeeded or hung until context expired", err)
 	}
 }
+
+func TestFinalH3ReadDeliversBytesBeforeEOF(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	owner := &transport{}
+	c := &connection{owner: owner, ctx: ctx, commands: make(chan command),
+		done: make(chan struct{}), active: 1}
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "https://example.org/", nil)
+	s := &stream{conn: c, req: req, closed: make(chan struct{}),
+		uploadDone: make(chan struct{})}
+	close(s.uploadDone)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		readCount := 0
+		for {
+			select {
+			case cmd := <-c.commands:
+				switch cmd.kind {
+				case 'r':
+					readCount++
+					if readCount == 1 {
+						copy(cmd.data, "last")
+						cmd.reply <- result{n: 4, fin: true}
+					} else {
+						cmd.reply <- result{fin: true}
+					}
+				case 'x':
+					cmd.reply <- result{}
+					return
+				default:
+					cmd.reply <- result{err: errProtocol}
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	var buffer [8]byte
+	n, err := s.Read(buffer[:])
+	if err != nil || n != 4 || string(buffer[:n]) != "last" {
+		t.Fatalf("lost final bytes, got %q n=%d err=%v", buffer[:n], n, err)
+	}
+	n, err = s.Read(buffer[:])
+	if n != 0 || !errors.Is(err, io.EOF) {
+		t.Fatalf("expected EOF after final bytes, got n=%d err=%v", n, err)
+	}
+	select {
+	case <-done:
+	case <-ctx.Done():
+		t.Fatal("final EOF did not release the stream")
+	}
+	if c.active != 0 {
+		t.Fatalf("Neqo active request leaked on EOF: %d", c.active)
+	}
+}

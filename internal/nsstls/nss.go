@@ -45,6 +45,9 @@ func NewTransportWithProfile(config *tls.Config, profile string) (Transport, err
 	return NewTransportWithProfiles(config, profile, "")
 }
 func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string) (Transport, error) {
+	if config == nil {
+		return nil, errors.New("NSS TLS config is nil")
+	}
 	if err := h2profile.Validate(profile); err != nil {
 		return nil, err
 	}
@@ -351,6 +354,9 @@ func DialTLSContext(ctx context.Context, network, addr string, config *tls.Confi
 	return DialTLSContextWithProfile(ctx, network, addr, config, "")
 }
 func DialTLSContextWithProfile(ctx context.Context, network, addr string, config *tls.Config, profile string) (net.Conn, error) {
+	if config == nil {
+		return nil, errors.New("NSS TLS config is nil")
+	}
 	if err := checkClientProfile(profile); err != nil {
 		return nil, err
 	}

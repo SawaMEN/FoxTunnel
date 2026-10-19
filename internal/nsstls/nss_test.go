@@ -101,3 +101,16 @@ func TestALPNRequired(t *testing.T) {
 
 var _ net.Conn = (*conn)(nil)
 var _ io.Closer = (*conn)(nil)
+
+func TestNilTLSConfigRejectsWithoutPanic(t *testing.T) {
+	transport, err := NewTransportWithProfiles(nil, "", "")
+	if err == nil || transport != nil {
+		t.Fatalf("nil NSS TLS config accepted: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	conn, err := DialTLSContextWithProfile(ctx, "tcp", "127.0.0.1:1", nil, "")
+	if err == nil || conn != nil {
+		t.Fatalf("nil NSS dial TLS config accepted: %v", err)
+	}
+}

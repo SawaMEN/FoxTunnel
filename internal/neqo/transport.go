@@ -433,7 +433,9 @@ func (s *stream) Read(p []byte) (int, error) {
 			s.Close()
 			return 0, io.EOF
 		}
-		return out.n, io.EOF
+		// Deliver the final bytes without signaling EOF in the same
+		// call. The next Read returns EOF and releases the stream.
+		return out.n, nil
 	}
 	return out.n, nil
 }
