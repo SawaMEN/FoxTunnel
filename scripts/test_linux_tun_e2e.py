@@ -86,7 +86,8 @@ if kind == "tcp":
         s.connect((host, port))
         s.sendall(b"fox-tun-e2e")
         success = s.recv(64) == b"fox-tun-e2e"
-    except OSError:
+    except OSError as exc:
+        print(f"TCP probe failed: {exc!r}", file=sys.stderr)
         success = False
 elif kind == "udp":
     s = socket.socket(family, socket.SOCK_DGRAM)
@@ -94,7 +95,8 @@ elif kind == "udp":
     try:
         s.sendto(b"fox-udp-e2e", (host, port))
         success = s.recv(100) == b"fox-udp-e2e"
-    except OSError:
+    except OSError as exc:
+        print(f"UDP probe failed: {exc!r}", file=sys.stderr)
         success = False
 elif kind == "dns":
     s = socket.socket(family, socket.SOCK_DGRAM)
@@ -106,7 +108,8 @@ elif kind == "dns":
         answer = s.recv(512)
         success = (len(answer) >= 41 and answer[:2] == b"\x2a\x2b"
                    and bytes([198,18,0,9]) in answer[25:])
-    except OSError:
+    except OSError as exc:
+        print(f"DNS probe failed: {exc!r}", file=sys.stderr)
         success = False
 else:
     raise SystemExit("unknown probe")
@@ -225,6 +228,7 @@ class TUNEndToEnd(unittest.TestCase):
                 )
                 # A new namespace often has no systemd-resolved socket. A TUN
                 # hijack rule still exercises the remote resolver via UDP SOCKS.
+                config["log"]["level"] = "debug" # isolated lab diagnostics only
                 profile = root / "sing-box.json"
                 profile.write_text(json.dumps(config), encoding="utf-8")
                 cmd(box, "check", "-c", str(profile))
@@ -249,6 +253,20 @@ class TUNEndToEnd(unittest.TestCase):
                 self.assertIn("policy drop", output)
                 self.assert_probe(cns, "dns", "9.9.9.9", 53, False)
             except Exception:
+                for ns in created:
+                    for suffix in (("route", "show", "table", "all"),
+                                   ("-6", "route", "show", "table", "all"),
+                                   ("rule", "show")):
+                        probe = subprocess.run(
+                            ["ip", "-n", ns, *suffix], capture_output=True,
+                            text=True, timeout=5
+                        )
+                        sys.stderr.write(f"\n-- {ns} {suffix} --\n{probe.stdout[-3000:]}\n")
+                    nft = subprocess.run(
+                        ["ip", "netns", "exec", ns, "nft", "list", "ruleset"],
+                        capture_output=True, text=True, timeout=5
+                    )
+                    sys.stderr.write(f"\n-- {ns} nft --\n{nft.stdout[-5500:]}\n")
                 for logfile in sorted(root.glob("proc-*.log")):
                     sys.stderr.write(
                         f"\n---- {logfile.name} ----\n"
