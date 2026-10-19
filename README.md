@@ -62,6 +62,9 @@ RSS NSS/Neqo, число дескрипторов, нагрузочные echo-�
 Этап 10/11: [аудит Firefox, FoxTunnel и NaiveProxy](docs/measurements/STAGE10-FINGERPRINT.md)
 с обновлением текущего NSS/H2 захвата, отдельными статусами отсутствующих
 NaiveProxy/QUIC измерений и без выдуманного процента похожести.
+Этап 11/11: [проверка пакета Mozilla и экспериментальный prerelease](docs/releases/MOZILLA-STAGE11.md).
+Версионный выпуск возможен только при изменении специального запроса в ветке update,
+после проверок исходников, зависимостей и сетевого H2/H3 echo.
 Подробности и ограничения: [Mozilla Transport Engine](docs/architecture/MOZILLA-ENGINE.md).
 
 ## Быстрый старт из исходников
