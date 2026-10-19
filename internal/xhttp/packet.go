@@ -50,10 +50,10 @@ func parsePathAt(r *http.Request, prefix string) (id string, seq *uint64, ok boo
 	return id, &n, true
 }
 
-func (s *Server) admitPacket(id string, seq uint64) (*session, int) {
+func (s *Server) admitPacket(id string, seq uint64, lifetime ...context.Context) (*session, int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	p := s.getSessionLocked(id)
+	p := s.getSessionLocked(id, lifetime...)
 	if p == nil {
 		return nil, http.StatusServiceUnavailable
 	}
@@ -83,8 +83,8 @@ func (p *session) signalLocked() {
 	p.changed = make(chan struct{})
 }
 
-func (s *Server) servePacket(w http.ResponseWriter, r *http.Request, id string, seq uint64) {
-	p, status := s.admitPacket(id, seq)
+func (s *Server) servePacket(w http.ResponseWriter, r *http.Request, id string, seq uint64, life context.Context) {
+	p, status := s.admitPacket(id, seq, life)
 	if status != 0 {
 		http.Error(w, "packet rejected", status)
 		return

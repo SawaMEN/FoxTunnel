@@ -96,7 +96,7 @@ func dialWithWindow(ctx context.Context, rt http.RoundTripper, origin, mode, aut
 			return nil, ctx.Err()
 		}
 		go sendPacketsWindow(c, life, rt, u, auth, host, settings.Path, window)
-		go func() { _, _ = io.Copy(peer, down.Body); _ = down.Body.Close(); _ = c.Close() }()
+		go func() { _, _ = io.Copy(peer, down.Body); _ = c.Close(); _ = down.Body.Close() }()
 		success = true
 		return c, nil
 	}
@@ -110,8 +110,8 @@ func dialWithWindow(ctx context.Context, rt http.RoundTripper, origin, mode, aut
 	if mode == "xhttp-stream-up" {
 		go func() {
 			_, _ = io.Copy(io.Discard, up.Body)
-			_ = up.Body.Close()
 			_ = c.Close()
+			_ = up.Body.Close()
 		}()
 		down, err = request("GET", nil)
 		if err != nil {
@@ -124,8 +124,10 @@ func dialWithWindow(ctx context.Context, rt http.RoundTripper, origin, mode, aut
 	}
 	go func() {
 		_, _ = io.Copy(peer, down.Body)
-		_ = down.Body.Close()
+		// Close the duplex pipe before joining HTTP body cleanup. net/http
+		// may wait for a request upload blocked in Read on this same pipe.
 		_ = c.Close()
+		_ = down.Body.Close()
 	}()
 	success = true
 	return c, nil
@@ -149,6 +151,8 @@ type Server struct {
 	Settings    Settings
 	MaxSessions int
 	Authorized  func(*http.Request) bool
+	Owner       func(*http.Request) string
+	Lifetime    func(*http.Request) context.Context
 	ServeConn   func(net.Conn, *http.Request)
 	mu          sync.Mutex
 	sessions    map[string]*session
@@ -185,7 +189,7 @@ func (s *Server) close(id string, p *session) {
 		close(p.done)
 	})
 }
-func (s *Server) getSessionLocked(id string) *session {
+func (s *Server) getSessionLocked(id string, lifetime ...context.Context) *session {
 	p := s.sessions[id]
 	if id == "" {
 		p = nil
@@ -199,8 +203,13 @@ func (s *Server) getSessionLocked(id string) *session {
 			return nil
 		}
 		a, b := net.Pipe()
-		ctx, cancel := context.WithCancel(context.Background())
+		parent := context.Background()
+		if len(lifetime) > 0 && lifetime[0] != nil {
+			parent = lifetime[0]
+		}
+		ctx, cancel := context.WithCancel(parent)
 		p = &session{local: a, peer: b, done: make(chan struct{}), ctx: ctx, cancel: cancel, changed: make(chan struct{})}
+		context.AfterFunc(ctx, func() { s.close(id, p) })
 		s.active++
 		if id != "" {
 			if s.sessions == nil {
@@ -212,10 +221,10 @@ func (s *Server) getSessionLocked(id string) *session {
 	}
 	return p
 }
-func (s *Server) claim(id string, upload bool) (*session, bool) {
+func (s *Server) claim(id string, upload bool, lifetime ...context.Context) (*session, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	p := s.getSessionLocked(id)
+	p := s.getSessionLocked(id, lifetime...)
 	if p == nil {
 		return nil, false
 	}
@@ -271,12 +280,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, seq, _ := parsePathAt(r, settings.Path)
+	if id != "" && s.Owner != nil {
+		id = s.Owner(r) + ":" + id
+	}
+	life := context.Background()
+	if s.Lifetime != nil {
+		life = s.Lifetime(r)
+	}
 	if seq != nil {
 		if r.Method != "POST" {
 			http.NotFound(w, r)
 			return
 		}
-		s.servePacket(w, r, id, *seq)
+		s.servePacket(w, r, id, *seq, life)
 		return
 	}
 	upload := r.Method == "POST"
@@ -284,7 +300,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	p, ok := s.claim(id, upload)
+	p, ok := s.claim(id, upload, life)
 	if !ok {
 		http.Error(w, "server busy", http.StatusServiceUnavailable)
 		return

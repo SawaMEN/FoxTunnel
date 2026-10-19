@@ -76,3 +76,7 @@ quic-go; ordinary Linux NSS archives exclude Neqo. Browser fingerprint equivalen
 arm64/other OS and sustained/native-sanitizer work remain follow-up validation.
 
 **Separate historical probe:** `experiments/neqo-ffi` remains a deliberately fail-closed Neqo UDP/QUIC experiment (Rust/C ABI v2), tested independently from the opt-in HTTP/3 implementation at `rust/neqo-bridge`. Do not confuse the two backends.
+
+## Stage five: managed access
+
+[Users, revocation and quotas](../reference/ACCESS.en.md): stable accounts, atomic local reload, generation-bound XHTTP/bond, live revocation, per-user/global request budgets, target-socket quota metering and conservative durable reservations. Legacy credentials remain separate. Billing periods, distributed identity sync and external audit remain future work.

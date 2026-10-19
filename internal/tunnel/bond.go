@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 )
@@ -76,7 +77,7 @@ func (c *Client) handleBond(conn net.Conn, target string) {
 
 // NewBondHub uses the same resolved-IP policy as ordinary CONNECT.
 func (s *Server) NewBondHub() *bond.Hub {
-	return &bond.Hub{MaxSessions: s.MaxTunnels, Dial: func(ctx context.Context, target string) (net.Conn, error) {
+	return &bond.Hub{MaxSessions: s.MaxTunnels, Owner: access.Owner, SessionContext: access.Scope, Dial: func(ctx context.Context, target string) (net.Conn, error) {
 		host, port, err := splitTarget(target)
 		if err != nil {
 			return nil, err

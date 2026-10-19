@@ -63,3 +63,5 @@
 Приоритеты и критерии следующего этапа: [NEXT-STEPS.md](NEXT-STEPS.md).
 
 - [x] Нативный Neqo HTTP3-клиент Linux amd64 opt-in, pinned ABI/runtime, проверенный H2 fallback до запроса и настоящие QUIC loss/UDP blackhole-тесты.
+
+- [x] Управляемый доступ: пользователи, отзыв/ротация, ограниченные бюджеты запросов и журнал квот на данные выхода ([контракт](../reference/ACCESS.md)).

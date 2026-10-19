@@ -61,3 +61,26 @@ func TestIndependentProject(t *testing.T) {
 		t.Fatal("public API failed", string(got), err)
 	}
 }
+
+func TestPublicAccessController(t *testing.T) {
+	policy := ft.AccessPolicy{Version: 1, Users: []ft.AccessUser{{ID: "external", Username: "external-client", Password: "random-external-test-secret-0123456789"}}}
+	controller, err := ft.NewAccessController(policy, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer controller.Close()
+	server, err := ft.NewServer(ft.ServerConfig{Access: controller})
+	if err != nil || server == nil {
+		t.Fatal("public access API", err)
+	}
+	if _, err := ft.NewServer(ft.ServerConfig{Access: controller, Credentials: ft.Credentials{Username: "legacy", Password: "secret"}}); err == nil {
+		t.Fatal("mixed authorization accepted")
+	}
+	policy.Users[0].Disabled = true
+	if err := controller.Replace(policy); err != nil {
+		t.Fatal(err)
+	}
+	if s := controller.Snapshot(); len(s.Users) != 1 || !s.Users[0].Disabled {
+		t.Fatal("access snapshot")
+	}
+}

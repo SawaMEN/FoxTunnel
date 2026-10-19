@@ -23,6 +23,8 @@ import (
 )
 
 type ServerConfig struct {
+	UsersFile      string `json:"users_file,omitempty"`
+	UsersState     string `json:"users_state,omitempty"`
 	XHTTPPath      string `json:"xhttp_path,omitempty"`
 	XHTTPHost      string `json:"xhttp_host,omitempty"`
 	Version        int    `json:"v"`
@@ -50,6 +52,13 @@ type Options struct {
 var ErrConfig = errors.New("invalid server configuration")
 var ErrSetup = errors.New("setup failed; verify certificates, names and output directory")
 
+func validCredentials(c ServerConfig) bool {
+	if c.UsersFile != "" || c.UsersState != "" {
+		return c.UsersFile != "" && c.UsersState != "" && c.Username == "" && c.Password == ""
+	}
+	return c.Username != "" && !strings.Contains(c.Username, ":") && len(c.Username) <= 256 && c.Password != "" && len(c.Password) <= 1024
+}
+
 func ReadServer(path string) (ServerConfig, error) {
 	var c ServerConfig
 	f, err := os.Open(path)
@@ -57,7 +66,7 @@ func ReadServer(path string) (ServerConfig, error) {
 		return c, ErrConfig
 	}
 	defer f.Close()
-	if safejson.Decode(f, 32<<10, &c) != nil || c.Version != 1 || c.Certificate == "" || c.PrivateKey == "" || c.Username == "" || strings.Contains(c.Username, ":") || len(c.Username) > 256 || c.Password == "" || len(c.Password) > 1024 || c.MaxTunnels < 1 || c.MaxTunnels > 65536 || c.MaxConnections < 1 || c.MaxConnections > 65536 {
+	if safejson.Decode(f, 32<<10, &c) != nil || c.Version != 1 || c.Certificate == "" || c.PrivateKey == "" || !validCredentials(c) || c.MaxTunnels < 1 || c.MaxTunnels > 65536 || c.MaxConnections < 1 || c.MaxConnections > 65536 {
 		return ServerConfig{}, ErrConfig
 	}
 	if c.XHTTPPath != "" || c.XHTTPHost != "" {
