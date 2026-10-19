@@ -1,6 +1,6 @@
 module example.com/independent-foxtunnel-consumer
 
-go 1.26.0
+go 1.26.3
 
 require github.com/SawaMEN/FoxTunnel v0.0.0
 
