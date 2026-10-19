@@ -246,7 +246,9 @@ func main() {
 		link := fs.String("link", "", i18n.Text("vetroff connection link (prefer --link-file for secrets)"))
 		linkFile := fs.String("link-file", "", i18n.Text("read vetroff connection link from file or - for stdin"))
 		enableUDP := new(bool)
-		if os.Args[1] == "client" { fs.BoolVar(enableUDP, "enable-udp", false, i18n.Text("enable experimental SOCKS5 UDP ASSOCIATE (not full UDP streaming)")) }
+		if os.Args[1] == "client" {
+			fs.BoolVar(enableUDP, "enable-udp", false, i18n.Text("enable experimental SOCKS5 UDP ASSOCIATE (not full UDP streaming)"))
+		}
 		listen := fs.String("listen", "127.0.0.1:1080", i18n.Text("local SOCKS5 listening address"))
 		maxConnections := fs.Int("max-connections", 256, i18n.Text("maximum local SOCKS sockets including incomplete handshakes"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
@@ -358,7 +360,9 @@ func main() {
 		if *connectTimeout <= 0 {
 			log.Fatal(i18n.Text("--connect-timeout must be positive"))
 		}
-		if *enableUDP && *bonded { log.Fatal("--enable-udp is not supported with bond/discovery") }
+		if *enableUDP && *bonded {
+			log.Fatal("--enable-udp is not supported with bond/discovery")
+		}
 		if *bondLanes && !*bonded {
 			log.Fatal(i18n.Text("bond lanes require --bond"))
 		}

@@ -27,7 +27,10 @@ func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 	defer s.activeTunnels.Add(-1)
 
 	data, err := io.ReadAll(io.LimitReader(r.Body, udpproto.MaxDatagram+1))
-	if err != nil { http.Error(w, "invalid datagram", http.StatusBadRequest); return }
+	if err != nil {
+		http.Error(w, "invalid datagram", http.StatusBadRequest)
+		return
+	}
 	if len(data) > udpproto.MaxDatagram {
 		http.Error(w, "datagram too large", http.StatusRequestEntityTooLarge)
 		return
@@ -50,7 +53,9 @@ func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		status := http.StatusBadGateway
-		if errors.Is(err, access.ErrLimited) || errors.Is(err, access.ErrQuota) { status = http.StatusTooManyRequests }
+		if errors.Is(err, access.ErrLimited) || errors.Is(err, access.ErrQuota) {
+			status = http.StatusTooManyRequests
+		}
 		http.Error(w, "destination unavailable", status)
 		return
 	}
@@ -70,7 +75,7 @@ func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "datagram read failed", http.StatusBadGateway)
 		return
 	}
-	payload, err := udpproto.Encode(udpproto.Packet{Host:ip.String(),Port:packet.Port,Data:response[:n]})
+	payload, err := udpproto.Encode(udpproto.Packet{Host: ip.String(), Port: packet.Port, Data: response[:n]})
 	if err != nil {
 		http.Error(w, "datagram response too large", http.StatusBadGateway)
 		return
@@ -89,14 +94,20 @@ func (s *Server) resolveUDP(ctx context.Context, host string) (netip.Addr, error
 			return netip.Addr{}, errors.New("invalid UDP target")
 		}
 		resolver := s.Resolver
-		if resolver == nil { resolver = net.DefaultResolver }
+		if resolver == nil {
+			resolver = net.DefaultResolver
+		}
 		var err error
 		addrs, err = resolver.LookupNetIP(ctx, "ip", host)
-		if err != nil { return netip.Addr{}, err }
+		if err != nil {
+			return netip.Addr{}, err
+		}
 	}
 	for _, ip := range addrs {
 		ip = ip.Unmap()
-		if s.AllowPrivate || safePublicIP(ip) { return ip, nil }
+		if s.AllowPrivate || safePublicIP(ip) {
+			return ip, nil
+		}
 	}
 	return netip.Addr{}, errors.New("UDP destination prohibited")
 }

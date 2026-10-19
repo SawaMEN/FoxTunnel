@@ -33,9 +33,9 @@ type Server struct {
 	Password      string
 	AllowPrivate  bool
 	// EnableUDP admits bounded authenticated one-shot datagram relay requests.
-	EnableUDP bool
-	Resolver      *net.Resolver
-	DialTimeout   time.Duration
+	EnableUDP   bool
+	Resolver    *net.Resolver
+	DialTimeout time.Duration
 	// Padding enables support for explicitly negotiated initial-v1 records.
 	Padding bool
 	// MaxTunnels bounds authenticated dialing/relay work across this Server.

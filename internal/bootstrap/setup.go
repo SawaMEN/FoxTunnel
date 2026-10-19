@@ -29,7 +29,7 @@ type ServerConfig struct {
 	XHTTPHost      string `json:"xhttp_host,omitempty"`
 	Version        int    `json:"v"`
 	H3Listen       string `json:"h3_listen,omitempty"`
-	EnableUDP       bool   `json:"enable_udp,omitempty"`
+	EnableUDP      bool   `json:"enable_udp,omitempty"`
 	Listen         string `json:"listen"`
 	Certificate    string `json:"cert"`
 	PrivateKey     string `json:"key"`
@@ -48,7 +48,7 @@ type ServerConfig struct {
 type Options struct {
 	Server, Certificate, PrivateKey, Output, SNI, CACertFile, JoinLinkFile, UpstreamCAFile, WebRoot string
 	TLSBackend, Transport, XHTTPPath, XHTTPHost                                                     string
-	EnableUDP bool
+	EnableUDP                                                                                       bool
 }
 
 var ErrConfig = errors.New("invalid server configuration")

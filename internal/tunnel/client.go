@@ -199,7 +199,9 @@ func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
 	command, target, err := socks5Request(conn)
-	if err != nil { return }
+	if err != nil {
+		return
+	}
 	_ = conn.SetDeadline(time.Time{})
 	if command == 3 {
 		_ = target // RFC 1928 client association hint; source is verified using control peer.
@@ -251,7 +253,9 @@ func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 
 func socks5Handshake(conn net.Conn) (string, error) {
 	command, target, err := socks5Request(conn)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	if command != 1 {
 		_ = socks5Reply(conn, 7)
 		return "", errors.New("only SOCKS CONNECT is supported")

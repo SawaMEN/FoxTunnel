@@ -29,22 +29,35 @@ func Parse(b []byte) (Packet, error) {
 	offset := 4
 	switch b[3] {
 	case 1:
-		if len(b) < offset+4+2 { return Packet{}, ErrPacket }
-		a, ok := netip.AddrFromSlice(b[offset:offset+4])
-		if !ok { return Packet{}, ErrPacket }
+		if len(b) < offset+4+2 {
+			return Packet{}, ErrPacket
+		}
+		a, ok := netip.AddrFromSlice(b[offset : offset+4])
+		if !ok {
+			return Packet{}, ErrPacket
+		}
 		p.Host = a.String()
 		offset += 4
 	case 4:
-		if len(b) < offset+16+2 { return Packet{}, ErrPacket }
-		a, ok := netip.AddrFromSlice(b[offset:offset+16])
-		if !ok { return Packet{}, ErrPacket }
+		if len(b) < offset+16+2 {
+			return Packet{}, ErrPacket
+		}
+		a, ok := netip.AddrFromSlice(b[offset : offset+16])
+		if !ok {
+			return Packet{}, ErrPacket
+		}
 		p.Host = a.String()
 		offset += 16
 	case 3:
-		if len(b) < offset+1 { return Packet{}, ErrPacket }
-		n := int(b[offset]); offset++
-		if n == 0 || len(b) < offset+n+2 { return Packet{}, ErrPacket }
-		p.Host = string(b[offset:offset+n])
+		if len(b) < offset+1 {
+			return Packet{}, ErrPacket
+		}
+		n := int(b[offset])
+		offset++
+		if n == 0 || len(b) < offset+n+2 {
+			return Packet{}, ErrPacket
+		}
+		p.Host = string(b[offset : offset+n])
 		if strings.ContainsAny(p.Host, "\x00\r\n\t /\\@?#") {
 			return Packet{}, ErrPacket
 		}
@@ -52,10 +65,14 @@ func Parse(b []byte) (Packet, error) {
 	default:
 		return Packet{}, ErrPacket
 	}
-	p.Port = binary.BigEndian.Uint16(b[offset:offset+2])
-	if p.Port == 0 { return Packet{}, ErrPacket }
+	p.Port = binary.BigEndian.Uint16(b[offset : offset+2])
+	if p.Port == 0 {
+		return Packet{}, ErrPacket
+	}
 	p.Data = b[offset+2:]
-	if len(p.Data) == 0 { return Packet{}, ErrPacket }
+	if len(p.Data) == 0 {
+		return Packet{}, ErrPacket
+	}
 	return p, nil
 }
 
@@ -80,7 +97,9 @@ func Encode(p Packet) ([]byte, error) {
 		b = append(b, p.Host...)
 	}
 	b = binary.BigEndian.AppendUint16(b, p.Port)
-	if len(b)+len(p.Data) > MaxDatagram { return nil, ErrPacket }
+	if len(b)+len(p.Data) > MaxDatagram {
+		return nil, ErrPacket
+	}
 	return append(b, p.Data...), nil
 }
 

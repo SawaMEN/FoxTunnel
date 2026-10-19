@@ -270,7 +270,7 @@ type ServerConfig struct {
 	Credentials              Credentials
 	XHTTPPath, XHTTPHost     string
 	AllowPrivateDestinations bool // False rejects private/loopback/link-local targets.
-	EnableUDP bool // Experimental authenticated HTTPS datagram relay; off by default.
+	EnableUDP                bool // Experimental authenticated HTTPS datagram relay; off by default.
 	MaxTunnels               int  // 0 uses 256.
 	DialTimeout              time.Duration
 	Padding                  bool
