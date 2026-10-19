@@ -4,14 +4,14 @@
 
 FoxTunnel is an **experimental** client–server TCP tunnel: a local SOCKS5 proxy, an HTTPS server and several built-in transports. No Xray process or external proxy sidecar is required.
 
-> **Status:** research prototype, not a general-purpose VPN. Application UDP, TUN, route management and a kill switch are not implemented. Firefox fingerprint equivalence and resistance to network filtering have not been demonstrated.
+> **Status:** research prototype, not a general-purpose VPN. Only an opt-in experimental UDP request/response relay is present (SOCKS5 UDP ASSOCIATE); full UDP, TUN, route management and a kill switch are not implemented. Firefox fingerprint equivalence and resistance to network filtering have not been demonstrated.
 
 ## Implemented features
 
 | Area | Current implementation |
 |---|---|
-| Client | Local SOCKS5 for TCP; CA/SNI certificate validation and optional SPKI pin |
-| Server | HTTPS, TCP forwarding, authentication, destination controls and an optional static public site |
+| Client | Local SOCKS5 for TCP and experimental UDP; CA/SNI certificate validation and optional SPKI pin |
+| Server | HTTPS, TCP forwarding and experimental UDP relay, authentication, destination controls and an optional static public site |
 | Transports | `h2-connect`, `h2-post`, `h3-post`, `wss`, `xhttp-stream-one`, `xhttp-stream-up`, `xhttp-packet-up` |
 | TCP TLS | Go TLS; Mozilla NSS is the default in supported `-tags nss` Linux builds |
 | HTTP/3 | `quic-go` by default; a **separate opt-in Mozilla Neqo experiment** on Linux amd64 |

@@ -43,6 +43,7 @@ type ClientConfig struct {
 	HTTP2ReceiveProfile  string
 	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
 	Padding              bool
+	EnableUDP            bool // Experimental SOCKS5 UDP ASSOCIATE; off by default.
 	ConnectTimeout       time.Duration
 	MaxConnections       int // Combined active SOCKS/direct connections and pending direct dials; 0 uses 256.
 	FallbackServers      []string
@@ -123,6 +124,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	core.MaxConnections = limit
 	core.ConnectTimeout = config.ConnectTimeout
 	core.Padding = config.Padding
+	core.EnableUDP = config.EnableUDP
 	ctx, cancel := context.WithCancel(context.Background())
 	success = true
 	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
@@ -165,7 +167,7 @@ func (c *Client) ownLocked(raw net.Conn) *ownedConn {
 }
 
 // ServeSOCKS takes ownership of listener and closes it on return or Client.Close.
-// SOCKS5 exposes TCP only. No child process or panel is required.
+// SOCKS5 supports TCP and opt-in experimental UDP ASSOCIATE. No child process or panel is required.
 func (c *Client) ServeSOCKS(listener net.Listener) error {
 	c.mu.Lock()
 	if c.closed {
@@ -268,6 +270,7 @@ type ServerConfig struct {
 	Credentials              Credentials
 	XHTTPPath, XHTTPHost     string
 	AllowPrivateDestinations bool // False rejects private/loopback/link-local targets.
+	EnableUDP bool // Experimental authenticated HTTPS datagram relay; off by default.
 	MaxTunnels               int  // 0 uses 256.
 	DialTimeout              time.Duration
 	Padding                  bool
@@ -289,7 +292,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{core: &tunnel.Server{Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
+	return &Server{core: &tunnel.Server{Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, EnableUDP: config.EnableUDP, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || r.TLS.Version < tls.VersionTLS13 {

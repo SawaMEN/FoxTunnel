@@ -37,6 +37,8 @@ type Client struct {
 	// MaxConnections bounds local SOCKS sockets, including incomplete handshakes.
 	// Configure before Serve; zero uses 256.
 	MaxConnections int
+	// EnableUDP permits experimental SOCKS5 UDP ASSOCIATE; off by default.
+	EnableUDP bool
 	// ConnectTimeout bounds setup only, never the lifetime of an open stream.
 	// Set before calling Serve; zero uses 15 seconds.
 	ConnectTimeout time.Duration
@@ -196,11 +198,14 @@ func (c *Client) handle(conn net.Conn) { c.handleContext(context.Background(), c
 func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
-	target, err := socks5Handshake(conn)
-	if err != nil {
+	command, target, err := socks5Request(conn)
+	if err != nil { return }
+	_ = conn.SetDeadline(time.Time{})
+	if command == 3 {
+		_ = target // RFC 1928 client association hint; source is verified using control peer.
+		c.handleUDPAssociate(ctx, conn)
 		return
 	}
-	_ = conn.SetDeadline(time.Time{})
 
 	if c.bondClient != nil || c.bondDiscovery != nil {
 		c.handleBond(conn, target)
@@ -245,16 +250,26 @@ func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 }
 
 func socks5Handshake(conn net.Conn) (string, error) {
+	command, target, err := socks5Request(conn)
+	if err != nil { return "", err }
+	if command != 1 {
+		_ = socks5Reply(conn, 7)
+		return "", errors.New("only SOCKS CONNECT is supported")
+	}
+	return target, nil
+}
+
+func socks5Request(conn net.Conn) (byte, string, error) {
 	var hello [2]byte
 	if _, err := io.ReadFull(conn, hello[:]); err != nil {
-		return "", err
+		return 0, "", err
 	}
 	if hello[0] != 5 || hello[1] == 0 {
-		return "", errors.New(i18n.Text("unsupported SOCKS greeting"))
+		return 0, "", errors.New(i18n.Text("unsupported SOCKS greeting"))
 	}
 	methods := make([]byte, int(hello[1]))
 	if _, err := io.ReadFull(conn, methods); err != nil {
-		return "", err
+		return 0, "", err
 	}
 	noAuth := false
 	for _, m := range methods {
@@ -264,59 +279,59 @@ func socks5Handshake(conn net.Conn) (string, error) {
 	}
 	if !noAuth {
 		_, _ = conn.Write([]byte{5, 0xff})
-		return "", errors.New(i18n.Text("SOCKS no-auth method unavailable"))
+		return 0, "", errors.New(i18n.Text("SOCKS no-auth method unavailable"))
 	}
 	if _, err := conn.Write([]byte{5, 0}); err != nil {
-		return "", err
+		return 0, "", err
 	}
 	var h [4]byte
 	if _, err := io.ReadFull(conn, h[:]); err != nil {
-		return "", err
+		return 0, "", err
 	}
-	if h[0] != 5 || h[1] != 1 || h[2] != 0 {
+	if h[0] != 5 || (h[1] != 1 && h[1] != 3) || h[2] != 0 {
 		_ = socks5Reply(conn, 0x07)
-		return "", errors.New(i18n.Text("only SOCKS CONNECT is supported"))
+		return 0, "", errors.New(i18n.Text("only SOCKS CONNECT is supported"))
 	}
 	var host string
 	switch h[3] {
 	case 1:
 		var addr [4]byte
 		if _, err := io.ReadFull(conn, addr[:]); err != nil {
-			return "", err
+			return 0, "", err
 		}
 		host = net.IP(addr[:]).String()
 	case 4:
 		var addr [16]byte
 		if _, err := io.ReadFull(conn, addr[:]); err != nil {
-			return "", err
+			return 0, "", err
 		}
 		host = net.IP(addr[:]).String()
 	case 3:
 		var n [1]byte
 		if _, err := io.ReadFull(conn, n[:]); err != nil {
-			return "", err
+			return 0, "", err
 		}
 		if n[0] == 0 {
-			return "", errors.New(i18n.Text("empty hostname"))
+			return 0, "", errors.New(i18n.Text("empty hostname"))
 		}
 		name := make([]byte, n[0])
 		if _, err := io.ReadFull(conn, name); err != nil {
-			return "", err
+			return 0, "", err
 		}
 		host = string(name)
 	default:
 		_ = socks5Reply(conn, 0x08)
-		return "", errors.New(i18n.Text("unsupported SOCKS address type"))
+		return 0, "", errors.New(i18n.Text("unsupported SOCKS address type"))
 	}
 	var p [2]byte
 	if _, err := io.ReadFull(conn, p[:]); err != nil {
-		return "", err
+		return 0, "", err
 	}
 	port := binary.BigEndian.Uint16(p[:])
-	if port == 0 || strings.ContainsAny(host, "\x00\r\n") {
-		return "", errors.New(i18n.Text("invalid destination"))
+	if (port == 0 && h[1] == 1) || strings.ContainsAny(host, "\x00\r\n") {
+		return 0, "", errors.New(i18n.Text("invalid destination"))
 	}
-	return net.JoinHostPort(host, strconv.Itoa(int(port))), nil
+	return h[1], net.JoinHostPort(host, strconv.Itoa(int(port))), nil
 }
 
 func socks5Reply(w io.Writer, code byte) error {

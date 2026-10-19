@@ -70,8 +70,9 @@ func main() {
 		join := fs.String("join-link-file", "", i18n.Text("join a main node using its connection file"))
 		upstreamCA := fs.String("bond-ca-cert", "", i18n.Text("additional trusted PEM for the common exit"))
 		web := fs.String("web-root", "", i18n.Text("public website directory for ordinary requests and rejected probes"))
+		enableUDP := fs.Bool("enable-udp", false, i18n.Text("experimental SOCKS5 UDP request/response relay on generated server"))
 		i18n.Parse(fs, os.Args[2:])
-		if err := bootstrap.Generate(bootstrap.Options{Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost}); err != nil {
+		if err := bootstrap.Generate(bootstrap.Options{Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, EnableUDP: *enableUDP}); err != nil {
 			log.Fatal(i18n.Text(err.Error()))
 		}
 		fmt.Println(i18n.Text("configuration created: server.json, connection.txt and node.json (secrets not printed)"))
@@ -108,6 +109,7 @@ func main() {
 		maxConnections := fs.Int("max-connections", 512, i18n.Text("maximum accepted sockets including incomplete TLS handshakes"))
 		webRoot := fs.String("web-root", "", i18n.Text("public website directory for ordinary requests and rejected probes"))
 		allowPrivate := fs.Bool("allow-private", false, i18n.Text("permit private/loopback destination IPs (unsafe on public deployments)"))
+		enableUDP := fs.Bool("enable-udp", false, i18n.Text("enable experimental authenticated UDP relay (one request/response per HTTPS POST)"))
 		i18n.Parse(fs, os.Args[2:])
 		if *configFile != "" {
 			conflict := false
@@ -127,6 +129,7 @@ func main() {
 			*usersFile, *usersState = config.UsersFile, config.UsersState
 			*listen, *cert, *key = config.Listen, config.Certificate, config.PrivateKey
 			*h3Listen = config.H3Listen
+			*enableUDP = config.EnableUDP
 			*xhttpPath, *xhttpHost = config.XHTTPPath, config.XHTTPHost
 			*webRoot, *clusterFile = config.WebRoot, config.ClusterFile
 			*bondHub, *bondRelay, *bondCA = config.BondHub, config.BondUpstream, config.BondCA
@@ -181,7 +184,7 @@ func main() {
 		if err != nil {
 			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
 		}
-		handler := &tunnel.Server{Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		handler := &tunnel.Server{Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, EnableUDP: *enableUDP, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()
@@ -242,6 +245,8 @@ func main() {
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		link := fs.String("link", "", i18n.Text("vetroff connection link (prefer --link-file for secrets)"))
 		linkFile := fs.String("link-file", "", i18n.Text("read vetroff connection link from file or - for stdin"))
+		enableUDP := new(bool)
+		if os.Args[1] == "client" { fs.BoolVar(enableUDP, "enable-udp", false, i18n.Text("enable experimental SOCKS5 UDP ASSOCIATE (not full UDP streaming)")) }
 		listen := fs.String("listen", "127.0.0.1:1080", i18n.Text("local SOCKS5 listening address"))
 		maxConnections := fs.Int("max-connections", 256, i18n.Text("maximum local SOCKS sockets including incomplete handshakes"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
@@ -287,7 +292,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
 				default:
 					conflict = true
 				}
@@ -353,6 +358,7 @@ func main() {
 		if *connectTimeout <= 0 {
 			log.Fatal(i18n.Text("--connect-timeout must be positive"))
 		}
+		if *enableUDP && *bonded { log.Fatal("--enable-udp is not supported with bond/discovery") }
 		if *bondLanes && !*bonded {
 			log.Fatal(i18n.Text("bond lanes require --bond"))
 		}
@@ -397,6 +403,7 @@ func main() {
 			log.Fatal(err)
 		}
 		client.MaxConnections = *maxConnections
+		client.EnableUDP = *enableUDP
 		if err := client.SetFallbackServers(fallbacks); err != nil {
 			log.Fatal(err)
 		}

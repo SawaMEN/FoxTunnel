@@ -32,6 +32,8 @@ type Server struct {
 	Username      string
 	Password      string
 	AllowPrivate  bool
+	// EnableUDP admits bounded authenticated one-shot datagram relay requests.
+	EnableUDP bool
 	Resolver      *net.Resolver
 	DialTimeout   time.Duration
 	// Padding enables support for explicitly negotiated initial-v1 records.
@@ -90,6 +92,11 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.BondRelayOnly {
 		s.cover(w, r)
+		return
+	}
+	if s.EnableUDP && r.Method == http.MethodPost && r.URL.Path == udpPath &&
+		(r.ProtoMajor == 2 || r.ProtoMajor == 3) && s.authorized(r) {
+		s.serveUDP(w, r)
 		return
 	}
 	// Select the tunnel only after authentication; rejected requests use the

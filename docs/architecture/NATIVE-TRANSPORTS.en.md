@@ -28,7 +28,7 @@ H3 is standard QUIC, without Salamander/Gecko or Firefox fingerprint parity.
 The client completes TLS before sending HTTP; 0-RTT is disabled. Headers, streams
 and receive windows are bounded. `max-connections` separately caps QUIC connections,
 including incomplete handshakes. QUIC Retry starts at half capacity. The limit is
-independent of TCP admission. This transports application TCP, not SOCKS UDP or TUN.
+independent of TCP admission. This carries application TCP; a separate [experimental UDP ASSOCIATE](UDP.en.md) uses bounded HTTPS POST request/reply. Neither is TUN or native HTTP/3 datagram.
 
 ## Automatic setup
 

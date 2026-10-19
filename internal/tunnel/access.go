@@ -17,7 +17,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	settings, err := xhttp.Normalize(s.XHTTPSettings.Path, s.XHTTPSettings.Host)
-	candidate := r.Method == http.MethodConnect || (r.Method == http.MethodPost && (r.URL.Path == postPath || r.URL.Path == bond.Path)) || (r.Method == http.MethodGet && (r.URL.Path == wsPath || r.URL.Path == cluster.Path)) || (err == nil && xhttp.MatchesAt(r, settings))
+	candidate := r.Method == http.MethodConnect || (r.Method == http.MethodPost && (r.URL.Path == postPath || r.URL.Path == udpPath || r.URL.Path == bond.Path)) || (r.Method == http.MethodGet && (r.URL.Path == wsPath || r.URL.Path == cluster.Path)) || (err == nil && xhttp.MatchesAt(r, settings))
 	if !candidate {
 		s.cover(w, r)
 		return
