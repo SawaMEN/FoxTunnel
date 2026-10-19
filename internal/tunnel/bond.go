@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"io"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 )
@@ -30,7 +32,7 @@ func (c *Client) EnableBond() error {
 	if c.Padding {
 		return errors.New(i18n.Text("bond and initial-v1 padding cannot be combined"))
 	}
-	c.bondClient = &bond.Client{Endpoints: append([]*url.URL{c.ServerURL}, c.fallbackServers...), Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline}
+	c.bondClient = &bond.Client{Endpoints: append([]*url.URL{c.ServerURL}, c.fallbackServers...), Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes}
 	return nil
 }
 func (c *Client) handleBond(conn net.Conn, target string) {
@@ -75,7 +77,7 @@ func (c *Client) handleBond(conn net.Conn, target string) {
 
 // NewBondHub uses the same resolved-IP policy as ordinary CONNECT.
 func (s *Server) NewBondHub() *bond.Hub {
-	return &bond.Hub{MaxSessions: s.MaxTunnels, Dial: func(ctx context.Context, target string) (net.Conn, error) {
+	return &bond.Hub{MaxSessions: s.MaxTunnels, Owner: access.Owner, SessionContext: access.Scope, Dial: func(ctx context.Context, target string) (net.Conn, error) {
 		host, port, err := splitTarget(target)
 		if err != nil {
 			return nil, err
@@ -106,7 +108,10 @@ func NewBondRelayIdentity(raw, user, password, ca, sni, pin string) (http.Handle
 		req.URL = &endpoint
 		req.Host = endpoint.Host
 		req.RequestURI = ""
-		req.Body = io.NopCloser(io.LimitReader(r.Body, 64<<10))
+		streaming := r.Header.Get(bond.LaneHeader) == bond.LaneVersion
+		if !streaming {
+			req.Body = io.NopCloser(io.LimitReader(r.Body, 64<<10))
+		}
 		resp, err := upstream.transport.RoundTrip(req)
 		if err != nil {
 			status := http.StatusGatewayTimeout
@@ -117,11 +122,21 @@ func NewBondRelayIdentity(raw, user, password, ca, sni, pin string) (http.Handle
 			return
 		}
 		defer resp.Body.Close()
+		if resp.Header.Get(bond.LaneHeader) == bond.LaneVersion {
+			w.Header().Set(bond.LaneHeader, bond.LaneVersion)
+		}
 		w.WriteHeader(resp.StatusCode)
 		if resp.ContentLength == 0 {
 			return
 		}
-		_, _ = copyBondResponse(w, io.LimitReader(resp.Body, 64<<10))
+		if streaming {
+			if err := http.NewResponseController(w).Flush(); err != nil {
+				return
+			}
+			_, _ = copyBondLaneResponse(w, resp.Body)
+		} else {
+			_, _ = copyBondResponse(w, io.LimitReader(resp.Body, 64<<10))
+		}
 	})
 	return handler, upstream.Close, nil
 }
@@ -145,4 +160,37 @@ func copyBondResponse(w io.Writer, r io.Reader) (int64, error) {
 		}
 	}()
 	return io.CopyBuffer(w, r, buffer[:])
+}
+
+// Forward one bounded reply at a time. Flushing arbitrary transport Read chunks
+// would turn a split six-byte header into its own TLS/H2 write.
+func copyBondLaneResponse(w http.ResponseWriter, r io.Reader) (int64, error) {
+	buffer := make([]byte, (32<<10)+6)
+	var total int64
+	for {
+		if _, err := io.ReadFull(r, buffer[:6]); err != nil {
+			if err == io.EOF {
+				return total, nil
+			}
+			return total, err
+		}
+		n := int(binary.BigEndian.Uint32(buffer[2:6]))
+		if n > 32<<10 {
+			return total, errors.New("oversized bond lane reply")
+		}
+		if _, err := io.ReadFull(r, buffer[6:6+n]); err != nil {
+			return total, err
+		}
+		written, err := w.Write(buffer[:6+n])
+		total += int64(written)
+		if err != nil {
+			return total, err
+		}
+		if written != 6+n {
+			return total, io.ErrShortWrite
+		}
+		if err := http.NewResponseController(w).Flush(); err != nil {
+			return total, err
+		}
+	}
 }

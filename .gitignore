@@ -7,5 +7,7 @@
 /ft-webprofile
 *.log
 
-# Local Rust experiment output (keep Cargo.lock tracked).
+# Rust outputs are local; the Cargo.lock files remain tracked.
 **/target/
+/internal/neqo/build_stamp.h
+/foxtunnel-neqo

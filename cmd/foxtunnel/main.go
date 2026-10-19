@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
@@ -36,6 +37,11 @@ func main() {
 	password := os.Getenv("FOXTUNNEL_PASSWORD")
 
 	switch os.Args[1] {
+	case "access":
+		if err := accessCommand(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		return
 	case "version":
 		fs := i18n.NewFlagSet("foxtunnel version")
 		asJSON := fs.Bool("json", false, i18n.Text("print machine-readable build information"))
@@ -85,6 +91,8 @@ func main() {
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		configFile := fs.String("config", "", i18n.Text("private server configuration JSON"))
+		usersFile := fs.String("users-file", "", i18n.Text("private access policy JSON; reload with SIGHUP"))
+		usersState := fs.String("users-state", "", i18n.Text("durable access ledger in a private directory"))
 		h3Listen := fs.String("h3-listen", "", i18n.Text("optional native HTTP/3 UDP listening address"))
 		listen := fs.String("listen", "127.0.0.1:8443", i18n.Text("HTTPS listening address"))
 		cert := fs.String("cert", "", i18n.Text("TLS certificate PEM"))
@@ -116,6 +124,7 @@ func main() {
 				log.Fatal(i18n.Text(err.Error()))
 			}
 			user, password = config.Username, config.Password
+			*usersFile, *usersState = config.UsersFile, config.UsersState
 			*listen, *cert, *key = config.Listen, config.Certificate, config.PrivateKey
 			*h3Listen = config.H3Listen
 			*xhttpPath, *xhttpHost = config.XHTTPPath, config.XHTTPHost
@@ -124,9 +133,27 @@ func main() {
 			*bondSNI, *bondPin = config.BondSNI, config.BondPin
 			*maxTunnels, *maxConnections = config.MaxTunnels, config.MaxConnections
 		}
-		if user == "" || password == "" {
+		var controller *access.Controller
+		if *usersFile != "" || *usersState != "" {
+			if *usersFile == "" || *usersState == "" || user != "" || password != "" {
+				log.Fatal("users-file and users-state require exclusive access mode")
+			}
+			if err := checkAccessPaths(*usersFile, *usersState); err != nil {
+				log.Fatal(err)
+			}
+			policy, err := readAccessPolicy(*usersFile, *bondRelay != "")
+			if err != nil {
+				log.Fatal(err)
+			}
+			controller, err = access.New(policy, *usersState)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer controller.Close()
+		} else if user == "" || password == "" {
 			log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 		}
+
 		if *maxTunnels <= 0 {
 			log.Fatal(i18n.Text("--max-tunnels must be positive"))
 		}
@@ -138,7 +165,7 @@ func main() {
 		}
 		var cover http.Handler
 		if *webRoot != "" {
-			if err := tunnel.CheckPublicRoot(*webRoot, *key, *configFile, *clusterFile); err != nil {
+			if err := tunnel.CheckPublicRoot(*webRoot, *key, *configFile, *clusterFile, *usersFile, *usersState); err != nil {
 				log.Fatal(i18n.Text("public website overlaps private configuration"))
 			}
 			var err error
@@ -154,14 +181,18 @@ func main() {
 		if err != nil {
 			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
 		}
-		handler := &tunnel.Server{XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		handler := &tunnel.Server{Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()
 			handler.Bond = hub
 		}
 		if *bondRelay != "" {
-			relay, closeRelay, err := tunnel.NewBondRelayIdentity(*bondRelay, user, password, *bondCA, *bondSNI, *bondPin)
+			relayUser, relayPassword := user, password
+			if controller != nil {
+				relayUser, relayPassword = "transport-only", "not-forwarded"
+			}
+			relay, closeRelay, err := tunnel.NewBondRelayIdentity(*bondRelay, relayUser, relayPassword, *bondCA, *bondSNI, *bondPin)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -172,6 +203,10 @@ func main() {
 			if err := handler.ConfigureCluster(*clusterFile); err != nil {
 				log.Fatal(err)
 			}
+		}
+		if controller != nil {
+			stop := watchAccess(controller, *usersFile, *bondRelay != "")
+			defer stop()
 		}
 		server := &http.Server{
 			Addr:              *listen,
@@ -213,6 +248,10 @@ func main() {
 		var fallbacks serverURLs
 		fs.Var(&fallbacks, "fallback-server", i18n.Text("explicit trusted HTTPS proxy fallback (repeat up to seven times)"))
 		bondPipeline := fs.String("bond-pipeline", "auto", i18n.Text("bond pipeline: auto, 4 or 8 (higher depth uses more memory)"))
+		bondLanes := new(bool)
+		if os.Args[1] == "client" {
+			fs.BoolVar(bondLanes, "bond-lanes", false, i18n.Text("experimental persistent bond channels and small-write batching (requires --bond)"))
+		}
 		bonded := fs.Bool("bond", false, i18n.Text("experimental multi-node stream bonding; nodes must share one hub"))
 		discover := fs.Bool("discover", false, i18n.Text("obtain trusted bond nodes and capacity weights from the main HTTPS node"))
 		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active"))
@@ -220,6 +259,20 @@ func main() {
 		padding := fs.Bool("padding", false, i18n.Text("require experimental initial-record padding (server must enable it)"))
 		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up (no external proxy)"))
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
+		quicBackend, h3Fallback := new(string), new(string)
+		quicTimeout := new(time.Duration)
+		*quicBackend = "quic-go"
+		*h3Fallback = "none"
+		if os.Args[1] == "client" {
+			fs.StringVar(quicBackend, "quic-backend", "quic-go", i18n.Text("QUIC client: quic-go or experimental neqo (h3-post only)"))
+			fs.StringVar(h3Fallback, "h3-fallback", "none", i18n.Text("Neqo handshake fallback: none or h2 (before sending a request)"))
+			fs.DurationVar(quicTimeout, "quic-handshake-timeout", 0, i18n.Text("Neqo handshake budget (default 2s; 100ms through 10s)"))
+		}
+		tlsProfile := new(string)
+		*tlsProfile = "default"
+		if os.Args[1] == "client" {
+			fs.StringVar(tlsProfile, "tls-client-profile", "default", i18n.Text("TLS client profile: default or experimental firefox-158 (NSS 3.130)"))
+		}
 		h2Profile := fs.String("h2-receive-profile", "default", i18n.Text("HTTP/2 receive profile: default or experimental firefox-158"))
 		sni := fs.String("sni", "", i18n.Text("verified TLS server name (default: URL hostname)"))
 		pin := fs.String("pin-sha256", "", i18n.Text("additional server SPKI pin: sha256/base64"))
@@ -234,7 +287,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile":
+				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
 				default:
 					conflict = true
 				}
@@ -300,6 +353,9 @@ func main() {
 		if *connectTimeout <= 0 {
 			log.Fatal(i18n.Text("--connect-timeout must be positive"))
 		}
+		if *bondLanes && !*bonded {
+			log.Fatal(i18n.Text("bond lanes require --bond"))
+		}
 		if *discover && !*bonded {
 			log.Fatal(i18n.Text("cluster discovery requires --bond"))
 		}
@@ -307,13 +363,31 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := client.SetTLSBackend(*tlsBackend); err != nil {
+		initialBackend := *tlsBackend
+		if *quicBackend == "neqo" && initialBackend == "nss" {
+			initialBackend = "auto"
+		}
+		if err := client.SetTLSBackend(initialBackend); err != nil {
 			log.Fatal(err)
 		}
 		if err := client.SetServerIdentity(*sni, *pin); err != nil {
 			log.Fatal(err)
 		}
 		if err := client.SetTransport(*nativeTransport); err != nil {
+			log.Fatal(err)
+		}
+		if *h3Fallback != "none" && *h3Fallback != "h2" {
+			log.Fatal("--h3-fallback: none or h2")
+		}
+		if err := client.SetQUICBackend(*quicBackend, *h3Fallback == "h2", *quicTimeout); err != nil {
+			log.Fatal(err)
+		}
+		if *quicBackend == "neqo" && *tlsBackend == "nss" {
+			if err := client.SetTLSBackend("nss"); err != nil {
+				log.Fatal(err)
+			}
+		}
+		if err := client.SetTLSClientProfile(*tlsProfile); err != nil {
 			log.Fatal(err)
 		}
 		if err := client.SetHTTP2ReceiveProfile(*h2Profile); err != nil {
@@ -341,6 +415,7 @@ func main() {
 		default:
 			log.Fatal(i18n.Text("bond pipeline must be auto, 4 or 8"))
 		}
+		client.BondLanes = *bondLanes
 		if *bonded {
 			var err error
 			if *discover {
@@ -366,7 +441,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add> [flags] (credentials: environment or vetroff link)"))
+	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access> [flags] (credentials: environment or vetroff link)"))
 	os.Exit(2)
 }
 

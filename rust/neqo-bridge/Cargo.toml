@@ -1,0 +1,20 @@
+[package]
+name = "foxtunnel-neqo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+neqo-common = { git = "https://github.com/mozilla/neqo", rev = "1ec4c2a3ccd7ada264112d1b70b070381557d844" }
+neqo-http3 = { git = "https://github.com/mozilla/neqo", rev = "1ec4c2a3ccd7ada264112d1b70b070381557d844" }
+neqo-transport = { git = "https://github.com/mozilla/neqo", rev = "1ec4c2a3ccd7ada264112d1b70b070381557d844", default-features = false }
+nss = { package = "nss-rs", version = "0.16.1", git = "https://github.com/mozilla/nss-rs" }
+
+[profile.release]
+panic = "unwind"
+lto = false

@@ -186,7 +186,7 @@ func (c *Client) discoveredBond(ctx context.Context) (*bond.Client, error) {
 						}
 					}
 				}
-				d.current = &bond.Client{Endpoints: endpoints, Weights: weights, ExpectedHub: m.HubID, Transport: transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline}
+				d.current = &bond.Client{Endpoints: endpoints, Weights: weights, ExpectedHub: m.HubID, Transport: transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes}
 				d.manifest = m
 			}
 			d.expires = now.Add(time.Duration(m.ValidFor) * time.Second)

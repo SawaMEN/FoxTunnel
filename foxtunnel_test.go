@@ -37,7 +37,11 @@ func endpoint(t *testing.T, mode string, padding bool, limit int, backend ...str
 	if len(backend) > 0 {
 		selected = backend[0]
 	}
-	client, e := ft.NewClient(ft.ClientConfig{TLSBackend: selected, ServerURL: h.URL, Credentials: ft.Credentials{Username: "alice", Password: "secret"}, CACertFile: ca, Transport: mode, Padding: padding, MaxConnections: limit, HTTP2ReceiveProfile: ft.HTTP2ReceiveFirefox158})
+	clientProfile := ""
+	if len(backend) > 1 {
+		clientProfile = backend[1]
+	}
+	client, e := ft.NewClient(ft.ClientConfig{TLSClientProfile: clientProfile, TLSBackend: selected, ServerURL: h.URL, Credentials: ft.Credentials{Username: "alice", Password: "secret"}, CACertFile: ca, Transport: mode, Padding: padding, MaxConnections: limit, HTTP2ReceiveProfile: ft.HTTP2ReceiveFirefox158})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -61,11 +65,15 @@ func endpoint(t *testing.T, mode string, padding bool, limit int, backend ...str
 func TestPublicDialHalfCloseAndSetupContext(t *testing.T) {
 	testPublicDialHalfCloseAndSetupContext(t, "go")
 }
-func testPublicDialHalfCloseAndSetupContext(t *testing.T, backend string) {
+func testPublicDialHalfCloseAndSetupContext(t *testing.T, backend string, clientProfiles ...string) {
 	for _, mode := range []string{"h2-connect", "h2-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		for _, padding := range []bool{false, true} {
 			t.Run(mode+map[bool]string{true: "/padded", false: "/plain"}[padding], func(t *testing.T) {
-				client, target := endpoint(t, mode, padding, 0, backend)
+				clientProfile := ""
+				if len(clientProfiles) > 0 {
+					clientProfile = clientProfiles[0]
+				}
+				client, target := endpoint(t, mode, padding, 0, backend, clientProfile)
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				c, e := client.DialContext(ctx, "tcp", target)
 				cancel()

@@ -80,7 +80,26 @@ int ft_init(void){
  methods.getsocketoption=get_option;methods.setsocketoption=set_option;
  return 0;
 }
-PRFileDesc *ft_new(uintptr_t handle,const char *name,const char *local,const char *remote,const char *protocol,int *error){
+/* Socket-local preferences based on Firefox 158 nsNSSIOLayerSetOptions and
+ * the measured TLS-1.3 ClientHello. No process-global cipher policy changes.
+ * 4588 is the IANA X25519MLKEM768 group; the pinned NSS runtime implements it.
+ * Numeric identifiers also allow building with Ubuntu 24.04's older headers.
+ * NSS itself moves PKCS#1 schemes last under TLS-1.3-only policy; do not
+ * bypass ssl3_FilterSigAlgs or advertise TLS 1.2 to change this ordering. */
+static SECStatus firefox158(PRFileDesc *fd) {
+ const SSLNamedGroup groups[]={(SSLNamedGroup)4588,(SSLNamedGroup)29,
+  (SSLNamedGroup)23,(SSLNamedGroup)24,(SSLNamedGroup)25};
+ const SSLSignatureScheme signatures[]={(SSLSignatureScheme)1027,(SSLSignatureScheme)1283,
+  (SSLSignatureScheme)1539,(SSLSignatureScheme)2052,(SSLSignatureScheme)2053,
+  (SSLSignatureScheme)2054,(SSLSignatureScheme)1025,(SSLSignatureScheme)1281,
+  (SSLSignatureScheme)1537,(SSLSignatureScheme)515,(SSLSignatureScheme)513};
+ if(strcmp(NSS_GetVersion(),"3.130")!=0){PR_SetError(PR_OPERATION_NOT_SUPPORTED_ERROR,0);return SECFailure;}
+ if(SSL_NamedGroupConfig(fd,groups,sizeof(groups)/sizeof(groups[0]))!=SECSuccess ||
+    SSL_SendAdditionalKeyShares(fd,2)!=SECSuccess ||
+    SSL_SignatureSchemePrefSet(fd,signatures,sizeof(signatures)/sizeof(signatures[0]))!=SECSuccess)return SECFailure;
+ return SECSuccess;
+}
+PRFileDesc *ft_new(uintptr_t handle,const char *name,const char *local,const char *remote,const char *protocol,int profile,int *error){
  PRFileDesc *fd=PR_CreateIOLayerStub(identity,&methods);
  if(!fd){*error=PR_GetError();return NULL;}
  Layer *data=calloc(1,sizeof(Layer));
@@ -102,6 +121,7 @@ PRFileDesc *ft_new(uintptr_t handle,const char *name,const char *local,const cha
     SSL_SetURL(fd,name)!=SECSuccess ||
     SSL_SetNextProtoNego(fd,alpn,(unsigned int)protocol_len+1)!=SECSuccess ||
     SSL_AuthCertificateHook(fd,authenticate,(void *)handle)!=SECSuccess ||
+    (profile!=0 && (profile!=1 || firefox158(fd)!=SECSuccess)) ||
     SSL_ResetHandshake(fd,PR_FALSE)!=SECSuccess){*error=PR_GetError();PR_Close(fd);return NULL;}
  return fd;
 }

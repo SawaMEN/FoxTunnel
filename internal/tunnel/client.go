@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"io"
 	"net"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 )
 
 // Client exposes local SOCKS5 TCP over the selected native HTTPS transport.
-// NSS is the default in NSS-tagged Linux builds for TCP transports; HTTP/3 stays Go QUIC.
+// NSS is the default in NSS-tagged Linux builds for TCP transports; HTTP/3 defaults to Go QUIC; explicit Neqo uses NSS.
 type Client struct {
 	ServerURL  *url.URL
 	Username   string
@@ -57,14 +58,18 @@ type Client struct {
 		CloseIdleConnections()
 	}
 	// BondPipeline is 0 (automatic), 4 or 8; set before EnableBond.
-	BondPipeline     int
+	BondPipeline int
+	// BondLanes is an experimental local opt-in; set before enabling bond.
+	BondLanes        bool
 	bondClient       *bond.Client
 	bondDiscovery    *bondDiscovery
 	tlsConfig        *tls.Config
 	identity         tlsidentity.Policy
 	backend          string
 	nativeTransport  string
+	quic             quicSettings
 	h2ReceiveProfile string
+	tlsClientProfile string
 	xhttpSettings    xhttp.Settings
 }
 
@@ -127,7 +132,7 @@ func newGoTransportWithProfile(config *tls.Config, profile string) (*http.Transp
 }
 
 // SetTLSBackend selects a backend before Serve starts. "auto" uses NSS on
-// supported TCP transports when compiled in, but Go QUIC for HTTP/3.
+// supported TCP transports when compiled in, but Go QUIC for HTTP/3 unless Neqo is explicitly configured.
 // Explicit "nss" never silently falls back to Go.
 func (c *Client) SetTLSBackend(name string) error {
 	if c.bondClient != nil || c.bondDiscovery != nil {
@@ -141,16 +146,16 @@ func (c *Client) SetTLSBackend(name string) error {
 	resolved := name
 	if name == "auto" {
 		resolved = "go"
-		if buildinfo.NSSAvailable && c.nativeTransport != "h3-post" {
+		if (buildinfo.NSSAvailable && c.nativeTransport != "h3-post") || c.quic.backend == "neqo" {
 			resolved = "nss"
 		}
 	}
-	transport, err := makeNativeTransport(c.nativeTransport, resolved, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile)
+	transport, err := makeNativeTransport(c.nativeTransport, resolved, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile, c.tlsClientProfile, c.quic)
 	if err != nil {
 		return err
 	}
 	c.transport.CloseIdleConnections()
-	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, h2ReceiveProfile: c.h2ReceiveProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, quic: c.quic, h2ReceiveProfile: c.h2ReceiveProfile, tlsClientProfile: c.tlsClientProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry)}
 	c.backend = name
 	return nil
 }
@@ -338,6 +343,26 @@ func (c *Client) SetHTTP2ReceiveProfile(name string) error {
 	c.h2ReceiveProfile = name
 	if err := c.SetTLSBackend(c.backend); err != nil {
 		c.h2ReceiveProfile = old
+		return err
+	}
+	return nil
+}
+
+// SetTLSClientProfile applies socket-local NSS preferences before serving.
+func (c *Client) SetTLSClientProfile(name string) error {
+	if err := nsstls.ValidateClientProfile(name); err != nil {
+		return err
+	}
+	if name == "default" {
+		name = ""
+	}
+	if c.bondClient != nil || c.bondDiscovery != nil {
+		return i18n.Error("configure TLS before enabling bond")
+	}
+	old := c.tlsClientProfile
+	c.tlsClientProfile = name
+	if err := c.SetTLSBackend(c.backend); err != nil {
+		c.tlsClientProfile = old
 		return err
 	}
 	return nil

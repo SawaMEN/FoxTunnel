@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"net"
 	"net/http"
 	"strings"
@@ -14,12 +15,16 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 const ProtocolDraft = buildinfo.ProtocolDraft
 const HTTP2ReceiveFirefox158 = h2profile.Firefox158
+
+// TLSClientFirefox158 opts into measured preferences on pinned NSS 3.130.
+const TLSClientFirefox158 = nsstls.Firefox158
 
 var ErrCapacity = errors.New("foxtunnel client connection limit reached")
 
@@ -28,11 +33,15 @@ type ClientConfig struct {
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
-	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for H3); explicit go/nss allowed.
+	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for default H3); Neqo uses NSS.
 	Transport            string // Empty selects h2-connect.
+	QUICBackend          string // Empty/quic-go preserves the default; neqo is an opt-in build.
+	H3Fallback           string // Empty/none or h2; only before a Neqo HTTP request is created.
+	QUICHandshakeTimeout time.Duration
 	ServerName, SPKIPin  string
 	XHTTPPath, XHTTPHost string
 	HTTP2ReceiveProfile  string
+	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
 	Padding              bool
 	ConnectTimeout       time.Duration
 	MaxConnections       int // Combined active SOCKS/direct connections and pending direct dials; 0 uses 256.
@@ -70,13 +79,32 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if backend == "" {
 		backend = "auto"
 	}
-	if err = core.SetTLSBackend(backend); err != nil {
+	initialBackend := backend
+	if config.QUICBackend == "neqo" && backend == "nss" {
+		initialBackend = "auto"
+	}
+	if err = core.SetTLSBackend(initialBackend); err != nil {
 		return nil, err
 	}
 	if err = core.SetServerIdentity(config.ServerName, config.SPKIPin); err != nil {
 		return nil, err
 	}
 	if err = core.SetTransport(config.Transport); err != nil {
+		return nil, err
+	}
+	fallback := config.H3Fallback
+	if fallback != "" && fallback != "none" && fallback != "h2" {
+		return nil, errors.New("H3Fallback must be none or h2")
+	}
+	if err = core.SetQUICBackend(config.QUICBackend, fallback == "h2", config.QUICHandshakeTimeout); err != nil {
+		return nil, err
+	}
+	if config.QUICBackend == "neqo" && backend == "nss" {
+		if err = core.SetTLSBackend("nss"); err != nil {
+			return nil, err
+		}
+	}
+	if err = core.SetTLSClientProfile(config.TLSClientProfile); err != nil {
 		return nil, err
 	}
 	if err = core.SetHTTP2ReceiveProfile(config.HTTP2ReceiveProfile); err != nil {
@@ -223,7 +251,20 @@ func (l *ownedListener) Accept() (net.Conn, error) {
 	}
 }
 
+// AccessUser configures an opaque stable account ID and a high-entropy Basic credential.
+type AccessUser = access.User
+type AccessPolicy = access.Document
+type AccessSnapshot = access.Snapshot
+type AccessController = access.Controller
+
+// NewAccessController uses a Linux durable ledger when stateFile is nonempty.
+// The caller owns Close. An empty stateFile explicitly selects volatile accounting.
+func NewAccessController(policy AccessPolicy, stateFile string) (*AccessController, error) {
+	return access.New(policy, stateFile)
+}
+
 type ServerConfig struct {
+	Access                   *AccessController // Alternative to Credentials; shared by all server transports.
 	Credentials              Credentials
 	XHTTPPath, XHTTPHost     string
 	AllowPrivateDestinations bool // False rejects private/loopback/link-local targets.
@@ -238,7 +279,7 @@ type ServerConfig struct {
 type Server struct{ core *tunnel.Server }
 
 func NewServer(config ServerConfig) (*Server, error) {
-	if config.Credentials.Username == "" || config.Credentials.Password == "" || strings.Contains(config.Credentials.Username, ":") {
+	if (config.Access == nil && (config.Credentials.Username == "" || config.Credentials.Password == "" || strings.Contains(config.Credentials.Username, ":"))) || (config.Access != nil && (config.Credentials.Username != "" || config.Credentials.Password != "")) {
 		return nil, errors.New("server credentials required")
 	}
 	if config.MaxTunnels < 0 || config.DialTimeout < 0 {
@@ -248,7 +289,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{core: &tunnel.Server{Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
+	return &Server{core: &tunnel.Server{Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || r.TLS.Version < tls.VersionTLS13 {

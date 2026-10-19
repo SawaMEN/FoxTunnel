@@ -1,0 +1,29 @@
+File: bond.test
+Build ID: 7cbc951a0e63db299c4207bac1fa5de5a7c2d2cc
+Type: cpu
+Time: 2026-10-18 17:07:18 PDT
+Duration: 10.50s, Total samples = 11.61s (110.61%)
+Showing nodes accounting for 7.88s, 67.87% of 11.61s total
+Dropped 466 nodes (cum <= 0.06s)
+Showing top 20 nodes out of 273
+      flat  flat%   sum%        cum   cum%
+     1.88s 16.19% 16.19%      1.88s 16.19%  internal/runtime/syscall/linux.Syscall6
+     1.41s 12.14% 28.34%      2.76s 23.77%  runtime.cgocall
+     1.24s 10.68% 39.02%      2.81s 24.20%  syscall.Syscall
+     0.88s  7.58% 46.60%      0.88s  7.58%  runtime.memmove
+     0.83s  7.15% 53.75%      0.83s  7.15%  runtime.futex
+     0.21s  1.81% 55.56%      0.21s  1.81%  runtime.memclrNoHeapPointers
+     0.15s  1.29% 56.85%      0.21s  1.81%  runtime.lock2
+     0.15s  1.29% 58.14%      0.60s  5.17%  runtime.selectgo
+     0.12s  1.03% 59.17%      0.12s  1.03%  crypto/internal/fips140/aes/gcm.gcmAesDec
+     0.12s  1.03% 60.21%      0.12s  1.03%  internal/runtime/atomic.(*Uint32).CompareAndSwap (inline)
+     0.12s  1.03% 61.24%      0.16s  1.38%  internal/sync.(*Mutex).Lock
+     0.12s  1.03% 62.27%      0.12s  1.03%  runtime.nextFreeFast
+     0.10s  0.86% 63.14%      0.10s  0.86%  crypto/internal/fips140/aes/gcm.gcmAesEnc
+     0.10s  0.86% 64.00%      0.19s  1.64%  runtime.runqgrab
+     0.10s  0.86% 64.86%      0.20s  1.72%  runtime.sellock
+     0.09s  0.78% 65.63%      0.09s  0.78%  runtime.usleep
+     0.07s   0.6% 66.24%      0.07s   0.6%  memeqbody
+     0.07s   0.6% 66.84%      0.07s   0.6%  runtime.asyncPreempt
+     0.06s  0.52% 67.36%      0.06s  0.52%  internal/runtime/maps.ctrlGroup.matchH2
+     0.06s  0.52% 67.87%      0.06s  0.52%  runtime.nanotime

@@ -17,7 +17,7 @@ import (
 )
 
 func TestNativeTransports(t *testing.T) { testNativeTransports(t, "go") }
-func testNativeTransports(t *testing.T, backend string) {
+func testNativeTransports(t *testing.T, backend string, clientProfiles ...string) {
 	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		if backend == "nss" && mode == "h3-post" {
 			continue
@@ -36,6 +36,11 @@ func testNativeTransports(t *testing.T, backend string) {
 			}
 			if err := client.SetTransport(mode); err != nil {
 				t.Fatal(err)
+			}
+			if len(clientProfiles) > 0 {
+				if err := client.SetTLSClientProfile(clientProfiles[0]); err != nil {
+					t.Fatal(err)
+				}
 			}
 			client.Padding = true
 			client.ConnectTimeout = 200 * time.Millisecond
@@ -76,7 +81,7 @@ func TestNativeVerificationBeforeCredentials(t *testing.T) {
 }
 func testNativeVerificationBeforeCredentials(t *testing.T, backend string, receiveProfile ...string) {
 	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
-		if len(receiveProfile) > 0 && (mode == "wss" || mode == "h3-post") {
+		if len(receiveProfile) > 0 && receiveProfile[0] != "" && (mode == "wss" || mode == "h3-post") {
 			continue
 		}
 		if backend == "nss" && mode == "h3-post" {
@@ -114,6 +119,11 @@ func testNativeVerificationBeforeCredentials(t *testing.T, backend string, recei
 				}
 				if len(receiveProfile) > 0 {
 					if err := c.SetHTTP2ReceiveProfile(receiveProfile[0]); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if len(receiveProfile) > 1 {
+					if err := c.SetTLSClientProfile(receiveProfile[1]); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -303,5 +313,11 @@ func TestXHTTPIdleClosePreservesActiveStream(t *testing.T) {
 				time.Sleep(time.Millisecond)
 			}
 		})
+	}
+}
+
+func TestNativeBondedLanesGo(t *testing.T) {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+		t.Run(mode, func(t *testing.T) { testBondedSOCKSNativeLanes(t, "go", 8, true, mode, true) })
 	}
 }

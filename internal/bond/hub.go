@@ -30,14 +30,16 @@ const (
 )
 
 type block struct {
-	data []byte
-	eof  bool
+	data  []byte
+	eof   bool
+	lanes bool
 }
 type session struct {
 	mu                        sync.Mutex
 	changed                   chan struct{}
 	ready                     chan struct{}
 	idle                      *time.Timer
+	stopOwner                 func() bool
 	target                    string
 	conn                      net.Conn
 	err                       error
@@ -46,6 +48,7 @@ type session struct {
 	nextUp, nextDown, ackDown uint64
 	up, down                  map[uint64]block
 	receiveBuffers            [window][]byte
+	lanes                     map[io.ReadCloser]struct{}
 }
 
 func (s *session) signal() { close(s.changed); s.changed = make(chan struct{}) }
@@ -53,6 +56,12 @@ func (s *session) stop(err error) {
 	s.mu.Lock()
 	if !s.closed {
 		s.closed = true
+		if s.stopOwner != nil {
+			s.stopOwner()
+		}
+		for body := range s.lanes {
+			body.Close()
+		}
 		s.up = nil
 		s.down = nil
 		s.receiveBuffers = [window][]byte{}
@@ -69,15 +78,17 @@ func (s *session) stop(err error) {
 }
 
 type Hub struct {
-	identityOnce  sync.Once
-	identity      [32]byte
-	identityError error
-	Dial          func(context.Context, string) (net.Conn, error)
-	MaxSessions   int
-	mu            sync.Mutex
-	sessions      map[string]*session
-	lastSweep     time.Time
-	closed        bool
+	identityOnce   sync.Once
+	identity       [32]byte
+	identityError  error
+	Dial           func(context.Context, string) (net.Conn, error)
+	Owner          func(context.Context) string
+	SessionContext func(context.Context) context.Context
+	MaxSessions    int
+	mu             sync.Mutex
+	sessions       map[string]*session
+	lastSweep      time.Time
+	closed         bool
 }
 
 // Tokens contain creation time and 192 random bits. Expired opens are rejected,
@@ -89,6 +100,9 @@ func validToken(token []byte, now time.Time) bool {
 func (h *Hub) get(ctx context.Context, token []byte, target string) (*session, error) {
 	now := time.Now()
 	key := hex.EncodeToString(token)
+	if h.Owner != nil {
+		key = h.Owner(ctx) + ":" + key
+	}
 	h.mu.Lock()
 	if h.closed {
 		h.mu.Unlock()
@@ -146,12 +160,24 @@ func (h *Hub) get(ctx context.Context, token []byte, target string) (*session, e
 	}
 	s = &session{target: target, changed: make(chan struct{}), ready: make(chan struct{}), touched: now, up: make(map[uint64]block), down: make(map[uint64]block)}
 	s.idle = time.AfterFunc(lifetime, func() { s.stop(context.DeadlineExceeded) })
+	sessionCtx := context.Background()
+	if h.SessionContext != nil {
+		sessionCtx = h.SessionContext(ctx)
+	}
+	stopOwner := context.AfterFunc(sessionCtx, func() { s.stop(context.Canceled) })
+	s.mu.Lock()
+	if s.closed {
+		stopOwner()
+	} else {
+		s.stopOwner = stopOwner
+	}
+	s.mu.Unlock()
 	h.sessions[key] = s
 	h.mu.Unlock()
 	// Dial belongs to the session, not the first HTTP attempt; losing that attempt
 	// cannot create a second destination connection on a retry through another node.
 	go func() {
-		dialCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		dialCtx, cancel := context.WithTimeout(sessionCtx, 10*time.Second)
 		defer cancel()
 		conn, err := h.Dial(dialCtx, target)
 		s.mu.Lock()
@@ -164,6 +190,14 @@ func (h *Hub) get(ctx context.Context, token []byte, target string) (*session, e
 		s.conn = conn
 		s.err = err
 		s.closed = err != nil
+		if err != nil {
+			if s.stopOwner != nil {
+				s.stopOwner()
+			}
+			if s.idle != nil {
+				s.idle.Stop()
+			}
+		}
 		close(s.ready)
 		s.signal()
 		s.mu.Unlock()
@@ -201,11 +235,20 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if r.Header.Get(LaneHeader) == LaneVersion {
+		h.serveLane(w, r)
+		return
+	}
 	body, err := readBounded(r.Body, r.ContentLength, headerSize+chunkSize)
 	if err != nil || len(body) < headerSize || len(body) > headerSize+chunkSize {
 		http.Error(w, "bad frame", 400)
 		return
 	}
+	h.serveFrame(w, r, body)
+}
+
+func (h *Hub) serveFrame(w http.ResponseWriter, r *http.Request, body []byte) {
+	expected := r.Header.Get("X-FoxTunnel-Bond-Hub")
 	op, token := body[0], body[1:33]
 	seq := binary.BigEndian.Uint64(body[33:41])
 	ack := binary.BigEndian.Uint64(body[41:49])
@@ -252,6 +295,7 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch op {
 	case opOpen:
+		w.Header().Set(LaneHeader, LaneVersion)
 		w.WriteHeader(200)
 		w.Write(h.identity[:])
 	case opWrite, opFin:

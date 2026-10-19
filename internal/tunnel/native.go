@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"io"
 	"net"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/neqo"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 	"github.com/coder/websocket"
@@ -47,9 +49,19 @@ func (c *Client) SetTransport(mode string) error {
 	return nil
 }
 
-func makeNativeTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings, receiveProfile string) (tlsTransport, error) {
+func makeNativeTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings, receiveProfile, clientProfile string, quic quicSettings) (tlsTransport, error) {
+	if err := nsstls.ValidateClientProfile(clientProfile); err != nil {
+		return nil, err
+	}
+	if clientProfile == nsstls.Firefox158 && backend != "nss" {
+		return nil, i18n.Error("TLS client profile requires NSS")
+	}
+
+	if quic.backend == "neqo" && mode != "h3-post" {
+		return nil, errors.New("Neqo requires h3-post")
+	}
 	if mode == "xhttp-stream-one" || mode == "xhttp-stream-up" || mode == "xhttp-packet-up" {
-		return newXHTTPTransport(mode, backend, config, auth, settings, receiveProfile)
+		return newXHTTPTransport(mode, backend, config, auth, settings, receiveProfile, clientProfile)
 	}
 	if receiveProfile != "" && (mode == "wss" || mode == "h3-post") {
 		return nil, i18n.Error("HTTP/2 receive profile requires an H2 or XHTTP transport")
@@ -58,15 +70,38 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 		return nil, xhttp.ErrSettings
 	}
 	if mode == "h3-post" {
+		if quic.backend == "neqo" {
+			if backend != "nss" || clientProfile != "" {
+				return nil, errors.New("Neqo requires NSS and cannot use the TCP Firefox TLS profile")
+			}
+			timeout := quic.timeout
+			if timeout == 0 {
+				timeout = 2 * time.Second
+			}
+			transport, err := neqo.NewTransport(neqo.Config{TLS: config, HandshakeTimeout: timeout})
+			if err != nil {
+				return nil, err
+			}
+			var selected tlsTransport = transport
+			if quic.fallback {
+				h2, err := makeTLStransport("nss", config, "", "")
+				if err != nil {
+					transport.CloseIdleConnections()
+					return nil, err
+				}
+				selected = &neqoFallbackTransport{h3: transport, h2: h2, until: make(map[string]time.Time)}
+			}
+			return postTransport{tlsTransport: selected, host: config.ServerName}, nil
+		}
 		if backend != "go" {
 			return nil, i18n.Error("HTTP/3 requires Go QUIC TLS; NSS cannot be selected")
 		}
 		return newH3Transport(config), nil
 	}
 	if mode == "wss" {
-		return newWSSTransport(backend, config, auth)
+		return newWSSTransport(backend, config, auth, clientProfile)
 	}
-	t, err := makeTLStransport(backend, config, receiveProfile)
+	t, err := makeTLStransport(backend, config, receiveProfile, clientProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -108,10 +143,10 @@ func (t *wssTransport) CloseIdleConnections() {
 	t.outer.CloseIdleConnections()
 }
 
-func newWSSTransport(backend string, config *tls.Config, auth string) (tlsTransport, error) {
+func newWSSTransport(backend string, config *tls.Config, auth, clientProfile string) (tlsTransport, error) {
 	// Validate the build now, rather than silently switching away from NSS later.
 	if backend == "nss" {
-		probe, err := nsstls.NewTransport(config)
+		probe, err := nsstls.NewTransportWithProfiles(config, "", clientProfile)
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +159,7 @@ func newWSSTransport(backend string, config *tls.Config, auth string) (tlsTransp
 	outer := &http.Transport{Protocols: protocols, TLSClientConfig: cfg, DisableCompression: true, TLSHandshakeTimeout: 10 * time.Second, ResponseHeaderTimeout: 10 * time.Second, IdleConnTimeout: 90 * time.Second}
 	if backend == "nss" {
 		outer.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return nsstls.DialTLSContext(ctx, network, addr, cfg)
+			return nsstls.DialTLSContextWithProfile(ctx, network, addr, cfg, clientProfile)
 		}
 	}
 	client := &http.Client{Transport: outer, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
@@ -198,8 +233,10 @@ func (s *Server) serveWSS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.CloseNow()
+	stop := context.AfterFunc(access.Scope(r.Context()), func() { conn.CloseNow() })
+	defer stop()
 	inner := &http2.Server{MaxConcurrentStreams: 32, MaxUploadBufferPerConnection: 1 << 20, MaxUploadBufferPerStream: 64 << 10, IdleTimeout: 90 * time.Second}
-	inner.ServeConn(wsSocket(conn), &http2.ServeConnOpts{Context: context.Background(), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: s})
+	inner.ServeConn(wsSocket(conn), &http2.ServeConnOpts{Context: access.Scope(r.Context()), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: s})
 }
 
 func basicAuth(user, password string) string {
@@ -208,8 +245,8 @@ func basicAuth(user, password string) string {
 
 // Mozilla NSS supplies the outer TLS handshake; Go supplies the HTTP/2 framing.
 // The inner connection is plaintext HTTP/2 inside the verified HTTPS carrier.
-func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings, receiveProfile string) (tlsTransport, error) {
-	outer, err := makeTLStransport(backend, config, receiveProfile)
+func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, settings xhttp.Settings, receiveProfile, clientProfile string) (tlsTransport, error) {
+	outer, err := makeTLStransport(backend, config, receiveProfile, clientProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -303,10 +340,10 @@ func (b *carrierBody) Read(p []byte) (int, error) {
 func (b *carrierBody) Close() error { err := b.ReadCloser.Close(); b.once.Do(b.release); return err }
 func (s *Server) serveXHTTP(w http.ResponseWriter, r *http.Request) {
 	s.xhttpOnce.Do(func() {
-		s.xhttpServer = &xhttp.Server{Settings: s.XHTTPSettings, MaxSessions: s.MaxTunnels, Authorized: s.authorized, ServeConn: func(conn net.Conn, outer *http.Request) {
+		s.xhttpServer = &xhttp.Server{Settings: s.XHTTPSettings, MaxSessions: s.MaxTunnels, Authorized: s.authorized, Owner: func(r *http.Request) string { return access.Owner(r.Context()) }, Lifetime: func(r *http.Request) context.Context { return access.Scope(r.Context()) }, ServeConn: func(conn net.Conn, outer *http.Request) {
 			defer conn.Close()
 			inner := &http2.Server{MaxConcurrentStreams: 32, MaxUploadBufferPerConnection: 1 << 20, MaxUploadBufferPerStream: 64 << 10, IdleTimeout: 90 * time.Second}
-			inner.ServeConn(conn, &http2.ServeConnOpts{Context: context.Background(), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { r.TLS = outer.TLS; s.ServeHTTP(w, r) })})
+			inner.ServeConn(conn, &http2.ServeConnOpts{Context: access.Scope(outer.Context()), BaseConfig: &http.Server{MaxHeaderBytes: 32 << 10}, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { r.TLS = outer.TLS; s.ServeHTTP(w, r) })})
 		}}
 	})
 	s.xhttpServer.ServeHTTP(w, r)
