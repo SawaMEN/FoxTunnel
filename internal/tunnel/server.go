@@ -99,6 +99,11 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serveUDP(w, r)
 		return
 	}
+	if s.EnableUDP && r.Method == http.MethodPost && r.URL.Path == udpStreamPath &&
+		(r.ProtoMajor == 2 || r.ProtoMajor == 3) && s.authorized(r) {
+		s.serveUDPStream(w, r)
+		return
+	}
 	// Select the tunnel only after authentication; rejected requests use the
 	// same handler as the public website and never dial a destination.
 	if r.Method != http.MethodConnect || (r.ProtoMajor != 2 && r.ProtoMajor != 3) || !s.authorized(r) {

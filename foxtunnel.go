@@ -44,6 +44,7 @@ type ClientConfig struct {
 	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
 	Padding              bool
 	EnableUDP            bool // Experimental SOCKS5 UDP ASSOCIATE; off by default.
+	UDPStreaming         bool // Opt-in v2 persistent UDP stream; requires EnableUDP.
 	ConnectTimeout       time.Duration
 	MaxConnections       int // Combined active SOCKS/direct connections and pending direct dials; 0 uses 256.
 	FallbackServers      []string
@@ -65,6 +66,9 @@ type Client struct {
 func NewClient(config ClientConfig) (*Client, error) {
 	if config.MaxConnections < 0 || config.ConnectTimeout < 0 {
 		return nil, errors.New("negative client limit or timeout")
+	}
+	if config.UDPStreaming && !config.EnableUDP {
+		return nil, errors.New("UDP streaming requires UDP to be enabled")
 	}
 	core, err := tunnel.NewClient(config.ServerURL, config.Credentials.Username, config.Credentials.Password, config.CACertFile)
 	if err != nil {
@@ -125,6 +129,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	core.ConnectTimeout = config.ConnectTimeout
 	core.Padding = config.Padding
 	core.EnableUDP = config.EnableUDP
+	core.UDPStreaming = config.UDPStreaming
 	ctx, cancel := context.WithCancel(context.Background())
 	success = true
 	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil

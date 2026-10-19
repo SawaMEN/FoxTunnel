@@ -56,7 +56,7 @@ against compromised trusted nodes.
 
 ## Remaining gaps
 
-The prototype adds **opt-in** experimental UDP ASSOCIATE (one datagram per HTTPS POST) to SOCKS5 TCP; there is still no TUN, persistent UDP, OS kill switch or guarantee of
+The prototype adds **opt-in** experimental UDP ASSOCIATE (one-shot HTTPS POST v1 and separately enabled multiplexed HTTP streaming v2) to SOCKS5 TCP; there is still no TUN, native QUIC DATAGRAM, network migration, OS kill switch or guarantee of
 capturing all system DNS/traffic. There is no independent audit or Russian TSPU
 field evidence; NSS plus Go H2 is not Firefox parity. Authentication is a bearer
 credential inside TLS, without TUIC-style TLS-exporter channel binding. Per-user

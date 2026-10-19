@@ -12,7 +12,7 @@ The **single current roadmap**, replacing the duplicated `NEXT-STEPS` file. Revi
 | 2. Mozilla TLS/H2 | NSS TCP and measured profile gaps; **no full Firefox parity** | [Mozilla profile](../research/MOZILLA-CLIENT-PROFILE.en.md) |
 | 3. Data path | Bounded bond lanes, coalescing and loopback benchmarks; no claimed Internet advantage | [Bond](../architecture/BONDING.en.md), [data path](../research/DATA-PATH.en.md) |
 | 4. Neqo/H3 | Experimental Linux amd64 client with CA/SNI/SPKI and narrowly scoped H2 fallback; quic-go remains the default | [Neqo](../research/NEQO-INTEGRATION.en.md) |
-| 6. UDP request/response | Experimental SOCKS5 UDP ASSOCIATE over HTTPS POST; no persistent UDP or TUN | [UDP](../architecture/UDP.en.md) |
+| 6. UDP, two modes | One-shot HTTPS POST v1 plus opt-in persistent v2 stream multiplexing up to 16 UDP destinations; no TUN, system routing or network migration | [UDP](../architecture/UDP.en.md) |
 | 5. Access control | Local users, revocation/rotation and quotas; no distributed control plane | [Access](../reference/ACCESS.en.md) |
 
 A [reproducible SOCKS5 comparison harness against VLESS](../research/TRANSPORT-COMPARISON.en.md) is available for future field trials, with JSON samples and offline tests. **It is not an actual ISP measurement, Firefox-parity result or performance win.**

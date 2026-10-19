@@ -39,6 +39,9 @@ type Client struct {
 	MaxConnections int
 	// EnableUDP permits experimental SOCKS5 UDP ASSOCIATE; off by default.
 	EnableUDP bool
+	// UDPStreaming selects the v2 persistent multiplexed UDP carrier; requires EnableUDP.
+	// The existing v1 request/response relay remains the default for compatibility.
+	UDPStreaming bool
 	// ConnectTimeout bounds setup only, never the lifetime of an open stream.
 	// Set before calling Serve; zero uses 15 seconds.
 	ConnectTimeout time.Duration

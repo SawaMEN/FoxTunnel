@@ -12,7 +12,7 @@
 | 2. Mozilla TLS/H2 | NSS для TCP, профиль и измерения различий; **полного Firefox-паритета нет** | [Mozilla profile](../research/MOZILLA-CLIENT-PROFILE.md) |
 | 3. Передача данных | Ограниченные bond-каналы, coalescing и локальные бенчмарки; прирост скорости в Интернете не доказан | [Bond](../architecture/BONDING.md), [результаты](../research/DATA-PATH.md) |
 | 4. Mozilla Neqo/H3 | Экспериментальный Linux amd64 backend с CA/SNI/SPKI и ограниченным H2 fallback; стандартный H3 — quic-go | [Neqo](../research/NEQO-INTEGRATION.md) |
-| 6. UDP запрос/ответ | Экспериментальный SOCKS5 UDP ASSOCIATE по HTTPS POST, без TUN, NAT и потокового UDP | [UDP](../architecture/UDP.md) |
+| 6. UDP — два режима | Одноразовый HTTPS POST v1 и opt-in постоянный поток v2 с мультиплексированием до 16 UDP-направлений; без TUN, системных маршрутов и мобильной миграции | [UDP](../architecture/UDP.md) |
 | 5. Управление доступом | Локальные пользователи, отзыв, ротация и квоты; нет распределённого управления | [Access](../reference/ACCESS.md) |
 
 Для следующего этапа полевых проверок добавлен [воспроизводимый SOCKS5-стенд сравнения с VLESS](../research/TRANSPORT-COMPARISON.md) с JSON-отчётами и офлайн-тестами. **Реальных полевых замеров, полного Firefox-паритета и прироста производительности это не подтверждает.**

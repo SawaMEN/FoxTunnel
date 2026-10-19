@@ -45,6 +45,10 @@ func (c *Client) handleUDPAssociate(parent context.Context, control net.Conn) {
 	if err := replyUDPAssociate(control, socket.LocalAddr().(*net.UDPAddr)); err != nil {
 		return
 	}
+	if c.UDPStreaming {
+		c.handleUDPStream(parent, control, socket, peer)
+		return
+	}
 
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()

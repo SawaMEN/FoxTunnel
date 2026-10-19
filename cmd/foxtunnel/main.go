@@ -246,8 +246,10 @@ func main() {
 		link := fs.String("link", "", i18n.Text("vetroff connection link (prefer --link-file for secrets)"))
 		linkFile := fs.String("link-file", "", i18n.Text("read vetroff connection link from file or - for stdin"))
 		enableUDP := new(bool)
+		udpStream := new(bool)
 		if os.Args[1] == "client" {
-			fs.BoolVar(enableUDP, "enable-udp", false, i18n.Text("enable experimental SOCKS5 UDP ASSOCIATE (not full UDP streaming)"))
+			fs.BoolVar(enableUDP, "enable-udp", false, i18n.Text("enable experimental SOCKS5 UDP ASSOCIATE"))
+			fs.BoolVar(udpStream, "udp-stream", false, i18n.Text("opt in to persistent multiplexed UDP stream v2 (requires --enable-udp)"))
 		}
 		listen := fs.String("listen", "127.0.0.1:1080", i18n.Text("local SOCKS5 listening address"))
 		maxConnections := fs.Int("max-connections", 256, i18n.Text("maximum local SOCKS sockets including incomplete handshakes"))
@@ -294,7 +296,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout":
 				default:
 					conflict = true
 				}
@@ -363,6 +365,9 @@ func main() {
 		if *enableUDP && *bonded {
 			log.Fatal("--enable-udp is not supported with bond/discovery")
 		}
+		if *udpStream && !*enableUDP {
+			log.Fatal("--udp-stream requires --enable-udp")
+		}
 		if *bondLanes && !*bonded {
 			log.Fatal(i18n.Text("bond lanes require --bond"))
 		}
@@ -408,6 +413,7 @@ func main() {
 		}
 		client.MaxConnections = *maxConnections
 		client.EnableUDP = *enableUDP
+		client.UDPStreaming = *udpStream
 		if err := client.SetFallbackServers(fallbacks); err != nil {
 			log.Fatal(err)
 		}

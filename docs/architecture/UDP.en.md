@@ -10,6 +10,18 @@ For a manual server: `foxtunnel server ... --enable-udp`. For setup-generated co
 
 Client UDP cannot be combined with `--bond`/discovery at this stage. H3 requires a working QUIC listener. Keep unauthenticated local SOCKS5 bound to **loopback**.
 
+## Stage 2: persistent multiplexed UDP stream (opt-in)
+
+Use `foxtunnel client --enable-udp --udp-stream ...` to select the **separate** HTTPS endpoint `/.well-known/foxtunnel-udp-stream-v2`. The server's existing `--enable-udp` enables both wire versions. For the Go SDK use `ClientConfig{EnableUDP: true, UDPStreaming: true}`. Selecting `--udp-stream` without `--enable-udp` is rejected.
+
+Each SOCKS5 UDP ASSOCIATE opens **one long-lived, full-duplex HTTP/2 (or HTTP/3) POST**. Its wire format is a two-byte big-endian length followed by a valid RFC 1928 UDP packet, at most **1232 bytes**. It multiplexes multiple destinations over one stream; one UDP request can receive **multiple asynchronous replies**, unlike v1. The server maintains at most **16 connected and DNS/IP-pinned UDP sockets** per association.
+
+An association has a maximum duration of **10 minutes**. A destination socket expires after **30 seconds** of inactivity; the outbound queue holds **32 datagrams** and drops excess. The oldest destination is evicted at capacity. The client pins the UDP source IP and port to the TCP control connection. Authentication, `MaxTunnels`, per-user access metering, DNS/IP filtering and TLS identity verification are retained. There is no fallback to the older wire format after errors.
+
+This is **experimental UDP over reliable HTTP streaming**, which can incur head-of-line blocking when packets are lost. It is **not** QUIC DATAGRAM, TUN, system-level DNS, NAT mobility, multicast, or evidence of resistance to network blocking. Calls and games require independent tests. HTTP/3 and Neqo behaviour requires separate interoperability verification.
+
+Verification: `go test ./internal/udpproto ./internal/tunnel -run 'TestUDP|TestStream' -count=1` and `go test -race ./internal/udpproto ./internal/tunnel`. Tests cover multiple destinations, multiple replies, malformed frames, opt-in admission and the unchanged one-shot v1 relay.
+
 ## Safety and wire semantics
 
 - UDP ASSOCIATE owns a TCP control connection. Only datagrams from the same IP address are accepted, the first valid UDP source port is pinned, and closing the control connection closes its UDP socket.
