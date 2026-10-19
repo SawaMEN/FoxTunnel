@@ -35,6 +35,15 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
+	"QUIC client: quic-go or experimental neqo (h3-post only)":       "Клиент QUIC: quic-go или экспериментальный neqo (только h3-post)",
+	"Neqo handshake fallback: none or h2 (before sending a request)": "При недоступности Neqo: none или h2 (до отправки запроса)",
+	"Neqo handshake budget (default 2s; 100ms through 10s)":          "Срок рукопожатия Neqo (по умолчанию 2с; от 100мс до 10с)",
+
+	"TLS client profile: default or experimental firefox-158 (NSS 3.130)":  "Профиль TLS-клиента: default или экспериментальный firefox-158 (NSS 3.130)",
+	"unknown TLS client profile (choose default or firefox-158)":           "Неизвестный профиль TLS-клиента (выберите default или firefox-158)",
+	"TLS client profile requires NSS":                                      "Профиль TLS-клиента требует NSS",
+	"firefox-158 TLS client profile requires the pinned NSS 3.130 runtime": "Профиль TLS firefox-158 требует закреплённые библиотеки NSS 3.130",
+
 	"print machine-readable build information":                       "Вывести сведения о сборке в JSON",
 	"HTTP/2 receive profile: default or experimental firefox-158":    "Профиль приёма HTTP/2: default или экспериментальный firefox-158",
 	"unknown HTTP/2 receive profile (choose default or firefox-158)": "Неизвестный профиль приёма HTTP/2 (выберите default или firefox-158)",
@@ -92,6 +101,8 @@ var translations = map[string]string{
 	"cannot read connection link file":                                                       "Не удалось прочитать файл ссылки подключения",
 	"usage: foxtunnel <version|setup|server|client|share|cluster-add> [flags] (credentials: environment or vetroff link)": "Использование: foxtunnel <version|setup|server|client|share|cluster-add> [параметры] (учётные данные: окружение или ссылка vetroff://)",
 
+	"experimental persistent bond channels and small-write batching (requires --bond)": "Экспериментальные постоянные bond-каналы и объединение мелких записей (нужен --bond)",
+	"bond lanes require --bond":                                   "Для постоянных bond-каналов нужен --bond",
 	"bond pipeline must be auto, 4 or 8":                          "Глубина конвейера объединения: auto, 4 или 8",
 	"bond pipeline: auto, 4 or 8 (higher depth uses more memory)": "Конвейер объединения: auto, 4 или 8 (большая глубина требует больше памяти)",
 	"bond attempt timeout must be at least 100ms":                 "В режиме объединения время попытки должно быть не меньше 100ms",

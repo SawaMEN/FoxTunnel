@@ -1,0 +1,178 @@
+go version go1.26.9 linux/amd64
+=== RUN   TestIndependentH3EchoReuseAndColdHandshake
+--- PASS: TestIndependentH3EchoReuseAndColdHandshake (0.23s)
+=== RUN   TestTrustBeforeCredentials
+=== RUN   TestTrustBeforeCredentials/CA
+=== RUN   TestTrustBeforeCredentials/SNI
+=== RUN   TestTrustBeforeCredentials/pin
+--- PASS: TestTrustBeforeCredentials (0.03s)
+    --- PASS: TestTrustBeforeCredentials/CA (0.01s)
+    --- PASS: TestTrustBeforeCredentials/SNI (0.01s)
+    --- PASS: TestTrustBeforeCredentials/pin (0.01s)
+=== RUN   TestConcurrentDuplexAndCancellation
+--- PASS: TestConcurrentDuplexAndCancellation (0.09s)
+=== RUN   TestBlockedUDPBoundedProbe
+--- PASS: TestBlockedUDPBoundedProbe (0.16s)
+=== RUN   TestALPNFailureIsTerminal
+--- PASS: TestALPNFailureIsTerminal (0.01s)
+=== RUN   TestPeerResetClosesIdleUpload
+--- PASS: TestPeerResetClosesIdleUpload (0.01s)
+=== RUN   TestMalformedResponseDoesNotWaitForContext
+--- PASS: TestMalformedResponseDoesNotWaitForContext (0.01s)
+=== RUN   TestRealQUICDatagramLossAndDelay
+    udp_test.go:149: 256 KiB echo, 5ms per direction, drop each 17th datagram: 710.335341ms; dropped=43
+--- PASS: TestRealQUICDatagramLossAndDelay (0.72s)
+=== RUN   TestIndependentH3EchoReuseAndColdHandshake
+--- PASS: TestIndependentH3EchoReuseAndColdHandshake (0.19s)
+=== RUN   TestTrustBeforeCredentials
+=== RUN   TestTrustBeforeCredentials/CA
+=== RUN   TestTrustBeforeCredentials/SNI
+=== RUN   TestTrustBeforeCredentials/pin
+--- PASS: TestTrustBeforeCredentials (0.03s)
+    --- PASS: TestTrustBeforeCredentials/CA (0.01s)
+    --- PASS: TestTrustBeforeCredentials/SNI (0.01s)
+    --- PASS: TestTrustBeforeCredentials/pin (0.01s)
+=== RUN   TestConcurrentDuplexAndCancellation
+--- PASS: TestConcurrentDuplexAndCancellation (0.08s)
+=== RUN   TestBlockedUDPBoundedProbe
+--- PASS: TestBlockedUDPBoundedProbe (0.15s)
+=== RUN   TestALPNFailureIsTerminal
+--- PASS: TestALPNFailureIsTerminal (0.01s)
+=== RUN   TestPeerResetClosesIdleUpload
+--- PASS: TestPeerResetClosesIdleUpload (0.02s)
+=== RUN   TestMalformedResponseDoesNotWaitForContext
+--- PASS: TestMalformedResponseDoesNotWaitForContext (0.02s)
+=== RUN   TestRealQUICDatagramLossAndDelay
+    udp_test.go:149: 256 KiB echo, 5ms per direction, drop each 17th datagram: 691.644933ms; dropped=42
+--- PASS: TestRealQUICDatagramLossAndDelay (0.70s)
+=== RUN   TestIndependentH3EchoReuseAndColdHandshake
+--- PASS: TestIndependentH3EchoReuseAndColdHandshake (0.22s)
+=== RUN   TestTrustBeforeCredentials
+=== RUN   TestTrustBeforeCredentials/CA
+=== RUN   TestTrustBeforeCredentials/SNI
+=== RUN   TestTrustBeforeCredentials/pin
+--- PASS: TestTrustBeforeCredentials (0.05s)
+    --- PASS: TestTrustBeforeCredentials/CA (0.02s)
+    --- PASS: TestTrustBeforeCredentials/SNI (0.01s)
+    --- PASS: TestTrustBeforeCredentials/pin (0.02s)
+=== RUN   TestConcurrentDuplexAndCancellation
+--- PASS: TestConcurrentDuplexAndCancellation (0.09s)
+=== RUN   TestBlockedUDPBoundedProbe
+--- PASS: TestBlockedUDPBoundedProbe (0.15s)
+=== RUN   TestALPNFailureIsTerminal
+--- PASS: TestALPNFailureIsTerminal (0.01s)
+=== RUN   TestPeerResetClosesIdleUpload
+--- PASS: TestPeerResetClosesIdleUpload (0.02s)
+=== RUN   TestMalformedResponseDoesNotWaitForContext
+--- PASS: TestMalformedResponseDoesNotWaitForContext (0.02s)
+=== RUN   TestRealQUICDatagramLossAndDelay
+    udp_test.go:149: 256 KiB echo, 5ms per direction, drop each 17th datagram: 700.260074ms; dropped=42
+--- PASS: TestRealQUICDatagramLossAndDelay (0.71s)
+PASS
+ok  	github.com/SawaMEN/FoxTunnel/internal/neqo	4.737s
+=== RUN   TestNeqoNativeSOCKSLargeHalfClose
+--- PASS: TestNeqoNativeSOCKSLargeHalfClose (0.71s)
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback/disabled
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback/h2
+--- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback (0.32s)
+    --- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback/disabled (0.15s)
+    --- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback/h2 (0.17s)
+=== RUN   TestNeqoTrustFailureDoesNotDowngrade
+--- PASS: TestNeqoTrustFailureDoesNotDowngrade (0.02s)
+=== RUN   TestMalformedPaddedUploadDoesNotReachDestination
+--- PASS: TestMalformedPaddedUploadDoesNotReachDestination (0.02s)
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/network
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/trust
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/protocol
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/canceled
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/post-start
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/http-status
+--- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/network (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/trust (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/protocol (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/canceled (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/post-start (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/http-status (0.00s)
+=== RUN   TestQUICSettingsValidationRollback
+--- PASS: TestQUICSettingsValidationRollback (0.01s)
+=== RUN   TestNeqoNativeSOCKSLargeHalfClose
+--- PASS: TestNeqoNativeSOCKSLargeHalfClose (0.62s)
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback/disabled
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback/h2
+--- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback (0.32s)
+    --- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback/disabled (0.15s)
+    --- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback/h2 (0.17s)
+=== RUN   TestNeqoTrustFailureDoesNotDowngrade
+--- PASS: TestNeqoTrustFailureDoesNotDowngrade (0.02s)
+=== RUN   TestMalformedPaddedUploadDoesNotReachDestination
+--- PASS: TestMalformedPaddedUploadDoesNotReachDestination (0.01s)
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/network
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/trust
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/protocol
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/canceled
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/post-start
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/http-status
+--- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/network (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/trust (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/protocol (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/canceled (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/post-start (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/http-status (0.00s)
+=== RUN   TestQUICSettingsValidationRollback
+--- PASS: TestQUICSettingsValidationRollback (0.00s)
+=== RUN   TestNeqoNativeSOCKSLargeHalfClose
+--- PASS: TestNeqoNativeSOCKSLargeHalfClose (0.59s)
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback/disabled
+=== RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback/h2
+--- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback (0.31s)
+    --- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback/disabled (0.15s)
+    --- PASS: TestNeqoBlockedUDPFallbackH2AndNoFallback/h2 (0.16s)
+=== RUN   TestNeqoTrustFailureDoesNotDowngrade
+--- PASS: TestNeqoTrustFailureDoesNotDowngrade (0.01s)
+=== RUN   TestMalformedPaddedUploadDoesNotReachDestination
+--- PASS: TestMalformedPaddedUploadDoesNotReachDestination (0.01s)
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/network
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/trust
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/protocol
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/canceled
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/post-start
+=== RUN   TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/http-status
+--- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/network (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/trust (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/protocol (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/canceled (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/post-start (0.00s)
+    --- PASS: TestQUICFallbackOnlyBeforeRequestAndOnlyNetwork/http-status (0.00s)
+=== RUN   TestQUICSettingsValidationRollback
+--- PASS: TestQUICSettingsValidationRollback (0.00s)
+PASS
+ok  	github.com/SawaMEN/FoxTunnel/internal/tunnel	4.138s
+=== RUN   TestPublicNeqoContextAndPin
+=== RUN   TestPublicNeqoContextAndPin/h3
+=== RUN   TestPublicNeqoContextAndPin/fallback
+--- PASS: TestPublicNeqoContextAndPin (0.23s)
+    --- PASS: TestPublicNeqoContextAndPin/h3 (0.16s)
+    --- PASS: TestPublicNeqoContextAndPin/fallback (0.07s)
+=== RUN   TestPublicNeqoContextAndPin
+=== RUN   TestPublicNeqoContextAndPin/h3
+=== RUN   TestPublicNeqoContextAndPin/fallback
+--- PASS: TestPublicNeqoContextAndPin (0.16s)
+    --- PASS: TestPublicNeqoContextAndPin/h3 (0.08s)
+    --- PASS: TestPublicNeqoContextAndPin/fallback (0.08s)
+=== RUN   TestPublicNeqoContextAndPin
+=== RUN   TestPublicNeqoContextAndPin/h3
+=== RUN   TestPublicNeqoContextAndPin/fallback
+--- PASS: TestPublicNeqoContextAndPin (0.16s)
+    --- PASS: TestPublicNeqoContextAndPin/h3 (0.09s)
+    --- PASS: TestPublicNeqoContextAndPin/fallback (0.07s)
+PASS
+ok  	github.com/SawaMEN/FoxTunnel	1.582s

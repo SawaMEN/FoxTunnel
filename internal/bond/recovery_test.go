@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"github.com/quic-go/quic-go/http3"
+	"golang.org/x/net/http2"
 	"io"
 	"net"
 	"net/http"
@@ -121,6 +123,10 @@ func TestRequestRecoveryBoundsAndTerminalErrors(t *testing.T) {
 		{"timeout", 0, context.DeadlineExceeded, 6},
 		{"certificate", 0, &tls.CertificateVerificationError{Err: io.ErrUnexpectedEOF}, 1},
 		{"tls-alert", 0, tls.AlertError(42), 1},
+		{"h2-reset", 0, http2.StreamError{StreamID: 1, Code: http2.ErrCodeInternal}, 6},
+		{"h2-protocol", 0, http2.StreamError{StreamID: 1, Code: http2.ErrCodeProtocol}, 1},
+		{"h3-reset", 0, &http3.Error{Remote: true, ErrorCode: http3.ErrCodeInternalError}, 6},
+		{"h3-protocol", 0, &http3.Error{Remote: true, ErrorCode: http3.ErrCodeGeneralProtocolError}, 1},
 		{"unauthorized", 403, nil, 1},
 		{"different-hub", 409, nil, 1},
 		{"closed-session", 410, nil, 1},

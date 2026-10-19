@@ -3,7 +3,9 @@ package tunnel
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/pem"
 	"io"
 	"net"
@@ -11,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -20,7 +23,7 @@ import (
 )
 
 func TestHTTP2ReceiveProfile(t *testing.T) { testHTTP2ReceiveProfile(t, "go") }
-func testHTTP2ReceiveProfile(t *testing.T, backend string) {
+func testHTTP2ReceiveProfile(t *testing.T, backend string, clientProfiles ...string) {
 	for _, mode := range []string{"h2-connect", "h2-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			target := testDestination(t, func(c net.Conn) { _, _ = io.Copy(c, c) })
@@ -55,6 +58,18 @@ func testHTTP2ReceiveProfile(t *testing.T, backend string) {
 			if e = client.SetTransport(mode); e != nil {
 				t.Fatal(e)
 			}
+			if len(clientProfiles) > 0 {
+				if e := client.SetTLSClientProfile(clientProfiles[0]); e != nil {
+					t.Fatal(e)
+				}
+				// Exercise the identity-specific transport, not just the base
+				// pool, and verify that rebuilding it retains the TLS profile.
+				sum := sha256.Sum256(endpoint.Certificate().RawSubjectPublicKeyInfo)
+				if e := client.SetServerIdentity("", "sha256/"+base64.StdEncoding.EncodeToString(sum[:])); e != nil {
+					t.Fatal(e)
+				}
+
+			}
 			if e = client.SetHTTP2ReceiveProfile(h2profile.Firefox158); e != nil {
 				t.Fatal(e)
 			}
@@ -82,6 +97,10 @@ func testHTTP2ReceiveProfile(t *testing.T, backend string) {
 				if r.e != nil {
 					t.Fatal(r.e)
 				}
+				if len(clientProfiles) > 0 && (!reflect.DeepEqual(r.p.Hello.SupportedGroups, []uint16{4588, 29, 23, 24, 25}) || !reflect.DeepEqual(r.p.Hello.KeyShareGroups, []uint16{4588, 29, 23})) {
+					t.Fatal("TLS profile lost in the actual carrier/identity transport", r.p.Hello)
+				}
+
 				settings := map[uint16]uint32{}
 				for _, s := range r.p.Settings {
 					settings[s.ID] = s.Value
@@ -108,7 +127,7 @@ func testHTTP2ReceiveProfile(t *testing.T, backend string) {
 func TestHTTP2ReceiveProfileCreditRenewal(t *testing.T) {
 	testHTTP2ReceiveProfileCreditRenewal(t, "go")
 }
-func testHTTP2ReceiveProfileCreditRenewal(t *testing.T, backend string) {
+func testHTTP2ReceiveProfileCreditRenewal(t *testing.T, backend string, clientProfiles ...string) {
 	for _, mode := range []string{"h2-connect", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			target := testDestination(t, func(c net.Conn) { _, _ = io.Copy(c, c) })
@@ -126,6 +145,11 @@ func testHTTP2ReceiveProfileCreditRenewal(t *testing.T, backend string) {
 			}
 			if e := client.SetTransport(mode); e != nil {
 				t.Fatal(e)
+			}
+			if len(clientProfiles) > 0 {
+				if e := client.SetTLSClientProfile(clientProfiles[0]); e != nil {
+					t.Fatal(e)
+				}
 			}
 			if e := client.SetHTTP2ReceiveProfile(h2profile.Firefox158); e != nil {
 				t.Fatal(e)
@@ -196,7 +220,7 @@ func TestHTTP2ReceiveProfileTLSRejection(t *testing.T) {
 	testNativeVerificationBeforeCredentials(t, "go", h2profile.Firefox158)
 }
 func TestHTTP2ReceiveProfileCancellation(t *testing.T) { testHTTP2ReceiveProfileCancellation(t, "go") }
-func testHTTP2ReceiveProfileCancellation(t *testing.T, backend string) {
+func testHTTP2ReceiveProfileCancellation(t *testing.T, backend string, clientProfiles ...string) {
 	for _, mode := range []string{"h2-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			done := make(chan struct{})
@@ -207,6 +231,11 @@ func testHTTP2ReceiveProfileCancellation(t *testing.T, backend string) {
 			}
 			if e := client.SetTransport(mode); e != nil {
 				t.Fatal(e)
+			}
+			if len(clientProfiles) > 0 {
+				if e := client.SetTLSClientProfile(clientProfiles[0]); e != nil {
+					t.Fatal(e)
+				}
 			}
 			if e := client.SetHTTP2ReceiveProfile(h2profile.Firefox158); e != nil {
 				t.Fatal(e)

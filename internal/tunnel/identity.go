@@ -26,7 +26,9 @@ type identityPool struct {
 	config           *tls.Config
 	backend          string
 	mode             string
+	quic             quicSettings
 	h2ReceiveProfile string
+	tlsClientProfile string
 	xhttpSettings    xhttp.Settings
 	auth             string
 	primary          string
@@ -34,9 +36,9 @@ type identityPool struct {
 	entries          map[string]identityEntry
 }
 
-func makeTLStransport(backend string, config *tls.Config, receiveProfile string) (tlsTransport, error) {
+func makeTLStransport(backend string, config *tls.Config, receiveProfile, clientProfile string) (tlsTransport, error) {
 	if backend == "nss" {
-		return nsstls.NewTransportWithProfile(config, receiveProfile)
+		return nsstls.NewTransportWithProfiles(config, receiveProfile, clientProfile)
 	}
 	return newGoTransportWithProfile(config, receiveProfile)
 }
@@ -79,7 +81,7 @@ func (p *identityPool) forPolicy(origin string, policy tlsidentity.Policy) (tlsT
 	// operators share ticket keys between servers using different certificates.
 	config.ClientSessionCache = tls.NewLRUClientSessionCache(8)
 	policy.Apply(config)
-	transport, err := makeNativeTransport(p.mode, p.backend, config, p.auth, p.xhttpSettings, p.h2ReceiveProfile)
+	transport, err := makeNativeTransport(p.mode, p.backend, config, p.auth, p.xhttpSettings, p.h2ReceiveProfile, p.tlsClientProfile, p.quic)
 	if err != nil {
 		return nil, err
 	}

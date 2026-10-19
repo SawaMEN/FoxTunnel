@@ -42,7 +42,13 @@ func NewTransport(config *tls.Config) (Transport, error) {
 	return NewTransportWithProfile(config, "")
 }
 func NewTransportWithProfile(config *tls.Config, profile string) (Transport, error) {
+	return NewTransportWithProfiles(config, profile, "")
+}
+func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string) (Transport, error) {
 	if err := h2profile.Validate(profile); err != nil {
+		return nil, err
+	}
+	if err := checkClientProfile(clientProfile); err != nil {
 		return nil, err
 	}
 	if config.InsecureSkipVerify {
@@ -86,7 +92,7 @@ func NewTransportWithProfile(config *tls.Config, profile string) (Transport, err
 		if config.ServerName != "" {
 			host = config.ServerName
 		}
-		return wrapConfig(setup, raw, host, config)
+		return wrapConfigWithProfile(setup, raw, host, config, clientProfile)
 	}
 	return transport, nil
 }
@@ -112,6 +118,17 @@ func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) 
 	return wrapConfig(ctx, raw, name, &tls.Config{RootCAs: roots})
 }
 func wrapConfig(ctx context.Context, raw net.Conn, name string, config *tls.Config) (*conn, error) {
+	return wrapConfigWithProfile(ctx, raw, name, config, "")
+}
+func wrapConfigWithProfile(ctx context.Context, raw net.Conn, name string, config *tls.Config, profile string) (*conn, error) {
+	if err := checkClientProfile(profile); err != nil {
+		raw.Close()
+		return nil, err
+	}
+	var profileID C.int
+	if profile == Firefox158 {
+		profileID = 1
+	}
 	protocol := "h2"
 	if len(config.NextProtos) != 0 {
 		if len(config.NextProtos) != 1 || (config.NextProtos[0] != "h2" && config.NextProtos[0] != "http/1.1") {
@@ -133,7 +150,7 @@ func wrapConfig(ctx context.Context, raw net.Conn, name string, config *tls.Conf
 	cremote := C.CString(remote)
 	defer C.free(unsafe.Pointer(cremote))
 	var code C.int
-	c.fd = C.ft_new(C.uintptr_t(c.handle), cname, clocal, cremote, cprotocol, &code)
+	c.fd = C.ft_new(C.uintptr_t(c.handle), cname, clocal, cremote, cprotocol, profileID, &code)
 	if c.fd == nil {
 		c.handle.Delete()
 		raw.Close()
@@ -314,9 +331,25 @@ func ft_go_verify(handle C.uintptr_t) C.int {
 // Version identifies the linked NSS library for measurement provenance.
 func Version() string { return C.GoString(C.ft_version()) }
 
+func checkClientProfile(name string) error {
+	if err := ValidateClientProfile(name); err != nil {
+		return err
+	}
+	if name == Firefox158 && Version() != "3.130" {
+		return i18n.Error("firefox-158 TLS client profile requires the pinned NSS 3.130 runtime")
+	}
+	return nil
+}
+
 // DialTLSContext verifies TLS 1.3 and exactly the requested h2 or http/1.1 ALPN.
 // It is used by native WSS; it does not emulate the Firefox HTTP stack.
 func DialTLSContext(ctx context.Context, network, addr string, config *tls.Config) (net.Conn, error) {
+	return DialTLSContextWithProfile(ctx, network, addr, config, "")
+}
+func DialTLSContextWithProfile(ctx context.Context, network, addr string, config *tls.Config, profile string) (net.Conn, error) {
+	if err := checkClientProfile(profile); err != nil {
+		return nil, err
+	}
 	if config.InsecureSkipVerify || config.VerifyPeerCertificate != nil {
 		return nil, i18n.Error("TLS verification cannot be disabled")
 	}
@@ -342,5 +375,5 @@ func DialTLSContext(ctx context.Context, network, addr string, config *tls.Confi
 			return nil, err
 		}
 	}
-	return wrapConfig(setup, raw, name, config)
+	return wrapConfigWithProfile(setup, raw, name, config, profile)
 }

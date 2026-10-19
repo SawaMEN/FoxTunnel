@@ -27,7 +27,9 @@
 ## Исследования
 - [Исследовательские материалы](research/)
 - [План интеграции Mozilla Neqo/HTTP3](research/NEQO-INTEGRATION.md)
+- [Профиль Mozilla TLS/H2 и отчёт различий](research/MOZILLA-CLIENT-PROFILE.md)
 - [Методика измерений](research/PERFORMANCE.md)
+- [Передача данных и постоянные bond-каналы](research/DATA-PATH.md)
 - [Измерения](measurements/)
 
 ## Развитие проекта
@@ -38,3 +40,5 @@
 Исходный код остаётся в `cmd/`, `internal/` и `foxtunnel.go` в корне; `examples/` содержит примеры SDK, `experiments/` — отдельные прототипы. `scripts/` отвечает за сборку и проверку релизов, `.github/workflows/` — за CI.
 
 Не переносите файлы Go-пакетов произвольно: тесты `*_test.go` должны оставаться рядом с кодом, а путь публичного SDK является частью API.
+
+- [Neqo HTTP3: клиент и H2 fallback](research/NEQO-INTEGRATION.md)

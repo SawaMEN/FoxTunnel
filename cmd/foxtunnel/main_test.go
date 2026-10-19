@@ -136,7 +136,7 @@ func TestShareAndImportFromStdin(t *testing.T) {
 	if !strings.HasPrefix(link, "vetroff://") {
 		t.Fatal("wrong connection scheme")
 	}
-	client := helperCommand(ctx, "client", "--link-file", "-", "--listen", "127.0.0.1:0", "--h2-receive-profile", "firefox-158")
+	client := helperCommand(ctx, "client", "--link-file", "-", "--listen", "127.0.0.1:0", "--h2-receive-profile", "firefox-158", "--bond-lanes")
 	client.Env = helperEnv(false)
 	client.Stdin = strings.NewReader(link + "\n")
 	stderr, err := client.StderrPipe()
@@ -202,5 +202,64 @@ func TestVersionMachineContract(t *testing.T) {
 	}
 	if strings.Contains(string(output), "example-only-password") {
 		t.Fatal("version disclosed credentials")
+	}
+}
+
+func TestTLSClientProfileWithStdinLinkRejectsGoWithoutDisclosure(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	share := helperCommand(ctx, "share", "--server", "https://a.example", "--tls-backend", "go")
+	share.Env = helperEnv(true)
+	output, e := share.Output()
+	if e != nil {
+		t.Fatal(e)
+	}
+	link := strings.TrimSpace(string(output))
+	client := helperCommand(ctx, "client", "--link-file", "-", "--tls-client-profile", "firefox-158")
+	client.Env = helperEnv(false)
+	client.Stdin = strings.NewReader(link + "\n")
+	rejected, e := client.CombinedOutput()
+	if e == nil || !strings.Contains(string(rejected), "NSS") || strings.Contains(string(rejected), "vetroff://") || strings.Contains(string(rejected), "example-only-password") {
+		t.Fatal("profile ignored or credentials disclosed", e)
+	}
+}
+
+func TestBondLanesRequiresBondAndIsLocal(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := helperCommand(ctx, "client", "--server", "https://example.org", "--bond-lanes")
+	cmd.Env = helperEnv(true)
+	output, err := cmd.CombinedOutput()
+	if err == nil || (!strings.Contains(string(output), "--bond") && !strings.Contains(string(output), "объедин")) {
+		t.Fatal("lane flag did not require bond", err, string(output))
+	}
+	cmd = helperCommand(ctx, "share", "--server", "https://example.org", "--bond-lanes")
+	cmd.Env = helperEnv(true)
+	if output, err = cmd.CombinedOutput(); err == nil || strings.Contains(string(output), "example-only-password") {
+		t.Fatal("local lane option accepted by share or credentials disclosed")
+	}
+}
+
+func TestQUICOptionsAreLocalAndAcceptImportedH3Link(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	share := helperCommand(ctx, "share", "--server", "https://example.org", "--transport", "h3-post", "--tls-backend", "auto")
+	share.Env = helperEnv(true)
+	output, err := share.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := helperCommand(ctx, "client", "--link-file", "-", "--quic-backend", "invalid", "--h3-fallback", "h2", "--quic-handshake-timeout", "150ms")
+	client.Env = helperEnv(false)
+	client.Stdin = strings.NewReader(strings.TrimSpace(string(output)))
+	rejected, err := client.CombinedOutput()
+	if err == nil || !strings.Contains(string(rejected), "QUIC backend") || strings.Contains(string(rejected), "example-only-password") {
+		t.Fatal("local options ignored, rejected as link settings, or secret disclosed", err, string(rejected))
+	}
+	share = helperCommand(ctx, "share", "--server", "https://example.org", "--quic-backend", "neqo")
+	share.Env = helperEnv(true)
+	rejected, err = share.CombinedOutput()
+	if err == nil || strings.Contains(string(rejected), "example-only-password") {
+		t.Fatal("local QUIC option exported or secret disclosed")
 	}
 }

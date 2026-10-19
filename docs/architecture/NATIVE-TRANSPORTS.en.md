@@ -130,3 +130,5 @@ These short, noisy loopback measurements are not Internet results, Mbit/s or
 proof of superiority. Useful payload is counted once per full echo round trip.
 WSS and QUIC add framing/packet work. Loss and latency may change the ranking;
 Russian deployment choices require actual field measurements.
+
+The default H3 implementation above remains quic-go/Go TLS. An explicitly selected [experimental Neqo/NSS client](../research/NEQO-INTEGRATION.en.md) is available on Linux amd64 builds with `nss,neqo`, with separately enabled handshake-only H2 fallback. Server implementation and existing transport/link encodings are unchanged.

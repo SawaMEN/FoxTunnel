@@ -1,0 +1,86 @@
+name: Neqo Rust FFI experiment
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/neqo-ffi/**'
+      - '.github/workflows/neqo-ffi-probe.yml'
+  pull_request:
+    paths:
+      - 'experiments/neqo-ffi/**'
+      - '.github/workflows/neqo-ffi-probe.yml'
+permissions:
+  contents: read
+jobs:
+  ffi:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install pinned Rust compiler and NSS development libraries
+        run: |
+          rustup toolchain install 1.90.0 --profile minimal
+          rustup default 1.90.0
+          sudo apt-get update -qq
+          sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config build-essential clang libclang-dev
+      - name: Install hash-pinned NSS 3.126 required by nss-rs
+        uses: mozilla/actions/nss@a2f86e00e93d54a5c56689e15633eeb3ef1bf671
+        with:
+          minimum-version: '3.126'
+          sha256: 'c95a4cf93d6939000642254422d71dffccb5c017d0f40733d3e2be18aa93f1be'
+      - name: Verify pinned Mozilla NSS toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$NSS_DIR/build.sh"
+          test -d "$LD_LIBRARY_PATH"
+          test "$NSS_PREBUILT" = 1
+          echo "Using Mozilla NSS from $NSS_DIR (not system pkg-config NSS)"
+      - name: Verify checked-in Cargo lock
+        working-directory: experiments/neqo-ffi
+        run: cargo metadata --locked --format-version 1 --no-deps > /dev/null
+      - name: Test actual Mozilla Neqo packet generation
+        working-directory: experiments/neqo-ffi
+        run: cargo test --locked --verbose
+      - name: Build C-compatible Neqo library
+        working-directory: experiments/neqo-ffi
+        run: cargo build --locked
+      - name: Smoke test C ABI consumer
+        working-directory: experiments/neqo-ffi
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc -std=c11 -Wall -Wextra -Werror test_bridge.c -L target/debug -lfoxtunnel_neqo -Wl,-rpath,"$PWD/target/debug" -o target/debug/neqo-abi-test
+          ./target/debug/neqo-abi-test
+      - name: Build UDP driver and loopback Go HTTP3 fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cc -std=c11 -Wall -Wextra -Werror -O2 experiments/neqo-ffi/probe_udp.c \
+            -I experiments/neqo-ffi \
+            -L experiments/neqo-ffi/target/debug -lfoxtunnel_neqo \
+            -Wl,-rpath,"$PWD/experiments/neqo-ffi/target/debug" \
+            -o /tmp/neqo-udp-probe
+          go build -o /tmp/neqo-h3-fixture ./experiments/neqo-ffi/cmd/h3-fixture
+      - name: Neqo/Go HTTP3 handshake must reject untrusted certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/neqo-h3-fixture > /tmp/neqo-h3-port.txt 2>/tmp/neqo-h3-errors.txt &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 100); do
+            test -s /tmp/neqo-h3-port.txt && break
+            kill -0 "$pid"
+            sleep 0.1
+          done
+          test -s /tmp/neqo-h3-port.txt
+          port="$(head -n 1 /tmp/neqo-h3-port.txt)"
+          /tmp/neqo-udp-probe 127.0.0.1 "$port" example.org
+          if grep -q 'ERROR: unauthenticated HTTP request received' /tmp/neqo-h3-errors.txt; then
+            echo 'SECURITY FAILURE: sent HTTP request before verifying peer'
+            exit 1
+          fi

@@ -1,0 +1,204 @@
+{
+  "schema": 1,
+  "source": "FoxTunnel stage2; NSS 3.130; Go 1.26.9; Linux amd64; direct fixture HTML GET; firefox-158 TLS/H2",
+  "hello": {
+    "record_version": 769,
+    "legacy_version": 771,
+    "cipher_suites": [
+      4865,
+      4867,
+      4866
+    ],
+    "extensions": [
+      0,
+      23,
+      65281,
+      10,
+      16,
+      51,
+      43,
+      13,
+      28
+    ],
+    "supported_groups": [
+      4588,
+      29,
+      23,
+      24,
+      25
+    ],
+    "supported_versions": [
+      772
+    ],
+    "signature_algorithms": [
+      1027,
+      1283,
+      1539,
+      2052,
+      2053,
+      2054,
+      515,
+      1025,
+      1281,
+      1537,
+      513
+    ],
+    "key_share_groups": [
+      4588,
+      29,
+      23
+    ],
+    "alpn": [
+      "h2"
+    ],
+    "sni_present": true,
+    "ja3": "771,4865-4867-4866,0-23-65281-10-16-51-43-13-28,4588-29-23-24-25,",
+    "ja3_md5": "d8e98ec95ca162a266ddd82b242f4193"
+  },
+  "negotiated_alpn": "h2",
+  "tls_records": [
+    {
+      "direction": "client",
+      "type": 22,
+      "length": 1475,
+      "microseconds": 316
+    },
+    {
+      "direction": "server",
+      "type": 22,
+      "length": 1178,
+      "microseconds": 1614
+    },
+    {
+      "direction": "server",
+      "type": 20,
+      "length": 1,
+      "microseconds": 1614
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 36,
+      "microseconds": 1615
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 839,
+      "microseconds": 1615
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 281,
+      "microseconds": 1615
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 53,
+      "microseconds": 1615
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 53,
+      "microseconds": 2325
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 93,
+      "microseconds": 2325
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 57,
+      "microseconds": 2535
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 62,
+      "microseconds": 2640
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 26,
+      "microseconds": 2849
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 109,
+      "microseconds": 2915
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 170,
+      "microseconds": 2952
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 19,
+      "microseconds": 3100
+    }
+  ],
+  "dropped_records": 0,
+  "client_h2_frames": [
+    {
+      "type": 4,
+      "flags": 0,
+      "length": 30,
+      "stream": 0
+    },
+    {
+      "type": 8,
+      "flags": 0,
+      "length": 4,
+      "stream": 0
+    },
+    {
+      "type": 1,
+      "flags": 5,
+      "length": 31,
+      "stream": 1
+    },
+    {
+      "type": 4,
+      "flags": 1,
+      "length": 0,
+      "stream": 0
+    }
+  ],
+  "dropped_frames": 0,
+  "initial_h2_settings": [
+    {
+      "id": 2,
+      "value": 0
+    },
+    {
+      "id": 4,
+      "value": 131072
+    },
+    {
+      "id": 5,
+      "value": 16384
+    },
+    {
+      "id": 6,
+      "value": 10485760
+    },
+    {
+      "id": 1,
+      "value": 65536
+    }
+  ],
+  "initial_connection_window_updates": [
+    12517377
+  ]
+}

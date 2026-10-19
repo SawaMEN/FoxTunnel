@@ -21,12 +21,13 @@
 - [x] Shared XHTTP path/HTTP Host, random new-cluster routes, join inheritance and controlled HTTPS frontend tests.
 - [x] Bounded packet-up pipeline (4 POSTs), delayed-ACK tests; live Firefox 158 and Go/NSS TLS/H2 profiles (see WEB-PROFILE.en.md).
 - [x] Opt-in firefox-158 HTTP/2 receive profile: actual windows/HPACK, Go/NSS and XHTTP, wire/credit/cancellation/TLS tests.
-- [x] Independent public SDK/MIT/wire draft; nine-target versioned binary pipeline with manifest, version metadata and SHA-256.
+- [x] Independent public SDK/MIT/wire draft; two Linux NSS builds with build.json and pinned Mozilla runtime.
 - [x] Offline release-content/build.json/Mozilla-provenance/hash verification and compatibility rules; Go 1.26.9 in CI.
 - [ ] Independent XHTTP interoperability, XMUX and separate direction settings.
 - [ ] Native ECH/REALITY and measured automatic transport selection.
 - [ ] TUN/UDP, system routing/DNS/kill switch and individual user credentials.
-- [ ] Persistent bond lanes instead of per-block RPC; delivery-based path estimates.
+- [x] Negotiated persistent bond lanes/coalescing with bounded windows and duplicate-free retries.
+- [ ] Available-bandwidth estimates and isolated packet RTT/loss measurements.
 - [ ] Global ingress telemetry and automatic allocation between clients.
 - [ ] Test in multiple OS configurations and behind an HTTPS frontend.
 - [x] Bound authenticated destination setup and relay concurrency before DNS/dial.
@@ -61,3 +62,5 @@ See [deployment, acknowledgements, limits and tests](../architecture/BONDING.en.
 No speed advantage or TSPU resistance is established.
 
 Priorities and acceptance criteria: [NEXT-STEPS.en.md](NEXT-STEPS.en.md).
+
+- [x] Opt-in native Neqo HTTP3 client on Linux amd64, pinned ABI/runtime, verified pre-request H2 fallback and actual QUIC loss/UDP-blackhole tests.

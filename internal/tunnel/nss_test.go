@@ -137,3 +137,23 @@ func TestNSSNativeDiscoveredBond(t *testing.T) {
 }
 
 func TestXHTTPSettingsNSS(t *testing.T) { testXHTTPSettings(t, "nss") }
+
+func TestBondedLanesSOCKSNSS(t *testing.T) {
+	testBondedSOCKSNativeLanes(t, "nss", 8, false, "h2-connect", true)
+}
+
+func BenchmarkNSSBondedDataPath(b *testing.B) {
+	for _, mode := range []struct {
+		name  string
+		lanes bool
+	}{{"rpc", false}, {"lanes", true}} {
+		b.Run(mode.name+"/write137", func(b *testing.B) { benchmarkBondedProfile(b, 0, 8, mode.lanes, "nss", 137) })
+		b.Run(mode.name+"/write32768", func(b *testing.B) { benchmarkBondedProfile(b, 0, 8, mode.lanes, "nss", 32768) })
+	}
+}
+
+func TestNativeBondedLanesNSS(t *testing.T) {
+	for _, mode := range []string{"h2-post", "wss", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+		t.Run(mode, func(t *testing.T) { testBondedSOCKSNativeLanes(t, "nss", 8, true, mode, true) })
+	}
+}

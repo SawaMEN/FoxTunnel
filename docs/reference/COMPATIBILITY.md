@@ -59,3 +59,5 @@ python3 scripts/release.py verify --input downloaded \
 требуют отдельной проверки. План обновления Mozilla и Go входит в сопровождение.
 
 [Поставка](DISTRIBUTION.md) · [Wire draft](WIRE-DRAFT-0.md) · [Следующие этапы](../planning/NEXT-STEPS.md)
+
+Bond `records-v1` — явно согласуемое расширение существующего endpoint. [Спецификация передачи](../research/DATA-PATH.md) определяет переключение на старый RPC отдельно для каждого входа до отправки операции; прежние RPC-запросы по-прежнему принимаются.

@@ -26,8 +26,21 @@ func DialTLSContext(context.Context, string, string, *tls.Config) (net.Conn, err
 }
 
 func NewTransportWithProfile(config *tls.Config, profile string) (Transport, error) {
+	return NewTransportWithProfiles(config, profile, "")
+}
+func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string) (Transport, error) {
 	if err := h2profile.Validate(profile); err != nil {
 		return nil, err
 	}
+	if err := ValidateClientProfile(clientProfile); err != nil {
+		return nil, err
+	}
 	return NewTransport(config)
+}
+
+func DialTLSContextWithProfile(ctx context.Context, network, addr string, config *tls.Config, profile string) (net.Conn, error) {
+	if err := ValidateClientProfile(profile); err != nil {
+		return nil, err
+	}
+	return DialTLSContext(ctx, network, addr, config)
 }
