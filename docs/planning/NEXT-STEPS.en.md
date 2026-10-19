@@ -78,3 +78,7 @@ arm64/other OS and sustained/native-sanitizer work remain follow-up validation.
 ## Stage five: managed access
 
 [Users, revocation and quotas](../reference/ACCESS.en.md): stable accounts, atomic local reload, generation-bound XHTTP/bond, live revocation, per-user/global request budgets, target-socket quota metering and conservative durable reservations. Legacy credentials remain separate. Billing periods, distributed identity sync and external audit remain future work.
+
+## Stage six: Linux L3 VPN
+
+[Experimental TUN/IP mode](../guides/LINUX-VPN.en.md): kernel TCP/UDP and DNS, IPv4/IPv6, static routes, kill switch retained until explicit disconnect and separate privileged netns CI. Reliable streams, not QUIC DATAGRAM; roaming, seamless process restart and boot-time policy remain future work.

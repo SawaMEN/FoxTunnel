@@ -3,6 +3,7 @@ package tunnel
 import (
 	"context"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/ippacket"
 	"io"
 	"net"
 	"strconv"
@@ -27,9 +28,20 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 	if e != nil || n < 1 || n > 65535 || host == "" || strings.ContainsAny(host, "/\\\r\n\t @?#") {
 		return nil, errors.New("invalid TCP destination")
 	}
+	return c.dialMode(ctx, address, "")
+}
+
+// DialIP opens an explicitly negotiated, framed IP session. No TCP target dial.
+func (c *Client) DialIP(ctx context.Context) (net.Conn, error) {
+	if c.Padding || c.bondClient != nil || c.bondDiscovery != nil {
+		return nil, errors.New("IP tunnel cannot use padding or bond")
+	}
+	return c.dialMode(ctx, ippacket.Authority, ippacket.Version)
+}
+func (c *Client) dialMode(ctx context.Context, address, mode string) (net.Conn, error) {
 	lifetime, cancel := context.WithCancel(context.Background())
 	stop := context.AfterFunc(ctx, cancel)
-	stream, e := c.openTunnel(lifetime, address)
+	stream, e := c.openTunnelMode(lifetime, address, mode)
 	stopped := stop()
 	if e != nil || !stopped || ctx.Err() != nil {
 		if stream != nil {

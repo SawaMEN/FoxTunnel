@@ -249,3 +249,5 @@ Persistent channels require local `--bond-lanes` with `--bond`; RPC stays the de
 [Neqo HTTP3: experimental client and H2 fallback](docs/research/NEQO-INTEGRATION.en.md).
 
 [Managed users, revocation and quotas](docs/reference/ACCESS.en.md).
+
+[Linux TUN VPN: TCP/UDP, DNS, IPv6 and kill switch](docs/guides/LINUX-VPN.en.md).

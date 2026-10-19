@@ -14,20 +14,10 @@ func Dial(ctx context.Context, dial func(context.Context) (net.Conn, error)) (ne
 	if g == nil {
 		return dial(ctx)
 	}
-	c := g.owner
-	c.mu.Lock()
-	a := g.account
-	if c.closed || c.failed || g.ctx.Err() != nil {
-		c.mu.Unlock()
-		return nil, ErrDenied
+	release, err := Hold(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if a.tunnels >= g.config.MaxTunnels {
-		c.mu.Unlock()
-		return nil, ErrLimited
-	}
-	a.tunnels++
-	c.mu.Unlock()
-	release := func() { c.mu.Lock(); a.tunnels--; c.mu.Unlock() }
 	conn, err := dial(ctx)
 	if err != nil {
 		release()
@@ -162,4 +152,46 @@ func (w *meteredConn) Write(p []byte) (int, error) {
 		}
 	}
 	return total, nil
+}
+
+// Hold reserves one output session, including setup. Call release exactly once.
+func Hold(ctx context.Context) (func(), error) {
+	g := from(ctx)
+	if g == nil {
+		return func() {}, nil
+	}
+	c := g.owner
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed || c.failed || g.ctx.Err() != nil {
+		return nil, ErrDenied
+	}
+	if g.account.tunnels >= g.config.MaxTunnels {
+		return nil, ErrLimited
+	}
+	g.account.tunnels++
+	var once sync.Once
+	return func() { once.Do(func() { c.mu.Lock(); g.account.tunnels--; c.mu.Unlock() }) }, nil
+}
+
+// ChargePacket atomically charges a complete IP envelope before TUN injection
+// or stream delivery. IP mode meters headers as well as payload, without replay.
+func ChargePacket(ctx context.Context, n int) error {
+	if n < 20 || n > 1280 {
+		return ErrQuota
+	}
+	g := from(ctx)
+	if g == nil {
+		return nil
+	}
+	allowed, err := g.reserve(n)
+	if err != nil {
+		return err
+	}
+	if allowed != n {
+		g.settle(allowed, 0)
+		return ErrQuota
+	}
+	g.settle(n, n)
+	return nil
 }

@@ -245,3 +245,5 @@ go build -o ft-fingerprint ./cmd/ft-fingerprint
 [Neqo HTTP3: экспериментальный клиент и H2 fallback](docs/research/NEQO-INTEGRATION.md).
 
 [Пользователи, отзыв доступа и квоты](docs/reference/ACCESS.md).
+
+[Linux TUN VPN: TCP/UDP, DNS, IPv6 и kill switch](docs/guides/LINUX-VPN.md).

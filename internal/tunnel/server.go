@@ -10,6 +10,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/ippacket"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 	"io"
 	"net"
@@ -25,6 +26,8 @@ import (
 // Server terminates authenticated native H2 CONNECT, H2/H3 POST and WSS.
 // It has no Firefox fingerprint parity. Padding is an opt-in experiment.
 type Server struct {
+	// IP handles opt-in framed IP sessions after the common authentication boundary.
+	IP http.Handler
 	// Access is mutually exclusive with legacy credentials; set before serving.
 	Access *access.Controller
 
@@ -100,10 +103,26 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			public.Header.Del("Proxy-Authorization")
 			public.Header.Del(paddingHeader)
 			public.Header.Del(targetHeader)
+			public.Header.Del(ippacket.Header)
 			s.Cover.ServeHTTP(w, public)
 		} else {
 			http.NotFound(w, r)
 		}
+		return
+	}
+
+	if mode := r.Header.Get(ippacket.Header); mode != "" {
+		if mode != ippacket.Version || r.Host != ippacket.Authority || s.IP == nil || r.Header.Get(paddingHeader) != "" {
+			http.Error(w, "unsupported IP mode", 400)
+			return
+		}
+		if !s.acquireTunnel() {
+			http.Error(w, "server busy", 503)
+			return
+		}
+		defer s.activeTunnels.Add(-1)
+		w.Header().Set(ippacket.Header, ippacket.Version)
+		s.IP.ServeHTTP(w, r)
 		return
 	}
 	padded, err := paddingRequested(r.Header)

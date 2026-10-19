@@ -65,3 +65,7 @@
 - [x] Нативный Neqo HTTP3-клиент Linux amd64 opt-in, pinned ABI/runtime, проверенный H2 fallback до запроса и настоящие QUIC loss/UDP blackhole-тесты.
 
 - [x] Управляемый доступ: пользователи, отзыв/ротация, ограниченные бюджеты запросов и журнал квот на данные выхода ([контракт](../reference/ACCESS.md)).
+
+## Шестой этап: Linux L3 VPN
+
+[Экспериментальный TUN/IP-режим](../guides/LINUX-VPN.md): TCP/UDP и DNS через ядро, IPv4/IPv6, статическая маршрутизация, постоянный до явного отключения kill switch и отдельный привилегированный netns CI. Это надёжный поток, не QUIC DATAGRAM; roaming, автоматический restart без disconnect и boot-time политика остаются дальнейшей работой.

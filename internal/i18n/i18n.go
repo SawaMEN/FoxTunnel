@@ -35,6 +35,15 @@ func (e messageError) Error() string { return Text(string(e)) }
 func Error(english string) error     { return messageError(english) }
 
 var translations = map[string]string{
+	"private Linux IP service configuration":               "Закрытая конфигурация IP-сервиса Linux",
+	"private VPN configuration JSON":                       "Закрытый JSON-файл настройки VPN",
+	"private vetroff link file with a literal IP endpoint": "Закрытый файл ссылки vetroff с IP-адресом сервера",
+	"additional trusted PEM certificate":                   "Дополнительный доверенный сертификат PEM",
+	"explicitly remove VPN server firewall policy":         "Явно удалить правила межсетевого экрана VPN-сервера",
+	"VPN policy installed; direct egress blocked":          "Правила VPN установлены; прямой выход заблокирован",
+	"VPN IP session connected":                             "IP-сессия VPN подключена",
+	"VPN disconnected; traffic remains blocked":            "VPN отключён; прямой выход остаётся заблокирован",
+
 	"QUIC client: quic-go or experimental neqo (h3-post only)":       "Клиент QUIC: quic-go или экспериментальный neqo (только h3-post)",
 	"Neqo handshake fallback: none or h2 (before sending a request)": "При недоступности Neqo: none или h2 (до отправки запроса)",
 	"Neqo handshake budget (default 2s; 100ms through 10s)":          "Срок рукопожатия Neqo (по умолчанию 2с; от 100мс до 10с)",

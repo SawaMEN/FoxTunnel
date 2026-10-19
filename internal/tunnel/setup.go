@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/ippacket"
 	"io"
 	"net"
 	"net/http"
@@ -79,6 +80,9 @@ func (s *openStream) close() {
 // here, so a failed setup can move to another explicitly configured origin.
 // An HTTP response or verification/protocol failure is always terminal.
 func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, error) {
+	return c.openTunnelMode(ctx, target, "")
+}
+func (c *Client) openTunnelMode(ctx context.Context, target, mode string) (*openStream, error) {
 	endpoints := append([]*url.URL{c.ServerURL}, c.fallbackServers...)
 	tried := make([]bool, len(endpoints))
 	timeout := c.ConnectTimeout
@@ -115,6 +119,9 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 			return nil, err
 		}
 		req.Host = target
+		if mode != "" {
+			req.Header.Set(ippacket.Header, mode)
+		}
 		req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
 		if c.Padding {
 			req.Header.Set(paddingHeader, paddingVersion)
@@ -130,6 +137,9 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 				if paddingErr != nil || negotiated != c.Padding {
 					err = errors.New(i18n.Text("CONNECT padding negotiation failed"))
 				}
+			}
+			if err == nil && resp.Header.Get(ippacket.Header) != mode {
+				err = errors.New("IP tunnel negotiation failed")
 			}
 			if err == nil {
 				c.preferredEndpoint.Store(uint32(index))

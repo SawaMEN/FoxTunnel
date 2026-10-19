@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/access"
+	"github.com/SawaMEN/FoxTunnel/internal/ippacket"
 	"net"
 	"net/http"
 	"strings"
@@ -128,6 +129,30 @@ func NewClient(config ClientConfig) (*Client, error) {
 	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
 }
 func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	return c.dialOwned(ctx, func(setup context.Context) (net.Conn, error) { return c.core.DialContext(setup, network, address) })
+}
+
+// IPConn preserves IP boundaries. Use ReadPacket/WritePacket exclusively; never
+// interleave the embedded byte-stream methods with packet operations.
+type IPConn struct {
+	net.Conn
+	framing *ippacket.Stream
+}
+
+func (c *IPConn) ReadPacket(p []byte) (int, error) { return c.framing.ReadPacket(p) }
+func (c *IPConn) WritePacket(p []byte) error       { return c.framing.WritePacket(p) }
+
+const IPMTU = ippacket.MTU
+
+// DialIP opens an explicitly negotiated IP session; ctx controls setup only.
+func (c *Client) DialIP(ctx context.Context) (*IPConn, error) {
+	conn, err := c.dialOwned(ctx, c.core.DialIP)
+	if err != nil {
+		return nil, err
+	}
+	return &IPConn{Conn: conn, framing: &ippacket.Stream{Reader: conn, Writer: conn}}, nil
+}
+func (c *Client) dialOwned(ctx context.Context, dial func(context.Context) (net.Conn, error)) (net.Conn, error) {
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
@@ -141,7 +166,7 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 	c.mu.Unlock()
 	setup, cancel := context.WithCancel(ctx)
 	stop := context.AfterFunc(c.ctx, cancel)
-	raw, err := c.core.DialContext(setup, network, address)
+	raw, err := dial(setup)
 	stop()
 	cancel()
 	c.mu.Lock()
@@ -264,6 +289,7 @@ func NewAccessController(policy AccessPolicy, stateFile string) (*AccessControll
 }
 
 type ServerConfig struct {
+	IPHandler                http.Handler      // Experimental ip-v1 handler, behind managed authentication.
 	Access                   *AccessController // Alternative to Credentials; shared by all server transports.
 	Credentials              Credentials
 	XHTTPPath, XHTTPHost     string
@@ -282,6 +308,9 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if (config.Access == nil && (config.Credentials.Username == "" || config.Credentials.Password == "" || strings.Contains(config.Credentials.Username, ":"))) || (config.Access != nil && (config.Credentials.Username != "" || config.Credentials.Password != "")) {
 		return nil, errors.New("server credentials required")
 	}
+	if config.IPHandler != nil && config.Access == nil {
+		return nil, errors.New("IP handler requires managed access")
+	}
 	if config.MaxTunnels < 0 || config.DialTimeout < 0 {
 		return nil, errors.New("negative server limit or timeout")
 	}
@@ -289,7 +318,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{core: &tunnel.Server{Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
+	return &Server{core: &tunnel.Server{IP: config.IPHandler, Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || r.TLS.Version < tls.VersionTLS13 {

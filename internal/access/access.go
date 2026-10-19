@@ -309,6 +309,14 @@ func Scope(ctx context.Context) context.Context {
 	}
 	return context.Background()
 }
+
+// AccountID returns the stable configured ID, without exposing credentials.
+func AccountID(ctx context.Context) string {
+	if g := from(ctx); g != nil {
+		return g.config.ID
+	}
+	return ""
+}
 func Owner(ctx context.Context) string {
 	if g := from(ctx); g != nil {
 		return g.config.ID + "/" + formatSerial(g.serial)

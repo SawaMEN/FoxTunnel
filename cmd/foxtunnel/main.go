@@ -42,6 +42,11 @@ func main() {
 			log.Fatal(err)
 		}
 		return
+	case "vpn-client", "vpn-down", "vpn-network":
+		if err := vpnCommand(os.Args[1], os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		return
 	case "version":
 		fs := i18n.NewFlagSet("foxtunnel version")
 		asJSON := fs.Bool("json", false, i18n.Text("print machine-readable build information"))
@@ -88,6 +93,7 @@ func main() {
 		return
 	case "server":
 		fs := i18n.NewFlagSet("foxtunnel server")
+		vpnConfig := fs.String("vpn-config", "", i18n.Text("private Linux IP service configuration"))
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		configFile := fs.String("config", "", i18n.Text("private server configuration JSON"))
@@ -112,7 +118,7 @@ func main() {
 		if *configFile != "" {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
-				if f.Name != "config" && f.Name != "lang" {
+				if f.Name != "config" && f.Name != "lang" && f.Name != "vpn-config" {
 					conflict = true
 				}
 			})
@@ -165,7 +171,7 @@ func main() {
 		}
 		var cover http.Handler
 		if *webRoot != "" {
-			if err := tunnel.CheckPublicRoot(*webRoot, *key, *configFile, *clusterFile, *usersFile, *usersState); err != nil {
+			if err := tunnel.CheckPublicRoot(*webRoot, *key, *configFile, *clusterFile, *usersFile, *usersState, *vpnConfig); err != nil {
 				log.Fatal(i18n.Text("public website overlaps private configuration"))
 			}
 			var err error
@@ -182,6 +188,16 @@ func main() {
 			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
 		}
 		handler := &tunnel.Server{Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		if *vpnConfig != "" {
+			if handler.Access == nil || *bondRelay != "" {
+				log.Fatal("IP service requires managed users on an exit")
+			}
+			ipHandler, err := newVPNHub(context.Background(), *vpnConfig, *allowPrivate)
+			if err != nil {
+				log.Fatal(err)
+			}
+			handler.IP = ipHandler
+		}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()
@@ -441,7 +457,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access> [flags] (credentials: environment or vetroff link)"))
+	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access|vpn-client|vpn-down|vpn-network> [flags] (credentials: environment or vetroff link)"))
 	os.Exit(2)
 }
 

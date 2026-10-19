@@ -7,6 +7,8 @@
 - [Ссылки подключения](guides/CONNECTION-LINKS.md)
 - [Серверы и точки входа](guides/ENDPOINTS.md)
 
+- [Linux TUN VPN, DNS и kill switch](guides/LINUX-VPN.md)
+
 ## Архитектура и протокол
 - [Архитектура](architecture/ARCHITECTURE.md)
 - [Нативные транспорты](architecture/NATIVE-TRANSPORTS.md)

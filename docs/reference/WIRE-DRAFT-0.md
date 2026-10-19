@@ -94,3 +94,16 @@ TLS backend, HPACK and scheduling can affect behavior without changing stream
 payload format; integrations must test their pinned implementation/transport.
 Application UDP, TUN, stable C ABI and a cross-language conformance suite are not
 included in this draft. No TSPU bypass or browser equivalence is established.
+
+## Optional ip-v1 (stage six, experimental)
+
+An explicit `X-FoxTunnel-Network: ip-v1` CONNECT to `ip.foxtunnel.invalid:1`
+selects an enabled IP handler after normal managed authentication. The server
+echoes that exact network value; absent/mismatched negotiation is terminal.
+POST/WSS/XHTTP wrappers retain it inside their authenticated inner request.
+An ordinary TCP CONNECT does not opt into IP mode. Each record consists of a
+two-byte unsigned big-endian length followed by one complete 20–1280-byte IP
+packet. Invalid or truncated records close the session without replay. This is
+a custom reliable-stream format, not an RFC CONNECT-IP/CONNECT-UDP or QUIC
+DATAGRAM implementation. See [Linux VPN](../guides/LINUX-VPN.en.md) for packet
+validation, address binding, quota units and kernel/network policy requirements.

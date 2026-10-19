@@ -3,6 +3,7 @@ package tunnel
 import (
 	"context"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/ippacket"
 	"net/http"
 
 	"github.com/SawaMEN/FoxTunnel/internal/access"
@@ -50,5 +51,6 @@ func (s *Server) cover(w http.ResponseWriter, r *http.Request) {
 	public.Header.Del("Proxy-Authorization")
 	public.Header.Del(paddingHeader)
 	public.Header.Del(targetHeader)
+	public.Header.Del(ippacket.Header)
 	s.Cover.ServeHTTP(w, public)
 }

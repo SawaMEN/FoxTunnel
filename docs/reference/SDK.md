@@ -41,3 +41,5 @@ setup, сброс дедлайна, закрытие клиента, лимит 
 Экспериментально для Linux amd64 после [закреплённой сборки Neqo](../research/NEQO-INTEGRATION.md): `Transport: "h3-post", QUICBackend: "neqo", H3Fallback: "h2", QUICHandshakeTimeout: 2*time.Second`. `TLSBackend` — auto/nss; CA/ServerName/SPKIPin сохраняют прежний смысл. Эти поля не включают Neqo в обычных релизах и не меняют формат ссылок.
 
 Управляемый доступ: `NewAccessController`, `AccessPolicy`/`AccessUser`, `ServerConfig.Access`, `Replace`, `Snapshot` и `Close`: [контракт и журнал квот](ACCESS.md).
+
+[Linux TUN VPN: TCP/UDP, DNS, IPv6 и kill switch](../guides/LINUX-VPN.md).
