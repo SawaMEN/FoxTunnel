@@ -129,7 +129,9 @@ def make_config(
     lines = [
         f"table inet {TABLE} {{",
         "  chain output {",
-        "    type filter hook output priority -150; policy drop;",
+        # Run after sing-box auto_redirect OUTPUT mangle/NAT hooks: an earlier
+        # DROP would block an app packet before it could enter the TUN.
+        "    type filter hook output priority filter; policy drop;",
         '    oifname "lo" accept',
         f'    oifname "{tun}" accept',
         # IPv6 neighbor discovery is necessary to reach an IPv6 server even

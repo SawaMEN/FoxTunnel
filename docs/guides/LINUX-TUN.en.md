@@ -40,7 +40,7 @@ sudo /tmp/foxtunnel-tun-lab/run.sh
 sudo nft delete table inet foxtunnel_tun_guard
 ~~~
 
-**Warning:** run.sh installs the DROP guard **before** sing-box starts. It may cut off SSH, LAN, updates and Internet access. Only loopback, TUN, and allowlisted server IP/port on the uplink are accepted. Guard stays on after a crash but may disappear after a reboot. Not production ready.
+**Warning:** run.sh installs the DROP guard **before** sing-box starts. The nftables chain uses `filter` priority, after sing-box `auto_redirect` hooks, so tunneled traffic is not accidentally rejected before interception. It may cut off SSH, LAN, updates and Internet access. Only loopback, TUN, and allowlisted server IP/port on the uplink are accepted. Guard stays on after a crash but may disappear after a reboot. Not production ready.
 
 Linux local DNS stub 127.0.0.53 may bypass TUN DNS hijacking; off-host resolver traffic should be blocked by the guard, but this must be verified. Network namespaces, privileged firewall changes, DoH and network migration are not covered.
 
