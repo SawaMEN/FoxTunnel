@@ -122,7 +122,9 @@ class NamespaceGuardTests(unittest.TestCase):
         ):
             run("ip", "-n", ns, "link", "set", "lo", "up")
             run("ip", "-n", ns, "addr", "add", ipv4, "dev", dev)
-            run("ip", "-n", ns, "-6", "addr", "add", ipv6, "dev", dev)
+            # Avoid IPv6 Duplicate Address Detection timing races in this
+            # pair of private, randomly named namespaces.
+            run("ip", "-n", ns, "-6", "addr", "add", ipv6, "dev", dev, "nodad")
             run("ip", "-n", ns, "link", "set", dev, "up")
 
         proc = subprocess.Popen(
@@ -136,10 +138,11 @@ class NamespaceGuardTests(unittest.TestCase):
         first_line = proc.stdout.readline().strip() if ready else "(no output within 5s)"
         if first_line != "READY":
             try:
-                detail, _ = proc.communicate(timeout=3)
+                proc.wait(timeout=3)
             except subprocess.TimeoutExpired:
                 proc.kill()
-                detail, _ = proc.communicate(timeout=3)
+                proc.wait(timeout=3)
+            detail = proc.stdout.read()  # Preserve Python TextIOWrapper buffered lines.
             raise RuntimeError(
                 f"isolated server failed to start: {first_line!r} "
                 f"(exit={proc.poll()})\\n{detail}"
