@@ -1,0 +1,20 @@
+name: One-time native TUN test formatting
+on:
+  push:
+    paths: [".github/workflows/native-tun-format-once.yml"]
+permissions:
+  contents: write
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format native TUN tests and remove formatter
+        run: |
+          set -euo pipefail
+          gofmt -w internal/nativetun/linux_test.go
+          git rm -f .github/workflows/native-tun-format-once.yml
+          git add internal/nativetun/linux_test.go
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "style: gofmt native TUN UDP associate tests"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
