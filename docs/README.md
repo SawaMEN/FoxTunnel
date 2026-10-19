@@ -10,6 +10,7 @@
 
 - [Установка и запуск](guides/SETUP.md)
 - [Экспериментальный Linux TUN: sing-box, DNS и nftables](guides/LINUX-TUN.md)
+- [Нативный Linux TUN: встроенный gVisor TCP/IP](guides/NATIVE-LINUX-TUN.md)
 - [Ссылки подключения](guides/CONNECTION-LINKS.md)
 - [Точки входа и публичный сайт](guides/ENDPOINTS.md)
 

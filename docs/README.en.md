@@ -10,6 +10,7 @@ Use this index as the **single entry point**. Guides explain operations; archite
 
 - [Setup and first run](guides/SETUP.en.md)
 - [Experimental Linux TUN: sing-box, DNS and nftables](guides/LINUX-TUN.en.md)
+- [Native Linux TUN: embedded gVisor TCP/IP](guides/NATIVE-LINUX-TUN.en.md)
 - [Connection links](guides/CONNECTION-LINKS.en.md)
 - [Ingress and endpoints](guides/ENDPOINTS.en.md)
 
