@@ -171,6 +171,12 @@ class TUNEndToEnd(unittest.TestCase):
                     cmd("ip", "-n", ns, "addr", "add", addr4, "dev", name)
                     cmd("ip", "-n", ns, "-6", "addr", "add", addr6, "dev", name, "nodad")
                     cmd("ip", "-n", ns, "link", "set", name, "up")
+                # A production Linux host has a physical default route.
+                # Give the isolated client the same prerequisite so sing-box
+                # auto_detect_interface can locate the physical uplink.
+                # The exit namespace does not forward these direct packets.
+                cmd("ip", "-n", cns, "route", "add", "default", "via", "198.18.0.1", "dev", "fcwan0")
+                cmd("ip", "-n", cns, "-6", "route", "add", "default", "via", "fd42:1::1", "dev", "fcwan0")
                 # Isolated endpoints are reachable at the *exit*, but NOT on
                 # the client's directly connected veth subnet.
                 cmd("ip", "-n", sns, "addr", "add", "198.18.0.9/32", "dev", "lo")
