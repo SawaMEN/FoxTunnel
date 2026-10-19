@@ -132,6 +132,10 @@ def make_config(
         "    type filter hook output priority -150; policy drop;",
         '    oifname "lo" accept',
         f'    oifname "{tun}" accept',
+        # IPv6 neighbor discovery is necessary to reach an IPv6 server even
+        # with a default-deny output chain. Restrict to NDP, hop limit 255,
+        # and the explicit uplink; no unrestricted ICMPv6 or DNS bypass.
+        f'    oifname "{wan}" ip6 hoplimit 255 icmpv6 type {{ nd-neighbor-solicit, nd-neighbor-advert }} accept',
     ]
     for ip, port in server_ips:
         family = "ip" if ip.version == 4 else "ip6"

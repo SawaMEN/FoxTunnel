@@ -38,6 +38,9 @@ class GeneratorTests(unittest.TestCase):
         self.assertIn("policy drop;", nft)
         self.assertIn('oifname "ftun0" accept', nft)
         self.assertIn('oifname "lo" accept', nft)
+        self.assertIn('oifname "enp3s0" ip6 hoplimit 255 icmpv6 type', nft)
+        self.assertIn("nd-neighbor-solicit", nft)
+        self.assertIn("nd-neighbor-advert", nft)
         self.assertIn(
             'oifname "enp3s0" ip daddr 198.51.100.17 tcp dport 443 accept', nft
         )

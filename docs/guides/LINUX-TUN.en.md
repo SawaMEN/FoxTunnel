@@ -11,7 +11,7 @@ This is an integration with **external sing-box 1.14+**, forwarding through FoxT
 - [x] IPv4/IPv6 routes and explicit FoxTunnel server IP exceptions
 - [x] TUN DNS capture with upstream numeric DNS over SOCKS5
 - [x] nftables output DROP guard persisting after process crash, plus offline tests
-- [ ] Isolated network-namespace trials: TCP, UDP, DNS, IPv6, failures and leaks
+- [ ] Isolated network-namespace trials: **partial** — CI now tests real IPv4/IPv6 TCP, UDP, direct DNS blocking and nft guard retention after the test server exits; **sing-box TUN, end-to-end FoxTunnel, interface changes and comprehensive leak checks remain unverified**.
 - [ ] Native TUN without an external sing-box dependency
 
 **5/7 counts implemented code components, not verified network security.**
@@ -49,3 +49,15 @@ python3 -m unittest discover -s scripts -p test_linux_tun_companion.py -v
 ~~~
 
 These are **offline generator tests**, not an operational TUN trial. References: [sing-box TUN](https://sing-box.sagernet.org/configuration/inbound/tun/) and [SOCKS outbound](https://sing-box.sagernet.org/configuration/outbound/socks/).
+
+## Real-kernel nft guard laboratory (NOT live TUN)
+
+`scripts/test_linux_tun_netns.py` creates two isolated Linux network namespaces connected by a veth pair, with no Internet access. It checks allowlisted IPv4/IPv6 TCP, blocked unlisted ports, denied direct UDP/DNS, a UDP-only transport variant and retention of the output DROP policy after the mock server exits. The firewall allows narrowly scoped IPv6 NDP Neighbor Solicitation/Advertisement (hop limit 255) on the selected uplink; without NDP, even allowlisted IPv6 connections could fail.
+
+Opt in on a dedicated Linux machine with root, iproute2 and nftables:
+
+~~~sh
+sudo -E env FOXTUNNEL_TUN_NETNS=1 python3 -m unittest discover -s scripts -p test_linux_tun_netns.py -v
+~~~
+
+**This is a real-kernel firewall test, NOT a sing-box TUN, encrypted FoxTunnel or comprehensive leak test.** Without explicit opt-in it is skipped. See [CI workflow](https://github.com/SawaMEN/FoxTunnel/actions/workflows/tun-netns.yml).

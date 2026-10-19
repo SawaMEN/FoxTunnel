@@ -11,7 +11,7 @@
 - [x] IPv4/IPv6 маршруты и точечные исключения IP серверов FoxTunnel
 - [x] Перехват DNS на TUN и числовой upstream через SOCKS5
 - [x] nftables-guard с DROP по умолчанию, остающийся при аварии процесса; офлайн-тесты
-- [ ] Сетевые испытания в отдельном namespace: TCP, UDP, DNS, IPv6, падение сервера и утечки
+- [ ] Сетевые испытания в отдельном namespace: **частично** — добавлен CI-стенд проверки реальных IPv4/IPv6 TCP, UDP, прямого DNS и сохранения nft guard после остановки сервера; **не проведены** реальные испытания sing-box TUN, полного FoxTunnel пути, смены интерфейса и всех утечек.
 - [ ] Нативный TUN без внешнего sing-box
 
 **5/7 — число реализованных компонентов, а не доказательство их работы в сети.**
@@ -51,3 +51,15 @@ python3 -m unittest discover -s scripts -p test_linux_tun_companion.py -v
 ~~~
 
 Это офлайн-тесты генератора, **не** тест настоящего TUN. См. [sing-box TUN](https://sing-box.sagernet.org/configuration/inbound/tun/) и [SOCKS outbound](https://sing-box.sagernet.org/configuration/outbound/socks/).
+
+## Сетевой стенд (проверка только nft guard)
+
+В GitHub Actions используется `scripts/test_linux_tun_netns.py`: две новые изолированные сетевые namespace, соединённые veth без доступа в Интернет. Стенд проверяет разрешённый HTTPS TCP к указанным IPv4/IPv6 адресам, запрет других портов и прямого UDP/DNS, переключение разрешённого транспорта на UDP и сохранение policy DROP при остановке имитатора сервера. Для IPv6 guard разрешает только NDP (Neighbor Solicitation/Advertisement с hop limit 255) на выбранном uplink — иначе даже разрешённое IPv6-соединение не установится.
+
+Запуск вручную только на отдельной Linux машине с root, iproute2 и nftables:
+
+~~~sh
+sudo -E env FOXTUNNEL_TUN_NETNS=1 python3 -m unittest discover -s scripts -p test_linux_tun_netns.py -v
+~~~
+
+**Это сетевые тесты политики nftables, не тест реального TUN/sing-box или сквозного шифрования FoxTunnel.** В текущем окружении тесты могут пропускаться без явного включения. Итоговый статус см. [workflow](https://github.com/SawaMEN/FoxTunnel/actions/workflows/tun-netns.yml).
