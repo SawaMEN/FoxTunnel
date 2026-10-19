@@ -1,0 +1,78 @@
+name: Stage 10 Firefox FoxTunnel fingerprint evidence (no fake Naive)
+
+on:
+  push:
+    branches: [update]
+    paths:
+      - 'scripts/fingerprint_audit.py'
+      - 'scripts/test_fingerprint_audit.py'
+      - '.github/workflows/stage10-fingerprint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  historical-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate conservative evidence classification
+        run: python3 -m unittest discover -s scripts -p test_fingerprint_audit.py -v
+      - name: Compare historical Firefox 158 and pre-stage-3 FoxTunnel NSS
+        run: |
+          umask 077
+          mkdir -p stage10-report
+          python3 scripts/fingerprint_audit.py \
+            --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
+            --foxtunnel docs/measurements/2026-10-19/nss-firefox158-page.json \
+            --out stage10-report/historical-audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage10-historical-ff158-nss-prestage3-not-naive
+          path: stage10-report/historical-audit.json
+          retention-days: 7
+
+  current-nss-profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install pinned Mozilla NSS and Neqo dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y pkg-config libclang-dev gcc g++ binutils unzip
+          rustup toolchain install 1.99.1 --profile minimal
+      - name: Capture NSS from the current update branch, page GET profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          python3 scripts/build_neqo.py --out "$work/native"
+          source "$work/native/env.sh"
+          go build -mod=readonly -tags nss,neqo,mozilla -o "$work/ft-webprofile" ./cmd/ft-webprofile
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' \
+            -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
+          mkdir -p stage10-report
+          "$work/ft-webprofile" --listen 127.0.0.1:0 \
+            --cert "$work/cert.pem" --key "$work/key.pem" \
+            --sample nss --scenario page --tls-client-profile firefox-158 \
+            --h2-receive-profile firefox-158 \
+            --source "FoxTunnel update NSS-3.130 stage10 local H2 GET" \
+            --duration 2s --out stage10-report/current-nss-h2.json
+          python3 scripts/fingerprint_audit.py \
+            --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
+            --foxtunnel stage10-report/current-nss-h2.json \
+            --out stage10-report/current-nss-vs-historical-firefox.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage10-current-nss-h2-vs-historical-firefox-not-naive
+          path: stage10-report/
+          retention-days: 7
+          if-no-files-found: error
