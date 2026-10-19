@@ -1,68 +1,31 @@
-[Русский](ROADMAP.md) | **English**
+# FoxTunnel roadmap
 
-# Roadmap
+[Русский](ROADMAP.md) · **English** · [Documentation](../README.en.md) · [Source](https://github.com/SawaMEN/FoxTunnel/tree/main)
 
-- [x] Initialize repository and experimental Go module.
-- [x] HTTP/2 CONNECT server behind TLS 1.3 with Basic proxy authentication.
-- [x] Local SOCKS5 TCP client with certificate validation.
-- [x] Basic tests for tunneled roundtrips, authorization and destination filtering.
-- [x] Serve an operator-owned static site for ordinary requests and rejected probes.
-- [x] Bound CONNECT setup, release cancelled streams, preserve upload half-close.
-- [x] Add TLS resumption, filtered dual-stack fallback and local throughput benchmark.
-- [x] Add opt-in bounded initial-record padding with explicit negotiation, parser limits, fuzzing and Go/NSS tests.
-- [x] Main-node topology/weight discovery: one-address links, refresh/expiry, exit identity and Go/NSS tests.
-- [x] Review Sudoku and the official dnstt v1.20260501.0 archive.
-- [x] Review current Amnezia/AWG, TUIC v5 and its pinned Wind dependency.
-- [x] SNI/SPKI/tls13 links and per-ingress policies, Go/NSS checks and ticket isolation.
-- [x] Generated setup/join bundles, private server configuration and atomic ingress registration.
-- [x] Pre-handshake socket admission, confined public site and govulncheck CI.
-- [x] Native H2 POST, WSS carrying H2, H3 POST/QUIC, shared discovery/bond, profile and setup settings.
-- [x] Three native XHTTP modes: stream-one, stream-up and bounded packet-up; Go/NSS, setup, links and cluster.
-- [x] Shared XHTTP path/HTTP Host, random new-cluster routes, join inheritance and controlled HTTPS frontend tests.
-- [x] Bounded packet-up pipeline (4 POSTs), delayed-ACK tests; live Firefox 158 and Go/NSS TLS/H2 profiles (see WEB-PROFILE.en.md).
-- [x] Opt-in firefox-158 HTTP/2 receive profile: actual windows/HPACK, Go/NSS and XHTTP, wire/credit/cancellation/TLS tests.
-- [x] Independent public SDK/MIT/wire draft; two Linux NSS builds with build.json and pinned Mozilla runtime.
-- [x] Offline release-content/build.json/Mozilla-provenance/hash verification and compatibility rules; Go 1.26.9 in CI.
-- [ ] Independent XHTTP interoperability, XMUX and separate direction settings.
-- [ ] Native ECH/REALITY and measured automatic transport selection.
-- [ ] TUN/UDP, system routing/DNS/kill switch and individual user credentials.
-- [x] Negotiated persistent bond lanes/coalescing with bounded windows and duplicate-free retries.
-- [ ] Available-bandwidth estimates and isolated packet RTT/loss measurements.
-- [ ] Global ingress telemetry and automatic allocation between clients.
-- [ ] Test in multiple OS configurations and behind an HTTPS frontend.
-- [x] Bound authenticated destination setup and relay concurrency before DNS/dial.
-- [x] Review AmneziaWG 3.1 and additional transport designs with pinned sources.
-- [ ] Add rate limiting, HTTP/TLS connection limits, observability without leaking targets/credentials, graceful shutdown and external audit.
-- [x] Live Firefox 158 Linux TLS/H2 reference measurements and Go/NSS comparisons.
-- [ ] Matched workloads, external packet captures, other OSes/mobile and full conformance tests.
-- [x] Add standalone NSS/NSPR ClientHello capture experiment (not a transport).
-- [x] Add experimental Linux NSS TLS 1.3 data adapter with certificate validation and h2 ALPN.
-- [x] Linux NSS runtime from pinned Mozilla archives, hashes/licenses, native amd64/arm64 and isolated-container tests.
-- [ ] Ongoing NSS maintenance and Firefox behavior conformance on target systems.
-- [ ] Investigate Neqo client-side QUIC/HTTP3 and RFC 9298 CONNECT-UDP; compare overhead.
-- [ ] Decide if the Mozilla implementation has measurable advantages relative to Chromium/NaïveProxy.
-- [ ] Integrate with sing-box fork and 3x-ui only after protocols and lifecycle stabilize.
+The **single current roadmap**, replacing the duplicated `NEXT-STEPS` file. Reviewed **19 October 2026**. “Implemented” means merged into `main`, **not** production-ready.
 
-**Do not ship this prototype to end users as a censorship-resistant VPN.**
+## Implemented in source
 
-## Endpoint scheduling and follow-up review
+| Stage | Current scope | Details |
+|---|---|---|
+| 1. Reproducible foundation | Build verification; releases triggered independently | [Distribution](../reference/DISTRIBUTION.en.md), [compatibility](../reference/COMPATIBILITY.en.md) |
+| 2. Mozilla TLS/H2 | NSS TCP and measured profile gaps; **no full Firefox parity** | [Mozilla profile](../research/MOZILLA-CLIENT-PROFILE.en.md) |
+| 3. Data path | Bounded bond lanes, coalescing and loopback benchmarks; no claimed Internet advantage | [Bond](../architecture/BONDING.en.md), [data path](../research/DATA-PATH.en.md) |
+| 4. Neqo/H3 | Experimental Linux amd64 client with CA/SNI/SPKI and narrowly scoped H2 fallback; quic-go remains the default | [Neqo](../research/NEQO-INTEGRATION.en.md) |
+| 5. Access control | Local users, revocation/rotation and quotas; no distributed control plane | [Access](../reference/ACCESS.en.md) |
 
-Trusted multi-origin setup failover, round-robin and least-active scheduling
-are implemented for both TLS backends, with bounded network-failure cooldown.
-See [configuration and limits](../guides/ENDPOINTS.en.md) and the
-[NaiveProxy/Sudoku review](../research/NAIVE-SUDOKU-REVIEW.en.md).
-Neqo HTTP/3, bandwidth-aware scheduling, warm pools and Firefox fingerprint parity
-remain experiments rather than delivered features.
+These stages are merged into `main`. Passing CI on their source branches does **not** prove every combined-commit check passed: review the current GitHub Actions checks. NSS and Neqo experiments are not production readiness claims.
 
-## Experimental stream bonding
+## Next
 
-The separate opt-in `--bond` mode carries blocks of one stream through multiple
-entries to one common exit. Ordinary whole-stream scheduling remains available.
-See [deployment, acknowledgements, limits and tests](../architecture/BONDING.en.md).
-No speed advantage or TSPU resistance is established.
+1. **Full VPN:** application UDP, TUN, routes, DNS/IPv6 and kill switch; include leak and failure tests.
+2. **Operations:** installation, updates/rollback, target OS, soak and native-memory tests, independent security review.
+3. **Field measurements:** comparable Firefox/NaiveProxy/FoxTunnel workloads, packet captures, RTT/loss, networks and reproducible evidence.
+4. **Integrations:** further client/panel adapters after API and wire contracts are stabilized.
 
-Priorities and acceptance criteria: [NEXT-STEPS.en.md](NEXT-STEPS.en.md).
+## Acceptance rules
 
-- [x] Opt-in native Neqo HTTP3 client on Linux amd64, pinned ABI/runtime, verified pre-request H2 fallback and actual QUIC loss/UDP-blackhole tests.
-
-- [x] Explicit managed access: users, revocation/rotation, bounded request budgets and durable target-byte quotas ([contract](../reference/ACCESS.en.md)).
+- **Code is not a release:** verify GitHub Releases before claiming an artifact exists.
+- **NSS is not Firefox:** shared libraries do not replicate Necko or browser-level HTTP/2 behavior.
+- **Neqo is not a censorship-resistance guarantee:** neither TSPU bypass nor superiority to NaiveProxy has been established.
+- New backends require fail-closed trust, no silent downgrade, interoperability tests, race tests and bounded resources.
