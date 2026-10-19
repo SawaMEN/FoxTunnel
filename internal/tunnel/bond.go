@@ -57,7 +57,7 @@ func (c *Client) EnableBond() error {
 	if c.Padding {
 		return errors.New(i18n.Text("bond and initial-v1 padding cannot be combined"))
 	}
-	c.bondClient = &bond.Client{Endpoints: append([]*url.URL{c.ServerURL}, c.fallbackServers...), Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune
+	c.bondClient = &bond.Client{Endpoints: append([]*url.URL{c.ServerURL}, c.fallbackServers...), Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune}
 	return nil
 }
 func (c *Client) handleBond(conn net.Conn, target string) {
