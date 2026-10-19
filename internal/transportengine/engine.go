@@ -152,5 +152,9 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 	if err := c.SetTLSClientProfile(p.TLSClientProfile); err != nil {
 		return err
 	}
-	return c.SetHTTP2ReceiveProfile(p.HTTP2ReceiveProfile)
+	if err := c.SetHTTP2ReceiveProfile(p.HTTP2ReceiveProfile); err != nil {
+		return err
+	}
+	c.SetEngineStatus(p.Engine, p.Transport, p.TLSBackend, p.QUICBackend, p.H3Fallback)
+	return nil
 }

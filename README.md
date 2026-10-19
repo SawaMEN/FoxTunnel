@@ -48,6 +48,8 @@ HTTP-запроса. QUIC-параметры Firefox ещё требуют из�
 недоступности Neqo клиент временно использует NSS/H2 и перепроверяет UDP
 через 30 секунд. Go SDK предоставляет `Client.NotifyNetworkChange()` для
 сигналов ОС о смене сети; проверка TLS не ослабляется.
+Этап 6 добавляет безопасный `Client.Status()` в SDK и опциональные локальные
+JSON-логи через `--engine-status-interval 10s` без адресов и секретов.
 Подробности и ограничения: [Mozilla Transport Engine](docs/architecture/MOZILLA-ENGINE.md).
 
 ## Быстрый старт из исходников

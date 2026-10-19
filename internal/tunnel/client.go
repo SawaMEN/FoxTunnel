@@ -23,6 +23,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
@@ -68,6 +69,7 @@ type Client struct {
 	backend          string
 	nativeTransport  string
 	quic             quicSettings
+	status           *enginestatus.Recorder
 	h2ReceiveProfile string
 	tlsClientProfile string
 	xhttpSettings    xhttp.Settings
@@ -94,7 +96,7 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 			return nil, errors.New(i18n.Text("CA file contains no PEM certificates"))
 		}
 	}
-	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile}
+	c := &Client{ServerURL: u, Username: user, Password: password, CACertFile: caFile, status: enginestatus.New()}
 	c.tlsConfig = &tls.Config{MinVersion: tls.VersionTLS13, MaxVersion: tls.VersionTLS13, RootCAs: roots, ClientSessionCache: tls.NewLRUClientSessionCache(32)}
 	c.transport = &identityPool{base: newGoTransport(c.tlsConfig), config: c.tlsConfig.Clone(), backend: "go", primary: u.Scheme + "://" + u.Host, entries: make(map[string]identityEntry)}
 	c.backend = "auto"
@@ -129,6 +131,16 @@ func newGoTransportWithProfile(config *tls.Config, profile string) (*http.Transp
 		return nil, err
 	}
 	return t, nil
+}
+
+// TransportStatus returns aggregate, privacy-safe engine observations.
+func (c *Client) TransportStatus() enginestatus.Snapshot {
+	return c.status.Snapshot()
+}
+
+// SetEngineStatus is called after transport configuration succeeds.
+func (c *Client) SetEngineStatus(engine, transport, tlsBackend, quicBackend, fallback string) {
+	c.status.Configure(engine, transport, tlsBackend, quicBackend, fallback)
 }
 
 // SetTLSBackend selects a backend before Serve starts. "auto" uses NSS on
@@ -168,6 +180,7 @@ func (c *Client) Close() { c.transport.CloseIdleConnections() }
 // active streams or weakening TLS identity verification. Otherwise, H3 will
 // be probed automatically when the 30-second cooldown expires.
 func (c *Client) NotifyNetworkChange() {
+	c.status.NetworkChanged()
 	if pool, ok := c.transport.(*identityPool); ok {
 		pool.NetworkChanged()
 	} else {

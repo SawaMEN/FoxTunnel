@@ -195,3 +195,25 @@ there is no HTTP retry on an unsuccessful H3 request, no redirect,
 no speculative credential transmission, and no hidden Go TLS downgrade.
 Both H3 and H2 must be enabled on the trusted server origin for fallback
 to succeed. Stage 5 code has not been built or tested yet.
+
+
+## Stage 6: local engine status and diagnostics
+
+Go Core now records a concurrency-safe engine status shared by the primary
+transport and identity-specific transports. The public SDK returns a copy
+using the client.Status() method. The snapshot contains only configured
+engine/backends, a last H2/H3 *selection* (not HTTP success), fixed reason
+codes (probe, unreachable, cooldown, network-change), aggregate counters
+and the last transition timestamp. No URL, SNI, IP, certificate, pin,
+credential, request metadata or raw error string is stored.
+
+For the standalone CLI, --engine-status-interval 10s enables local periodic
+JSON status logs (default 0 disables). This flag does not alter wire format,
+connection links, server configuration or any authenticated request data.
+A network change must still be reported by the platform integrator through
+NotifyNetworkChange; otherwise H3 is re-probed after its cooldown.
+
+Stage 6 is diagnostic instrumentation only: active streams are not replayed,
+TLS identity checks remain mandatory, and no network fingerprint parity or
+operational reliability has been established. Build and tests were deferred
+as requested.

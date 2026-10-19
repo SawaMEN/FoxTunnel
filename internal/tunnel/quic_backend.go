@@ -9,12 +9,14 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/neqo"
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 )
 
 type quicSettings struct {
 	backend  string
 	fallback bool
 	timeout  time.Duration
+	status   *enginestatus.Recorder
 }
 
 // SetQUICBackend is a local opt-in for h3-post. Configure after SetTransport and
@@ -42,7 +44,7 @@ func (c *Client) SetQUICBackend(backend string, h2Fallback bool, timeout time.Du
 		return errors.New("Neqo uses NSS; TLS backend go is incompatible")
 	}
 	old := c.quic
-	c.quic = quicSettings{backend: backend, fallback: h2Fallback, timeout: timeout}
+	c.quic = quicSettings{backend: backend, fallback: h2Fallback, timeout: timeout, status: c.status}
 	if err := c.SetTLSBackend(c.backend); err != nil {
 		c.quic = old
 		return err
@@ -67,6 +69,7 @@ type neqoFallbackTransport struct {
 	until      map[string]time.Time
 	probes     map[string]*neqoProbe
 	generation uint64
+	status     *enginestatus.Recorder
 }
 
 const h3RetryAfter = 30 * time.Second
@@ -84,6 +87,7 @@ func (t *neqoFallbackTransport) selectTransport(ctx context.Context, target *url
 		t.mu.Lock()
 		if time.Now().Before(t.until[origin]) {
 			t.mu.Unlock()
+			t.status.Route("h2", "cooldown")
 			return true, nil
 		}
 		if existing := t.probes[origin]; existing != nil {
@@ -97,6 +101,13 @@ func (t *neqoFallbackTransport) selectTransport(ctx context.Context, target *url
 				t.mu.Unlock()
 				if stale {
 					continue
+				}
+				if existing.err == nil {
+					if existing.useH2 {
+						t.status.Route("h2", "unreachable")
+					} else {
+						t.status.Route("h3", "probe")
+					}
 				}
 				return existing.useH2, existing.err
 			case <-ctx.Done():
@@ -114,10 +125,21 @@ func (t *neqoFallbackTransport) selectTransport(ctx context.Context, target *url
 		t.mu.Unlock()
 
 		// No HTTP stream, credentials or request body have been sent.
+		t.status.BeginProbe()
 		err := t.h3.Probe(ctx, target)
 		var unreachable *neqo.ReachabilityError
 		reachableFailure := errors.As(err, &unreachable)
 		canceled := ctx.Err() != nil
+		switch {
+		case canceled:
+			t.status.EndProbe("canceled")
+		case reachableFailure:
+			t.status.EndProbe("unreachable")
+		case err == nil:
+			t.status.EndProbe("reachable")
+		default:
+			t.status.EndProbe("rejected")
+		}
 
 		t.mu.Lock()
 		if t.probes[origin] == probe {
@@ -159,9 +181,12 @@ func (t *neqoFallbackTransport) selectTransport(ctx context.Context, target *url
 			continue
 		}
 		if probe.useH2 {
+			t.status.Route("h2", "unreachable")
 			// Only close unused QUIC engines. Existing active HTTP/3
 			// streams to this or other origins continue unchanged.
 			t.h3.CloseIdleConnections()
+		} else if probe.err == nil {
+			t.status.Route("h3", "probe")
 		}
 		return probe.useH2, probe.err
 	}

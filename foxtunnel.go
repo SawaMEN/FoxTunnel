@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
@@ -28,6 +29,9 @@ const HTTP2ReceiveFirefox158 = h2profile.Firefox158
 const TLSClientFirefox158 = nsstls.Firefox158
 
 var ErrCapacity = errors.New("foxtunnel client connection limit reached")
+
+// TransportStatus contains only local aggregate transport counters and fixed codes.
+type TransportStatus = enginestatus.Snapshot
 
 type Credentials struct{ Username, Password string }
 type ClientConfig struct {
@@ -106,6 +110,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 	success = true
 	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
 }
+// Status returns a concurrency-safe snapshot. No addresses or secrets.
+func (c *Client) Status() TransportStatus {
+	return c.core.TransportStatus()
+}
+
 // NotifyNetworkChange clears cached UDP unreachability after a confirmed
 // Wi-Fi/cellular route change. Omit it when the platform provides no such
 // signal: Mozilla mode retries HTTP/3 automatically after the cooldown.

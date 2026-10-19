@@ -89,7 +89,7 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 					transport.CloseIdleConnections()
 					return nil, err
 				}
-				selected = &neqoFallbackTransport{h3: transport, h2: h2, until: make(map[string]time.Time)}
+				selected = &neqoFallbackTransport{h3: transport, h2: h2, until: make(map[string]time.Time), status: quic.status}
 			}
 			return postTransport{tlsTransport: selected, host: config.ServerName}, nil
 		}

@@ -266,6 +266,10 @@ func main() {
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
 		quicBackend, h3Fallback := new(string), new(string)
 		quicTimeout := new(time.Duration)
+		engineStatusInterval := new(time.Duration)
+		if os.Args[1] == "client" {
+			fs.DurationVar(engineStatusInterval, "engine-status-interval", 0, i18n.Text("optional local engine status JSON log interval; 0 disables, minimum 1s"))
+		}
 		*quicBackend = "quic-go"
 		*h3Fallback = "none"
 		if os.Args[1] == "client" {
@@ -292,7 +296,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine":
+				case "listen", "ca-cert", "lang", "link", "link-file", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval":
 				default:
 					conflict = true
 				}
@@ -357,6 +361,9 @@ func main() {
 		}
 		if *connectTimeout <= 0 {
 			log.Fatal(i18n.Text("--connect-timeout must be positive"))
+		}
+		if *engineStatusInterval < 0 || (*engineStatusInterval > 0 && *engineStatusInterval < time.Second) {
+			log.Fatal("--engine-status-interval must be 0 or at least 1s")
 		}
 		if *bondLanes && !*bonded {
 			log.Fatal(i18n.Text("bond lanes require --bond"))
@@ -431,6 +438,24 @@ func main() {
 			}
 		}
 		defer client.Close()
+		if *engineStatusInterval > 0 {
+			ticker := time.NewTicker(*engineStatusInterval)
+			defer ticker.Stop()
+			done := make(chan struct{})
+			defer close(done)
+			go func() {
+				for {
+					select {
+					case <-done:
+						return
+					case <-ticker.C:
+						if data, err := json.Marshal(client.TransportStatus()); err == nil {
+							log.Printf("engine_status=%s", data)
+						}
+					}
+				}
+			}()
+		}
 		listener, err := net.Listen("tcp", *listen)
 		if err != nil {
 			log.Fatal(err)
