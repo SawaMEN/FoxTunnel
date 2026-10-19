@@ -153,7 +153,7 @@ def package(argv):
                          rust_dependencies_sha256=hashlib.sha256(dependency_manifest).hexdigest()),
             asset_sha256=asset_hashes)
         append_asset(files, 'build.json', (json.dumps(meta, indent=2, sort_keys=True) + '\n').encode())
-        if len(files) > 256 or sum(map(len, files.values())) > MAX_BUNDLE_SIZE:
+        if len(files) > 1024 or sum(map(len, files.values())) > MAX_BUNDLE_SIZE:
             raise ValueError('Mozilla bundle exceeds archive safety limits')
         with archive.open('xb') as f:
             with gzip.GzipFile(fileobj=f, mode='wb', filename='', mtime=epoch) as gz:
