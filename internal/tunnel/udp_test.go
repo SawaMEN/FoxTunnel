@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"io"
 	"net"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
