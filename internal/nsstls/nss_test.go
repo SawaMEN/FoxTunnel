@@ -184,10 +184,10 @@ func TestNSSVerifierHonorsTLSConfigTime(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	conn, err := DialTLSContextWithProfile(ctx, "tcp", server.Listener.Addr().String(), config, "")
-	if conn != nil {
-		conn.Close()
-	}
-	if err == nil {
-		t.Fatal("NSS ignored caller TLS verification time and accepted a not-yet-valid cert")
+	if err == nil || conn != nil {
+		if err == nil && conn != nil {
+			conn.Close()
+		}
+		t.Fatalf("NSS trust failure must return nil connection, got conn=%T err=%v", conn, err)
 	}
 }

@@ -408,5 +408,11 @@ func DialTLSContextWithProfile(ctx context.Context, network, addr string, config
 			return nil, err
 		}
 	}
-	return wrapConfigWithProfile(setup, raw, name, config, profile)
+	secure, err := wrapConfigWithProfile(setup, raw, name, config, profile)
+	if err != nil {
+		// A typed nil *conn assigned directly to net.Conn is a non-nil
+		// interface. Always return a genuine nil on handshake failure.
+		return nil, err
+	}
+	return secure, nil
 }
