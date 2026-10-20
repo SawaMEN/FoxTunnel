@@ -94,11 +94,11 @@ func TestStage2CoverStripsAllProxyMetadataForBothModes(t *testing.T) {
 			r := httptest.NewRequest(method, "https://proxy.example/", nil)
 			r.ProtoMajor = 2
 			r.Header = http.Header{
-				"Proxy-Authorization": {"Basic private"},
-				"X-FoxTunnel-Padding": {"initial-v1"},
-				"X-FoxTunnel-Target": {"sensitive.example:443"},
+				"Proxy-Authorization":      {"Basic private"},
+				"X-FoxTunnel-Padding":      {"initial-v1"},
+				"X-FoxTunnel-Target":       {"sensitive.example:443"},
 				"X-Foxtunnel-New-Metadata": {"hidden"},
-				"x-foxtunnel-lower": {"hidden"},
+				"x-foxtunnel-lower":        {"hidden"},
 			}
 			result := httptest.NewRecorder()
 			s.ServeHTTP(result, r)
