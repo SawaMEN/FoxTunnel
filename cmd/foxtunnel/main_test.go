@@ -109,7 +109,7 @@ func TestCLIHelper(t *testing.T) {
 func helperEnv(credentials bool) []string {
 	var env []string
 	for _, value := range os.Environ() {
-		if strings.HasPrefix(value, "FOXTUNNEL_USER=") || strings.HasPrefix(value, "FOXTUNNEL_PASSWORD=") || strings.HasPrefix(value, "FOXTUNNEL_TEST_HELPER=") {
+		if strings.HasPrefix(value, "FOXTUNNEL_USER=") || strings.HasPrefix(value, "FOXTUNNEL_PASSWORD=") || strings.HasPrefix(value, "FOXTUNNEL_SOCKS_") || strings.HasPrefix(value, "FOXTUNNEL_TEST_HELPER=") {
 			continue
 		}
 		env = append(env, value)
@@ -176,6 +176,77 @@ func TestShareXHTTPRouteCLI(t *testing.T) {
 	conflict.Env = helperEnv(false)
 	if msg, err := conflict.CombinedOutput(); err == nil || strings.Contains(string(msg), "vetroff://") || strings.Contains(string(msg), "example-only-password") {
 		t.Fatal("ambiguous import accepted or leaked credentials")
+	}
+}
+
+func TestPrivateShareFileAndImportPermissions(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	path := filepath.Join(t.TempDir(), "client.link")
+	share := helperCommand(ctx, "share", "--server", "https://example.org", "--out", path)
+	share.Env = helperEnv(true)
+	output, err := share.CombinedOutput()
+	if err != nil || strings.Contains(string(output), "vetroff://") || strings.Contains(string(output), "example-only-password") {
+		t.Fatalf("share did not keep credentials private: %v %q", err, output)
+	}
+	fi, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode().Perm() != 0600 {
+		t.Fatalf("share created readable secret file: %o", fi.Mode().Perm())
+	}
+	// Private files can start clients exactly as --link-file - used to.
+	client := helperCommand(ctx, "client", "--link-file", path, "--listen", "127.0.0.1:0")
+	client.Env = helperEnv(false)
+	stderr, err := client.StderrPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Start(); err != nil {
+		t.Fatal(err)
+	}
+	line, err := bufio.NewReader(stderr).ReadString('\n')
+	if err != nil || !strings.Contains(line, "SOCKS5") {
+		t.Fatal("private link import did not start client", err, line)
+	}
+	_ = client.Process.Kill()
+	_ = client.Wait()
+	if err := os.Chmod(path, 0644); err != nil {
+		t.Fatal(err)
+	}
+	reject := helperCommand(ctx, "client", "--link-file", path)
+	reject.Env = helperEnv(false)
+	out, err := reject.CombinedOutput()
+	if err == nil || strings.Contains(string(out), "example-only-password") || strings.Contains(string(out), "vetroff://") {
+		t.Fatal("world-readable link file imported or secret leaked")
+	}
+	again := helperCommand(ctx, "share", "--server", "https://example.org", "--out", path)
+	again.Env = helperEnv(true)
+	out, err = again.CombinedOutput()
+	if err == nil || strings.Contains(string(out), "vetroff://") || strings.Contains(string(out), "example-only-password") {
+		t.Fatal("private link share overwrote existing file")
+	}
+}
+
+func TestSOCKSLocalAndNetworkSafetyCLI(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	base := []string{"client", "--server", "https://example.org", "--listen", "0.0.0.0:0"}
+	without := helperCommand(ctx, base...)
+	without.Env = helperEnv(true)
+	if out, err := without.CombinedOutput(); err == nil || !strings.Contains(string(out), "socks-allow-lan") {
+		t.Fatalf("public SOCKS5 without auth/explicit opt-in accepted: %q %v", out, err)
+	}
+	withAuth := helperCommand(ctx, base...)
+	withAuth.Env = append(helperEnv(true), "FOXTUNNEL_SOCKS_USER=local", "FOXTUNNEL_SOCKS_PASSWORD=local-only-password")
+	if out, err := withAuth.CombinedOutput(); err == nil || !strings.Contains(string(out), "socks-allow-lan") {
+		t.Fatalf("public SOCKS5 without explicit opt-in accepted: %q %v", out, err)
+	}
+	missing := helperCommand(ctx, "client", "--server", "https://example.org")
+	missing.Env = append(helperEnv(true), "FOXTUNNEL_SOCKS_USER=local")
+	if out, err := missing.CombinedOutput(); err == nil || !strings.Contains(string(out), "FOXTUNNEL_SOCKS_") {
+		t.Fatalf("incomplete SOCKS credentials accepted: %q %v", out, err)
 	}
 }
 

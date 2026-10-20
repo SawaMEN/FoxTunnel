@@ -184,6 +184,7 @@ class TUNEndToEnd(unittest.TestCase):
             processes: list[subprocess.Popen] = []
             created: list[str] = []
             resolver_dir = None
+            resolver_parent_created = False
             try:
                 # Only uniquely named namespaces and an ephemeral veth are touched.
                 for ns in (cns, sns):
@@ -213,8 +214,13 @@ class TUNEndToEnd(unittest.TestCase):
                 if native:
                     # ip netns exec bind-mounts this resolver configuration only
                     # for this unique namespace. Host resolver stays untouched.
-                    resolver_dir = Path('/etc/netns') / cns
-                    resolver_dir.mkdir()
+                    resolver_parent = Path('/etc/netns')
+                    if not resolver_parent.exists():
+                        resolver_parent.mkdir()
+                        resolver_parent_created = True
+                    candidate = resolver_parent / cns
+                    candidate.mkdir()
+                    resolver_dir = candidate
                     (resolver_dir / 'resolv.conf').write_text('nameserver 198.18.0.9\noptions timeout:1 attempts:1\n')
                     cmd('ip', '-n', cns, 'route', 'add', 'default', 'via', '198.18.0.1', 'dev', 'fcwan0')
                     cmd('ip', '-n', cns, '-6', 'route', 'add', 'default', 'via', 'fd42:1::1', 'dev', 'fcwan0')
@@ -397,6 +403,8 @@ class TUNEndToEnd(unittest.TestCase):
                 if resolver_dir is not None:
                     (resolver_dir / 'resolv.conf').unlink(missing_ok=True)
                     resolver_dir.rmdir()
+                if resolver_parent_created:
+                    Path('/etc/netns').rmdir()
                 for ns in reversed(created):
                     subprocess.run(["ip", "netns", "del", ns], check=False,
                                    stdout=subprocess.DEVNULL,
