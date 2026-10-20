@@ -2,6 +2,7 @@ name: Native platform operations
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'scripts/deploy_cli.py'
       - 'scripts/test_deploy_cli.py'
@@ -55,7 +56,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Native lifecycle, certificate renewal and listener release
-        run: go test -race ./cmd/foxtunnel ./internal/tlsidentity ./internal/tunnel -run 'TestServerCertificateReloadAndShutdownH2H3|TestProcessSIGTERMAndCertificateSIGHUP|TestClientSIGTERMClosesIncompleteSOCKS|TestCertificateReloadRetainsLastValidPair|TestServeContextStopsActiveAndIncompleteConnections' -count=1 -timeout=90s
+        run: go test -race ./cmd/foxtunnel ./internal/tlsidentity ./internal/tunnel -run 'TestServerCertificateReloadAndShutdownH2H3|TestProcessSIGTERMAndCertificateSIGHUP|TestClientSIGTERMClosesIncompleteSOCKS|TestCertificateReloadRetainsLastValidPair|TestServeContextStopsActiveAndIncompleteConnections|TestH3BlackholedSetupRecoversOnNewPathAndPreservesExistingStream|TestH3DeadlineRetiresPoolWithoutReplayOrClosingLiveBody|TestH3CallerCancellationAndHTTPRejectionDoNotRetirePool|TestH3AlreadyCancelledRequestDoesNotCreatePool' -count=1 -timeout=90s
       - name: Build two reviewed native installation candidates
         shell: bash
         run: |
@@ -78,7 +79,7 @@ jobs:
           python -m unittest discover -s scripts -p test_deploy_cli.py -v
       - name: Native H2/H3 process soak, resource budgets and restart recovery
         env:
-          FOXTUNNEL_SOAK_SECONDS: ${{ inputs.soak_seconds || '180' }}
+          FOXTUNNEL_SOAK_SECONDS: ${{ inputs.soak_seconds || (contains(github.event.pull_request.labels.*.name, 'operations-long') && '1800') || '180' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -86,7 +87,7 @@ jobs:
           mkdir operations-report
           python scripts/operations_soak.py --binary foxtunnel-lab-2.exe \
             --cert operations-cert/cert.pem --key operations-cert/key.pem \
-            --seconds "$FOXTUNNEL_SOAK_SECONDS" --parallel 3 --recovery-seconds 120 \
+            --seconds "$FOXTUNNEL_SOAK_SECONDS" --parallel 3 --recovery-seconds 30 \
             --out operations-report/report.json
       - name: Retain aggregate operations evidence only
         if: always()
