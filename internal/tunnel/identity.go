@@ -62,6 +62,9 @@ func (c *Client) SetServerIdentity(sni, pin string) error {
 	if err != nil || c.bondClient != nil || c.bondDiscovery != nil {
 		return i18n.Error("invalid TLS identity settings")
 	}
+	if pool, ok := c.transport.(*identityPool); ok && len(pool.nodePolicies) != 0 {
+		return i18n.Error("cannot override TLS identity after per-node SPKI pins have been configured")
+	}
 	old := c.identity
 	c.identity = policy
 	backend := c.backend
