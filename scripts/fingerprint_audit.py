@@ -32,6 +32,40 @@ MAX_INPUT = 4 * 1024 * 1024
 ABSENT = object()
 
 
+def ja3_expected(hello: dict) -> str:
+    """Recompute the JA3 compatibility string without payload or SNI."""
+    def uints(name: str, *, required: bool = False) -> list[int]:
+        value = hello.get(name)
+        if value is None and not required:
+            return []
+        if (not isinstance(value, list) or
+                any(type(item) is not int or item < 0 or item > 65535
+                    for item in value)):
+            raise ValueError("invalid captured JA3 vector")
+        return value
+
+    legacy = hello.get("legacy_version")
+    if type(legacy) is not int or not 0 <= legacy <= 65535:
+        raise ValueError("invalid TLS legacy version")
+    cipher = uints("cipher_suites", required=True)
+    extensions = uints("extensions", required=True)
+    groups = uints("supported_groups")
+    points = uints("ec_point_formats")
+    if not cipher or not extensions:
+        raise ValueError("TLS JA3 cipher/extension evidence missing")
+
+    def grease(value: int) -> bool:
+        return (value >> 8) == (value & 0xff) and (value & 0x0f) == 0x0a
+
+    def vector(values: list[int], filter_grease: bool) -> str:
+        return "-".join(str(v) for v in values
+                        if not filter_grease or not grease(v))
+
+    return ",".join((str(legacy), vector(cipher, True),
+                     vector(extensions, True), vector(groups, True),
+                     vector(points, False)))
+
+
 def read_profile(path: Path, kind: str) -> tuple[dict, str]:
     if not path.is_file() or path.stat().st_size > MAX_INPUT:
         raise ValueError("capture file missing or exceeds 4 MiB")
@@ -42,16 +76,24 @@ def read_profile(path: Path, kind: str) -> tuple[dict, str]:
     if kind == "tls_h2":
         if not isinstance(raw.get("hello"), dict):
             raise ValueError("missing TLS ClientHello metadata")
+        hello = raw["hello"]
+        expected = ja3_expected(hello)
+        if hello.get("ja3") != expected or hello.get("ja3_md5") != hashlib.md5(
+                expected.encode("ascii")).hexdigest():
+            raise ValueError("TLS JA3 incompatible with captured handshake metadata")
         if not isinstance(raw.get("initial_h2_settings"), list) or not raw["initial_h2_settings"]:
             raise ValueError("missing initial H2 SETTINGS; a partial capture is not H2 evidence")
         for item in raw["initial_h2_settings"]:
-            if not isinstance(item, dict) or type(item.get("id")) is not int or type(item.get("value")) is not int:
+            if (not isinstance(item, dict) or type(item.get("id")) is not int
+                    or type(item.get("value")) is not int or
+                    not 1 <= item["id"] <= 65535 or
+                    not 0 <= item["value"] <= 0xffffffff):
                 raise ValueError("malformed initial H2 SETTINGS")
         if len({x["id"] for x in raw["initial_h2_settings"]}) != len(raw["initial_h2_settings"]):
             raise ValueError("duplicate H2 SETTINGS identifier")
         if raw.get("dropped_frames", 0) or raw.get("dropped_records", 0):
             raise ValueError("truncated TLS/H2 capture")
-    else:
+    elif kind == "h3_quic":
         if raw.get("kind") != "h3-quic-observation":
             raise ValueError("H3/QUIC requires endpoint-decoded evidence")
         if not isinstance(raw.get("quic"), dict) or not isinstance(raw.get("h3"), dict):
@@ -68,10 +110,20 @@ def read_profile(path: Path, kind: str) -> tuple[dict, str]:
                 or not isinstance(h3.get("settings"), list)
                 or not h3["settings"]):
             raise ValueError("missing decoded QUIC transport parameters or H3 SETTINGS")
+        for entries in (q["transport_parameters"], h3["settings"]):
+            if (any(not isinstance(item, dict) or
+                    type(item.get("id")) is not int or
+                    not 0 <= item["id"] <= (1 << 62) - 1 or
+                    "value" not in item
+                    for item in entries) or
+                    len({item["id"] for item in entries}) != len(entries)):
+                raise ValueError("invalid or duplicated endpoint-decoded QUIC/H3 identifiers")
         if (raw.get("capture_method") != "endpoint"
                 or not isinstance(raw.get("capture_scenario"), str)
                 or not raw["capture_scenario"].strip()):
             raise ValueError("capture provenance must identify endpoint decoding and scenario")
+    else:
+        raise ValueError("unsupported observation type")
     return raw, hashlib.sha256(data).hexdigest()
 
 
