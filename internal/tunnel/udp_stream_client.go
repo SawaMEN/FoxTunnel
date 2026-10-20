@@ -92,6 +92,7 @@ func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socke
 	}
 	peerIP = peerIP.Unmap()
 	var source atomic.Pointer[net.UDPAddr]
+	var permitted udpReplyGuard
 	downloadDone := make(chan struct{})
 	go func() {
 		defer close(downloadDone)
@@ -100,6 +101,9 @@ func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socke
 			if err != nil {
 				cancel()
 				return
+			}
+			if !permitted.matches(wire) {
+				continue // Never emit an unsolicited UDP destination.
 			}
 			dst := source.Load()
 			if dst == nil || ctx.Err() != nil {
@@ -129,7 +133,8 @@ func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socke
 		if !ok || ip.Unmap() != peerIP || n > udpproto.MaxDatagram {
 			continue
 		}
-		if _, err := udpproto.Parse(buf[:n]); err != nil {
+		packet, err := udpproto.Parse(buf[:n])
+		if err != nil {
 			continue
 		}
 		pinned := source.Load()
@@ -141,6 +146,7 @@ func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socke
 		if pinned.Port != src.Port || !pinned.IP.Equal(src.IP) {
 			continue
 		}
+		permitted.remember(packet)
 		if err := udpproto.WriteFrame(stream.writer, buf[:n]); err != nil {
 			return
 		}
