@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
@@ -50,6 +51,9 @@ type Client struct {
 	// AutoTune controls the bounded 4/8-slot pipeline from measured data.
 	// Requires Adaptive; disabled by default.
 	AutoTune bool
+	// TrafficMode is legacy (default), auto, latency or throughput.
+	// A non-legacy mode requires Adaptive and affects data operations only.
+	TrafficMode string
 	// Weights are relative configured capacities (1..100), not traffic quotas.
 	// ExpectedHub optionally pins the exit before the first destination dial.
 	Weights     []int
@@ -74,6 +78,10 @@ func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
 // reserveFor schedules the specific Bond data operation; the legacy wrapper
 // above preserves control-plane callers and existing tests.
 func (c *Client) reserveFor(tried []bool, op byte, payloadBytes int) (int, func(time.Duration, bool, int)) {
+	return c.reserveForClass(tried, op, payloadBytes, trafficUnspecified)
+}
+
+func (c *Client) reserveForClass(tried []bool, op byte, payloadBytes int, priority trafficClass) (int, func(time.Duration, bool, int)) {
 	c.mu.Lock()
 	if len(c.paths) != len(c.Endpoints) {
 		c.paths = make([]pathState, len(c.Endpoints))
@@ -92,7 +100,11 @@ func (c *Client) reserveFor(tried []bool, op byte, payloadBytes int) (int, func(
 	start := int(c.next % uint64(len(tried)))
 	c.next++
 	if c.Adaptive && (op == opWrite || op == opRead) {
-		selected = c.pickAdaptive(tried, op, payloadBytes, now)
+		if priority == trafficLatency && c.TrafficMode != "" && c.TrafficMode != "legacy" {
+			selected = c.pickLatency(tried, now)
+		} else {
+			selected = c.pickAdaptive(tried, op, payloadBytes, now)
+		}
 	} else if c.RouteMode == "smart" {
 		candidates := make([]multihop.Candidate, len(tried))
 		for i := range tried {
@@ -226,6 +238,10 @@ func (c *Client) requestInto(ctx context.Context, token []byte, hub string, op b
 }
 
 func (c *Client) requestVia(ctx context.Context, transport http.RoundTripper, token []byte, hub string, op byte, seq, ack uint64, payload, responseBuffer []byte) (block, error) {
+	return c.requestViaClass(ctx, transport, token, hub, op, seq, ack, payload, responseBuffer, trafficUnspecified)
+}
+
+func (c *Client) requestViaClass(ctx context.Context, transport http.RoundTripper, token []byte, hub string, op byte, seq, ack uint64, payload, responseBuffer []byte, priority trafficClass) (block, error) {
 	frame := make([]byte, headerSize)
 	frame[0] = op
 	copy(frame[1:33], token)
@@ -250,7 +266,7 @@ func (c *Client) requestVia(ctx context.Context, transport http.RoundTripper, to
 		if ctx.Err() != nil {
 			return block{}, ctx.Err()
 		}
-		index, release := c.reserveFor(tried, op, len(payload))
+		index, release := c.reserveForClass(tried, op, len(payload), priority)
 		tried[index] = true
 		timeout := c.attemptBudget(index, op)
 		attempt, cancel := context.WithTimeout(ctx, timeout)
@@ -384,12 +400,22 @@ type Stream struct {
 	receivePool                 [][]byte
 	currentBuffer               []byte
 	uploadCapacity              int
+	uploadBytes, downloadBytes  atomic.Uint64
 	workers                     sync.WaitGroup
 	ackMu                       sync.Mutex
 	ack                         uint64
 }
 
 func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
+	switch c.TrafficMode {
+	case "", "legacy":
+	case "auto", "latency", "throughput":
+		if !c.Adaptive {
+			return nil, errors.New("bond traffic mode requires adaptive scheduling")
+		}
+	default:
+		return nil, errors.New("unknown bond traffic mode")
+	}
 	if c.AutoTune && !c.Adaptive {
 		return nil, errors.New("bond auto-tuning requires adaptive scheduling")
 	}
@@ -492,7 +518,8 @@ func (s *Stream) fetch() {
 			s.ackMu.Lock()
 			ack := s.ack
 			s.ackMu.Unlock()
-			b, err := s.client.requestVia(s.readCtx, s.transport, s.token[:], s.hub, opRead, seq, ack, nil, responseBuffer)
+			priority := classifyTraffic(s.client.TrafficMode, opRead, 0, s.uploadBytes.Load(), s.downloadBytes.Load())
+			b, err := s.client.requestViaClass(s.readCtx, s.transport, s.token[:], s.hub, opRead, seq, ack, nil, responseBuffer, priority)
 			if errors.Is(err, errPoll) {
 				continue
 			}
@@ -537,6 +564,7 @@ func (s *Stream) Read(p []byte) (int, error) {
 		}
 	}
 	n := copy(p, s.current)
+	s.downloadBytes.Add(uint64(n))
 	s.current = s.current[n:]
 	if len(s.current) == 0 {
 		s.receivePool = append(s.receivePool, s.currentBuffer)
@@ -593,12 +621,14 @@ func (s *Stream) writeBlocks(p []byte) (int, error) {
 		seq := s.nextUp
 		s.nextUp++
 		written += n
+		total := s.uploadBytes.Add(uint64(n))
+		priority := classifyTraffic(s.client.TrafficMode, opWrite, n, total, s.downloadBytes.Load())
 		s.uploadPending.Add(1)
 		s.workers.Go(func() {
 			defer s.uploadPending.Done()
 			defer func() { s.uploadSlots <- buffer }()
 			for {
-				_, err := s.client.requestVia(s.ctx, s.transport, s.token[:], s.hub, opWrite, seq, 0, payload, nil)
+				_, err := s.client.requestViaClass(s.ctx, s.transport, s.token[:], s.hub, opWrite, seq, 0, payload, nil, priority)
 				if errors.Is(err, errPoll) {
 					continue
 				}
