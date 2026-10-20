@@ -40,9 +40,14 @@ type Server struct {
 	Padding bool
 	// MaxTunnels bounds authenticated dialing/relay work across this Server.
 	// Zero uses 256. Configure before serving and do not copy Server after use.
-	MaxTunnels       int
-	activeTunnels    atomic.Int64
-	activeWebSockets atomic.Int64
+	MaxTunnels int
+	// MaxCoverRequests limits concurrent public/unauthorized HTTP handlers,
+	// independently of authenticated tunnels. Zero uses 64. Configure before
+	// serving and do not copy Server after first use.
+	MaxCoverRequests    int
+	activeTunnels       atomic.Int64
+	activeCoverRequests atomic.Int64
+	activeWebSockets    atomic.Int64
 	xhttpOnce        sync.Once
 	xhttpServer      *xhttp.Server
 	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
@@ -270,6 +275,24 @@ func (fw flushingWriter) Write(p []byte) (int, error) {
 	n, err := fw.w.Write(p)
 	fw.flusher.Flush()
 	return n, err
+}
+
+// acquireCover bounds potentially slow local file reads and custom cover
+// handlers without consuming the admission slots reserved for tunnels.
+func (s *Server) acquireCover() bool {
+	limit := s.MaxCoverRequests
+	if limit <= 0 {
+		limit = 64
+	}
+	for {
+		active := s.activeCoverRequests.Load()
+		if active >= int64(limit) {
+			return false
+		}
+		if s.activeCoverRequests.CompareAndSwap(active, active+1) {
+			return true
+		}
+	}
 }
 
 func (s *Server) acquireTunnel() bool {

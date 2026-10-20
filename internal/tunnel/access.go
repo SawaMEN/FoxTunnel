@@ -47,6 +47,15 @@ func (s *Server) cover(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if !s.acquireCover() {
+		// All public and rejected requests share this response on overload.
+		// The cover limit never consumes active authenticated tunnel slots.
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Retry-After", "1")
+		http.Error(w, "service temporarily unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	defer s.activeCoverRequests.Add(-1)
 	public := r.Clone(r.Context())
 	for key := range public.Header {
 		// Do not forward any FoxTunnel wire metadata (or credentials) to a
