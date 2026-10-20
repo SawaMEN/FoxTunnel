@@ -2,9 +2,13 @@ name: Tests
 on:
   push:
   pull_request:
+permissions:
+  contents: read
+
 jobs:
   go:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -14,6 +18,13 @@ jobs:
         run: test -z "$(gofmt -l cmd internal examples foxtunnel*.go integration/external)"
       - name: Check documentation links
         run: python3 scripts/check_docs_links.py
+      - name: Enforce protocol-core boundaries
+        run: python3 scripts/check_core_boundaries.py
+      - name: Check module dependency hygiene
+        run: |
+          go mod tidy -diff
+          cd integration/external
+          go mod tidy -diff
       - name: Vet
         run: go vet ./...
       - name: Test with race detector

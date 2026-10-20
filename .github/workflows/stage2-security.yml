@@ -2,7 +2,7 @@ name: Stage 2 Security Regression
 
 on:
   push:
-    branches: [up]
+    branches: [main]
     paths:
       - 'internal/authheader/**'
       - 'internal/access/**'

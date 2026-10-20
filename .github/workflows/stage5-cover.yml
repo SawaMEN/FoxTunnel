@@ -2,7 +2,7 @@ name: Stage 5 HTTPS Cover Isolation
 
 on:
   push:
-    branches: [up]
+    branches: [main]
     paths:
       - 'internal/tunnel/cover.go'
       - 'internal/tunnel/cover_test.go'

@@ -2,7 +2,7 @@ name: Stage 3 TCP Fast Path
 
 on:
   push:
-    branches: [up]
+    branches: [main]
     paths:
       - 'internal/tunnel/fastcopy.go'
       - 'internal/tunnel/fastcopy_test.go'

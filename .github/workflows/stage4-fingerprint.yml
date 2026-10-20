@@ -2,7 +2,7 @@ name: Stage 4 Firefox Fingerprint Evidence
 
 on:
   push:
-    branches: [up]
+    branches: [main]
     paths:
       - 'scripts/fingerprint_audit.py'
       - 'scripts/test_fingerprint_audit.py'

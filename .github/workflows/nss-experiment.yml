@@ -36,6 +36,8 @@ jobs:
           assert 'h2' in profile['alpn'], profile
           print('Captured NSS TLS ClientHello: ALPN', profile['alpn'])
           PY
+      - name: Enforce NSS protocol-core boundaries
+        run: python3 scripts/check_core_boundaries.py --tags nss
       - name: Test NSS data transport with race detector
         run: go test -race -tags nss ./... -count=1 -timeout=120s
       - name: Vet NSS adapter

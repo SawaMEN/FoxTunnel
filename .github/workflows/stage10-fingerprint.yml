@@ -2,7 +2,7 @@ name: Stage 10 Firefox FoxTunnel fingerprint evidence (no fake Naive)
 
 on:
   push:
-    branches: [update]
+    branches: [main]
     paths:
       - 'scripts/fingerprint_audit.py'
       - 'scripts/test_fingerprint_audit.py'

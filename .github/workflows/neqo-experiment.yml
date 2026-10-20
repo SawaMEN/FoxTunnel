@@ -32,6 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          python3 scripts/check_core_boundaries.py --tags nss,neqo
           go vet -tags nss,neqo ./...
           go test -race -tags nss,neqo ./... -count=1 -timeout=180s
           (cd integration/external && go test -race -tags nss,neqo ./... -count=1 -timeout=30s)

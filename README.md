@@ -47,7 +47,8 @@ go build -o foxtunnel ./cmd/foxtunnel
 - [Ручной запуск ядра](docs/START.md).
 - [Транспорты и параметры](docs/FEATURES.md).
 - [Архитектура, Go SDK и тесты](docs/DEVELOPMENT.md).
-- [Лабораторная дорожная карта без обязательных VDS](docs/ROADMAP-LAB-ONLY.md).
+- [План реализации — 10 этапов и прогресс](docs/IMPLEMENTATION-PLAN.md).
+- [Историческая лабораторная дорожная карта](docs/ROADMAP-LAB-ONLY.md).
 
 HTTP/2, HTTP/3, WebSocket, XHTTP, NSS/Neqo, несколько нод и управление доступом
 сохранены. Измерения в CI не доказывают устойчивость к DPI или готовность

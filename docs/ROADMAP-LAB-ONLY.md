@@ -1,4 +1,7 @@
-# Дорожная карта FoxTunnel — 8 этапов без обязательных VDS
+# Историческая лабораторная дорожная карта — 8 этапов
+
+Текущий план protocol-core и новый счётчик прогресса: [10 этапов реализации](IMPLEMENTATION-PLAN.md).
+Номера этапов и проценты ниже относятся к прежнему лабораторному плану.
 
 > Scope update: FoxTunnel is now a protocol core. Built-in TUN, VPN launchers
 > and their CI were removed. TUN/DNS/kill-switch results below are historical;

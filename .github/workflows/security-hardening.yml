@@ -11,7 +11,7 @@ on:
       - 'scripts/test_fingerprint_audit.py'
       - '.github/workflows/security-hardening.yml'
   push:
-    branches: [feature/security-hardening-tls-socks-secrets]
+    branches: [main]
 
 permissions:
   contents: read
