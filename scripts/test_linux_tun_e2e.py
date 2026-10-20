@@ -355,6 +355,14 @@ class TUNEndToEnd(unittest.TestCase):
                 cmd("ip", "-n", cns, "link", "set", "fcwan0", "down")
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
                 cmd("ip", "-n", cns, "link", "set", "fcwan0", "up")
+                # Linux removes static defaults (and may remove IPv6 global
+                # addresses) on link down. Recreate a usable physical path
+                # before checking the firewall, then keep it for the positive
+                # control. Otherwise ENETUNREACH would mimic a working guard.
+                cmd('ip', '-n', cns, 'addr', 'replace', '198.18.0.2/30', 'dev', 'fcwan0')
+                cmd('ip', '-n', cns, '-6', 'addr', 'replace', 'fd42:1::2/64', 'dev', 'fcwan0', 'nodad')
+                cmd('ip', '-n', cns, 'route', 'replace', 'default', 'via', '198.18.0.1', 'dev', 'fcwan0')
+                cmd('ip', '-n', cns, '-6', 'route', 'replace', 'default', 'via', 'fd42:1::1', 'dev', 'fcwan0')
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
                 self.assert_probe(cns, "dns", "198.18.0.9", 53, False)
                 self.assert_probe(cns, "tcp", "fd42:2::9", 5657, False)
