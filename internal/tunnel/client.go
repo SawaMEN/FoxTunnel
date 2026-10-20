@@ -32,6 +32,10 @@ import (
 // Client exposes local SOCKS5 TCP over the selected native HTTPS transport.
 // NSS is the default in NSS-tagged Linux builds for TCP transports; HTTP/3 defaults to Go QUIC; explicit Neqo uses NSS.
 type Client struct {
+	// RequireProtocolNegotiation rejects peers without draft/capability confirmation.
+	// Set before concurrent use. False preserves explicitly chosen legacy behavior.
+	RequireProtocolNegotiation bool
+
 	ServerURL  *url.URL
 	Username   string
 	Password   string

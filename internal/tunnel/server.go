@@ -25,6 +25,10 @@ import (
 // Server terminates authenticated native H2 CONNECT, H2/H3 POST and WSS.
 // It has no Firefox fingerprint parity. Padding is an opt-in experiment.
 type Server struct {
+	// RequireProtocolNegotiation rejects authenticated legacy TCP/UDP requests.
+	// Outer WSS/XHTTP handshakes and cluster/bond extensions are separate.
+	RequireProtocolNegotiation bool
+
 	// Access is mutually exclusive with legacy credentials; set before serving.
 	Access *access.Controller
 
@@ -61,6 +65,9 @@ type Server struct {
 }
 
 func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
+	if protocolRequest(r) && s.authorized(r) && !s.acceptProtocol(w, r) {
+		return
+	}
 	settings, settingsErr := xhttp.Normalize(s.XHTTPSettings.Path, s.XHTTPSettings.Host)
 	if settingsErr == nil && xhttp.MatchesAt(r, settings) && r.ProtoMajor == 2 && s.authorized(r) {
 		s.serveXHTTP(w, r)

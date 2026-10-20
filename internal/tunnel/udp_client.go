@@ -164,6 +164,7 @@ func (c *Client) exchangeUDP(ctx context.Context, wire []byte) ([]byte, error) {
 	}
 	req.Header.Set("Proxy-Authorization", basicAuth(c.Username, c.Password))
 	req.Header.Set("Content-Type", "application/octet-stream")
+	c.requestProtocol(req, "udp-v1")
 	resp, err := c.transport.RoundTrip(req)
 	if err != nil {
 		return nil, err
@@ -171,6 +172,11 @@ func (c *Client) exchangeUDP(ctx context.Context, wire []byte) ([]byte, error) {
 	defer resp.Body.Close()
 	if resp.ProtoMajor != 2 && resp.ProtoMajor != 3 {
 		return nil, errors.New("UDP relay requires H2/H3")
+	}
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
+		if err := c.verifyProtocol(resp, "udp-v1"); err != nil {
+			return nil, err
+		}
 	}
 	if resp.StatusCode == http.StatusNoContent {
 		return nil, nil

@@ -17,7 +17,7 @@ import (
 
 func TestIndependentProject(t *testing.T) {
 	creds := ft.Credentials{Username: "consumer", Password: "test-only"}
-	handler, err := ft.NewServer(ft.ServerConfig{Credentials: creds, AllowPrivateDestinations: true})
+	handler, err := ft.NewServer(ft.ServerConfig{RequireProtocolNegotiation: true, Credentials: creds, AllowPrivateDestinations: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func TestIndependentProject(t *testing.T) {
 		defer c.Close()
 		_, _ = io.Copy(c, c)
 	}()
-	client, err := ft.NewClient(ft.ClientConfig{ServerURL: server.URL, Credentials: creds, CACertFile: ca, Transport: "xhttp-packet-up"})
+	client, err := ft.NewClient(ft.ClientConfig{RequireProtocolNegotiation: true, ServerURL: server.URL, Credentials: creds, CACertFile: ca, Transport: "xhttp-packet-up"})
 	if err != nil {
 		t.Fatal(err)
 	}

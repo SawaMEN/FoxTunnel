@@ -29,6 +29,9 @@ const HTTP2ReceiveFirefox158 = h2profile.Firefox158
 // TLSClientFirefox158 opts into measured preferences on pinned NSS 3.130.
 const TLSClientFirefox158 = nsstls.Firefox158
 
+// ErrProtocolNegotiation identifies missing or incompatible wire confirmation.
+var ErrProtocolNegotiation = tunnel.ErrProtocolNegotiation
+
 var ErrCapacity = errors.New("foxtunnel client connection limit reached")
 
 // TransportStatus contains only local aggregate transport counters and fixed codes.
@@ -40,6 +43,10 @@ type NodeStatus = nodeperf.Snapshot
 
 type Credentials struct{ Username, Password string }
 type ClientConfig struct {
+	// RequireProtocolNegotiation opts into strict draft/capability confirmation.
+	// False preserves legacy interoperability. Configure both ends explicitly.
+	RequireProtocolNegotiation bool
+
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
@@ -86,6 +93,8 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	core.RequireProtocolNegotiation = config.RequireProtocolNegotiation
+
 	success := false
 	defer func() {
 		if !success {
@@ -293,6 +302,9 @@ func NewAccessController(policy AccessPolicy, stateFile string) (*AccessControll
 }
 
 type ServerConfig struct {
+	// RequireProtocolNegotiation rejects authenticated legacy TCP/UDP requests.
+	RequireProtocolNegotiation bool
+
 	Access                   *AccessController // Alternative to Credentials; shared by all server transports.
 	Credentials              Credentials
 	XHTTPPath, XHTTPHost     string
@@ -319,7 +331,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{core: &tunnel.Server{Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, EnableUDP: config.EnableUDP, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
+	return &Server{core: &tunnel.Server{RequireProtocolNegotiation: config.RequireProtocolNegotiation, Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, EnableUDP: config.EnableUDP, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || r.TLS.Version < tls.VersionTLS13 {

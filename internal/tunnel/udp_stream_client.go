@@ -49,6 +49,7 @@ func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (*ud
 	}
 	req.Header.Set("Proxy-Authorization", basicAuth(c.Username, c.Password))
 	req.Header.Set("Content-Type", "application/octet-stream")
+	c.requestProtocol(req, "udp-stream-v2")
 	resp, err := c.transport.RoundTrip(req)
 	if err != nil {
 		reader.Close()
@@ -62,6 +63,13 @@ func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (*ud
 		writer.Close()
 		cancel()
 		return nil, errors.New("UDP streaming endpoint refused (no downgrade to one-shot)")
+	}
+	if err := c.verifyProtocol(resp, "udp-stream-v2"); err != nil {
+		resp.Body.Close()
+		reader.Close()
+		writer.Close()
+		cancel()
+		return nil, err
 	}
 	return &udpStream{response: resp.Body, writer: writer, cancel: cancel}, nil
 }

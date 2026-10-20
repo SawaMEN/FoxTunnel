@@ -20,7 +20,7 @@ import (
 
 func endpoint(t *testing.T, mode string, padding bool, limit int, backend ...string) (*ft.Client, string) {
 	t.Helper()
-	server, e := ft.NewServer(ft.ServerConfig{Credentials: ft.Credentials{Username: "alice", Password: "secret"}, AllowPrivateDestinations: true, Padding: padding})
+	server, e := ft.NewServer(ft.ServerConfig{RequireProtocolNegotiation: true, Credentials: ft.Credentials{Username: "alice", Password: "secret"}, AllowPrivateDestinations: true, Padding: padding})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -41,7 +41,7 @@ func endpoint(t *testing.T, mode string, padding bool, limit int, backend ...str
 	if len(backend) > 1 {
 		clientProfile = backend[1]
 	}
-	client, e := ft.NewClient(ft.ClientConfig{TLSClientProfile: clientProfile, TLSBackend: selected, ServerURL: h.URL, Credentials: ft.Credentials{Username: "alice", Password: "secret"}, CACertFile: ca, Transport: mode, Padding: padding, MaxConnections: limit, HTTP2ReceiveProfile: ft.HTTP2ReceiveFirefox158})
+	client, e := ft.NewClient(ft.ClientConfig{RequireProtocolNegotiation: true, TLSClientProfile: clientProfile, TLSBackend: selected, ServerURL: h.URL, Credentials: ft.Credentials{Username: "alice", Password: "secret"}, CACertFile: ca, Transport: mode, Padding: padding, MaxConnections: limit, HTTP2ReceiveProfile: ft.HTTP2ReceiveFirefox158})
 	if e != nil {
 		t.Fatal(e)
 	}
