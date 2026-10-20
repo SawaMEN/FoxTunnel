@@ -39,6 +39,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Verify native UDP Go formatting
+        run: |
+          gofmt -d internal/nativetun/linux.go internal/nativetun/stage6_udp_idle_test.go
+          test -z "$(gofmt -l internal/nativetun/linux.go internal/nativetun/stage6_udp_idle_test.go)"
       - name: Offline TCP/UDP parser and cancelled SOCKS handshake tests
         run: go test -race ./internal/nativetun -count=2 -timeout=90s
       - name: Native VPN DNS rollback and fail-closed guard restart tests

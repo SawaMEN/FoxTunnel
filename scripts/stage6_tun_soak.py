@@ -21,6 +21,9 @@ MAX_FDS = 512
 MAX_FD_GROWTH = 48
 MAX_SOCKET_GROWTH = 32
 MAX_WORKERS = 3
+# Bound new UDP mappings below the 128-session / 30s admission capacity:
+# 2 UDP destinations per batch, at most ~2.67 flows per second.
+MIN_BATCH_PAUSE_SECONDS = 0.75
 # Match the longest native UDP flow inactivity timeout (30 seconds).
 # A two-second cooldown falsely labels still-valid mappings as leaks.
 IDLE_COOLDOWN_SECONDS = 34
@@ -128,7 +131,10 @@ def run(namespace: str, pids: dict[str, int], duration: float, *,
                 counts[kind]["succeeded"] += int(succeeded)
             samples.append({name: sample(pid) for name, pid in pids.items()})
             batches += 1
-            sleep(0.25)
+            # Admission capacity is finite by design: an unpaced burst can
+            # correctly drop packets without constituting a memory leak.
+            # Test sustainable parallel traffic below the declared envelope.
+            sleep(MIN_BATCH_PAUSE_SECONDS)
     elapsed = clock() - begin
     # The native forwarder permits non-DNS UDP mappings to remain idle
     # for 30 seconds. Wait past that genuine deadline before evaluating
@@ -146,6 +152,8 @@ def run(namespace: str, pids: dict[str, int], duration: float, *,
         "elapsed_seconds": round(elapsed, 3),
         "batches": batches,
         "max_parallel": MAX_WORKERS,
+        "minimum_batch_pause_seconds": MIN_BATCH_PAUSE_SECONDS,
+        "max_new_udp_flows_per_second": len([p for p in PROBES if p[0] == "udp"]) / MIN_BATCH_PAUSE_SECONDS,
         "idle_cooldown_seconds": IDLE_COOLDOWN_SECONDS,
         "load": counts,
         "resources": resource_report,

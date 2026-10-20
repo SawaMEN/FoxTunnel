@@ -82,9 +82,11 @@ class Stage6SoakRunner(unittest.TestCase):
     def test_bounded_parallel_all_families(self):
         report, probes = self.run_fake()
         self.assertTrue(report["passed"], report)
-        self.assertEqual(report["batches"], 4)
+        self.assertEqual(report["batches"], 2)
         self.assertEqual(report["max_parallel"], soak.MAX_WORKERS)
-        self.assertEqual(len(probes), 4 * len(soak.PROBES))
+        self.assertEqual(report["minimum_batch_pause_seconds"], soak.MIN_BATCH_PAUSE_SECONDS)
+        self.assertLessEqual(report["max_new_udp_flows_per_second"] * 30, 128)
+        self.assertEqual(len(probes), 2 * len(soak.PROBES))
         self.assertEqual(sum(x["succeeded"] for x in report["load"].values()), len(probes))
 
     def test_a_single_failed_application_probe_fails_soak(self):
