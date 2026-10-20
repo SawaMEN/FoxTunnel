@@ -106,43 +106,40 @@ func adaptiveRate(p pathState, op byte, now time.Time) (float64, bool) {
 // Reservations account for work queued on each path, preventing fast paths
 // from being overloaded while a slow ingress causes head-of-line stalls.
 func (c *Client) pickAdaptive(tried []bool, op byte, bytes int, now time.Time) int {
-	ready := make([]int, 0, len(tried))
-	eligible := make([]int, 0, len(tried))
+	// Bond has at most eight trusted ingress endpoints. Keep selection on the
+	// hot path allocation-free: a data block must not build candidate slices.
+	// These two passes preserve the legacy tie, cooldown and exploration rules.
+	earliestCooldown, readyFallback := -1, -1
+	fastest := float64(0)
 	for i := range tried {
 		if tried[i] {
 			continue
 		}
-		eligible = append(eligible, i)
-		if !now.Before(c.paths[i].retryAt) {
-			ready = append(ready, i)
+		p := c.paths[i]
+		if earliestCooldown < 0 || p.retryAt.Before(c.paths[earliestCooldown].retryAt) {
+			earliestCooldown = i
 		}
-	}
-	if len(eligible) == 0 {
-		return -1
-	}
-	if len(ready) == 0 {
-		// Preserve recovery when all origins are in cooldown.
-		best := eligible[0]
-		for _, i := range eligible[1:] {
-			if c.paths[i].retryAt.Before(c.paths[best].retryAt) {
-				best = i
-			}
+		if now.Before(p.retryAt) {
+			continue
 		}
-		return best
-	}
-
-	if bytes <= 0 {
-		bytes = chunkSize
-	}
-	start := int(c.next % uint64(len(tried)))
-	best, bestScore := -1, math.MaxFloat64
-	unknown := make([]int, 0, len(ready))
-	fastest := float64(0)
-	for _, i := range ready {
-		if rate, valid := adaptiveRate(c.paths[i], op, now); valid && rate > fastest {
+		if readyFallback < 0 || p.pending < c.paths[readyFallback].pending {
+			readyFallback = i
+		}
+		if rate, valid := adaptiveRate(p, op, now); valid && rate > fastest {
 			fastest = rate
 		}
 	}
+	if readyFallback < 0 {
+		// Preserve recovery when all origins are in cooldown.
+		return earliestCooldown
+	}
+	if bytes <= 0 {
+		bytes = chunkSize
+	}
+
+	start := int(c.next % uint64(len(tried)))
+	best, bestScore := -1, math.MaxFloat64
+	unknown := -1
 	for offset := range tried {
 		i := (start + offset) % len(tried)
 		if tried[i] || now.Before(c.paths[i].retryAt) {
@@ -151,15 +148,21 @@ func (c *Client) pickAdaptive(tried []bool, op byte, bytes int, now time.Time) i
 		p := c.paths[i]
 		rate, measured := adaptiveRate(p, op, now)
 		if !measured || rate <= 0 {
-			unknown = append(unknown, i)
+			// Rotate equal-backlog cold paths instead of pinning the first
+			// endpoint. Track only the winning index rather than a slice.
+			if unknown < 0 || p.pending < c.paths[unknown].pending {
+				unknown = i
+			}
 			continue
 		}
-		// A path dramatically slower than the fastest *available* ingress
-		// cannot receive ordinary data while fast ingress still has headroom.
-		// This is a soft exclusion: it does not defeat tried/cooldown failover.
+		// Very slow paths stay as fallbacks while a fast measured path has
+		// headroom. In particular, a cooldown never defeats safe failover.
 		if fastest > 0 && rate < 0.35*fastest {
 			hasHeadroom := false
-			for _, j := range ready {
+			for j := range tried {
+				if tried[j] || now.Before(c.paths[j].retryAt) {
+					continue
+				}
 				otherRate, valid := adaptiveRate(c.paths[j], op, now)
 				if valid && otherRate >= 0.8*fastest && c.paths[j].inflightBytes < 3*chunkSize {
 					hasHeadroom = true
@@ -174,8 +177,8 @@ func (c *Client) pickAdaptive(tried []bool, op byte, bytes int, now time.Time) i
 		if latency <= 0 {
 			latency = 60
 		}
-		// Approximate time to finish this queued block, not a claim of link
-		// capacity. Request backlog penalizes paths already in use.
+		// ACKed goodput is not spare link capacity. Queue reservations only
+		// estimate completion time; they do not change congestion control.
 		score := latency + 1000*float64(p.inflightBytes+int64(bytes))/rate + 3*float64(p.pending)
 		if c.RouteMode == "smart" && bondOrigin(c.Endpoints[i]) != c.DirectOrigin {
 			score += 5
@@ -184,36 +187,14 @@ func (c *Client) pickAdaptive(tried []bool, op byte, bytes int, now time.Time) i
 			best, bestScore = i, score
 		}
 	}
-	// A bounded fraction of REAL data operations explores under-sampled
-	// paths to prevent permanent starvation after a temporary slowdown.
-	if len(unknown) > 0 && (best < 0 || c.next%adaptiveExploreEvery == 0) {
-		// Rotate ties during startup: an idle serial workload still gathers
-		// measurements across all nodes rather than pinning the first origin.
-		selected := -1
-		for offset := range tried {
-			i := (start + offset) % len(tried)
-			for _, unknownIndex := range unknown {
-				if unknownIndex != i {
-					continue
-				}
-				if selected < 0 || c.paths[i].pending < c.paths[selected].pending {
-					selected = i
-				}
-				break
-			}
-		}
-		return selected
+	// Preserve the existing bounded fraction of real-data exploration.
+	if unknown >= 0 && (best < 0 || c.next%adaptiveExploreEvery == 0) {
+		return unknown
 	}
 	if best >= 0 {
 		return best
 	}
-	// All known paths were suppressed by the rate guard, or are unmeasured.
-	// Never block the session or skip trusted fallbacks.
-	selected := ready[0]
-	for _, i := range ready[1:] {
-		if c.paths[i].pending < c.paths[selected].pending {
-			selected = i
-		}
-	}
-	return selected
+	// Every known path was rate-suppressed, or all were unmeasured.
+	// Retain the lowest-backlog trusted fallback without blocking the stream.
+	return readyFallback
 }
