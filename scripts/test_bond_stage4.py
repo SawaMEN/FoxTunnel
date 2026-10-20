@@ -103,6 +103,16 @@ class Stage4Tests(unittest.TestCase):
         self.assertEqual(len(rows), 5)
         self.assertTrue(all(r["ok"] and r["rtt_ms"] >= 0 for r in rows))
 
+    def test_jitter_ignores_different_exit_flows(self):
+        rows = [
+            {"ok": True, "flow": 1, "round": 1, "rtt_ms": 5.0},
+            {"ok": True, "flow": 2, "round": 1, "rtt_ms": 90.0},
+            {"ok": True, "flow": 1, "round": 2, "rtt_ms": 5.5},
+            {"ok": True, "flow": 2, "round": 2, "rtt_ms": 90.5},
+        ]
+        self.assertEqual(field.per_flow_jitter(rows), 0.5)
+        self.assertEqual(gate.metrics_of(rows, "udp")["jitter_mean_abs_delta_ms"], 0.5)
+
     def test_preflight_rejects_unattested_wan_and_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory) / "report.json"
