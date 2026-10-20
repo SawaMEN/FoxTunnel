@@ -318,10 +318,14 @@ class TUNEndToEnd(unittest.TestCase):
                     sink = start(cns, box, "run", "-c", str(profile))
                     self.wait_tun(cns, sink, timeout=15)
 
-                self.assert_probe(cns, "tcp", "198.18.0.9", 5657, True)
-                self.assert_probe(cns, "tcp", "fd42:2::9", 5657, True)
-                self.assert_probe(cns, "udp", "198.18.0.9", 5656, True)
-                self.assert_probe(cns, "udp", "fd42:2::9", 5656, True)
+                # Repeat real dual-stack TCP and UDP through the active TUN.
+                # A single successful packet can hide stale state or a broken
+                # second flow. Keep probes bounded and independent.
+                for attempt in range(3):
+                    for destination in ("198.18.0.9", "fd42:2::9"):
+                        with self.subTest(attempt=attempt, destination=destination):
+                            self.assert_probe(cns, "tcp", destination, 5657, True)
+                            self.assert_probe(cns, "udp", destination, 5656, True)
                 if native:
                     self.assert_probe(cns, "udp-empty", "198.18.0.9", 5656, True)
                     self.assert_probe(cns, "udp-empty", "fd42:2::9", 5656, True)
@@ -333,9 +337,12 @@ class TUNEndToEnd(unittest.TestCase):
                 if native:
                     # One protected DNS server, both qtypes and both network
                     # families. Answers must match the exact DNS wire format.
-                    for destination in ("198.18.0.9", "fd42:2::9"):
-                        self.assert_probe(cns, "dns", destination, 53, True)
-                        self.assert_probe(cns, "dns6", destination, 53, True)
+                    for attempt in range(3):
+                        for destination in ("198.18.0.9", "fd42:2::9"):
+                            for qtype in ("dns", "dns6"):
+                                with self.subTest(attempt=attempt, destination=destination,
+                                                  qtype=qtype):
+                                    self.assert_probe(cns, qtype, destination, 53, True)
 
                 # A dropped tunnel must NOT fall back to direct Internet.
                 if native:
