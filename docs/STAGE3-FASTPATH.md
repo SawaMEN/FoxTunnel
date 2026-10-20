@@ -36,20 +36,20 @@ Go toolchain, типе transport и параметрах**. Подтверждё
 
 ## Воспроизводимые профили H2/H3 и NSS (шаг 2)
 
-Теперь есть отдельный офлайн-профилировщик \`scripts/stage3_profile.py\`.
+Теперь есть отдельный офлайн-профилировщик `scripts/stage3_profile.py`.
 Он запускает реальные loopback SOCKS → FoxTunnel → локальный TCP echo
 бенчмарки для **одного транспорта и одного размера** за запуск:
 
 | Вариант CLI | Реальная трасса на loopback | Теги Go |
 |---|---|---|
-| \`go-h2\` | H2 CONNECT + Go TLS 1.3 | Без тегов |
-| \`go-h3\` | H3 POST + quic-go | Без тегов |
-| \`nss-h2\` | H2 CONNECT + Mozilla NSS TLS | \`-tags nss\`, Linux + CGO |
+| `go-h2` | H2 CONNECT + Go TLS 1.3 | Без тегов |
+| `go-h3` | H3 POST + quic-go | Без тегов |
+| `nss-h2` | H2 CONNECT + Mozilla NSS TLS | `-tags nss`, Linux + CGO |
 
-Сценарии \`small\` = 64 байта и \`bulk\` = 1 МиБ, повторяемые обмены
+Сценарии `small` = 64 байта и `bulk` = 1 МиБ, повторяемые обмены
 внутри уже открытого соединения. Это ближе к изолированному профилированию
 быстрого пути, **не** полный CONNECT RTT. Для сценариев 1 КиБ/32 МиБ на
-независимых VDS остаётся \`docs/STAGE1-VLESS.md\`.
+независимых VDS остаётся `docs/STAGE1-VLESS.md`.
 
 Пример на Linux (внешняя приватная папка, не внутри Git):
 ~~~sh
@@ -60,10 +60,10 @@ python3 scripts/stage3_profile.py --variant go-h3 --scenario bulk \
 python3 scripts/stage3_profile.py --variant nss-h2 --scenario bulk \
   --benchtime 3s --out /tmp/ft-profiles/nss-h2-bulk
 ~~~
-Каталог \`/tmp/ft-profiles\` следует создать заранее с правами \`0700\`.
-Каждый выходной каталог создаётся однократно, \`0700\`, без перезаписи.
-Внутри: \`cpu.pprof\`, \`mem.pprof\`, \`block.pprof\`, \`mutex.pprof\`,
-\`go-test.log\`, \`summary.json\`. Файлы с правами \`0600\` на Linux.
+Каталог `/tmp/ft-profiles` следует создать заранее с правами `0700`.
+Каждый выходной каталог создаётся однократно, `0700`, без перезаписи.
+Внутри: `cpu.pprof`, `mem.pprof`, `block.pprof`, `mutex.pprof`,
+`go-test.log`, `summary.json`. Файлы с правами `0600` на Linux.
 
 Анализ в локальной среде (не размещать сырые профили в сети):
 ~~~sh
@@ -72,15 +72,15 @@ go tool pprof -top -alloc_space /tmp/ft-profiles/go-h3-bulk/mem.pprof
 go tool pprof -top /tmp/ft-profiles/nss-h2-bulk/block.pprof
 ~~~
 
-Для \`nss-h2\` нужен работающий CGO и dev-пакеты NSS/NSPR. Go CPU pprof
+Для `nss-h2` нужен работающий CGO и dev-пакеты NSS/NSPR. Go CPU pprof
 не учитывает потребление CPU **внутри нативного C NSS**, поэтому для
 достоверной оценки NSS↔Go FFI необходим дополнительный нативный профайлер
 и измерение полного процесса. CPU/heap/block/mutex Go-профили нельзя
 интерпретировать как абсолютную стоимость C-библиотеки.
 
 CI выполняет шесть парных профилей (3 варианта × 2 размера), но не загружает
-сырые \`.pprof\` в артефакты. Метрики CI не являются повторяемым WAN
-бенчмарком, а \`pprof\` могут содержать пути к файлам и другую служебную
+сырые `.pprof` в артефакты. Метрики CI не являются повторяемым WAN
+бенчмарком, а `pprof` могут содержать пути к файлам и другую служебную
 информацию. Для анализа реальных регрессий сохраняйте приватные профили
 и повторяйте по несколько запусков на одинаковом железе и коммите.
 
