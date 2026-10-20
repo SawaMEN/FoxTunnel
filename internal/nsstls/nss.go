@@ -123,21 +123,21 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 type ioFailure struct{ err error }
 
 type conn struct {
-	raw                          net.Conn
-	fd                           *C.PRFileDesc
-	handle                       cgo.Handle
-	readMu, writeMu              sync.Mutex
-	closeOnce                    sync.Once
-	closed                       atomic.Bool
-	readFault, writeFault        atomic.Pointer[ioFailure]
-	verifyErr                    error
-	serverName                   string
-	protocol                     string
-	roots                        *x509.CertPool
-	certificates                 []*x509.Certificate
-	verifiedChains               [][]*x509.Certificate
-	verifyConnection             func(tls.ConnectionState) error
-	currentTime                  func() time.Time
+	raw                   net.Conn
+	fd                    *C.PRFileDesc
+	handle                cgo.Handle
+	readMu, writeMu       sync.Mutex
+	closeOnce             sync.Once
+	closed                atomic.Bool
+	readFault, writeFault atomic.Pointer[ioFailure]
+	verifyErr             error
+	serverName            string
+	protocol              string
+	roots                 *x509.CertPool
+	certificates          []*x509.Certificate
+	verifiedChains        [][]*x509.Certificate
+	verifyConnection      func(tls.ConnectionState) error
+	currentTime           func() time.Time
 }
 
 func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) (*conn, error) {
