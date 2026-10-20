@@ -210,31 +210,44 @@ def run(a: argparse.Namespace) -> dict:
     rows = []
     # A fresh random payload per run, identical across TCP variants.
     pattern = os.urandom(tcp.CHUNK)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=a.parallel) as pool:
-        for round_number in range(a.rounds):
-            rotated = proxies[round_number % len(proxies):] + proxies[:round_number % len(proxies)]
-            for label, proxy in rotated:
-                futures = {}
+    if a.mode == "udp":
+        # Crucial for real latency tests: reuse ONE established SOCKS UDP
+        # association and one assigned HTTPS ingress per destination flow
+        # throughout all rounds. Creating a new association per datagram
+        # would measure startup churn, not steady-state gaming/voice RTT.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=a.parallel * len(proxies)) as pool:
+            jobs = {}
+            for label, proxy in proxies:
                 for flow in range(a.parallel):
-                    if a.mode == "tcp":
-                        func = pool.submit(tcp.trial, proxy, targets[0], a.bytes, a.timeout, pattern)
-                    else:
-                        func = pool.submit(udp_flow, proxy, targets[flow % len(targets)], 1, a.timeout,
-                                           a.warmup if round_number == 0 else 0)
-                    futures[func] = flow
-                for future in concurrent.futures.as_completed(futures):
-                    samples = [future.result()] if a.mode == "tcp" else future.result()
-                    for sample in samples:
-                        if a.mode == "tcp":
-                            clean = {"ok": bool(sample["ok"]), "completion_ms": round(
-                                sample["connect_ms"] + sample["transfer_ms"], 3)
-                                if sample["ok"] else None,
-                                "payload_mbps": sample["payload_mbps"] if sample["ok"] else None,
-                                "error_category": (sample.get("error") or "").partition(":")[0] or None}
-                        else:
-                            clean = sample
+                    future = pool.submit(udp_flow, proxy, targets[flow % len(targets)],
+                                         a.rounds, a.timeout, a.warmup)
+                    jobs[future] = (label, flow)
+            for future in concurrent.futures.as_completed(jobs):
+                label, flow = jobs[future]
+                for idx, sample in enumerate(future.result()):
+                    rows.append({"proxy": label, "round": idx + 1,
+                                 "flow": flow + 1, **sample})
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=a.parallel) as pool:
+            for label, proxy in proxies:
+                for _ in range(a.warmup):
+                    # Warm-up results are deliberately excluded.
+                    tcp.trial(proxy, targets[0], a.bytes, a.timeout, pattern)
+            for round_number in range(a.rounds):
+                rotated = proxies[round_number % len(proxies):] + proxies[:round_number % len(proxies)]
+                for label, proxy in rotated:
+                    futures = {pool.submit(tcp.trial, proxy, targets[0], a.bytes,
+                                           a.timeout, pattern): flow for flow in range(a.parallel)}
+                    for future in concurrent.futures.as_completed(futures):
+                        sample = future.result()
+                        clean = {"ok": bool(sample["ok"]), "completion_ms": round(
+                            sample["connect_ms"] + sample["transfer_ms"], 3)
+                            if sample["ok"] else None,
+                            "payload_mbps": sample["payload_mbps"] if sample["ok"] else None,
+                            "error_category": (sample.get("error") or "").partition(":")[0] or None}
                         rows.append({"proxy": label, "round": round_number + 1,
                                      "flow": futures[future] + 1, **clean})
+    rows.sort(key=lambda row: (row["proxy"], row["flow"], row["round"]))
     grouped = {name: summarize([r for r in rows if r["proxy"] == name], a.mode)
                for name, _ in proxies}
     return {"schema": 1, "kind": "foxtunnel-stage4-field", "created_at_utc":
