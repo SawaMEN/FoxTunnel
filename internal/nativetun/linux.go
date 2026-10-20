@@ -155,12 +155,22 @@ func (f *forwarder) HandleTCP(conn adapter.TCPConn) {
 	}()
 }
 
+// SOCKS handshakes use the caller's cancellation deadline, not merely the
+// socket's fixed fallback timeout. Preserve context.Canceled/DeadlineExceeded
+// even when cancellation presents as a closed network connection.
+func socksHandshakeError(ctx context.Context, err error) error {
+	if contextErr := ctx.Err(); contextErr != nil {
+		return contextErr
+	}
+	return err
+}
+
 // dialSOCKS performs an explicit unauthenticated SOCKS5 CONNECT using numeric
 // destinations only. Destination DNS is never resolved by this process.
 func dialSOCKS(ctx context.Context, socks, dst string) (*net.TCPConn, error) {
 	host, portText, err := net.SplitHostPort(dst)
 	if err != nil {
-		return nil, err
+		return nil, socksHandshakeError(ctx, err)
 	}
 	ip, err := netip.ParseAddr(host)
 	if err != nil {
@@ -173,13 +183,18 @@ func dialSOCKS(ctx context.Context, socks, dst string) (*net.TCPConn, error) {
 	d := &net.Dialer{}
 	c, err := d.DialContext(ctx, "tcp", socks)
 	if err != nil {
-		return nil, err
+		return nil, socksHandshakeError(ctx, err)
 	}
 	remote, ok := c.(*net.TCPConn)
 	if !ok {
 		c.Close()
 		return nil, errors.New("SOCKS endpoint is not TCP")
 	}
+	// DialContext governs only connection establishment. A stalled SOCKS
+	// server can otherwise block ReadFull until the full connectTimeout.
+	// This callback closes only the in-flight handshake socket.
+	stopCancel := context.AfterFunc(ctx, func() { _ = remote.Close() })
+	defer stopCancel()
 	success := false
 	defer func() {
 		if !success {
@@ -192,11 +207,11 @@ func dialSOCKS(ctx context.Context, socks, dst string) (*net.TCPConn, error) {
 	}
 	_ = remote.SetDeadline(deadline)
 	if _, err = remote.Write([]byte{5, 1, 0}); err != nil {
-		return nil, err
+		return nil, socksHandshakeError(ctx, err)
 	}
 	var greeting [2]byte
 	if _, err = io.ReadFull(remote, greeting[:]); err != nil {
-		return nil, err
+		return nil, socksHandshakeError(ctx, err)
 	}
 	if greeting != [2]byte{5, 0} {
 		return nil, errors.New("SOCKS authentication method refused")
@@ -211,10 +226,13 @@ func dialSOCKS(ctx context.Context, socks, dst string) (*net.TCPConn, error) {
 	}
 	request = binary.BigEndian.AppendUint16(request, uint16(port))
 	if _, err = remote.Write(request); err != nil {
-		return nil, err
+		return nil, socksHandshakeError(ctx, err)
 	}
 	if err = readReply(remote); err != nil {
-		return nil, err
+		return nil, socksHandshakeError(ctx, err)
+	}
+	if err = ctx.Err(); err != nil {
+		return nil, socksHandshakeError(ctx, err)
 	}
 	_ = remote.SetDeadline(time.Time{})
 	success = true
@@ -260,24 +278,28 @@ func dialUDPSOCKS(ctx context.Context, socks string) (*net.TCPConn, *net.UDPConn
 		c.Close()
 		return nil, nil, errors.New("SOCKS endpoint must be TCP")
 	}
+	// As with CONNECT, context cancellation must interrupt a SOCKS server
+	// stalled in its UDP ASSOCIATE control-channel handshake.
+	stopCancel := context.AfterFunc(ctx, func() { _ = ctrl.Close() })
+	defer stopCancel()
 	closeOnErr := func(e error) (*net.TCPConn, *net.UDPConn, error) { ctrl.Close(); return nil, nil, e }
 	_ = ctrl.SetDeadline(time.Now().Add(connectTimeout))
 	if _, err := ctrl.Write([]byte{5, 1, 0}); err != nil {
-		return closeOnErr(err)
+		return closeOnErr(socksHandshakeError(ctx, err))
 	}
 	var greet [2]byte
 	if _, err := io.ReadFull(ctrl, greet[:]); err != nil {
-		return closeOnErr(err)
+		return closeOnErr(socksHandshakeError(ctx, err))
 	}
 	if greet != [2]byte{5, 0} {
 		return closeOnErr(errors.New("SOCKS UDP refused"))
 	}
 	if _, err := ctrl.Write([]byte{5, 3, 0, 1, 0, 0, 0, 0, 0, 0}); err != nil {
-		return closeOnErr(err)
+		return closeOnErr(socksHandshakeError(ctx, err))
 	}
 	var h [4]byte
 	if _, err := io.ReadFull(ctrl, h[:]); err != nil {
-		return closeOnErr(err)
+		return closeOnErr(socksHandshakeError(ctx, err))
 	}
 	if h[0] != 5 || h[1] != 0 || h[2] != 0 {
 		return closeOnErr(errors.New("SOCKS UDP associate rejected"))
@@ -293,7 +315,7 @@ func dialUDPSOCKS(ctx context.Context, socks string) (*net.TCPConn, *net.UDPConn
 	}
 	addr := make([]byte, n+2)
 	if _, err := io.ReadFull(ctrl, addr); err != nil {
-		return closeOnErr(err)
+		return closeOnErr(socksHandshakeError(ctx, err))
 	}
 	ip := net.IP(addr[:n])
 	port := binary.BigEndian.Uint16(addr[n:])
@@ -302,7 +324,11 @@ func dialUDPSOCKS(ctx context.Context, socks string) (*net.TCPConn, *net.UDPConn
 	}
 	relay, err := net.DialUDP("udp", nil, &net.UDPAddr{IP: ip, Port: int(port)})
 	if err != nil {
-		return closeOnErr(err)
+		return closeOnErr(socksHandshakeError(ctx, err))
+	}
+	if err := ctx.Err(); err != nil {
+		_ = relay.Close()
+		return closeOnErr(socksHandshakeError(ctx, err))
 	}
 	_ = ctrl.SetDeadline(time.Time{})
 	return ctrl, relay, nil
