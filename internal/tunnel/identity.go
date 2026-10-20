@@ -35,6 +35,9 @@ type identityPool struct {
 	auth             string
 	primary          string
 	policy           tlsidentity.Policy
+	// Optional explicit trust policy for each configured origin.
+	// Set before Serve, immutable for the lifetime of the transport.
+	nodePolicies     map[string]tlsidentity.Policy
 	entries          map[string]identityEntry
 }
 
@@ -111,8 +114,9 @@ func (p *identityPool) forPolicy(origin string, policy tlsidentity.Policy) (tlsT
 	return transport, nil
 }
 func (p *identityPool) RoundTrip(r *http.Request) (*http.Response, error) {
-	policy := tlsidentity.Policy{}
-	if r.URL.Scheme+"://"+r.URL.Host == p.primary {
+	origin := r.URL.Scheme + "://" + r.URL.Host
+	policy := p.nodePolicies[origin]
+	if policy == (tlsidentity.Policy{}) && origin == p.primary {
 		policy = p.policy
 	}
 	return p.roundTrip(r, policy)
