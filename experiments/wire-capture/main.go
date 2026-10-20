@@ -244,7 +244,10 @@ func run() error {
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.New("no complete endpoint-decoded H3 observation")
+			c.mu.Lock()
+			diagnostic := fmt.Sprintf("incomplete H3 metadata: connections=%d initial=%d alpn=%q params=%d settings=%d", c.connections, c.result.QUIC.Initial, c.result.QUIC.ALPN, len(c.result.QUIC.Parameters), len(c.result.H3.Settings))
+			c.mu.Unlock()
+			return errors.New(diagnostic)
 		case e := <-serveDone:
 			return e
 		case <-tick.C:

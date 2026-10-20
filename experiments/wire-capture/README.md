@@ -29,3 +29,7 @@ archive; incomplete metadata fails instead of becoming a similarity claim.
 
 Build with `-tags nss,neqo` after the pinned native bridge. Run only on Linux
 amd64 with GTK/Firefox dependencies and NSS certutil. See the Neqo workflow.
+
+For H3, Firefox's third-party-root fallback heuristic is disabled because this
+fixture uses an imported test CA. Certificate/hostname verification stays on.
+This explicit override is recorded in the capture-set manifest.
