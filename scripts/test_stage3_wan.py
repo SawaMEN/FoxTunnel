@@ -105,7 +105,7 @@ class Stage3WanTests(unittest.TestCase):
             a = runner.parser().parse_args(self.args(Path(tmp) / "report.json"))
             self.assertEqual(runner.validate(a), 4096)
             a.candidate_sha = BASELINE
-            with self.assertRaisesRegex(ValueError, "revisions"):
+            with self.assertRaisesRegex(ValueError, "revision"):
                 runner.validate(a)
             a.candidate_sha = CANDIDATE
             a.vless_socks = a.baseline_socks
@@ -134,7 +134,7 @@ class Stage3WanTests(unittest.TestCase):
         doc = reports()
         doc[0]["environment"] = "lab"
         doc[0]["wan_attested_by_operator"] = False
-        doc[2]["resources"] = None
+        doc[3]["resources"] = None
         result = gate.evaluate(doc)
         self.assertFalse(result["passed"])
         self.assertIn("operator WAN attestation missing", result["issues"])
