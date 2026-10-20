@@ -1,0 +1,38 @@
+name: Wire draft compatibility
+
+on:
+  push:
+    branches: [main]
+    paths: ['foxtunnel*.go', 'internal/**', 'cmd/**', 'go.*', 'integration/external/**', '.github/workflows/wire-compatibility.yml']
+  pull_request:
+    paths: ['foxtunnel*.go', 'internal/**', 'cmd/**', 'go.*', 'integration/external/**', '.github/workflows/wire-compatibility.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  legacy-binary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Checkout exact pre-negotiation core
+        uses: actions/checkout@v4
+        with:
+          ref: 97036bf8dafddff7c46497c91488a87222132b05
+          path: .compat-legacy
+          persist-credentials: false
+      - name: Build real previous client/server executable
+        working-directory: .compat-legacy
+        run: go build -mod=readonly -buildvcs=false -o "$RUNNER_TEMP/foxtunnel-legacy" ./cmd/foxtunnel
+      - name: Test both directions and strict refusal using actual old processes
+        working-directory: integration/external
+        env:
+          FOXTUNNEL_LEGACY_BINARY: ${{ runner.temp }}/foxtunnel-legacy
+        run: go test -race -v ./... -run '^TestWireLegacyBinaryCompatibility$' -count=1 -timeout=90s
