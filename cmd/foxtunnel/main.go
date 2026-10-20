@@ -500,6 +500,9 @@ func main() {
 		if err := client.ValidateSOCKSAuth(); err != nil {
 			log.Fatal(err)
 		}
+		if *tunName != "" && client.SOCKSUsername != "" {
+			log.Fatal("--tun currently uses a local no-auth SOCKS5 connector; local SOCKS credentials are not yet supported with TUN")
+		}
 		client.EnableUDP = *enableUDP
 		client.UDPStreaming = *udpStream
 		client.UDPMultiNode = *udpMultiNode
