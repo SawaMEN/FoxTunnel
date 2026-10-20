@@ -33,3 +33,5 @@ jobs:
         run: go test -race -tags '${{ matrix.tags }}' ./internal/tunnel -run '^TestStage3TCP' -count=5 -timeout=180s
       - name: Repeated half-close, cancellation, parallel load and carrier regressions
         run: go test -race -tags '${{ matrix.tags }}' ./internal/tunnel -run '^Test(StreamOutlivesSetupTimeoutAndHalfClose|CancelledStreamClosesSilentDestination|ParallelStreams|NativeTransports|NSSNativeTransports|FallbackStopsOnHTTPOrPaddingFailure|EstablishedStreamIsNeverReplayed)$' -count=3 -timeout=180s
+      - name: Supervised public SOCKS API preserves reset signalling
+        run: go test -race -tags '${{ matrix.tags }}' . -run '^TestPublicSOCKSTransportResetIsNotEOF$' -count=5 -timeout=60s

@@ -66,6 +66,8 @@ detector for Go and NSS builds:
   deadline reset, cancellation and reservation release.
 - Context-dependent Body.Close for HTTP refusal and response-plus-error,
   asserting exactly one attempt.
+- Public ServeSOCKS supervision forwards TCP reset signalling through its
+  owned connection wrapper, verified with an actual target RST.
 - Actual TLS/H2 partial upload/response followed by RST, asserting no backup
   request and no successful EOF.
 - Existing half-close, setup-timeout, cancelled target, eight-parallel-stream,

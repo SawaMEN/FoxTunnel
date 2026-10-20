@@ -238,3 +238,78 @@ func testPublicCloseCancelsPendingDial(t *testing.T, backend string) {
 		t.Fatal("request not cancelled")
 	}
 }
+
+func TestPublicSOCKSTransportResetIsNotEOF(t *testing.T) {
+	client, _ := endpoint(t, "h2-connect", false, 0)
+	target, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer target.Close()
+	reset := make(chan struct{}, 1)
+	defer close(reset)
+	go func() {
+		conn, err := target.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		_ = conn.SetDeadline(time.Now().Add(4 * time.Second))
+		if _, err = conn.Write([]byte("partial")); err != nil {
+			return
+		}
+		select {
+		case <-reset:
+		case <-time.After(4 * time.Second):
+		}
+		_ = conn.(*net.TCPConn).SetLinger(0)
+	}()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- client.ServeSOCKS(listener) }()
+	t.Cleanup(func() {
+		client.Close()
+		listener.Close()
+		select {
+		case <-done:
+		case <-time.After(time.Second):
+			t.Error("SOCKS supervision did not stop")
+		}
+	})
+	conn, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
+	if _, err = conn.Write([]byte{5, 1, 0}); err != nil {
+		t.Fatal(err)
+	}
+	var greeting [2]byte
+	if _, err = io.ReadFull(conn, greeting[:]); err != nil || greeting != [2]byte{5, 0} {
+		t.Fatal("SOCKS greeting", err)
+	}
+	port := target.Addr().(*net.TCPAddr).Port
+	if _, err = conn.Write([]byte{5, 1, 0, 1, 127, 0, 0, 1, byte(port >> 8), byte(port)}); err != nil {
+		t.Fatal(err)
+	}
+	var reply [10]byte
+	if _, err = io.ReadFull(conn, reply[:]); err != nil || reply[1] != 0 {
+		t.Fatal("SOCKS setup", err, reply)
+	}
+	var prefix [7]byte
+	if _, err = io.ReadFull(conn, prefix[:]); err != nil || string(prefix[:]) != "partial" {
+		t.Fatal("partial response", err, string(prefix[:]))
+	}
+	reset <- struct{}{}
+	var next [1]byte
+	if _, err = conn.Read(next[:]); err == nil || errors.Is(err, io.EOF) {
+		t.Fatal("public SOCKS adapter disguised reset as EOF", err)
+	}
+	if timeout, ok := err.(net.Error); ok && timeout.Timeout() {
+		t.Fatal("public SOCKS adapter stalled after reset", err)
+	}
+}

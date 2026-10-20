@@ -254,6 +254,13 @@ func (c *ownedConn) Close() error {
 	c.once.Do(func() { c.err = c.Conn.Close(); c.owner.mu.Lock(); delete(c.owner.conns, c); c.owner.mu.Unlock() })
 	return c.err
 }
+// SetLinger preserves TCP reset signalling through the supervised SOCKS adapter.
+func (c *ownedConn) SetLinger(seconds int) error {
+	if tcp, ok := c.Conn.(interface{ SetLinger(int) error }); ok {
+		return tcp.SetLinger(seconds)
+	}
+	return errors.ErrUnsupported
+}
 func (c *ownedConn) CloseWrite() error {
 	if cw, ok := c.Conn.(interface{ CloseWrite() error }); ok {
 		return cw.CloseWrite()
