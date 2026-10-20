@@ -116,6 +116,12 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 	return transport, nil
 }
 
+// ioFailure is immutable once published. The common successful I/O path
+// requires only an atomic nil-store, rather than a cross-direction mutex.
+// Error allocations occur only on actual failures; cancellation and NSS
+// closing can overlap read and write callbacks.
+type ioFailure struct{ err error }
+
 type conn struct {
 	raw                          net.Conn
 	fd                           *C.PRFileDesc
@@ -123,8 +129,8 @@ type conn struct {
 	readMu, writeMu              sync.Mutex
 	closeOnce                    sync.Once
 	closed                       atomic.Bool
-	errMu                        sync.Mutex
-	readErr, writeErr, verifyErr error
+	readFault, writeFault        atomic.Pointer[ioFailure]
+	verifyErr                    error
 	serverName                   string
 	protocol                     string
 	roots                        *x509.CertPool
@@ -206,11 +212,8 @@ func (c *conn) Read(p []byte) (int, error) {
 	var code C.int
 	n := C.ft_read(c.fd, unsafe.Pointer(&p[0]), C.int(min(len(p), 1<<30)), &code)
 	if n < 0 {
-		c.errMu.Lock()
-		err := c.readErr
-		c.errMu.Unlock()
-		if err != nil {
-			return 0, err
+		if fault := c.readFault.Load(); fault != nil {
+			return 0, fault.err
 		}
 		return 0, fmt.Errorf(i18n.Text("NSS read failed: %d"), code)
 	}
@@ -231,11 +234,8 @@ func (c *conn) Write(p []byte) (int, error) {
 	var code C.int
 	n := C.ft_write(c.fd, unsafe.Pointer(&p[0]), C.int(min(len(p), 1<<30)), &code)
 	if n < 0 {
-		c.errMu.Lock()
-		err := c.writeErr
-		c.errMu.Unlock()
-		if err != nil {
-			return 0, err
+		if fault := c.writeFault.Load(); fault != nil {
+			return 0, fault.err
 		}
 		return 0, fmt.Errorf(i18n.Text("NSS write failed: %d"), code)
 	}
@@ -272,9 +272,13 @@ func (c *conn) ConnectionState() tls.ConnectionState {
 func ft_go_read(handle C.uintptr_t, buffer unsafe.Pointer, length C.int) C.int {
 	c := cgo.Handle(handle).Value().(*conn)
 	n, err := c.raw.Read(unsafe.Slice((*byte)(buffer), int(length)))
-	c.errMu.Lock()
-	c.readErr = err
-	c.errMu.Unlock()
+	// When NSS invokes a second read after a prior I/O failure, stale errors
+	// must not be returned if the new read succeeded. Publish immutable state.
+	if err == nil || errors.Is(err, io.EOF) {
+		c.readFault.Store(nil)
+	} else {
+		c.readFault.Store(&ioFailure{err: err})
+	}
 	if n > 0 {
 		return C.int(n)
 	}
@@ -300,12 +304,11 @@ func ft_go_write(handle C.uintptr_t, buffer unsafe.Pointer, length C.int) C.int 
 			if err == nil {
 				err = io.ErrShortWrite
 			}
-			c.errMu.Lock()
-			c.writeErr = err
-			c.errMu.Unlock()
+			c.writeFault.Store(&ioFailure{err: err})
 			return -1
 		}
 	}
+	c.writeFault.Store(nil)
 	return C.int(total)
 }
 

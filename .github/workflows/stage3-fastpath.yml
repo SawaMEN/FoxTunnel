@@ -12,6 +12,8 @@ on:
       - 'scripts/stage3_profile.py'
       - 'scripts/test_stage3_profile.py'
       - 'internal/tunnel/server.go'
+      - 'internal/nsstls/nss.go'
+      - 'internal/nsstls/stage3_ffi_nss_test.go'
       - '.github/workflows/stage3-fastpath.yml'
   pull_request:
     paths:
@@ -23,6 +25,8 @@ on:
       - 'scripts/stage3_profile.py'
       - 'scripts/test_stage3_profile.py'
       - 'internal/tunnel/server.go'
+      - 'internal/nsstls/nss.go'
+      - 'internal/nsstls/stage3_ffi_nss_test.go'
       - '.github/workflows/stage3-fastpath.yml'
   workflow_dispatch:
 
@@ -56,6 +60,31 @@ jobs:
         run: python3 -m unittest discover -s scripts -p test_stage3_profile.py -v
       - name: Scope statement
         run: echo 'Loopback and microbenchmarks only; no WAN or NSS FFI speed claim.'
+
+  nss-ffi:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install NSS and NSPR headers
+        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
+      - name: Formatting
+        run: test -z "$(gofmt -l internal/nsstls/nss.go internal/nsstls/stage3_ffi_nss_test.go)"
+      - name: Vet NSS callback state
+        run: go vet -tags nss ./internal/nsstls ./internal/tunnel
+      - name: Race-test NSS callback errors and live TCP streams
+        run: |
+          go test -race -tags nss ./internal/nsstls -run '^(TestStage3NSS|TestHandshakeCancellation|TestConcurrentCloseUnblocksRead)$' -count=4 -timeout=120s
+          go test -race -tags nss ./internal/tunnel -run '^(TestNSSSOCKSOverHTTP2|TestNSSHalfClose|TestNSSNativeTransports)$' -count=2 -timeout=120s
+      - name: Compare failure bookkeeper mutex and atomic
+        run: go test -tags nss ./internal/nsstls -run '^$' -bench '^BenchmarkStage3NSSFaultState$' -benchmem -benchtime=200ms -count=1 -timeout=90s
+      - name: Profile NSS-H2 real TLS transfer, not just bookkeeping
+        run: go test -tags nss ./internal/tunnel -run '^$' -bench '^BenchmarkStage3NSSH2$' -benchmem -benchtime=200ms -count=1 -timeout=120s
+      - name: Scope statement
+        run: echo 'Local NSS-H2 only; no evidence yet of an end-to-end speedup or fewer cgo calls.'
 
   loopback-profile:
     runs-on: ubuntu-24.04
