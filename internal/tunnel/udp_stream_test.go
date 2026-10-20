@@ -42,12 +42,12 @@ func TestUDPStreamMultiplexDestinations(t *testing.T) {
 		port int
 		data string
 	}{
-		{ap, "a-1"}, {bp, "b-1"}, {ap, "a-2"}, {bp, "b-2"},
+		{ap, "a-1"}, {bp, "b-1"}, {ap, "a-2"}, {bp, "b-2"}, {ap, ""},
 	} {
 		sendStreamTestPacket(t, udp, msg.port, msg.data)
 	}
 	got := map[string]int{}
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 5; i++ {
 		buf := make([]byte, udpproto.MaxDatagram+1)
 		n, err := udp.Read(buf)
 		if err != nil {
@@ -62,7 +62,7 @@ func TestUDPStreamMultiplexDestinations(t *testing.T) {
 		}
 		got[string(p.Data)]++
 	}
-	for _, msg := range []string{"a-1", "b-1", "a-2", "b-2"} {
+	for _, msg := range []string{"a-1", "b-1", "a-2", "b-2", ""} {
 		if got[msg] != 1 {
 			t.Fatalf("%s: expected once, got %v", msg, got)
 		}

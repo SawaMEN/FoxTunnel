@@ -4,6 +4,9 @@ package nativetun
 
 import (
 	"context"
+	"fmt"
+	"gvisor.dev/gvisor/pkg/tcpip"
+	"gvisor.dev/gvisor/pkg/tcpip/stack"
 	"io"
 	"net"
 	"strings"
@@ -239,5 +242,145 @@ func TestNativeReadSOCKSReplyRejectsMalformed(t *testing.T) {
 		if err := readReply(strings.NewReader(wire)); err == nil {
 			t.Errorf("accepted %q", wire)
 		}
+	}
+}
+
+// A cancellation without a deadline must wake both stalled SOCKS handshakes.
+func TestSOCKSHandshakeCancellation(t *testing.T) {
+	for _, udp := range []bool{false, true} {
+		t.Run(fmt.Sprint(udp), func(t *testing.T) {
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer listener.Close()
+			ready := make(chan struct{})
+			serverDone := make(chan struct{})
+			go func() {
+				defer close(serverDone)
+				conn, err := listener.Accept()
+				if err != nil {
+					return
+				}
+				defer conn.Close()
+				conn.SetDeadline(time.Now().Add(3 * time.Second))
+				var greeting [3]byte
+				if _, err := io.ReadFull(conn, greeting[:]); err != nil {
+					return
+				}
+				close(ready)
+				io.Copy(io.Discard, conn)
+			}()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			done := make(chan error, 1)
+			go func() {
+				if udp {
+					c, u, err := dialUDPSOCKS(ctx, listener.Addr().String())
+					if c != nil {
+						c.Close()
+					}
+					if u != nil {
+						u.Close()
+					}
+					done <- err
+				} else {
+					c, err := dialSOCKS(ctx, listener.Addr().String(), "198.18.0.9:80")
+					if c != nil {
+						c.Close()
+					}
+					done <- err
+				}
+			}()
+			select {
+			case <-ready:
+			case <-time.After(time.Second):
+				t.Fatal("no greeting")
+			}
+			cancel()
+			select {
+			case err := <-done:
+				if err == nil {
+					t.Fatal("cancelled handshake succeeded")
+				}
+			case <-time.After(time.Second):
+				t.Fatal("handshake ignored cancellation")
+			}
+			<-serverDone
+		})
+	}
+}
+
+type testTCP struct{ net.Conn }
+
+func (testTCP) ID() stack.TransportEndpointID {
+	return stack.TransportEndpointID{LocalAddress: tcpip.AddrFrom4([4]byte{198, 18, 0, 9}), LocalPort: 80}
+}
+
+func TestForwarderCancellationClosesEstablishedTCP(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	established, closed := make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(closed)
+		remote, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer remote.Close()
+		remote.SetDeadline(time.Now().Add(3 * time.Second))
+		var greeting [3]byte
+		if _, err := io.ReadFull(remote, greeting[:]); err != nil {
+			return
+		}
+		remote.Write([]byte{5, 0})
+		var request [10]byte
+		if _, err := io.ReadFull(remote, request[:]); err != nil {
+			return
+		}
+		remote.Write([]byte{5, 0, 0, 1, 127, 0, 0, 1, 0, 0})
+		// Requiring an application byte proves that the connection was handed
+		// off after SOCKS negotiation, rather than cancelled during negotiation.
+		var payload [1]byte
+		if _, err := io.ReadFull(remote, payload[:]); err != nil {
+			return
+		}
+		close(established)
+		io.Copy(io.Discard, remote)
+	}()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	local, app := net.Pipe()
+	defer app.Close()
+	f := &forwarder{ctx: ctx, socks: listener.Addr().String(), tcpSlots: make(chan struct{}, 1)}
+	f.HandleTCP(testTCP{local})
+	app.SetDeadline(time.Now().Add(time.Second))
+	if _, err := app.Write([]byte{1}); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-established:
+	case <-time.After(time.Second):
+		t.Fatal("no established flow")
+	}
+	cancel()
+	var b [1]byte
+	if _, err := app.Read(b[:]); err == nil {
+		t.Fatal("local socket survived cancellation")
+	}
+	select {
+	case <-closed:
+	case <-time.After(time.Second):
+		t.Fatal("remote socket survived cancellation")
+	}
+	deadline := time.Now().Add(time.Second)
+	for len(f.tcpSlots) != 0 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if len(f.tcpSlots) != 0 {
+		t.Fatal("TCP slot leaked")
 	}
 }

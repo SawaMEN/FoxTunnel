@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import signal
 import shutil
 import subprocess
 import sys
@@ -106,14 +107,21 @@ elif kind == "tcp":
     except OSError as exc:
         print(f"TCP probe failed: {exc!r}", file=sys.stderr)
         success = False
-elif kind == "udp":
+elif kind in ("udp", "udp-empty"):
     s = socket.socket(family, socket.SOCK_DGRAM)
     s.settimeout(2.5)
     try:
-        s.sendto(b"fox-udp-e2e", (host, port))
-        success = s.recv(100) == b"fox-udp-e2e"
+        payload = b"" if kind == "udp-empty" else b"fox-udp-e2e"
+        s.sendto(payload, (host, port))
+        success = s.recv(100) == payload
     except OSError as exc:
         print(f"UDP probe failed: {exc!r}", file=sys.stderr)
+        success = False
+elif kind == "resolve":
+    s = socket.socket()
+    try:
+        success = socket.gethostbyname("fox.lab") == "198.18.0.9"
+    except OSError:
         success = False
 elif kind == "dns":
     s = socket.socket(family, socket.SOCK_DGRAM)
@@ -175,6 +183,8 @@ class TUNEndToEnd(unittest.TestCase):
             root = Path(temp)
             processes: list[subprocess.Popen] = []
             created: list[str] = []
+            resolver_dir = None
+            resolver_parent_created = False
             try:
                 # Only uniquely named namespaces and an ephemeral veth are touched.
                 for ns in (cns, sns):
@@ -201,6 +211,20 @@ class TUNEndToEnd(unittest.TestCase):
                 cmd("ip", "-n", sns, "addr", "add", "198.18.0.9/32", "dev", "lo")
                 cmd("ip", "-n", sns, "-6", "addr", "add", "fd42:2::9/128", "dev", "lo", "nodad")
 
+                if native:
+                    # ip netns exec bind-mounts this resolver configuration only
+                    # for this unique namespace. Host resolver stays untouched.
+                    resolver_parent = Path('/etc/netns')
+                    if not resolver_parent.exists():
+                        resolver_parent.mkdir()
+                        resolver_parent_created = True
+                    candidate = resolver_parent / cns
+                    candidate.mkdir()
+                    resolver_dir = candidate
+                    (resolver_dir / 'resolv.conf').write_text('nameserver 198.18.0.9\noptions timeout:1 attempts:1\n')
+                    cmd('ip', '-n', cns, 'route', 'add', 'default', 'via', '198.18.0.1', 'dev', 'fcwan0')
+                    cmd('ip', '-n', cns, '-6', 'route', 'add', 'default', 'via', 'fd42:1::1', 'dev', 'fcwan0')
+
                 cert, key = root / "cert.pem", root / "key.pem"
                 cmd("openssl", "req", "-x509", "-nodes", "-newkey", "rsa:2048",
                     "-keyout", str(key), "-out", str(cert), "-days", "2",
@@ -221,7 +245,12 @@ class TUNEndToEnd(unittest.TestCase):
                 # Preserve credentials for both processes; do not pass secrets as CLI argv.
                 def fox_start(ns: str, *args: str):
                     fd = open(root / f"proc-{len(processes)}.log", "wb")
-                    p = subprocess.Popen(["ip", "netns", "exec", ns, fox, *args],
+                    launch = [fox, *args]
+                    if native and ns == cns:
+                        launch = [sys.executable, str(Path(__file__).with_name('linux_native_vpn.py').resolve()),
+                                  '--endpoint', '198.18.0.1:8443', '--uplink', 'fcwan0',
+                                  '--dns', '198.18.0.9', '--dns-mode', 'none', '--', *launch]
+                    p = subprocess.Popen(["ip", "netns", "exec", ns, *launch],
                                          env=env, stdout=fd, stderr=subprocess.STDOUT)
                     fd.close()
                     processes.append(p)
@@ -256,18 +285,20 @@ class TUNEndToEnd(unittest.TestCase):
                     cmd(box, "check", "-c", str(profile))
                 rules = root / "guard.nft"
                 rules.write_text(policy, encoding="utf-8")
-                cmd("ip", "netns", "exec", cns, "nft", "-c", "-f", str(rules))
-                cmd("ip", "netns", "exec", cns, "nft", "-f", str(rules))
+                if not native:
+                    cmd("ip", "netns", "exec", cns, "nft", "-c", "-f", str(rules))
+                    cmd("ip", "netns", "exec", cns, "nft", "-f", str(rules))
                 self.assert_probe(cns, "socks", "198.18.0.9", 5657, True)
                 sink = None
                 if native:
                     self.wait_tun(cns, client, timeout=15)
-                    cmd("ip", "-n", cns, "link", "set", "ftun0", "up")
-                    cmd("ip", "-n", cns, "addr", "add", "172.28.247.1/30", "dev", "ftun0")
-                    cmd("ip", "-n", cns, "-6", "addr", "add",
-                        "fdfe:dcba:9876::1/126", "dev", "ftun0", "nodad")
-                    cmd("ip", "-n", cns, "route", "add", "default", "dev", "ftun0")
-                    cmd("ip", "-n", cns, "-6", "route", "add", "default", "dev", "ftun0")
+                    deadline = time.monotonic() + 10
+                    while time.monotonic() < deadline:
+                        if '51821' in cmd('ip', '-n', cns, '-6', 'rule', 'show').stdout:
+                            break
+                        self.wait_alive(client, 0.1, 'native launcher')
+                    else:
+                        self.fail('native launcher did not install dual-stack policy routes')
                 else:
                     sink = start(cns, box, "run", "-c", str(profile))
                     self.wait_tun(cns, sink, timeout=15)
@@ -275,13 +306,27 @@ class TUNEndToEnd(unittest.TestCase):
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, True)
                 self.assert_probe(cns, "tcp", "fd42:2::9", 5657, True)
                 self.assert_probe(cns, "udp", "198.18.0.9", 5656, True)
+                self.assert_probe(cns, "udp", "fd42:2::9", 5656, True)
+                if native:
+                    self.assert_probe(cns, "udp-empty", "198.18.0.9", 5656, True)
+                    self.assert_probe(cns, "udp-empty", "fd42:2::9", 5656, True)
+                    self.assert_probe(cns, "resolve", "198.18.0.9", 53, True)
                 # Native stack forwards numeric DNS via UDP without rewriting
                 # the original destination. sing-box offers DNS hijack.
                 dns_target = "198.18.0.9" if native else "9.9.9.9"
                 self.assert_probe(cns, "dns", dns_target, 53, True)
+                if native:
+                    self.assert_probe(cns, "dns", "fd42:2::9", 53, True)
 
                 # A dropped tunnel must NOT fall back to direct Internet.
-                stop(client)
+                if native:
+                    children = Path(f'/proc/{client.pid}/task/{client.pid}/children').read_text().split()
+                    self.assertEqual(len(children), 1, 'launcher should own one FoxTunnel child')
+                    os.kill(int(children[0]), signal.SIGKILL)
+                    client.wait(timeout=8)
+                    self.assertNotIn('51821', cmd('ip', '-n', cns, 'rule', 'show').stdout)
+                else:
+                    stop(client)
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
                 self.assert_probe(cns, "udp", "198.18.0.9", 5656, False)
                 output = cmd("ip", "netns", "exec", cns, "nft", "list",
@@ -300,9 +345,9 @@ class TUNEndToEnd(unittest.TestCase):
                 # Recreate a physical default route like a real link that
                 # comes back while VPN is DOWN. The target is on the server
                 # namespace; WITHOUT the guard, these probes would connect.
-                cmd("ip", "-n", cns, "route", "add", "default",
+                cmd("ip", "-n", cns, "route", "replace", "default",
                     "via", "198.18.0.1", "dev", "fcwan0")
-                cmd("ip", "-n", cns, "-6", "route", "add", "default",
+                cmd("ip", "-n", cns, "-6", "route", "replace", "default",
                     "via", "fd42:1::1", "dev", "fcwan0")
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
                 self.assert_probe(cns, "udp", "198.18.0.9", 5656, False)
@@ -310,8 +355,26 @@ class TUNEndToEnd(unittest.TestCase):
                 cmd("ip", "-n", cns, "link", "set", "fcwan0", "down")
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
                 cmd("ip", "-n", cns, "link", "set", "fcwan0", "up")
+                # Linux removes static defaults (and may remove IPv6 global
+                # addresses) on link down. Recreate a usable physical path
+                # before checking the firewall, then keep it for the positive
+                # control. Otherwise ENETUNREACH would mimic a working guard.
+                cmd('ip', '-n', cns, 'addr', 'replace', '198.18.0.2/30', 'dev', 'fcwan0')
+                cmd('ip', '-n', cns, '-6', 'addr', 'replace', 'fd42:1::2/64', 'dev', 'fcwan0', 'nodad')
+                cmd('ip', '-n', cns, 'route', 'replace', 'default', 'via', '198.18.0.1', 'dev', 'fcwan0')
+                cmd('ip', '-n', cns, '-6', 'route', 'replace', 'default', 'via', 'fd42:1::1', 'dev', 'fcwan0')
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
                 self.assert_probe(cns, "dns", "198.18.0.9", 53, False)
+                self.assert_probe(cns, "tcp", "fd42:2::9", 5657, False)
+                self.assert_probe(cns, "udp", "fd42:2::9", 5656, False)
+                # Positive control: identical physical routes and services
+                # work once the guard is removed, only inside our namespace.
+                cmd('ip', 'netns', 'exec', cns, 'nft', 'delete', 'table', 'inet', companion.TABLE)
+                self.assert_probe(cns, 'tcp', '198.18.0.9', 5657, True)
+                self.assert_probe(cns, 'tcp', 'fd42:2::9', 5657, True)
+                self.assert_probe(cns, 'udp', '198.18.0.9', 5656, True)
+                self.assert_probe(cns, 'udp', 'fd42:2::9', 5656, True)
+                self.assert_probe(cns, 'dns', '198.18.0.9', 53, True)
             except Exception:
                 for ns in created:
                     for suffix in (("route", "show", "table", "all"),
@@ -345,6 +408,11 @@ class TUNEndToEnd(unittest.TestCase):
                     stop(process)
                 # Dropping an entire unique namespace also removes all
                 # sing-box routes and nftables rules; host is never modified.
+                if resolver_dir is not None:
+                    (resolver_dir / 'resolv.conf').unlink(missing_ok=True)
+                    resolver_dir.rmdir()
+                if resolver_parent_created:
+                    Path('/etc/netns').rmdir()
                 for ns in reversed(created):
                     subprocess.run(["ip", "netns", "del", ns], check=False,
                                    stdout=subprocess.DEVNULL,

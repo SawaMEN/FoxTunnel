@@ -374,6 +374,8 @@ func (f *forwarder) udpFlow(conn adapter.UDPConn) {
 	var once sync.Once
 	closeAll := func() { once.Do(func() { close(stop); _ = conn.Close(); _ = udp.Close(); _ = ctrl.Close() }) }
 	defer closeAll()
+	stopCancel := context.AfterFunc(f.ctx, closeAll)
+	defer stopCancel()
 	go func() { _, _ = io.Copy(io.Discard, ctrl); closeAll() }()
 	go func() {
 		var buf [udpproto.MaxDatagram + 1]byte

@@ -39,6 +39,13 @@ type Client struct {
 	// MaxConnections bounds local SOCKS sockets, including incomplete handshakes.
 	// Configure before Serve; zero uses 256.
 	MaxConnections int
+	// Optional credentials for the LOCAL SOCKS5 listener, never forwarded
+	// to remote FoxTunnel nodes. Configure before Serve.
+	SOCKSUsername string
+	SOCKSPassword string
+	// AllowPublicSOCKS permits a non-loopback listener only when local
+	// RFC1929 credentials are configured. No confidentiality on that link.
+	AllowPublicSOCKS bool
 	// EnableUDP permits experimental SOCKS5 UDP ASSOCIATE; off by default.
 	EnableUDP bool
 	// UDPStreaming selects the v2 persistent multiplexed UDP carrier; requires EnableUDP.
@@ -191,12 +198,19 @@ func (c *Client) SetTLSBackend(name string) error {
 			resolved = "nss"
 		}
 	}
+	// Preserve strict per-origin trust on TLS backend/profile changes.
+	var nodePolicies map[string]tlsidentity.Policy
+	if old, ok := c.transport.(*identityPool); ok {
+		old.mu.Lock()
+		nodePolicies = old.nodePolicies
+		old.mu.Unlock()
+	}
 	transport, err := makeNativeTransport(c.nativeTransport, resolved, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile, c.tlsClientProfile, c.quic)
 	if err != nil {
 		return err
 	}
 	c.transport.CloseIdleConnections()
-	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, quic: c.quic, h2ReceiveProfile: c.h2ReceiveProfile, tlsClientProfile: c.tlsClientProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry), monitor: c.nodeMetrics}
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, quic: c.quic, h2ReceiveProfile: c.h2ReceiveProfile, tlsClientProfile: c.tlsClientProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, nodePolicies: nodePolicies, entries: make(map[string]identityEntry), monitor: c.nodeMetrics}
 	c.backend = name
 	return nil
 }
@@ -240,6 +254,13 @@ func (c *Client) Serve(listener net.Listener) error {
 
 // ServeContext cancels SOCKS relay requests and closes the listener on ctx end.
 func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error {
+	if err := c.ValidateSOCKSAuth(); err != nil {
+		return err
+	}
+	if addr, ok := listener.Addr().(*net.TCPAddr); ok && !addr.IP.IsLoopback() &&
+		(!c.AllowPublicSOCKS || c.SOCKSUsername == "") {
+		return errors.New("non-loopback SOCKS5 requires explicit LAN opt-in and local credentials")
+	}
 	stop := context.AfterFunc(ctx, func() { _ = listener.Close() })
 	defer stop()
 	limit := c.MaxConnections
@@ -268,7 +289,7 @@ func (c *Client) handle(conn net.Conn) { c.handleContext(context.Background(), c
 func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
-	command, target, err := socks5Request(conn)
+	command, target, err := socks5RequestAuth(conn, c.SOCKSUsername, c.SOCKSPassword)
 	if err != nil {
 		return
 	}
@@ -334,28 +355,11 @@ func socks5Handshake(conn net.Conn) (string, error) {
 }
 
 func socks5Request(conn net.Conn) (byte, string, error) {
-	var hello [2]byte
-	if _, err := io.ReadFull(conn, hello[:]); err != nil {
-		return 0, "", err
-	}
-	if hello[0] != 5 || hello[1] == 0 {
-		return 0, "", errors.New(i18n.Text("unsupported SOCKS greeting"))
-	}
-	methods := make([]byte, int(hello[1]))
-	if _, err := io.ReadFull(conn, methods); err != nil {
-		return 0, "", err
-	}
-	noAuth := false
-	for _, m := range methods {
-		if m == 0 {
-			noAuth = true
-		}
-	}
-	if !noAuth {
-		_, _ = conn.Write([]byte{5, 0xff})
-		return 0, "", errors.New(i18n.Text("SOCKS no-auth method unavailable"))
-	}
-	if _, err := conn.Write([]byte{5, 0}); err != nil {
+	return socks5RequestAuth(conn, "", "")
+}
+
+func socks5RequestAuth(conn net.Conn, user, password string) (byte, string, error) {
+	if err := socks5Greeting(conn, user, password); err != nil {
 		return 0, "", err
 	}
 	var h [4]byte
