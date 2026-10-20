@@ -48,8 +48,8 @@ type Server struct {
 	activeTunnels       atomic.Int64
 	activeCoverRequests atomic.Int64
 	activeWebSockets    atomic.Int64
-	xhttpOnce        sync.Once
-	xhttpServer      *xhttp.Server
+	xhttpOnce           sync.Once
+	xhttpServer         *xhttp.Server
 	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
 	Cover http.Handler
 	// Bond is an opt-in hub or relay, behind the same authentication boundary.
