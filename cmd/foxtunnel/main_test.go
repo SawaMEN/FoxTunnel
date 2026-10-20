@@ -109,7 +109,7 @@ func TestCLIHelper(t *testing.T) {
 func helperEnv(credentials bool) []string {
 	var env []string
 	for _, value := range os.Environ() {
-		if strings.HasPrefix(value, "FOXTUNNEL_USER=") || strings.HasPrefix(value, "FOXTUNNEL_PASSWORD=") || strings.HasPrefix(value, "FOXTUNNEL_TEST_HELPER=") {
+		if strings.HasPrefix(value, "FOXTUNNEL_USER=") || strings.HasPrefix(value, "FOXTUNNEL_PASSWORD=") || strings.HasPrefix(value, "FOXTUNNEL_SOCKS_") || strings.HasPrefix(value, "FOXTUNNEL_TEST_HELPER=") {
 			continue
 		}
 		env = append(env, value)
