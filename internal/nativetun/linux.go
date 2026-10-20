@@ -141,6 +141,15 @@ func (f *forwarder) HandleTCP(conn adapter.TCPConn) {
 			return
 		}
 		defer remote.Close()
+		// The dial context ends after the SOCKS handshake; active TCP
+		// forwarding must instead track the lifetime of the TUN runner.
+		// Closing both endpoints unblocks concurrent io.Copy pumps and
+		// releases their bounded forwarding slot on shutdown.
+		stop := context.AfterFunc(f.ctx, func() {
+			_ = conn.Close()
+			_ = remote.Close()
+		})
+		defer stop()
 		done := make(chan struct{})
 		go func() {
 			_, _ = io.Copy(remote, conn)
