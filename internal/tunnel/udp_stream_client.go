@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,14 +20,21 @@ import (
 // server session. Neither redirects nor single-shot fallback are attempted.
 type udpStream struct {
 	response io.ReadCloser
+	reader   *io.PipeReader
+	once     sync.Once
 	writer   *io.PipeWriter
 	cancel   context.CancelFunc
 }
 
 func (s *udpStream) close() {
-	s.cancel()
-	_ = s.writer.Close()
-	_ = s.response.Close()
+	s.once.Do(func() {
+		s.cancel()
+		_ = s.writer.Close()
+		if s.reader != nil {
+			_ = s.reader.Close()
+		}
+		_ = s.response.Close()
+	})
 }
 
 func (c *Client) openUDPStream(parent context.Context) (*udpStream, error) {
@@ -36,42 +44,57 @@ func (c *Client) openUDPStream(parent context.Context) (*udpStream, error) {
 // openUDPStreamTo never retries an established flow on a different exit.
 // The caller supplies an explicitly trusted HTTPS origin.
 func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (*udpStream, error) {
-	ctx, cancel := context.WithCancel(parent)
+	if err := parent.Err(); err != nil {
+		return nil, err
+	}
+	ctx, abort := context.WithCancelCause(parent)
+	cancel := func() { abort(context.Canceled) }
 	reader, writer := io.Pipe()
+	var response *http.Response
+	keep := false
+	defer func() {
+		if !keep {
+			cancel()
+			_ = writer.Close()
+			_ = reader.Close()
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
+		}
+	}()
 	u := *endpoint
 	u.Path, u.RawPath, u.RawQuery, u.Fragment = udpStreamPath, "", "", ""
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), reader)
 	if err != nil {
-		reader.Close()
-		writer.Close()
-		cancel()
 		return nil, err
 	}
 	req.Header.Set("Proxy-Authorization", basicAuth(c.Username, c.Password))
 	req.Header.Set("Content-Type", "application/octet-stream")
 	c.requestProtocol(req, "udp-stream-v2")
-	resp, err := c.transport.RoundTrip(req)
+	budget := c.ConnectTimeout
+	if budget <= 0 {
+		budget = 15 * time.Second
+	}
+	timer := time.AfterFunc(budget, func() { abort(context.DeadlineExceeded) })
+	response, err = c.transport.RoundTrip(req)
+	timedOut := !timer.Stop()
+	if timedOut || ctx.Err() != nil {
+		if cause := context.Cause(ctx); cause != nil {
+			return nil, cause
+		}
+		return nil, context.DeadlineExceeded
+	}
 	if err != nil {
-		reader.Close()
-		writer.Close()
-		cancel()
 		return nil, err
 	}
-	if (resp.ProtoMajor != 2 && resp.ProtoMajor != 3) || resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		reader.Close()
-		writer.Close()
-		cancel()
+	if (response.ProtoMajor != 2 && response.ProtoMajor != 3) || response.StatusCode != http.StatusOK {
 		return nil, errors.New("UDP streaming endpoint refused (no downgrade to one-shot)")
 	}
-	if err := c.verifyProtocol(resp, "udp-stream-v2"); err != nil {
-		resp.Body.Close()
-		reader.Close()
-		writer.Close()
-		cancel()
+	if err := c.verifyProtocol(response, "udp-stream-v2"); err != nil {
 		return nil, err
 	}
-	return &udpStream{response: resp.Body, writer: writer, cancel: cancel}, nil
+	keep = true
+	return &udpStream{response: response.Body, reader: reader, writer: writer, cancel: cancel}, nil
 }
 
 func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socket *net.UDPConn, peer *net.TCPAddr) {

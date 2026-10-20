@@ -61,16 +61,16 @@ type ClientConfig struct {
 	HTTP2ReceiveProfile  string
 	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
 	Padding              bool
-	EnableUDP            bool // Experimental SOCKS5 UDP ASSOCIATE; off by default.
+	EnableUDP            bool // Experimental datagram API and SOCKS5 UDP; off by default.
 	UDPStreaming         bool // Opt-in v2 persistent UDP stream; requires EnableUDP.
 	ConnectTimeout       time.Duration
-	MaxConnections       int // Combined active SOCKS/direct connections and pending direct dials; 0 uses 256.
+	MaxConnections       int // Combined TCP/UDP connections and pending operations; 0 uses 256.
 	FallbackServers      []string
 	Balance              string // Empty preserves failover; adaptive enables passive-metric route selection.
 }
 
 // Client is configured at construction and may be shared by concurrent callers.
-// Close cancels pending dials and closes its streams and owned SOCKS listeners.
+// Close cancels pending TCP/UDP setup and closes its streams and SOCKS listeners.
 type Client struct {
 	core           *tunnel.Client
 	ctx            context.Context
@@ -79,6 +79,7 @@ type Client struct {
 	closed         bool
 	pending, limit int
 	conns          map[*ownedConn]struct{}
+	udpConns       map[*UDPConn]struct{}
 	listeners      map[net.Listener]struct{}
 }
 
@@ -137,7 +138,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	core.UDPStreaming = config.UDPStreaming
 	ctx, cancel := context.WithCancel(context.Background())
 	success = true
-	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
+	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), udpConns: make(map[*UDPConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
 }
 
 // Status returns a concurrency-safe snapshot. No addresses or secrets.
@@ -171,7 +172,7 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 		c.mu.Unlock()
 		return nil, net.ErrClosed
 	}
-	if c.pending+len(c.conns) >= c.limit {
+	if c.pending+len(c.conns)+len(c.udpConns) >= c.limit {
 		c.mu.Unlock()
 		return nil, ErrCapacity
 	}
@@ -228,6 +229,10 @@ func (c *Client) Close() error {
 	for conn := range c.conns {
 		conns = append(conns, conn)
 	}
+	udpConns := make([]*UDPConn, 0, len(c.udpConns))
+	for conn := range c.udpConns {
+		udpConns = append(udpConns, conn)
+	}
 	listeners := make([]net.Listener, 0, len(c.listeners))
 	for l := range c.listeners {
 		listeners = append(listeners, l)
@@ -237,6 +242,9 @@ func (c *Client) Close() error {
 		l.Close()
 	}
 	for _, conn := range conns {
+		conn.Close()
+	}
+	for _, conn := range udpConns {
 		conn.Close()
 	}
 	c.core.Close()
@@ -286,7 +294,7 @@ func (l *ownedListener) Accept() (net.Conn, error) {
 			raw.Close()
 			return nil, net.ErrClosed
 		}
-		if l.owner.pending+len(l.owner.conns) >= l.owner.limit {
+		if l.owner.pending+len(l.owner.conns)+len(l.owner.udpConns) >= l.owner.limit {
 			l.owner.mu.Unlock()
 			raw.Close()
 			continue

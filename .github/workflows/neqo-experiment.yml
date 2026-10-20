@@ -36,6 +36,7 @@ jobs:
           go vet -tags nss,neqo ./...
           go test -race -tags nss,neqo ./... -count=1 -timeout=180s
           (cd integration/external && go test -race -tags nss,neqo ./... -count=1 -timeout=30s)
+          go test -race -tags nss,neqo ./internal/tunnel -run '^TestStage4Neqo' -count=3 -timeout=120s
           go test -race -tags nss,neqo ./internal/neqo ./internal/tunnel -run 'TestNeqo|TestQUIC|TestIndependentH3|TestBlockedUDP|TestALPNFailure|TestConcurrentDuplex|TestTrustBeforeCredentials|TestRealQUIC|TestPeerReset|TestMalformed' -count=3 -timeout=60s
       - name: Verify explicit backend reporting
         shell: bash

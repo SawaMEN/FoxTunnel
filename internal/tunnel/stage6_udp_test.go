@@ -178,7 +178,14 @@ func TestStage6UDPStreamMalformedFramesReleaseAdmission(t *testing.T) {
 			r.ProtoMajor = 2
 			r.Header.Set("Proxy-Authorization", basicAuth("alice", "secret"))
 			w := httptest.NewRecorder()
-			s.ServeHTTP(w, r)
+			var aborted any
+			func() {
+				defer func() { aborted = recover() }()
+				s.ServeHTTP(w, r)
+			}()
+			if aborted != http.ErrAbortHandler {
+				t.Fatalf("malformed frame did not abort response: %v", aborted)
+			}
 			if w.Code != http.StatusOK || s.activeTunnels.Load() != 0 {
 				t.Fatalf("malformed streaming association failed to release slot: status=%d tunnels=%d", w.Code, s.activeTunnels.Load())
 			}

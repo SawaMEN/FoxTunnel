@@ -5,6 +5,7 @@ package udpproto
 import (
 	"encoding/binary"
 	"errors"
+	"net"
 	"net/netip"
 	"strconv"
 	"strings"
@@ -101,5 +102,5 @@ func Encode(p Packet) ([]byte, error) {
 }
 
 func (p Packet) Target() string {
-	return strings.Join([]string{p.Host, strconv.Itoa(int(p.Port))}, ":")
+	return net.JoinHostPort(p.Host, strconv.Itoa(int(p.Port)))
 }

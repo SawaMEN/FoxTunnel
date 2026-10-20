@@ -138,7 +138,7 @@ The reference server bounds each stream to 16 connected destination sockets,
 timeout. Full destination tables evict the least recently used flow; a full
 reply queue drops packets. Resolution/dial/send failure drops the affected
 datagram/flow, rather than introducing an in-band error frame. After HTTP 200,
-malformed framing closes the body; HTTP status cannot change mid-stream.
+malformed framing resets the HTTP stream; HTTP status cannot change mid-stream.
 
 Reference SOCKS ingress binds an association to its TCP peer IP and first valid
 UDP source port; unsolicited replies and fragmented packets are rejected.

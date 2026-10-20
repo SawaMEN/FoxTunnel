@@ -39,8 +39,16 @@ Close returned connections and call `Client.Close()` when stopping the profile.
 `Status()`, `NodeStatuses()` and `NotifyNetworkChange()` support diagnostics and
 confirmed route changes. See the repository's `examples/embed/main.go` and
 `integration/external` consumer tests. Direct public `DialContext` supports TCP;
-UDP is currently opt-in through SOCKS5 UDP ASSOCIATE with `EnableUDP` and,
-optionally, `UDPStreaming`. The matching server must enable UDP too.
+UDP is opt-in with `EnableUDP` on both ends. Direct datagram APIs are
+`ExchangeUDP(ctx, Datagram)` (v1 one-shot) and `OpenUDP(ctx)` (v2 association
+with Send/Receive/Close). The OpenUDP context owns the whole association lifetime;
+Receive cancellation only cancels its wait, while cancellation of an in-flight
+Send terminates the association to avoid partial-frame replay. Client.Close
+cancels pending setup and closes owned associations. UDP and TCP share the
+MaxConnections budget. Address is host:port (bracket IPv6); DNS resolves at the
+exit. MaxUDPDatagram includes the address header: 1232 bytes. The APIs are
+experimental; the repository guide is `docs/UDP-H3.md`.
+SOCKS5 UDP ASSOCIATE remains available, optionally with `UDPStreaming`.
 
 For a process host on supported Linux architectures:
 

@@ -1,0 +1,36 @@
+name: UDP and H3 stability
+
+on:
+  push:
+    branches: [main]
+    paths: ['internal/**', 'foxtunnel*.go', 'go.*', 'integration/external/**', '.github/workflows/udp-h3-stability.yml']
+  pull_request:
+    paths: ['internal/**', 'foxtunnel*.go', 'go.*', 'integration/external/**', '.github/workflows/udp-h3-stability.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  datagrams:
+    strategy:
+      fail-fast: false
+      matrix:
+        tags: ['', 'nss']
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install NSS build headers
+        if: matrix.tags == 'nss'
+        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
+      - name: Repeat IPv4 IPv6 DNS NAT bounds cancellation and impaired H3 paths
+        run: go test -race -tags '${{ matrix.tags }}' ./internal/tunnel -run '^TestStage4' -count=5 -timeout=180s
+      - name: Repeat external UDP SDK ownership and shared limits
+        working-directory: integration/external
+        run: go test -race -tags '${{ matrix.tags }}' ./... -run '^TestPublicUDP' -count=3 -timeout=90s
