@@ -145,14 +145,27 @@ net/http сервере не обещается; поддерживаемый ha
 
 ## Этап 5 из 10 — безопасность
 
-**Выполнено 4 из 5 задач локально; нативные проверки ожидают CI.**
-Знаменатель зафиксирован до изменений. Независимый review ещё не предоставлен.
+**Выполнено 4 из 5 задач.** Изменения в [PR #40](https://github.com/SawaMEN/FoxTunnel/pull/40),
+построенном поверх PR #39; слияние в main ещё не выполнено.
+Независимый review ещё не предоставлен.
 
 - [x] Проверить TLS/SNI/SPKI и запрет передачи credentials до проверки доверия.
 - [x] Проверить изоляцию пользователей, ротацию/отзыв и сохранение учёта квот.
 - [x] Усилить SSRF-фильтр TCP/UDP и подтвердить pin DNS без повторного разрешения.
 - [x] Ограничить незавершённые UDP-запросы и проверить admission/очистку/race.
 - [ ] Получить независимый security review без открытых critical/high замечаний.
+
+Подтверждение runtime-ревизии `9c59aad6`:
+
+- [Security/race регрессии Go](https://github.com/SawaMEN/FoxTunnel/actions/runs/39494115112):
+  новые тесты и существующие TLS/изоляция/квоты по три раза; access/auth/TLS по пять раз.
+- [NSS: полный race/vet/govulncheck и повторные security-тесты](https://github.com/SawaMEN/FoxTunnel/actions/runs/39494115198).
+- [Neqo: полный native/race набор и отзыв UDP по три раза](https://github.com/SawaMEN/FoxTunnel/actions/runs/39494115150).
+- [Полный Go набор](https://github.com/SawaMEN/FoxTunnel/actions/runs/39494115233) и
+  [внешний SDK на трёх ОС](https://github.com/SawaMEN/FoxTunnel/actions/runs/39494115024).
+
+Локально прошли полный Go/race набор, внешний SDK, go vet и повторные security-тесты.
+Следующий коммит меняет только документацию прогресса.
 
 [Контракты, исправления и пакет для review](CORE-SECURITY.md).
 CI и собственная ревизия не заменяют независимый review. Его результат должен
