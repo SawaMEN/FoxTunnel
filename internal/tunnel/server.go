@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/base64"
 	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/access"
+	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
@@ -107,15 +107,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	// Select the tunnel only after authentication; rejected requests use the
 	// same handler as the public website and never dial a destination.
 	if r.Method != http.MethodConnect || (r.ProtoMajor != 2 && r.ProtoMajor != 3) || !s.authorized(r) {
-		if s.Cover != nil {
-			public := r.Clone(r.Context())
-			public.Header.Del("Proxy-Authorization")
-			public.Header.Del(paddingHeader)
-			public.Header.Del(targetHeader)
-			s.Cover.ServeHTTP(w, public)
-		} else {
-			http.NotFound(w, r)
-		}
+		s.cover(w, r)
 		return
 	}
 	padded, err := paddingRequested(r.Header)
@@ -192,15 +184,7 @@ func (s *Server) authorized(r *http.Request) bool {
 		return access.Authenticated(r.Context())
 	}
 
-	auth := r.Header.Get("Proxy-Authorization")
-	if len(auth) < 7 || !strings.EqualFold(auth[:6], "Basic ") {
-		return false
-	}
-	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(auth[6:]))
-	if err != nil {
-		return false
-	}
-	user, pass, ok := strings.Cut(string(decoded), ":")
+	user, pass, ok := authheader.Parse(r.Header)
 	if !ok || s.Username == "" || s.Password == "" {
 		return false
 	}

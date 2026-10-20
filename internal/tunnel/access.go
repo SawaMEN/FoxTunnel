@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
@@ -47,8 +48,13 @@ func (s *Server) cover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	public := r.Clone(r.Context())
-	public.Header.Del("Proxy-Authorization")
-	public.Header.Del(paddingHeader)
-	public.Header.Del(targetHeader)
+	for key := range public.Header {
+		// Do not forward any FoxTunnel wire metadata (or credentials) to a
+		// custom cover handler. Compare actual keys to handle noncanonical maps.
+		if strings.EqualFold(key, "Proxy-Authorization") ||
+			strings.HasPrefix(strings.ToLower(key), "x-foxtunnel-") {
+			delete(public.Header, key)
+		}
+	}
 	s.Cover.ServeHTTP(w, public)
 }

@@ -1,0 +1,44 @@
+name: Stage 2 Security Regression
+
+on:
+  push:
+    branches: [up]
+    paths:
+      - 'internal/authheader/**'
+      - 'internal/access/**'
+      - 'internal/tunnel/server.go'
+      - 'internal/tunnel/access.go'
+      - 'internal/tunnel/stage2_security_test.go'
+      - '.github/workflows/stage2-security.yml'
+  pull_request:
+    paths:
+      - 'internal/authheader/**'
+      - 'internal/access/**'
+      - 'internal/tunnel/server.go'
+      - 'internal/tunnel/access.go'
+      - 'internal/tunnel/stage2_security_test.go'
+      - '.github/workflows/stage2-security.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Format
+        run: test -z "$(gofmt -l internal/authheader internal/access/access.go internal/tunnel/server.go internal/tunnel/access.go internal/tunnel/stage2_security_test.go)"
+      - name: Static checks
+        run: go vet ./internal/authheader ./internal/access ./internal/tunnel
+      - name: Auth/parser and cover regression, race detector
+        run: go test -race ./internal/authheader ./internal/access ./internal/tunnel -count=1 -timeout=120s
+      - name: Bounded Basic proxy auth fuzz
+        run: go test ./internal/authheader -run '^$' -fuzz '^FuzzParse$' -fuzztime=2000x -parallel=2 -timeout=90s
+      - name: Disclosure limits
+        run: echo 'Offline tests only; no penetration test or external audit was conducted.'
