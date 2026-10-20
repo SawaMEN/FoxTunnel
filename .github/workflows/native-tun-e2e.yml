@@ -4,10 +4,23 @@ on:
     branches: [main]
     paths:
       - "internal/nativetun/**"
+      - "scripts/linux_native_vpn.py"
+      - "scripts/linux_tun_companion.py"
       - "cmd/foxtunnel/main.go"
       - "go.mod"
       - "go.sum"
       - "scripts/test_linux_tun_e2e.py"
+      - ".github/workflows/native-tun-e2e.yml"
+  pull_request:
+    paths:
+      - "internal/nativetun/**"
+      - "internal/udpproto/**"
+      - "internal/tunnel/udp*"
+      - "cmd/foxtunnel/main.go"
+      - "go.mod"
+      - "go.sum"
+      - "scripts/*tun*"
+      - "scripts/linux_native_vpn.py"
       - ".github/workflows/native-tun-e2e.yml"
   workflow_dispatch:
 
@@ -39,4 +52,4 @@ jobs:
       - name: Test scope
         run: |
           echo "Direct gVisor TCP/IP stack in FoxTunnel binary, no sing-box process."
-          echo "Isolated netns only; full DNS interception and production leak audits are not verified."
+          echo "Isolated netns only; namespace resolver lookup, IPv6 UDP and child SIGKILL exercised. Production leak audits remain separate."

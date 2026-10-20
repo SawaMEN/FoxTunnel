@@ -70,14 +70,11 @@ func Parse(b []byte) (Packet, error) {
 		return Packet{}, ErrPacket
 	}
 	p.Data = b[offset+2:]
-	if len(p.Data) == 0 {
-		return Packet{}, ErrPacket
-	}
 	return p, nil
 }
 
 func Encode(p Packet) ([]byte, error) {
-	if p.Port == 0 || len(p.Data) == 0 || len(p.Data) > MaxDatagram-10 {
+	if p.Port == 0 || len(p.Data) > MaxDatagram-10 {
 		return nil, ErrPacket
 	}
 	b := []byte{0, 0, 0}

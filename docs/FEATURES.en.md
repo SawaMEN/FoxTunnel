@@ -62,7 +62,25 @@ Both sides must support the configured mode. The implementation has datagram/ses
 
 Requires Linux \`/dev/net/tun\`, \`CAP_NET_ADMIN\` and UDP enabled at the server. FoxTunnel embeds a Go TCP/IP stack, without requiring an external sing-box process for this mode.
 
-**FoxTunnel does not configure OS routes, DNS or a kill switch.** A mistaken default route can loop the tunnel into itself or terminate remote SSH; test only in an isolated machine/namespace with console access and explicit server routes. There is also a separate optional sing-box TUN companion, not part of the basic setup.
+The binary only opens the TUN. Use the explicit source-tree launcher for IPv4/IPv6 routing, DNS and a persistent kill switch (root, Python 3, iproute2, nftables, systemd-resolved):
+
+~~~bash
+sudo --preserve-env=FOXTUNNEL_USER,FOXTUNNEL_PASSWORD python3 scripts/linux_native_vpn.py \
+  --endpoint 203.0.113.10:443 --uplink enp3s0 --dns 1.1.1.1 -- \
+  /absolute/path/foxtunnel client --server https://203.0.113.10 \
+  --sni vpn.example.com \
+  --enable-udp --udp-stream --tun ftun0 --tun-mtu 1400
+~~~
+
+Set credentials through `FOXTUNNEL_USER` and `FOXTUNNEL_PASSWORD` first. Replace the example IP, use a numeric client URL with verified TLS SNI, list every fallback endpoint, and use `--carrier udp` for outer H3. `/etc/resolv.conf` must use systemd-resolved; DNS goes through TUN. `--dns-mode none` requires separately managed DNS (e.g. a network namespace).
+
+The launcher checks table 51821 and rule priorities 18000–18016, installs the guard before starting the client, and adds separate IPv4/IPv6 policy routes without replacing existing routes. On normal exit or client crash it removes only its own routing/DNS changes. The nft table persists and blocks physical egress except loopback, NDP and explicit carrier endpoints. **Use a local console: SSH and LAN are blocked too.** To restore access explicitly:
+
+~~~bash
+sudo nft delete table inet foxtunnel_tun_guard
+~~~
+
+Killing the launcher itself with SIGKILL may leave its policy rules; inspect them before restarting. The guard does not survive reboot or cover other namespaces. CI tests isolated netns forwarding and crash blocking; resolved configuration has unit coverage, while a production host leak audit remains necessary. UDP SOCKS packets are limited to 1232 bytes including headers; IP fragmentation and arbitrary IP protocols are unsupported. A separate optional sing-box companion remains available.
 
 ## Multi-node and access control
 

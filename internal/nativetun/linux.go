@@ -128,6 +128,8 @@ func (f *forwarder) HandleTCP(conn adapter.TCPConn) {
 	go func() {
 		defer release(f.tcpSlots)
 		defer conn.Close()
+		stopLocal := context.AfterFunc(f.ctx, func() { _ = conn.Close() })
+		defer stopLocal()
 		id := conn.ID()
 		host := net.IP(id.LocalAddress.AsSlice())
 		if host == nil {
@@ -141,6 +143,8 @@ func (f *forwarder) HandleTCP(conn adapter.TCPConn) {
 			return
 		}
 		defer remote.Close()
+		stopRemote := context.AfterFunc(f.ctx, func() { _ = remote.Close() })
+		defer stopRemote()
 		done := make(chan struct{})
 		go func() {
 			_, _ = io.Copy(remote, conn)
@@ -180,6 +184,8 @@ func dialSOCKS(ctx context.Context, socks, dst string) (*net.TCPConn, error) {
 		c.Close()
 		return nil, errors.New("SOCKS endpoint is not TCP")
 	}
+	stopCancel := context.AfterFunc(ctx, func() { _ = remote.Close() })
+	defer stopCancel()
 	success := false
 	defer func() {
 		if !success {
@@ -260,6 +266,8 @@ func dialUDPSOCKS(ctx context.Context, socks string) (*net.TCPConn, *net.UDPConn
 		c.Close()
 		return nil, nil, errors.New("SOCKS endpoint must be TCP")
 	}
+	stopCancel := context.AfterFunc(ctx, func() { _ = ctrl.Close() })
+	defer stopCancel()
 	closeOnErr := func(e error) (*net.TCPConn, *net.UDPConn, error) { ctrl.Close(); return nil, nil, e }
 	_ = ctrl.SetDeadline(time.Now().Add(connectTimeout))
 	if _, err := ctrl.Write([]byte{5, 1, 0}); err != nil {
@@ -339,6 +347,8 @@ func (f *forwarder) udpFlow(conn adapter.UDPConn) {
 	var once sync.Once
 	closeAll := func() { once.Do(func() { close(stop); _ = conn.Close(); _ = udp.Close(); _ = ctrl.Close() }) }
 	defer closeAll()
+	stopCancel := context.AfterFunc(f.ctx, closeAll)
+	defer stopCancel()
 	go func() { _, _ = io.Copy(io.Discard, ctrl); closeAll() }()
 	go func() {
 		var buf [udpproto.MaxDatagram + 1]byte
@@ -386,9 +396,6 @@ func (f *forwarder) udpFlow(conn adapter.UDPConn) {
 				continue
 			}
 			return
-		}
-		if n == 0 {
-			continue
 		}
 		last.Store(time.Now().UnixNano())
 		packetDst.Data = buf[:n]
