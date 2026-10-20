@@ -249,9 +249,11 @@ func main() {
 		linkFile := fs.String("link-file", "", i18n.Text("read vetroff connection link from file or - for stdin"))
 		enableUDP := new(bool)
 		udpStream := new(bool)
+		udpMultiNode := new(bool)
 		if os.Args[1] == "client" {
 			fs.BoolVar(enableUDP, "enable-udp", false, i18n.Text("enable experimental SOCKS5 UDP ASSOCIATE"))
 			fs.BoolVar(udpStream, "udp-stream", false, i18n.Text("opt in to persistent multiplexed UDP stream v2 (requires --enable-udp)"))
+			fs.BoolVar(udpMultiNode, "udp-multi-node", false, i18n.Text("opt in to per-destination UDP v2 stream sharding across explicit trusted servers"))
 		}
 		listen := fs.String("listen", "127.0.0.1:1080", i18n.Text("local SOCKS5 listening address"))
 		tunName := new(string)
@@ -325,7 +327,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
 				default:
 					conflict = true
 				}
@@ -396,6 +398,12 @@ func main() {
 		}
 		if *udpStream && !*enableUDP {
 			log.Fatal("--udp-stream requires --enable-udp")
+		}
+		if *udpMultiNode && (!*enableUDP || !*udpStream || *bonded || *discover || len(fallbacks) == 0) {
+			log.Fatal("--udp-multi-node requires --enable-udp --udp-stream and at least two explicit trusted servers, without --bond or --discover")
+		}
+		if *udpMultiNode && *tunName != "" {
+			log.Fatal("--udp-multi-node is not yet supported with --tun")
 		}
 		if *engineStatusInterval < 0 || (*engineStatusInterval > 0 && *engineStatusInterval < time.Second) {
 			log.Fatal("--engine-status-interval must be 0 or at least 1s")
@@ -477,6 +485,7 @@ func main() {
 		client.MaxConnections = *maxConnections
 		client.EnableUDP = *enableUDP
 		client.UDPStreaming = *udpStream
+		client.UDPMultiNode = *udpMultiNode
 		if err := client.SetFallbackServers(fallbacks); err != nil {
 			log.Fatal(err)
 		}

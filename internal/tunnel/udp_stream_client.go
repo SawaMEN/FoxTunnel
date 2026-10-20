@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"sync/atomic"
 	"time"
 
@@ -29,9 +30,15 @@ func (s *udpStream) close() {
 }
 
 func (c *Client) openUDPStream(parent context.Context) (*udpStream, error) {
+	return c.openUDPStreamTo(parent, c.ServerURL)
+}
+
+// openUDPStreamTo never retries an established flow on a different exit.
+// The caller supplies an explicitly trusted HTTPS origin.
+func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (*udpStream, error) {
 	ctx, cancel := context.WithCancel(parent)
 	reader, writer := io.Pipe()
-	u := *c.ServerURL
+	u := *endpoint
 	u.Path, u.RawPath, u.RawQuery, u.Fragment = udpStreamPath, "", "", ""
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), reader)
 	if err != nil {
@@ -60,6 +67,10 @@ func (c *Client) openUDPStream(parent context.Context) (*udpStream, error) {
 }
 
 func (c *Client) handleUDPStream(parent context.Context, control net.Conn, socket *net.UDPConn, peer *net.TCPAddr) {
+	if c.UDPMultiNode {
+		c.handleUDPMultiNodeStream(parent, control, socket, peer)
+		return
+	}
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	stop := context.AfterFunc(ctx, func() { _ = socket.Close(); _ = control.Close() })

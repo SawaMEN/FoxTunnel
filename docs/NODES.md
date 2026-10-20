@@ -105,6 +105,26 @@ absent from `vetroff://` wire profiles: pass it as a client CLI opt-in.
 For the tests, limitations, and WAN acceptance criteria, see
 [stage 2 validation](ADAPTIVE-BONDING-STAGE2.md).
 
+## Stage 3: independent UDP destination sharding
+
+For the experimental UDP Stream v2 carrier, `--udp-multi-node` splits
+**different destinations** across 2–8 explicitly trusted HTTPS origins.
+Every destination stays on one exit for the entire UDP association, so
+a game flow is never per-packet striped across changing source addresses.
+
+```sh
+foxtunnel client --server https://ingress-1.example \
+  --fallback-server https://ingress-2.example \
+  --enable-udp --udp-stream --udp-multi-node
+```
+
+This feature is **separate from TCP Bonding**; it cannot be combined with
+`--bond`, `--discover`, or `--tun`. The multi-node session fails closed
+if one trusted stream disconnects or refuses UDP v2, with no silent
+rerouting of existing UDP flows. It can reduce cross-flow queue blocking,
+but does not make a single game session have a lower ping or aggregate
+2–8 server bandwidth. Read the [Stage 3 limitations and test plan](ADAPTIVE-BONDING-STAGE3.md).
+
 ## Compatibility
 
 The main branch now also contains experimental UDP and Linux TUN.

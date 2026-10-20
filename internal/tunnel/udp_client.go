@@ -17,7 +17,7 @@ import (
 // handleUDPAssociate is opt-in, single-client UDP ASSOCIATE (RFC 1928).
 // It is a bounded request/response relay, not general real-time UDP streaming.
 func (c *Client) handleUDPAssociate(parent context.Context, control net.Conn) {
-	if !c.EnableUDP || c.bondClient != nil || c.bondDiscovery != nil {
+	if !c.EnableUDP || (c.UDPMultiNode && (!c.UDPStreaming || len(c.fallbackServers) < 1)) || c.bondClient != nil || c.bondDiscovery != nil {
 		_ = socks5Reply(control, 7)
 		return
 	}

@@ -44,6 +44,9 @@ type Client struct {
 	// UDPStreaming selects the v2 persistent multiplexed UDP carrier; requires EnableUDP.
 	// The existing v1 request/response relay remains the default for compatibility.
 	UDPStreaming bool
+	// UDPMultiNode opts into parallel UDP v2 streams on explicit trusted exits.
+	// Different destinations are pinned to different nodes; requires UDPStreaming.
+	UDPMultiNode bool
 	// ConnectTimeout bounds setup only, never the lifetime of an open stream.
 	// Set before calling Serve; zero uses 15 seconds.
 	ConnectTimeout time.Duration
