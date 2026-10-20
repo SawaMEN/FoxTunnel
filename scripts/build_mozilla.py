@@ -123,6 +123,7 @@ def package(argv):
         if not go_version.startswith('go'):
             raise ValueError('cannot identify Go compiler')
         files = release.licenses(argv.go, env)
+        files.update(release.integration_files())
         for name, content in runtime_files.items():
             if name in files:
                 raise ValueError('duplicate runtime asset: ' + name)
@@ -139,7 +140,8 @@ def package(argv):
         asset_hashes = {name: hashlib.sha256(content).hexdigest()
                         for name, content in sorted(files.items()) if name != 'build.json'}
         meta = dict(
-            schema=1, version=argv.version, commit=commit, build_date=build_date,
+            schema=1, product='protocol-core', integration_schema=1,
+            version=argv.version, commit=commit, build_date=build_date,
             target='linux/amd64/mozilla', goos='linux', goarch='amd64',
             build_flavor='mozilla', protocol_draft='foxtunnel-draft-0', experimental=True,
             engine='mozilla', default_engine='legacy', go_version=go_version,

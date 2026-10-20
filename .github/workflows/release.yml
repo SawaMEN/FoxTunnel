@@ -1,10 +1,10 @@
-name: Versioned binaries
+name: Protocol core integration bundles
 on:
   push:
     branches: [main]
     tags: ['v[0-9]*']
   pull_request:
-    paths: ['cmd/**', 'internal/**', 'foxtunnel*.go', 'scripts/**', 'LICENSE', 'go.*', '.github/workflows/release.yml', '.github/release-request.json', 'docs/releases/**']
+    paths: ['cmd/**', 'internal/**', 'foxtunnel*.go', 'scripts/**', 'LICENSE', 'go.*', '.github/workflows/release.yml', '.github/release-request.json', 'docs/releases/**', 'docs/INTEGRATION.md', 'integration/contract.json']
 permissions:
   contents: read
 jobs:
@@ -177,8 +177,8 @@ jobs:
             fi
             tag_flags=(--target "$GITHUB_SHA")
           fi
-          notes=(--notes 'Experimental standalone FoxTunnel. Verify the archived build.json against the trusted release tag/commit and inspect archive contents. Linux NSS assets bundle Mozilla libraries; keep lib/ beside the executable. No production or censorship-resistance claim.')
+          notes=(--notes 'Experimental FoxTunnel protocol core for host integration. Verify the archived build.json against the trusted release tag/commit and inspect archive contents. Linux NSS assets bundle Mozilla libraries; keep lib/ beside the executable. No production or censorship-resistance claim.')
           if [ -f "docs/releases/$RELEASE_TAG.md" ]; then
             notes=(--notes-file "docs/releases/$RELEASE_TAG.md")
           fi
-          gh release create "$RELEASE_TAG" dist/* "${tag_flags[@]}" --prerelease --title "FoxTunnel $RELEASE_TAG" "${notes[@]}"
+          gh release create "$RELEASE_TAG" dist/*.tar.gz "${tag_flags[@]}" --prerelease --title "FoxTunnel $RELEASE_TAG" "${notes[@]}"

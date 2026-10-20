@@ -193,9 +193,6 @@ jobs:
           (cd dist && sha256sum --check SHA256SUMS)
           gh release create "$RELEASE_VERSION" \
             dist/foxtunnel_*_linux_amd64_mozilla.tar.gz \
-            dist/foxtunnel_*_linux_amd64_mozilla.tar.gz.metadata.json \
-            dist/SHA256SUMS dist/mozilla-verification.json \
-            dist/mozilla-release-gate.json \
             --target "$GITHUB_SHA" --prerelease \
             --title "FoxTunnel $RELEASE_VERSION (experimental Mozilla Linux amd64)" \
             --notes-file "docs/releases/$RELEASE_VERSION.md"

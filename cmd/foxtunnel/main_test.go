@@ -334,3 +334,30 @@ func TestQUICOptionsAreLocalAndAcceptImportedH3Link(t *testing.T) {
 		t.Fatal("local QUIC option exported or secret disclosed")
 	}
 }
+
+func TestProtocolCoreCLIContract(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := helperCommand(ctx, "version", "--json")
+	cmd.Env = helperEnv(false)
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var info struct {
+		Product           string `json:"product"`
+		IntegrationSchema int    `json:"integration_schema"`
+	}
+	if err := json.Unmarshal(out, &info); err != nil {
+		t.Fatal(err)
+	}
+	if info.Product != "protocol-core" || info.IntegrationSchema != 1 {
+		t.Fatalf("wrong integration identity: %s", out)
+	}
+	cmd = helperCommand(ctx, "client", "--tun", "ftun0")
+	cmd.Env = helperEnv(true)
+	out, err = cmd.CombinedOutput()
+	if err == nil || !strings.Contains(string(out), "flag provided but not defined") {
+		t.Fatalf("system TUN flag accepted: %s (%v)", out, err)
+	}
+}

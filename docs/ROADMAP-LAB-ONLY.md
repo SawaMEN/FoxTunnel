@@ -1,5 +1,10 @@
 # Дорожная карта FoxTunnel — 8 этапов без обязательных VDS
 
+> Scope update: FoxTunnel is now a protocol core. Built-in TUN, VPN launchers
+> and their CI were removed. TUN/DNS/kill-switch results below are historical;
+> host VPN integration must be validated in the client repository. UDP protocol
+> work remains in scope. See [integration contract](INTEGRATION.md).
+
 **Режим с 20 октября 2026 года:** реальные VDS, мобильные операторы и
 межрегиональные WAN-сети **исключены из критериев завершения всех восьми
 этапов**. Невозможность арендовать сервер не блокирует работу,

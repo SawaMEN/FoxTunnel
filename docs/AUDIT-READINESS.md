@@ -1,5 +1,10 @@
 # Доказательства, интеграции и подготовка к аудиту — этап 8
 
+> Scope update: FoxTunnel is now a protocol core. Built-in TUN, VPN launchers
+> and their CI were removed. TUN/DNS/kill-switch results below are historical;
+> host VPN integration must be validated in the client repository. UDP protocol
+> work remains in scope. See [integration contract](INTEGRATION.md).
+
 [Разработка](DEVELOPMENT.md) · [Эксплуатация, этап 7](OPERATIONS.md) · [Wire draft](reference/WIRE-DRAFT-0.md)
 
 Этап 8 продолжает восьмиэтапный план после эксплуатационных проверок. Старая нумерация файлов CI `stage8`–`stage11` относится к отдельной лабораторной серии. Неподтверждённый подписанный/notarized выпуск этапа 7 остаётся отдельным открытым пунктом. Реальные VDS и WAN-испытания необязательны для этой реализации; заявления об операторах или обходе ограничений всё равно требуют соответствующих измерений.

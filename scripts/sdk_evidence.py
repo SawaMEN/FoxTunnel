@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 from evidence_bundle import commit, decode, require
-from linux_tun_companion import write_exclusive
+from private_files import write_exclusive
 
 CARRIERS = ('h2-connect', 'h2-post', 'h3-post', 'wss', 'xhttp-packet-up', 'xhttp-stream-up')
 EXPECTED = {f'TestPublicHTTPClientIntegration/{c}/{route}' for c in CARRIERS

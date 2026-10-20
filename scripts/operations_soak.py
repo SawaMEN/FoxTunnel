@@ -23,7 +23,7 @@ import threading
 import time
 
 import compare_transports as bench
-from linux_tun_companion import write_exclusive
+from private_files import write_exclusive
 
 
 def resources(pid):

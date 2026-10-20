@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "product": "protocol-core",
+  "protocol_draft": "foxtunnel-draft-0",
+  "interfaces": {
+    "process": {
+      "executable": "foxtunnel",
+      "client": "SOCKS5",
+      "server": "HTTPS",
+      "metadata": [
+        "version",
+        "--json"
+      ],
+      "shutdown": "SIGTERM",
+      "reload": "SIGHUP (Unix: certificates and access policy)"
+    },
+    "go": {
+      "module": "github.com/SawaMEN/FoxTunnel",
+      "api": "experimental; pin a release or commit"
+    }
+  },
+  "host_owns": [
+    "vpn-permission",
+    "tun",
+    "routing",
+    "dns",
+    "kill-switch",
+    "ui",
+    "process-supervision"
+  ],
+  "native_bindings": []
+}

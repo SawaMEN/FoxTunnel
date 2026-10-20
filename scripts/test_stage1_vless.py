@@ -162,6 +162,8 @@ class Stage1Tests(unittest.TestCase):
     def test_process_monitor_linux(self):
         if os.name != "posix" or not Path("/proc/self/stat").exists():
             self.skipTest("Linux proc required")
+        if not all(Path(f"/proc/{pid}/stat").exists() for pid in (os.getpid(), os.getppid())):
+            self.skipTest("numeric process stats hidden by environment")
         ticks, rss, starttime = runner.proc_sample(os.getpid())
         self.assertGreater(starttime, 0)
         self.assertGreaterEqual(ticks, 0)

@@ -1,5 +1,10 @@
 # Stage 6/8 — UDP, Linux TUN, DNS, IPv6
 
+> Scope update: FoxTunnel is now a protocol core. Built-in TUN, VPN launchers
+> and their CI were removed. TUN/DNS/kill-switch results below are historical;
+> host VPN integration must be validated in the client repository. UDP protocol
+> work remains in scope. See [integration contract](INTEGRATION.md).
+
 **Режим:** только локальные испытания и GitHub Actions в ветке `up`;
 ни один критерий этапа не требует настоящих VDS или WAN.
 **Статус: 3 из 5 (60%)**, локальные CI проверены. Подэтап 1 —

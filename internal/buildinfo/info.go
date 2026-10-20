@@ -15,6 +15,8 @@ var Variant = ""
 var Dirty = "true"
 
 type Info struct {
+	Product           string   `json:"product"`
+	IntegrationSchema int      `json:"integration_schema"`
 	TransportEngines  []string `json:"transport_engines"`
 	QUICBackends      []string `json:"quic_backends"`
 	NeqoVersion       string   `json:"neqo_version,omitempty"`
@@ -55,5 +57,5 @@ func Current() Info {
 		quicBackends = append(quicBackends, "neqo")
 		neqoVersion, neqoRevision = neqo.Version, neqo.Revision
 	}
-	return Info{TransportEngines: engines, QUICBackends: quicBackends, NeqoVersion: neqoVersion, NeqoRevision: neqoRevision, NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
+	return Info{Product: "protocol-core", IntegrationSchema: 1, TransportEngines: engines, QUICBackends: quicBackends, NeqoVersion: neqoVersion, NeqoRevision: neqoRevision, NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
 }

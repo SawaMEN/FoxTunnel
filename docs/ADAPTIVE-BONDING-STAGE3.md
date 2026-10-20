@@ -44,7 +44,7 @@ FOXTUNNEL_USER=alice FOXTUNNEL_PASSWORD=secret \
 The feature can use 2–8 explicit trusted servers. It is disabled by
 default; `--udp-multi-node` requires `--enable-udp --udp-stream` plus
 at least one explicit fallback server, and cannot be combined with
-`--bond`, `--discover` or `--tun`. TCP Adaptive Bonding remains a
+`--bond` or `--discover`. TCP Adaptive Bonding remains a
 separate feature. No changes to server wire messages are required.
 
 ## Safety and resource bounds

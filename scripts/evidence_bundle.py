@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 import fingerprint_audit as fingerprints
-from linux_tun_companion import write_exclusive
+from private_files import write_exclusive
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = 'docs/evidence/registry.json'
