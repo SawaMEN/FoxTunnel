@@ -48,6 +48,10 @@ When both variables are set, **no-auth fallback is rejected**.
 The same local handshake protects SOCKS5 TCP CONNECT and UDP
 ASSOCIATE. Partial/oversized credential pairs fail at startup;
 server-side comparisons use fixed-size constant-time digests.
+The experimental native Linux `--tun` integration currently creates
+an internal no-auth SOCKS connector and therefore **rejects** this
+optional local credential mode, rather than silently failing to
+authenticate.
 
 Non-loopback SOCKS5 listeners require both sets of local credentials
 AND `--socks-allow-lan`:
