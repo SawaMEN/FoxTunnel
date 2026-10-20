@@ -70,6 +70,41 @@ congestion-control protocol is introduced.
 optional local-only JSON logs, disabled by default. They can expose
 node hostnames, so do not publish logs without reviewing them.
 
+## Stage 2: local interactive/bulk traffic scheduling
+
+With a trusted Bond cluster already configured, `--bond-traffic` opts into
+stream-aware TCP ingress scheduling. The four choices are:
+
+- `legacy` (default): unchanged adaptive throughput/queue scheduler.
+- `latency`: favor ingress paths with lower successful HTTP exchange time and
+  bounded queue depth; this is **not network ICMP ping**.
+- `throughput`: prefer successful ACKed data-block throughput and available
+  queue headroom, using the existing Adaptive Bonding selector.
+- `auto`: favor lower delay at the beginning of each TCP stream, prefer
+  measured throughput after at least 128 KiB have been accepted or received,
+  and keep individual short writes latency-oriented.
+
+The classifier uses only transferred byte counts and block sizes. It does
+**not** inspect TLS contents, identify games, infer a destination application,
+or guarantee lower RTT. The class affects only the choice of authenticated
+trusted ingress for **new data operations**, never replays or moves an existing
+remote TCP destination. No new wire messages or UDP bonding are added.
+
+```sh
+foxtunnel client --link-file connection.txt \
+  --bond-route smart --bond-adaptive --bond-autotune \
+  --bond-traffic auto --bond-metrics-interval 10s
+```
+
+`--bond-traffic` requires Bonding and `--bond-adaptive`; it also works with
+explicit trusted Bond endpoints without `--bond-route smart`. With smart
+routing, the coordinator hub must remain an ingress and each relay must lead
+to the **same** authenticated hub. The setting is local and intentionally
+absent from `vetroff://` wire profiles: pass it as a client CLI opt-in.
+
+For the tests, limitations, and WAN acceptance criteria, see
+[stage 2 validation](ADAPTIVE-BONDING-STAGE2.md).
+
 ## Compatibility
 
 The main branch now also contains experimental UDP and Linux TUN.
