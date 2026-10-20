@@ -37,9 +37,19 @@ jobs:
         run: go build ./cmd/foxtunnel
       - name: Go vet
         run: go vet ./...
+      - name: Multi-ingress HTTP/2 integrity and adaptive scheduler regression
+        run: |
+          go test ./internal/bond -run '^TestAdaptive(BondHTTP2MultiIngressIntegrity|Pick)' -count=3 -timeout=120s
       - name: Capture isolated selection microbenchmarks
         run: |
-          go test ./internal/bond -run '^$' -bench 'BenchmarkBond(PathSelection|SkewAndQueue)' -benchmem -benchtime=300ms -count=3 | tee node-bench.txt
+          go test ./internal/bond -run '^
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: node-benchmarks
+          path: node-bench.txt
+          if-no-files-found: ignore
+ -bench 'BenchmarkBond(PathSelection|SkewAndQueue|AdaptivePick)' -benchmem -benchtime=300ms -count=3 | tee node-bench.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
