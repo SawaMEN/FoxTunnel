@@ -1,0 +1,30 @@
+name: Temporary Stage 2 formatting
+
+on:
+  push:
+    branches: [feature/adaptive-bonding-stage2-traffic]
+    paths:
+      - '.github/workflows/stage2-format.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  gofmt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/adaptive-bonding-stage2-traffic
+          persist-credentials: true
+      - name: Format changed Go sources
+        run: |
+          gofmt -w internal/bond/traffic.go internal/bond/traffic_test.go internal/bond/client.go internal/tunnel/client.go internal/tunnel/bond.go internal/tunnel/cluster.go internal/tunnel/traffic_mode_test.go cmd/foxtunnel/main.go
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git add internal/bond/traffic.go internal/bond/traffic_test.go internal/bond/client.go internal/tunnel/client.go internal/tunnel/bond.go internal/tunnel/cluster.go internal/tunnel/traffic_mode_test.go cmd/foxtunnel/main.go
+            git commit -m "style(bond): apply gofmt to stage-2 Go sources"
+            git push origin HEAD:feature/adaptive-bonding-stage2-traffic
+          fi
