@@ -1,0 +1,30 @@
+name: Temporary stage-3 gofmt
+
+on:
+  push:
+    branches: [feature/adaptive-bonding-stage3-udp-sharding]
+    paths:
+      - '.github/workflows/stage3-format.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  gofmt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/adaptive-bonding-stage3-udp-sharding
+          persist-credentials: true
+      - name: Format stage 3 Go sources
+        run: |
+          gofmt -w internal/tunnel/udp_multinode_client.go internal/tunnel/udp_multinode_test.go internal/tunnel/udp_stream_client.go internal/tunnel/udp_client.go internal/tunnel/client.go cmd/foxtunnel/main.go
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git add internal/tunnel/udp_multinode_client.go internal/tunnel/udp_multinode_test.go internal/tunnel/udp_stream_client.go internal/tunnel/udp_client.go internal/tunnel/client.go cmd/foxtunnel/main.go
+            git commit -m "style(udp): apply gofmt for stage 3"
+            git push origin HEAD:feature/adaptive-bonding-stage3-udp-sharding
+          fi
