@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -20,7 +21,7 @@ func (shortFastWriter) Write(p []byte) (int, error) { return 0, nil }
 
 func TestFastCopyIntegrityAndScratchWipe(t *testing.T) {
 	for _, size := range []int{0, 1, 31, 1023, 32768, 32769, 1 << 20} {
-		t.Run(stringSize(size), func(t *testing.T) {
+		t.Run(strconv.Itoa(size)+"B", func(t *testing.T) {
 			want := bytes.Repeat([]byte{0xA5}, size)
 			var got bytes.Buffer
 			n, err := fastCopy(fastCopyWriter{&got}, fastCopyReader{bytes.NewReader(want)})
@@ -41,12 +42,7 @@ func TestFastCopyIntegrityAndScratchWipe(t *testing.T) {
 }
 
 func TestFastCopyReaderWriterSpecialization(t *testing.T) {
-	type writerTo struct {
-		io.Reader
-		used *bool
-	}
-	// Use an adapter rather than io.ReaderTo embedding, ensuring the hook is
-	// hit only by the actual io.WriterTo method.
+	// The source's io.WriterTo has priority over destination io.ReaderFrom.
 	var sawWriterTo bool
 	var sawReaderFrom bool
 	src := &hookWriterTo{used: &sawWriterTo}
@@ -60,7 +56,6 @@ func TestFastCopyReaderWriterSpecialization(t *testing.T) {
 		n != 5 || !sawReaderFrom {
 		t.Fatalf("ReadFrom fast path not preserved n=%d err=%v", n, err)
 	}
-	_ = writerTo{} // compile-time documentation of the intended case
 }
 
 type hookWriterTo struct{ used *bool }
@@ -161,8 +156,14 @@ func FuzzFastCopy(f *testing.F) {
 // intentionally compare allocation and throughput without hardcoded thresholds:
 // shared CI hardware cannot reliably support release pass/fail speed numbers.
 func BenchmarkFastCopyBaselineVsPool(b *testing.B) {
-	for _, size := range []int{1 << 10, 1 << 20} {
-		payload := bytes.Repeat([]byte{0xBC}, size)
+	for _, workload := range []struct {
+		name string
+		size int
+	}{
+		{"1KiB", 1 << 10},
+		{"1MiB", 1 << 20},
+	} {
+		payload := bytes.Repeat([]byte{0xBC}, workload.size)
 		for _, candidate := range []struct {
 			name string
 			copy func(io.Writer, io.Reader) (int64, error)
@@ -170,17 +171,17 @@ func BenchmarkFastCopyBaselineVsPool(b *testing.B) {
 			{"stdlib", io.Copy},
 			{"pooled", fastCopy},
 		} {
-			b.Run(candidate.name+"/"+stringSize(size), func(b *testing.B) {
+			b.Run(candidate.name+"/"+workload.name, func(b *testing.B) {
 				r := bytes.NewReader(payload)
 				dst := fastCopyWriter{io.Discard}
 				src := fastCopyReader{r}
-				b.SetBytes(int64(size))
+				b.SetBytes(int64(workload.size))
 				b.ReportAllocs()
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
 					r.Reset(payload)
 					n, err := candidate.copy(dst, src)
-					if err != nil || n != int64(size) {
+					if err != nil || n != int64(workload.size) {
 						b.Fatalf("mismatched byte count %d: %v", n, err)
 					}
 				}
