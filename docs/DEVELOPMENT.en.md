@@ -72,3 +72,5 @@ Raw dated measurement data remain in \`docs/measurements/\`. Existing experiment
 FoxTunnel is experimental, not a certified system VPN or leak-proof censorship bypass. If contributing, document tested platforms and behaviors, preserve existing OS support and never commit secrets or private packet captures.
 
 License: MIT.
+
+See [operations and platform gates](OPERATIONS.md) (Russian) for shutdown signals, live TLS renewal, and remaining installation/signing checks.

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -19,10 +18,10 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
-	"golang.org/x/net/netutil"
 )
 
 func main() {
@@ -213,10 +212,18 @@ func main() {
 			stop := watchAccess(controller, *usersFile, *bondRelay != "")
 			defer stop()
 		}
+		certificates, err := tlsidentity.NewCertificateStore(*cert, *key)
+		if err != nil {
+			log.Fatal(err)
+		}
+		stopCertificates := watchCertificate(certificates.Reload)
+		defer stopCertificates()
+		ctx, stopProcess := processContext()
+		defer stopProcess()
 		server := &http.Server{
 			Addr:              *listen,
 			Handler:           handler,
-			TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS13, MaxVersion: tls.VersionTLS13, NextProtos: []string{"h2", "http/1.1"}},
+			TLSConfig:         serverTLS(certificates.Get),
 			ReadHeaderTimeout: 10 * time.Second,
 			IdleTimeout:       90 * time.Second,
 			MaxHeaderBytes:    32 << 10,
@@ -226,21 +233,19 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		var udp net.PacketConn
 		if *h3Listen != "" {
-			pair, err := tls.LoadX509KeyPair(*cert, *key)
+			udp, err = net.ListenPacket("udp", *h3Listen)
 			if err != nil {
+				listener.Close()
 				log.Fatal(err)
 			}
-			udp, err := net.ListenPacket("udp", *h3Listen)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer udp.Close()
-			h3TLS := server.TLSConfig.Clone()
-			h3TLS.Certificates = []tls.Certificate{pair}
-			go func() { log.Fatal(handler.ServeHTTP3(context.Background(), udp, h3TLS, *maxConnections)) }()
 		}
-		log.Fatal(server.ServeTLS(netutil.LimitListener(listener, *maxConnections), *cert, *key))
+		if err := serveListeners(ctx, server, handler, listener, udp, *maxConnections); err != nil {
+			log.Fatal(err)
+		}
+		return
+
 	case "client", "share":
 		fs := i18n.NewFlagSet("foxtunnel " + os.Args[1])
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
@@ -604,6 +609,8 @@ func main() {
 				}
 			}()
 		}
+		ctx, stopProcess := processContext()
+		defer stopProcess()
 		listener, err := net.Listen("tcp", *listen)
 		if err != nil {
 			log.Fatal(err)
@@ -622,7 +629,7 @@ func main() {
 			if err := nativetun.Validate(options); err != nil {
 				log.Fatal(err)
 			}
-			runner, err := nativetun.Start(context.Background(), options)
+			runner, err := nativetun.Start(ctx, options)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -630,7 +637,10 @@ func main() {
 			log.Printf("native Linux TUN ready: %s (routes, DNS and firewall MUST be configured separately)", *tunName)
 		}
 		log.Printf(i18n.Text("SOCKS5 listener: %s"), listener.Addr())
-		log.Fatal(client.Serve(listener))
+		if err := client.ServeContext(ctx, listener); err != nil {
+			log.Fatal(err)
+		}
+		return
 	default:
 		usage()
 	}
