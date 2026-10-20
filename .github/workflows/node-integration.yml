@@ -40,6 +40,10 @@ jobs:
       - name: Multi-ingress HTTP/2 integrity and adaptive scheduler regression
         run: |
           go test ./internal/bond -run '^TestAdaptive(BondHTTP2MultiIngressIntegrity|Pick)' -count=3 -timeout=120s
+      - name: Traffic-aware scheduling and HTTP/2 integration
+        run: |
+          go test ./internal/bond -run '^TestTraffic' -count=3 -timeout=120s
+          go test ./internal/tunnel -run '^Test(BondTraffic|DiscoveredBondTraffic)' -count=3 -timeout=120s
       - name: Capture isolated selection microbenchmarks
         run: |
           go test ./internal/bond -run '^$' -bench 'BenchmarkBond(PathSelection|SkewAndQueue|AdaptivePick)' -benchmem -benchtime=300ms -count=3 | tee node-bench.txt

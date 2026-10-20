@@ -269,11 +269,14 @@ func main() {
 		bondRoute := new(string)
 		bondAdaptive := new(bool)
 		bondAutoTune := new(bool)
+		bondTraffic := new(string)
+		*bondTraffic = "legacy"
 		if os.Args[1] == "client" {
 			fs.BoolVar(bondLanes, "bond-lanes", false, i18n.Text("experimental persistent bond channels and small-write batching (requires --bond)"))
 			fs.StringVar(bondRoute, "bond-route", "legacy", i18n.Text("bond path scheduling: legacy or smart (requires --bond --discover and direct hub entry)"))
 			fs.BoolVar(bondAdaptive, "bond-adaptive", false, i18n.Text("experimental ACKed-data throughput and queue-aware bond scheduling (requires --bond)"))
 			fs.BoolVar(bondAutoTune, "bond-autotune", false, i18n.Text("conservative 4/8-slot tuning from ACKed throughput (requires --bond --bond-adaptive)"))
+			fs.StringVar(bondTraffic, "bond-traffic", "legacy", i18n.Text("opt-in Bond TCP traffic scheduling: legacy, auto, latency, throughput (requires --bond-adaptive)"))
 		}
 		bonded := fs.Bool("bond", false, i18n.Text("experimental multi-node stream bonding; nodes must share one hub"))
 		discover := fs.Bool("discover", false, i18n.Text("obtain trusted bond nodes and capacity weights from the main HTTPS node"))
@@ -322,7 +325,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "bond-route", "bond-adaptive", "bond-autotune", "bond-metrics-interval", "node-status-interval":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
 				default:
 					conflict = true
 				}
@@ -409,6 +412,15 @@ func main() {
 		if *bondMetricsInterval > 0 && !*bonded {
 			log.Fatal("--bond-metrics-interval requires --bond")
 		}
+		switch *bondTraffic {
+		case "legacy":
+		case "auto", "latency", "throughput":
+			if !*bonded || !*bondAdaptive {
+				log.Fatal("--bond-traffic requires --bond --bond-adaptive")
+			}
+		default:
+			log.Fatal("--bond-traffic must be legacy, auto, latency, or throughput")
+		}
 		if *bondAutoTune && (!*bonded || !*bondAdaptive) {
 			log.Fatal("--bond-autotune requires --bond --bond-adaptive")
 		}
@@ -487,6 +499,7 @@ func main() {
 		client.BondRoute = *bondRoute
 		client.BondAdaptive = *bondAdaptive
 		client.BondAutoTune = *bondAutoTune
+		client.BondTraffic = *bondTraffic
 		if *bonded {
 			var err error
 			if *discover {

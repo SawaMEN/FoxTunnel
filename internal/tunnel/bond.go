@@ -35,7 +35,24 @@ func (c *Client) BondMetrics() []bond.BondPathMetric {
 }
 
 // EnableBond must be called after endpoint/TLS configuration, before Serve.
+func validateBondTraffic(mode string, adaptive bool) error {
+	switch mode {
+	case "", "legacy":
+		return nil
+	case "auto", "latency", "throughput":
+		if adaptive {
+			return nil
+		}
+		return errors.New("bond traffic mode requires --bond-adaptive")
+	default:
+		return errors.New("invalid bond traffic mode")
+	}
+}
+
 func (c *Client) EnableBond() error {
+	if err := validateBondTraffic(c.BondTraffic, c.BondAdaptive); err != nil {
+		return err
+	}
 	if c.BondRoute != "" && c.BondRoute != "legacy" {
 		return errors.New("smart bond route requires authenticated discovery")
 	}
@@ -57,7 +74,7 @@ func (c *Client) EnableBond() error {
 	if c.Padding {
 		return errors.New(i18n.Text("bond and initial-v1 padding cannot be combined"))
 	}
-	c.bondClient = &bond.Client{Endpoints: append([]*url.URL{c.ServerURL}, c.fallbackServers...), Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune}
+	c.bondClient = &bond.Client{Endpoints: append([]*url.URL{c.ServerURL}, c.fallbackServers...), Transport: c.transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune, TrafficMode: c.BondTraffic}
 	return nil
 }
 func (c *Client) handleBond(conn net.Conn, target string) {
