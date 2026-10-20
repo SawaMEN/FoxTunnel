@@ -25,12 +25,12 @@ func trafficTestClient(mode string) *Client {
 
 func TestTrafficClassAutoTransition(t *testing.T) {
 	for _, tc := range []struct {
-		name string
-		mode string
-		op byte
-		size int
+		name     string
+		mode     string
+		op       byte
+		size     int
 		up, down uint64
-		want trafficClass
+		want     trafficClass
 	}{
 		{"legacy small", "legacy", opWrite, 128, 0, 0, trafficUnspecified},
 		{"latency always", "latency", opRead, 0, 10 * trafficBulkThreshold, 0, trafficLatency},
@@ -113,8 +113,8 @@ func TestTrafficLatencyUnknownPathsExploreWithoutProbes(t *testing.T) {
 
 func TestTrafficModeValidation(t *testing.T) {
 	for _, tc := range []struct {
-		mode string
-		adaptive bool
+		mode      string
+		adaptive  bool
 		validMode bool
 	}{
 		{"", false, true},
