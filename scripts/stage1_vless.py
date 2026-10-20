@@ -26,23 +26,24 @@ ERROR_TYPES = {"ConnectionError", "TimeoutError", "OSError", "ValueError",
                "BrokenPipeError", "ConnectionResetError", "socket.timeout"}
 
 
-def proc_sample(pid: int) -> tuple[int, int]:
+def proc_sample(pid: int) -> tuple[int, int, int]:
     """Linux process CPU ticks and current RSS KiB; never record the PID."""
     stat = Path(f"/proc/{pid}/stat").read_text(encoding="ascii")
     # comm is parenthesized and may contain spaces or closing parentheses.
     fields = stat[stat.rfind(")") + 2:].split()
     ticks = int(fields[11]) + int(fields[12])
+    starttime = int(fields[19])
     for line in Path(f"/proc/{pid}/status").read_text(encoding="ascii").splitlines():
         if line.startswith("VmRSS:"):
-            return ticks, int(line.split()[1])
+            return ticks, int(line.split()[1]), starttime
     raise ValueError("VmRSS missing")
 
 
 class ResourceSampler:
     def __init__(self, pids: dict[str, int]):
         self.pids = pids
-        self.first: dict[str, tuple[int, int]] = {}
-        self.last: dict[str, tuple[int, int]] = {}
+        self.first: dict[str, tuple[int, int, int]] = {}
+        self.last: dict[str, tuple[int, int, int]] = {}
         self.peaks: dict[str, int] = {}
         self.errors: list[str] = []
         self.stopped = threading.Event()
@@ -52,8 +53,10 @@ class ResourceSampler:
     def poll(self) -> None:
         for name, pid in self.pids.items():
             try:
-                ticks, rss = proc_sample(pid)
-                self.last[name] = (ticks, rss)
+                ticks, rss, starttime = proc_sample(pid)
+                if name in self.first and self.first[name][2] != starttime:
+                    self.errors.append(name)  # PID reused/restarted: CPU comparison invalid
+                self.last[name] = (ticks, rss, starttime)
                 self.peaks[name] = max(rss, self.peaks.get(name, 0))
             except (OSError, ValueError, IndexError):
                 self.errors.append(name)
@@ -100,6 +103,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--vless-socks", required=True, help="Xray/VLESS local SOCKS5 HOST:PORT")
     p.add_argument("--target", required=True, help="controlled echo destination HOST:PORT")
     p.add_argument("--scenario", required=True, choices=("small", "bulk"))
+    p.add_argument("--fox-transport", choices=("h2-connect", "h2-post", "h3-post", "wss",
+                   "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"))
+    p.add_argument("--vless-transport", choices=("reality-vision", "xhttp", "other"))
     p.add_argument("--environment", required=True, choices=("lab", "wan"))
     p.add_argument("--confirm-independent-vds", action="store_true",
                    help="operator attests separate VDS and an external measured route; NOT independent verification")
@@ -129,6 +135,8 @@ def validate(a: argparse.Namespace) -> int:
         raise ValueError("measurement values out of bounds")
     if a.confirm_independent_vds and a.environment != "wan":
         raise ValueError("WAN attestation is valid only with --environment wan")
+    if a.environment == "wan" and (not a.fox_transport or not a.vless_transport):
+        raise ValueError("WAN measurements must identify both transport configurations")
     if (a.fox_pid is None) != (a.vless_pid is None):
         raise ValueError("provide both --fox-pid and --vless-pid, or neither")
     if a.fox_pid is not None:
@@ -144,9 +152,14 @@ def validate(a: argparse.Namespace) -> int:
 def sanitize(row: dict) -> dict:
     err = row.get("error") or ""
     kind = err.split(":", 1)[0]
+    connect, transfer = row.get("connect_ms"), row.get("transfer_ms")
+    completion = (round(connect + transfer, 3)
+                  if row.get("ok") and isinstance(connect, (int, float))
+                  and isinstance(transfer, (int, float)) else None)
     return {
         "proxy": row["proxy"], "round": row["round"], "flow": row["flow"],
-        "ok": bool(row["ok"]), "connect_ms": row.get("connect_ms"),
+        "ok": bool(row["ok"]), "connect_ms": connect,
+        "transfer_ms": transfer, "completion_ms": completion,
         "payload_mbps": row.get("payload_mbps"),
         "error_category": (kind if kind in ERROR_TYPES else "other") if err else None,
         "integrity_failure": "echo mismatch" in err or "echo returned only" in err,
@@ -179,13 +192,16 @@ def measure(a: argparse.Namespace) -> dict:
         raise ValueError("unexpected benchmark report")
     clean = [sanitize(row) for row in raw["samples"]]
     return {
-        "schema": 1, "kind": "foxtunnel-vless-stage1",
+        "schema": 2, "kind": "foxtunnel-vless-stage1",
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "scenario": a.scenario, "environment": a.environment,
         "wan_attested_by_operator": a.environment == "wan" and a.confirm_independent_vds,
         "wan_verified_by_tool": False,
         "configuration": {"bytes_per_flow": size, "rounds": a.rounds,
-                          "parallel": a.parallel, "warmup": a.warmup},
+                          "parallel": a.parallel, "warmup": a.warmup,
+                          "timeout_seconds": a.timeout,
+                          "fox_transport": a.fox_transport,
+                          "vless_transport": a.vless_transport},
         "summary": raw["summary"], "samples": clean, "resources": resources,
         "limitations": [
             "Two operator-configured SOCKS chains, not protocol-only measurements.",

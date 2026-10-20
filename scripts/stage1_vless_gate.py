@@ -32,7 +32,7 @@ def percentile(values: list[float], q: float) -> float:
 
 def load(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or data.get("schema") != 1 or data.get("kind") != KIND:
+    if not isinstance(data, dict) or data.get("schema") != 2 or data.get("kind") != KIND:
         raise ValueError("not a stage1 redacted report")
     return data
 
@@ -56,6 +56,9 @@ def per_proxy(report: dict, label: str) -> dict:
         if type(r["ok"]) is not bool or type(r["integrity_failure"]) is not bool:
             raise ValueError("invalid sample flags")
         if r["ok"] and (not finite_nonnegative(r["connect_ms"]) or
+                        not finite_nonnegative(r["transfer_ms"]) or
+                        not finite_nonnegative(r["completion_ms"]) or
+                        abs(r["completion_ms"] - r["connect_ms"] - r["transfer_ms"]) > .005 or
                         not finite_nonnegative(r["payload_mbps"]) or r["payload_mbps"] <= 0 or
                         r["integrity_failure"]):
             raise ValueError("successful sample contains invalid measurement")
@@ -68,6 +71,8 @@ def per_proxy(report: dict, label: str) -> dict:
                           if good else None,
         "payload_median_mbps": round(statistics.median(r["payload_mbps"] for r in good), 3)
                                if good else None,
+        "completion_p95_ms": round(percentile([r["completion_ms"] for r in good], .95), 3)
+                             if good else None,
     }
 
 
@@ -88,12 +93,18 @@ def evaluate(reports: list[dict]) -> dict:
     days: set[str] = set()
     detail: list[dict] = []
     for report in reports:
-        if report.get("kind") != KIND or report.get("schema") != 1:
+        if report.get("kind") != KIND or report.get("schema") != 2:
             raise ValueError("unknown report kind or schema")
         if report.get("scenario") != scenario or report.get("configuration") != configuration:
             raise ValueError("mixed scenarios or measurement configurations")
-        if configuration["bytes_per_flow"] < 1 or configuration["bytes_per_flow"] > 1024 ** 3:
-            raise ValueError("invalid bytes per flow")
+        if (not 1 <= configuration["bytes_per_flow"] <= 1024 ** 3
+                or not 1 <= configuration["timeout_seconds"] <= 120
+                or configuration.get("fox_transport") not in
+                ("h2-connect", "h2-post", "h3-post", "wss", "xhttp-stream-one",
+                 "xhttp-stream-up", "xhttp-packet-up")
+                or configuration.get("vless_transport") not in
+                ("reality-vision", "xhttp", "other")):
+            raise ValueError("invalid or unidentified benchmark configuration")
         day = dt.datetime.fromisoformat(report["created_at_utc"])
         if day.tzinfo is None or day.utcoffset() is None:
             raise ValueError("timestamp must have a timezone")
@@ -106,13 +117,16 @@ def evaluate(reports: list[dict]) -> dict:
             raise ValueError("extra sample rows")
         speed = ratio(fox["payload_median_mbps"], vless["payload_median_mbps"])
         latency = ratio(fox["connect_p95_ms"], vless["connect_p95_ms"])
+        completion = ratio(fox["completion_p95_ms"], vless["completion_p95_ms"])
         if any(r["success_percent"] < 99 for r in (fox, vless)):
             issues.append("success rate below 99%")
         if any(r["integrity_failures"] for r in (fox, vless)):
             issues.append("verified echo integrity failure")
-        if speed is None or speed < .9:
+        if scenario == "bulk" and (speed is None or speed < .9):
             issues.append("FoxTunnel median goodput below 90% VLESS")
-        if latency is None or latency > 1.1:
+        if scenario == "small" and (completion is None or completion > 1.1):
+            issues.append("FoxTunnel p95 end-to-end latency above 110% VLESS")
+        if scenario == "bulk" and (latency is None or latency > 1.1):
             issues.append("FoxTunnel p95 CONNECT latency above 110% VLESS")
         resource = report.get("resources")
         cpu_ratio = mem_ratio = None
@@ -124,23 +138,25 @@ def evaluate(reports: list[dict]) -> dict:
             cpu_ratio = ratio(resource["fox"]["cpu_percent_one_core"],
                               resource["vless"]["cpu_percent_one_core"])
             mem_ratio = ratio(resource["fox"]["rss_peak_mib"], resource["vless"]["rss_peak_mib"])
-        if cpu_ratio is None or mem_ratio is None:
-            issues.append("CPU/RSS comparison missing or unusable")
-        else:
-            if cpu_ratio > 1.2:
-                issues.append("FoxTunnel CPU use above 120% VLESS")
-            if mem_ratio > 1.2:
-                issues.append("FoxTunnel RSS above 120% VLESS")
+        if scenario == "bulk":
+            if cpu_ratio is None or mem_ratio is None:
+                issues.append("CPU/RSS comparison missing or unusable")
+            else:
+                if cpu_ratio > 1.2:
+                    issues.append("FoxTunnel CPU use above 120% VLESS")
+                if mem_ratio > 1.2:
+                    issues.append("FoxTunnel RSS above 120% VLESS")
         detail.append({"utc_day": day.astimezone(dt.timezone.utc).date().isoformat(),
                        "fox": fox, "vless": vless,
                        "fox_to_vless": {"goodput_ratio": speed,
                                         "connect_p95_ratio": latency,
+                                        "completion_p95_ratio": completion,
                                         "cpu_ratio": cpu_ratio, "rss_ratio": mem_ratio}})
     if len(days) < 3:
         issues.append("at least three different UTC measurement days required")
     if len(reports) < 3:
         issues.append("at least three matched reports required")
-    return {"schema": 1, "kind": "foxtunnel-vless-stage1-gate",
+    return {"schema": 2, "kind": "foxtunnel-vless-stage1-gate",
             "scenario": scenario, "passed": not issues,
             "wan_verified_by_tool": False, "issues": sorted(set(issues)),
             "days_observed": len(days), "measurements": detail,

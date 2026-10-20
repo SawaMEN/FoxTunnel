@@ -18,13 +18,16 @@ def fake_report(day: int, scenario="small") -> dict:
     for label, speed in (("fox", 95.0), ("vless", 100.0)):
         for i in range(1, 7):
             samples.append({"proxy": label, "round": i, "flow": 1, "ok": True,
-                            "connect_ms": 10.0, "payload_mbps": speed,
+                            "connect_ms": 10.0, "transfer_ms": 5.0, "completion_ms": 15.0,
+                            "payload_mbps": speed,
                             "error_category": None, "integrity_failure": False})
-    return {"schema": 1, "kind": "foxtunnel-vless-stage1",
+    return {"schema": 2, "kind": "foxtunnel-vless-stage1",
             "created_at_utc": f"2026-10-{day:02d}T10:00:00+00:00",
             "scenario": scenario, "environment": "wan",
             "wan_attested_by_operator": True,
-            "configuration": {"bytes_per_flow": 1024, "rounds": 6, "parallel": 1, "warmup": 0},
+            "configuration": {"bytes_per_flow": 1024, "rounds": 6, "parallel": 1, "warmup": 0,
+                              "timeout_seconds": 30.0, "fox_transport": "h2-connect",
+                              "vless_transport": "reality-vision"},
             "samples": samples,
             "resources": {"fox": {"cpu_percent_one_core": 9.5, "rss_peak_mib": 48},
                           "vless": {"cpu_percent_one_core": 10, "rss_peak_mib": 50}}}
@@ -64,6 +67,8 @@ class Stage1Tests(unittest.TestCase):
                 self.assertEqual(runner.main(argv), 0)
                 doc = json.loads(out.read_text())
                 self.assertEqual(len(doc["samples"]), 12)
+                self.assertEqual(doc["schema"], 2)
+                self.assertTrue(all(r["completion_ms"] is not None for r in doc["samples"]))
                 self.assertEqual(doc["summary"]["fox"]["successful"], 6)
                 self.assertFalse(doc["wan_attested_by_operator"])
                 self.assertIsNone(doc["resources"])
@@ -82,18 +87,25 @@ class Stage1Tests(unittest.TestCase):
         self.assertEqual(result["days_observed"], 3)
         self.assertFalse(result["wan_verified_by_tool"])
         self.assertGreater(result["measurements"][0]["fox_to_vless"]["goodput_ratio"], .9)
+        self.assertEqual(result["schema"], 2)
+        self.assertEqual(result["measurements"][0]["fox"]["completion_p95_ms"], 15.0)
 
     def test_gate_fails_without_real_wan_attestation_and_resources(self):
         reports = [fake_report(d) for d in (18, 19, 20)]
         reports[1]["environment"] = "lab"
         reports[2]["resources"] = None
+        # Resource monitoring is mandatory for bulk, optional for small exchanges.
         result = gate.evaluate(reports)
         self.assertFalse(result["passed"])
         self.assertIn("WAN topology not operator-attested", result["issues"])
+        self.assertNotIn("CPU/RSS comparison missing or unusable", result["issues"])
+        reports = [fake_report(d, "bulk") for d in (18, 19, 20)]
+        reports[2]["resources"] = None
+        result = gate.evaluate(reports)
         self.assertIn("CPU/RSS comparison missing or unusable", result["issues"])
 
     def test_gate_rejects_slow_and_missing_days(self):
-        reports = [fake_report(d) for d in (18, 19, 19)]
+        reports = [fake_report(d, "bulk") for d in (18, 19, 19)]
         for row in reports[0]["samples"]:
             if row["proxy"] == "fox":
                 row["payload_mbps"] = 50
@@ -118,6 +130,29 @@ class Stage1Tests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gate.load(path)
 
+    def test_small_p95_completion_not_one_kilobyte_mbps(self):
+        reports = [fake_report(d) for d in (18, 19, 20)]
+        for row in reports[0]["samples"]:
+            if row["proxy"] == "fox":
+                row["payload_mbps"] = 0.01  # low Mbps on tiny packets is irrelevant
+        self.assertTrue(gate.evaluate(reports)["passed"])
+        for row in reports[0]["samples"]:
+            if row["proxy"] == "fox":
+                row["transfer_ms"] = 50
+                row["completion_ms"] = 60
+        result = gate.evaluate(reports)
+        self.assertIn("FoxTunnel p95 end-to-end latency above 110% VLESS", result["issues"])
+
+    def test_gate_rejects_inconsistent_timing_or_unidentified_transport(self):
+        reports = [fake_report(d) for d in (18, 19, 20)]
+        reports[0]["samples"][0]["completion_ms"] = 1
+        with self.assertRaisesRegex(ValueError, "invalid measurement"):
+            gate.evaluate(reports)
+        reports = [fake_report(d) for d in (18, 19, 20)]
+        reports[0]["configuration"]["fox_transport"] = None
+        with self.assertRaisesRegex(ValueError, "unidentified"):
+            gate.evaluate(reports)
+
     def test_gate_refuses_mixed_workloads(self):
         reports = [fake_report(d) for d in (18, 19, 20)]
         reports[1]["scenario"] = "bulk"
@@ -127,7 +162,8 @@ class Stage1Tests(unittest.TestCase):
     def test_process_monitor_linux(self):
         if os.name != "posix" or not Path("/proc/self/stat").exists():
             self.skipTest("Linux proc required")
-        ticks, rss = runner.proc_sample(os.getpid())
+        ticks, rss, starttime = runner.proc_sample(os.getpid())
+        self.assertGreater(starttime, 0)
         self.assertGreaterEqual(ticks, 0)
         self.assertGreater(rss, 0)
         sampler = runner.ResourceSampler({"fox": os.getpid(), "vless": os.getppid()})

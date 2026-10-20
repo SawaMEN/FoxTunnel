@@ -8,9 +8,11 @@
 - FoxTunnel (зафиксировать версию/commit, H2/H3, Go/NSS/Neqo).
 - Xray/VLESS (зафиксировать версию Xray, REALITY/Vision или XHTTP).
 
+Для WAN-запуска параметры --fox-transport и --vless-transport обязательны: конфигурации должны быть явно указаны оператором. CLI не может доказать, что реально запущен именно этот протокол.
+
 Серверы, exit, DNS, процессор, лимиты и маршруты документируйте приватно, без секретов в Git. Управляемый TCP echo-сервер должен быть доступен обоим exit. Для контроля используйте одинаковые условия или явно укажите отличия. Тест на двух контейнерах одной машины не считается независимыми VDS.
 
-Тест идёт через оба SOCKS5-прокси и проверяет каждый переданный echo-байт. Измеряются p95 времени SOCKS CONNECT и полезная скорость TCP echo (не скорость линии). Опционально измеряются CPU% и RSS отдельных Linux-процессов. Это не тест UDP, настоящего ICMP ping, браузерного отпечатка, обхода фильтрации или отсутствия утечек.
+Тест идёт через оба SOCKS5-прокси и проверяет каждый переданный echo-байт. Для коротких запросов измеряется p95 **полного выполнения CONNECT + передачи echo**; для больших — медианная полезная скорость TCP echo (не скорость линии), а также CONNECT p95. Опционально измеряются CPU% и RSS отдельных Linux-процессов. Это не тест UDP, настоящего ICMP ping, браузерного отпечатка, обхода фильтрации или отсутствия утечек.
 
 ## Подготовка
 
@@ -31,7 +33,8 @@ python3 scripts/echo_server.py --host 127.0.0.1 --port 9000
 python3 scripts/stage1_vless.py \
   --fox-socks 127.0.0.1:1080 --vless-socks 127.0.0.1:1081 \
   --target echo.private.example:9000 \
-  --scenario small --environment wan --confirm-independent-vds \
+  --scenario small --fox-transport h2-connect \
+  --vless-transport reality-vision --environment wan --confirm-independent-vds \
   --rounds 30 --parallel 4 --warmup 2 \
   --fox-pid 1234 --vless-pid 5678 \
   --out reports/day1-small.json
@@ -63,9 +66,9 @@ python3 scripts/stage1_vless_gate.py \
 
 **Порог для каждого парного дня:**
 - не менее 5 проверенных измерений на конфигурацию; успешность FoxTunnel и VLESS ≥99%; ноль обнаруженных ошибок целостности;
-- медианная полезная скорость FoxTunnel ≥90% VLESS;
-- p95 времени SOCKS CONNECT FoxTunnel ≤110% VLESS;
-- CPU% и пиковая RSS FoxTunnel ≤120% VLESS (оба PID обязательны для прохождения);
+- для **small**: p95 полной задержки (SOCKS CONNECT + echo) FoxTunnel ≤110% VLESS; скорость 1 KiB пакетов не используется как критерий;
+- для **bulk**: медианная полезная скорость FoxTunnel ≥90% VLESS, а p95 SOCKS CONNECT ≤110% VLESS;
+- для **bulk**: CPU% и пиковая RSS FoxTunnel ≤120% VLESS (оба PID обязательны для прохождения); для small ресурсы информативны;
 - минимум 3 разных UTC-дня, один размер нагрузки и одинаковая конфигурация; WAN подтверждён оператором.
 
 Доли вычисляются заново из индивидуальных измерений, а не принимаются из Summary. Выход gate не содержит endpoint/PID/raw ошибок. Даже passed=true означает только условный TCP baseline gate, но не доказательство независимости сети, правильности режима VLESS, устойчивости к ТСПУ, UDP или безопасности.
@@ -80,3 +83,5 @@ python3 -m py_compile scripts/stage1_vless.py scripts/stage1_vless_gate.py
 ## Границы этапа
 
 Текущие [сценарии UDP, loss, jitter и WAN-сравнения Bonding](ADAPTIVE-BONDING-STAGE4.md) полезны дополнительно, но они не заменяют парное сравнение с Xray/VLESS. После получения внешних TCP small/bulk отчётов можно разбирать Fast Path и переходить к следующим этапам.
+
+Версия схемы отчётов Stage 1 после уточнения методики — **2**. Ранние отчёты schema=1 использовать с новым gate нельзя: его необходимо запускать заново, чтобы получить измеренное completion_ms. Для Linux защита от повторного использования PID сверяет /proc/<pid>/stat starttime.
