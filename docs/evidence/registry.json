@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "observations": [
+    {
+      "id": "firefox158-h2",
+      "path": "docs/measurements/2026-10-18/firefox-158-linux.json",
+      "sha256": "9fe71c127b64b1b42dfefc30f5ccff1af6d1e16fbae88a64ca04ba6ecb6755b3",
+      "kind": "tls_h2",
+      "subject": "firefox",
+      "scope": "historical-loopback",
+      "source_commit": null
+    },
+    {
+      "id": "foxtunnel-nss-h2",
+      "path": "docs/measurements/2026-10-19/nss-firefox158-page.json",
+      "sha256": "33e3bc50ae8c214ac72908e481e2f7e72ebc9421f6b1a179ac8f0d8bbc953649",
+      "kind": "tls_h2",
+      "subject": "foxtunnel",
+      "scope": "historical-loopback",
+      "source_commit": null
+    },
+    {
+      "id": "native-operations-30m",
+      "path": "docs/measurements/2026-10-20/native-operations.json",
+      "sha256": "786862ca089dcc06c55d4978301d3a3df93893865e18d9f93e82b4043a3e7fba",
+      "kind": "native_operations",
+      "subject": "foxtunnel",
+      "scope": "native-loopback",
+      "source_commit": "a3621705d7b1375df3457c7ce87483652e3c695e"
+    }
+  ],
+  "comparison": {
+    "firefox_tls_h2": "firefox158-h2",
+    "firefox_quic_h3": null,
+    "foxtunnel_tls_h2": "foxtunnel-nss-h2",
+    "foxtunnel_quic_h3": null,
+    "naive_tls_h2": null,
+    "naive_quic_h3": null
+  }
+}

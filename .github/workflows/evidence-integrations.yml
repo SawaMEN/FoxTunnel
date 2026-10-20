@@ -1,0 +1,77 @@
+name: Evidence and external SDK integrations
+
+on:
+  pull_request:
+    paths: ['foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/linux_tun_companion.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
+  push:
+    branches: [main]
+    paths: ['foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/linux_tun_companion.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Evidence integrity and non-inference regressions
+        run: |
+          python -m unittest discover -s scripts -p test_evidence_bundle.py -v
+          python -m unittest discover -s scripts -p test_fingerprint_audit.py -v
+          python -m unittest discover -s scripts -p test_sdk_evidence.py -v
+      - name: Generate audit handoff from reviewed inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/evidence_bundle.py --out "$RUNNER_TEMP/foxtunnel-audit-handoff.json"
+          python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["worktree_dirty"] is False; assert d["evidence"]["independent_security_audit"] == "not_provided"' "$RUNNER_TEMP/foxtunnel-audit-handoff.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foxtunnel-audit-handoff
+          path: ${{ runner.temp }}/foxtunnel-audit-handoff.json
+          if-no-files-found: error
+          retention-days: 7
+  sdk:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+          cache-dependency-path: integration/external/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run independent public SDK consumer with race detector
+        working-directory: integration/external
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -race -json ./... -count=1 -timeout=90s | tee "$RUNNER_TEMP/foxtunnel-sdk-events.jsonl"
+      - name: Require actual execution of all 16 cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/sdk_evidence.py --input "$RUNNER_TEMP/foxtunnel-sdk-events.jsonl" --out "$RUNNER_TEMP/foxtunnel-sdk-summary.json"
+          python -c 'import json,sys; assert json.load(open(sys.argv[1]))["worktree_dirty"] is False' "$RUNNER_TEMP/foxtunnel-sdk-summary.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: external-sdk-${{ matrix.os }}
+          path: ${{ runner.temp }}/foxtunnel-sdk-summary.json
+          if-no-files-found: error
+          retention-days: 7
