@@ -68,12 +68,21 @@ func (c *Client) handleUDPMultiNodeStream(parent context.Context, control net.Co
 	// All exits must negotiate authenticated v2 before dispatch. In
 	// particular, a failed exit cannot transparently redirect or receive
 	// datagrams from an already pinned destination.
+	setupBudget := c.ConnectTimeout
+	if setupBudget <= 0 {
+		setupBudget = 15 * time.Second
+	}
+	setupTimer := time.AfterFunc(setupBudget, cancel)
+	defer setupTimer.Stop()
 	for _, endpoint := range endpoints {
 		stream, err := c.openUDPStreamTo(ctx, endpoint)
 		if err != nil {
 			return
 		}
 		streams = append(streams, stream)
+	}
+	if !setupTimer.Stop() || ctx.Err() != nil {
+		return
 	}
 
 	var source atomic.Pointer[net.UDPAddr]
