@@ -74,6 +74,26 @@ jobs:
             /release/foxtunnel version --json
             /release/sdk.test -test.run "^TestPublicNSS" -test.timeout=60s
           '
+      - name: Install complete native NSS archive without changing host configuration
+        env:
+          RELEASE_TAG: ${{ needs.request.outputs.version }}
+        shell: bash
+        run: |
+          python3 - <<'PYLAB'
+          import json, os, pathlib, subprocess, sys
+          sys.path.insert(0, 'scripts')
+          import deploy_cli
+          archive = next(pathlib.Path('dist').glob('*_nss.tar.gz'))
+          commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          home = pathlib.Path(os.environ['RUNNER_TEMP']) / 'installed-nss'
+          manager = deploy_cli.Deployment(home)
+          record = manager.install(archive, deploy_cli.digest(archive), os.environ['RELEASE_TAG'], commit, archive=True)
+          executable, installed = manager.bundle(record['identity'])
+          info = json.loads(subprocess.check_output([str(executable), 'version', '--json'], timeout=10))
+          assert info['commit'] == commit and info['build_flavor'] == 'nss'
+          assert info['nss_version'] and installed['build_flavor'] == 'nss'
+          print('Verified native NSS archive installation and bundled runtime loading')
+          PYLAB
       - uses: actions/upload-artifact@v4
         with:
           name: nss-${{ matrix.arch }}-archive

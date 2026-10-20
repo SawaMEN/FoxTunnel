@@ -3,6 +3,10 @@ name: Native platform operations
 on:
   pull_request:
     paths:
+      - 'scripts/deploy_cli.py'
+      - 'scripts/test_deploy_cli.py'
+      - 'scripts/operations_soak.py'
+      - 'integration/operations-cert/**'
       - 'cmd/foxtunnel/**'
       - 'internal/tunnel/**'
       - 'internal/tlsidentity/**'
@@ -12,6 +16,10 @@ on:
   push:
     branches: [main]
     paths:
+      - 'scripts/deploy_cli.py'
+      - 'scripts/test_deploy_cli.py'
+      - 'scripts/operations_soak.py'
+      - 'integration/operations-cert/**'
       - 'cmd/foxtunnel/**'
       - 'internal/tunnel/**'
       - 'internal/tlsidentity/**'
@@ -19,6 +27,13 @@ on:
       - 'go.sum'
       - '.github/workflows/platform-operations.yml'
   workflow_dispatch:
+    inputs:
+      soak_seconds:
+        description: Loopback soak duration on each native OS (seconds)
+        type: choice
+        options: ['180', '1800', '3600']
+        default: '180'
+        required: true
 
 permissions:
   contents: read
@@ -30,21 +45,59 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-15, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.9'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Native lifecycle, certificate renewal and listener release
         run: go test -race ./cmd/foxtunnel ./internal/tlsidentity ./internal/tunnel -run 'TestServerCertificateReloadAndShutdownH2H3|TestProcessSIGTERMAndCertificateSIGHUP|TestClientSIGTERMClosesIncompleteSOCKS|TestCertificateReloadRetainsLastValidPair|TestServeContextStopsActiveAndIncompleteConnections' -count=1 -timeout=90s
-      - name: Build and execute native CLI
+      - name: Build two reviewed native installation candidates
         shell: bash
         run: |
-          go build -o foxtunnel-platform.exe ./cmd/foxtunnel
-          ./foxtunnel-platform.exe version --json
+          set -euo pipefail
+          commit=$(git rev-parse HEAD)
+          for revision in 1 2; do
+            go build -buildvcs=false -o "foxtunnel-lab-$revision.exe" \
+              -ldflags "-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Version=v0.0.0-stage7.$revision -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Commit=$commit -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Dirty=false" \
+              ./cmd/foxtunnel
+          done
+          ./foxtunnel-lab-2.exe version --json
+      - name: Native install, update, refused update, rollback and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          export FOXTUNNEL_INSTALL_LAB_A="foxtunnel-lab-1.exe"
+          export FOXTUNNEL_INSTALL_LAB_B="foxtunnel-lab-2.exe"
+          export FOXTUNNEL_INSTALL_LAB_COMMIT
+          FOXTUNNEL_INSTALL_LAB_COMMIT=$(git rev-parse HEAD)
+          python -m unittest discover -s scripts -p test_deploy_cli.py -v
+      - name: Native H2/H3 process soak, resource budgets and restart recovery
+        env:
+          FOXTUNNEL_SOAK_SECONDS: ${{ inputs.soak_seconds || '180' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          go run -buildvcs=false ./integration/operations-cert --out operations-cert
+          mkdir operations-report
+          python scripts/operations_soak.py --binary foxtunnel-lab-2.exe \
+            --cert operations-cert/cert.pem --key operations-cert/key.pem \
+            --seconds "$FOXTUNNEL_SOAK_SECONDS" --parallel 3 --recovery-seconds 120 \
+            --out operations-report/report.json
+      - name: Retain aggregate operations evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-operations-${{ matrix.os }}
+          path: operations-report/report.json
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Scope
         shell: bash
         run: |
           echo 'Go transport CLI tests execute on the native runner; no cross-compile-only claim.'
-          echo 'Linux TUN remains Linux-only. Windows service management, installation, rollback, signing and Apple notarization are separate gates.'
+          echo 'Per-user Go CLI installation is exercised; NSS archive extraction has offline contract coverage. System service setup, package-manager installers, signing and Apple notarization remain separate gates.'
