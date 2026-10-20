@@ -363,6 +363,7 @@ func (f *forwarder) HandleUDP(conn adapter.UDPConn) {
 	}
 	go func() { defer release(f.udpSlots); defer conn.Close(); f.udpFlow(conn) }()
 }
+
 // udpFlowIdleFor keeps established non-DNS UDP mappings stable while
 // releasing ephemeral DNS source ports promptly. A delayed DNS response
 // after this idle window is dropped rather than creating a new association.
