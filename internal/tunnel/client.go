@@ -72,6 +72,8 @@ type Client struct {
 	BondAdaptive bool
 	// BondAutoTune opts into bounded 4/8-slot tuning from measured throughput.
 	BondAutoTune bool
+	// BondTraffic is legacy (default), auto, latency, or throughput.
+	BondTraffic string
 	// BondRoute: legacy (default) or smart (discovered direct hub + relay).
 	BondRoute        string
 	bondClient       *bond.Client
