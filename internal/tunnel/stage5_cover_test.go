@@ -16,9 +16,9 @@ func TestStage5CoverDeniesInternalSymlinkAliases(t *testing.T) {
 	root := t.TempDir()
 	const marker = "PRIVATE-COVER-ALIAS-NOT-PUBLIC"
 	for filename, body := range map[string]string{
-		".secret": marker,
+		".secret":     marker,
 		"server.json": marker,
-		"index.html": "<html>Public page</html>",
+		"index.html":  "<html>Public page</html>",
 	} {
 		if err := os.WriteFile(filepath.Join(root, filename), []byte(body), 0600); err != nil {
 			t.Fatal(err)
@@ -31,10 +31,10 @@ func TestStage5CoverDeniesInternalSymlinkAliases(t *testing.T) {
 		t.Fatal(err)
 	}
 	for link, target := range map[string]string{
-		"alias.txt": ".secret",
+		"alias.txt":         ".secret",
 		"safe-looking.json": "server.json",
 		"linked-index.html": "index.html",
-		"directory-alias": "hidden",
+		"directory-alias":   "hidden",
 	} {
 		if err := os.Symlink(target, filepath.Join(root, link)); err != nil {
 			t.Skipf("symlink creation unavailable: %v", err)
@@ -74,9 +74,9 @@ func TestStage5CoverServesPinnedPublicFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	for filename, data := range map[string]string{
-		"index.html": "<html>Public cover site</html>",
+		"index.html":      "<html>Public cover site</html>",
 		"docs/index.html": "<html>Docs home</html>",
-		"docs/style.css": "body { color: black; }",
+		"docs/style.css":  "body { color: black; }",
 	} {
 		if err := os.WriteFile(filepath.Join(root, filename), []byte(data), 0600); err != nil {
 			t.Fatal(err)
