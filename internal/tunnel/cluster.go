@@ -97,6 +97,9 @@ type bondDiscovery struct {
 // coordinator. Its listed origins receive the same credentials after TLS/h2.
 // Call after TLS/timeouts, before Serve. A failed initial fetch fails closed.
 func (c *Client) EnableBondDiscovery(ctx context.Context) error {
+	if err := validateBondTraffic(c.BondTraffic, c.BondAdaptive); err != nil {
+		return err
+	}
 	if (c.BondRoute != "" && c.BondRoute != "legacy" && c.BondRoute != "smart") || c.balance == "adaptive" || c.bondDiscovery != nil || c.bondClient != nil || len(c.fallbackServers) != 0 || c.Padding || (c.BondPipeline != 0 && c.BondPipeline != 4 && c.BondPipeline != 8) || (c.FallbackAttemptTimeout > 0 && c.FallbackAttemptTimeout < 100*time.Millisecond) {
 		return i18n.Error("invalid cluster configuration")
 	}
@@ -229,7 +232,7 @@ func (c *Client) discoveredBond(ctx context.Context) (*bond.Client, error) {
 					RouteMode: bondRouteMode(c.BondRoute), DirectOrigin: bondOriginKey(c.ServerURL),
 					Transport: transport, Username: c.Username, Password: c.Password,
 					AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout,
-					Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune}
+					Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune, TrafficMode: c.BondTraffic}
 				d.manifest = m
 			}
 			d.expires = now.Add(time.Duration(m.ValidFor) * time.Second)
