@@ -72,6 +72,11 @@ func TestAdaptiveBondHTTP2MultiIngressIntegrity(t *testing.T) {
 	if writes[0].Load() == 0 || writes[1].Load() == 0 {
 		t.Fatalf("both ingress links must carry real blocks: %d / %d", writes[0].Load(), writes[1].Load())
 	}
+	// Read may reach EOF while speculative prefetch workers are still
+	// terminating. Close joins those workers before checking reservations.
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
 	metrics := c.PathMetrics()
 	if metrics[0].UploadSamples+metrics[1].UploadSamples == 0 {
 		t.Fatalf("no ACKed block measurements: %+v", metrics)
