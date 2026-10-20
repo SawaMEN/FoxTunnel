@@ -7,6 +7,10 @@ on:
       - 'internal/tunnel/fastcopy.go'
       - 'internal/tunnel/fastcopy_test.go'
       - 'internal/tunnel/conn.go'
+      - 'internal/tunnel/stage3_profile_test.go'
+      - 'internal/tunnel/stage3_profile_nss_test.go'
+      - 'scripts/stage3_profile.py'
+      - 'scripts/test_stage3_profile.py'
       - 'internal/tunnel/server.go'
       - '.github/workflows/stage3-fastpath.yml'
   pull_request:
@@ -14,6 +18,10 @@ on:
       - 'internal/tunnel/fastcopy.go'
       - 'internal/tunnel/fastcopy_test.go'
       - 'internal/tunnel/conn.go'
+      - 'internal/tunnel/stage3_profile_test.go'
+      - 'internal/tunnel/stage3_profile_nss_test.go'
+      - 'scripts/stage3_profile.py'
+      - 'scripts/test_stage3_profile.py'
       - 'internal/tunnel/server.go'
       - '.github/workflows/stage3-fastpath.yml'
   workflow_dispatch:
@@ -42,5 +50,52 @@ jobs:
         run: go test ./internal/tunnel -run '^$' -fuzz '^FuzzFastCopy$' -fuzztime=2000x -parallel=2 -timeout=90s
       - name: Stdlib vs pooled copy benchmarks
         run: go test ./internal/tunnel -run '^$' -bench '^BenchmarkFastCopyBaselineVsPool$' -benchmem -benchtime=100ms -count=1 -timeout=90s
+      - name: Profile runner offline validation
+        run: python3 -m unittest discover -s scripts -p test_stage3_profile.py -v
       - name: Scope statement
         run: echo 'Loopback and microbenchmarks only; no WAN or NSS FFI speed claim.'
+
+  loopback-profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [go-h2, go-h3, nss-h2]
+        scenario: [small, bulk]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install native NSS headers (NSS profile only)
+        if: matrix.variant == 'nss-h2'
+        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
+      - name: Create restricted profiles on loopback, never upload raw data
+        env:
+          FT_VARIANT: ${{ matrix.variant }}
+          FT_SCENARIO: ${{ matrix.scenario }}
+        run: |
+          python3 scripts/stage3_profile.py \
+            --variant "$FT_VARIANT" --scenario "$FT_SCENARIO" \
+            --benchtime 250ms \
+            --out "$RUNNER_TEMP/foxtunnel-stage3-$FT_VARIANT-$FT_SCENARIO"
+      - name: Verify local private pprof metadata
+        env:
+          FT_VARIANT: ${{ matrix.variant }}
+          FT_SCENARIO: ${{ matrix.scenario }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          d = Path(os.environ['RUNNER_TEMP']) / (
+              'foxtunnel-stage3-' + os.environ['FT_VARIANT'] + '-' + os.environ['FT_SCENARIO'])
+          result = json.loads((d / 'summary.json').read_text())
+          assert result['environment'] == 'loopback'
+          assert result['variant'] == os.environ['FT_VARIANT']
+          assert result['scenario'] == os.environ['FT_SCENARIO']
+          assert all((d / filename).stat().st_size > 0 for filename in result['profile_files'].values())
+          assert all((d / filename).stat().st_mode & 0o077 == 0 for filename in result['profile_files'].values())
+          print('CPU/heap/block/mutex profiles captured privately; no upload')
+          PY
+
