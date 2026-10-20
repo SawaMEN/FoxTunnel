@@ -10,6 +10,8 @@ on:
       - "go.mod"
       - "go.sum"
       - "scripts/test_linux_tun_e2e.py"
+      - "scripts/stage6_tun_soak.py"
+      - "scripts/test_stage6_tun_soak.py"
       - "scripts/test_linux_native_vpn.py"
       - ".github/workflows/native-tun-e2e.yml"
   pull_request:
@@ -41,22 +43,43 @@ jobs:
         run: go test -race ./internal/nativetun -count=2 -timeout=90s
       - name: Native VPN DNS rollback and fail-closed guard restart tests
         run: python3 -m unittest discover -s scripts -p test_linux_native_vpn.py -v
+      - name: Bounded native TUN soak resource and failure gates
+        run: |
+          python3 -m py_compile scripts/stage6_tun_soak.py scripts/test_stage6_tun_soak.py scripts/test_linux_tun_e2e.py
+          python3 -m unittest discover -s scripts -p test_stage6_tun_soak.py -v
       - name: Build FoxTunnel including embedded userspace TCP/IP stack
         run: go build -o "$RUNNER_TEMP/foxtunnel" ./cmd/foxtunnel
       - name: Install isolated network tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq iproute2 nftables openssl
-      - name: Twice-run native TUN reconnect, link loss, DNS A AAAA and kill-switch
+      - name: Twice-run native TUN reconnect, link loss, DNS and bounded soak
         run: |
           set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/stage6-tun-reports"
           for attempt in 1 2; do
-            echo "Isolated TUN and DNS A/AAAA E2E run ${attempt}/2"
+            echo "Native netns UDP/TUN/DNS soak and recovery ${attempt}/2"
             sudo env FOXTUNNEL_TUN_E2E=1 FOXTUNNEL_TUN_NATIVE=1 \
+              FOXTUNNEL_TUN_SOAK_SECONDS=25 \
+              FOXTUNNEL_TUN_SOAK_REPORT="$RUNNER_TEMP/stage6-tun-reports/attempt-${attempt}.json" \
               FOXTUNNEL_LAB_FOXTUNNEL="$RUNNER_TEMP/foxtunnel" \
               python3 -m unittest discover -s scripts -p test_linux_tun_e2e.py -v
           done
+      - name: Make aggregate soak reports readable
+        if: always()
+        run: |
+          if test -d "$RUNNER_TEMP/stage6-tun-reports"; then
+            sudo chmod -R a+rX "$RUNNER_TEMP/stage6-tun-reports"
+          fi
+      - name: Upload aggregate stage 6 resource evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage6-tun-soak-netns
+          path: ${{ runner.temp }}/stage6-tun-reports/*.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Test scope
         run: |
           echo "Direct gVisor TCP/IP stack in FoxTunnel binary, no sing-box process."
-          echo "Isolated netns only; remote HTTPS exit restart, live uplink flap, A/AAAA, IPv6 UDP and child SIGKILL tested. Production leak audits remain separate."
+          echo "Isolated netns only; 25s x2 bounded TCP/UDP/DNS soak, native client/exit RSS-FD-socket samples, IPv4/IPv6 route cleanup, remote exit restart, link flap and SIGKILL. No production leak claim."

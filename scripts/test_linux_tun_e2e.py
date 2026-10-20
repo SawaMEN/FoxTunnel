@@ -19,6 +19,7 @@ import time
 import unittest
 
 import linux_tun_companion as companion
+import stage6_tun_soak as tun_soak
 
 
 ECHO_SERVICES = r"""
@@ -419,6 +420,41 @@ class TUNEndToEnd(unittest.TestCase):
                                                   "nft", "list", "table", "inet",
                                                   companion.TABLE).stdout)
 
+                if native and os.environ.get("FOXTUNNEL_TUN_SOAK_SECONDS"):
+                    # This is the same LIVE native TUN + HTTPS + UDP/DNS
+                    # namespace; no synthetic SOCKS substitutes. The
+                    # launcher stays alive and owns exactly one TUN child.
+                    duration = int(os.environ["FOXTUNNEL_TUN_SOAK_SECONDS"])
+                    children = Path(
+                        f"/proc/{client.pid}/task/{client.pid}/children"
+                    ).read_text().split()
+                    self.assertEqual(len(children), 1, "native TUN child count before soak")
+                    tracked = {
+                        "launcher": client.pid,
+                        "client": int(children[0]),
+                        "exit": server.pid,
+                    }
+                    def live_probe(ns, kind, address, port):
+                        result = subprocess.run(
+                            ["ip", "netns", "exec", ns, sys.executable,
+                             "-c", PROBE, kind, address, str(port)],
+                            capture_output=True, text=True, timeout=8
+                        )
+                        return result.returncode == 0
+                    report = tun_soak.run(cns, tracked, duration, probe=live_probe)
+                    # Aggregate measurements only, never credentials, TCP
+                    # payloads, /proc maps or packet contents.
+                    print("STAGE6_TUN_SOAK " + json.dumps(report, sort_keys=True), flush=True)
+                    report_path = os.environ.get("FOXTUNNEL_TUN_SOAK_REPORT")
+                    if report_path:
+                        companion.write_exclusive(
+                            Path(report_path), json.dumps(report, sort_keys=True) + "\n", 0o600
+                        )
+                    self.assertTrue(report["passed"], "native TUN resource or probe budget exceeded")
+                    self.assertIn("policy drop", cmd("ip", "netns", "exec", cns,
+                                                  "nft", "list", "table", "inet",
+                                                  companion.TABLE).stdout)
+
                 # A dropped tunnel must NOT fall back to direct Internet.
                 if native:
                     children = Path(f'/proc/{client.pid}/task/{client.pid}/children').read_text().split()
@@ -426,6 +462,13 @@ class TUNEndToEnd(unittest.TestCase):
                     os.kill(int(children[0]), signal.SIGKILL)
                     client.wait(timeout=8)
                     self.assertNotIn('51821', cmd('ip', '-n', cns, 'rule', 'show').stdout)
+                    self.assertNotIn('51821', cmd('ip', '-n', cns, '-6', 'rule', 'show').stdout)
+                    self.assertFalse(cmd('ip', '-n', cns, '-4', 'route', 'show',
+                                         'table', '51821').stdout.strip(),
+                                     'native IPv4 policy route survived child shutdown')
+                    self.assertFalse(cmd('ip', '-n', cns, '-6', 'route', 'show',
+                                         'table', '51821').stdout.strip(),
+                                     'native IPv6 policy route survived child shutdown')
                 else:
                     stop(client)
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
