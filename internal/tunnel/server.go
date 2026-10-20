@@ -162,7 +162,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	incomingDone := make(chan struct{})
 	go func() {
 		defer close(incomingDone)
-		_, err := io.Copy(upstream, incoming)
+		_, err := fastCopy(upstream, incoming)
 		if err != nil {
 			_ = upstream.Close()
 			return
@@ -173,7 +173,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Flush small chunks immediately; otherwise an interactive tunnel can stall.
-	_, _ = io.Copy(outgoing, upstream)
+	_, _ = fastCopy(outgoing, upstream)
 	_ = upstream.Close()
 	_ = r.Body.Close()
 	<-incomingDone

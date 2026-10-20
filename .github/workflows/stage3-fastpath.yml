@@ -1,0 +1,46 @@
+name: Stage 3 TCP Fast Path
+
+on:
+  push:
+    branches: [up]
+    paths:
+      - 'internal/tunnel/fastcopy.go'
+      - 'internal/tunnel/fastcopy_test.go'
+      - 'internal/tunnel/conn.go'
+      - 'internal/tunnel/server.go'
+      - '.github/workflows/stage3-fastpath.yml'
+  pull_request:
+    paths:
+      - 'internal/tunnel/fastcopy.go'
+      - 'internal/tunnel/fastcopy_test.go'
+      - 'internal/tunnel/conn.go'
+      - 'internal/tunnel/server.go'
+      - '.github/workflows/stage3-fastpath.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tcp-fastpath-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Formatting
+        run: |
+          gofmt -d internal/tunnel/fastcopy.go internal/tunnel/fastcopy_test.go internal/tunnel/conn.go internal/tunnel/server.go
+          test -z "$(gofmt -l internal/tunnel/fastcopy.go internal/tunnel/fastcopy_test.go internal/tunnel/conn.go internal/tunnel/server.go)"
+      - name: Go vet
+        run: go vet ./internal/tunnel
+      - name: Stream and half-close regressions under race detector
+        run: go test -race ./internal/tunnel -run '^(TestFastCopy|TestStreamOutlivesSetupTimeoutAndHalfClose|TestCancelledStreamClosesSilentDestination|TestParallelStreams|TestAccessRevocationIsolationAllTransports)' -count=1 -timeout=120s
+      - name: Fuzz bounded stream-copy correctness
+        run: go test ./internal/tunnel -run '^$' -fuzz '^FuzzFastCopy$' -fuzztime=2000x -parallel=2 -timeout=90s
+      - name: Stdlib vs pooled copy benchmarks
+        run: go test ./internal/tunnel -run '^$' -bench '^BenchmarkFastCopyBaselineVsPool$' -benchmem -benchtime=100ms -count=1 -timeout=90s
+      - name: Scope statement
+        run: echo 'Loopback and microbenchmarks only; no WAN or NSS FFI speed claim.'
