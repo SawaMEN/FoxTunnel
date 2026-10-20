@@ -10,6 +10,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "scripts/test_linux_tun_e2e.py"
+      - "scripts/test_linux_native_vpn.py"
       - ".github/workflows/native-tun-e2e.yml"
   pull_request:
     paths:
@@ -38,13 +39,15 @@ jobs:
           go-version-file: go.mod
       - name: Offline TCP/UDP parser and cancelled SOCKS handshake tests
         run: go test -race ./internal/nativetun -count=2 -timeout=90s
+      - name: Native VPN DNS rollback and fail-closed guard restart tests
+        run: python3 -m unittest discover -s scripts -p test_linux_native_vpn.py -v
       - name: Build FoxTunnel including embedded userspace TCP/IP stack
         run: go build -o "$RUNNER_TEMP/foxtunnel" ./cmd/foxtunnel
       - name: Install isolated network tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq iproute2 nftables openssl
-      - name: Twice-run native TUN IPv4 IPv6 TCP UDP DNS A AAAA kill-switch and link loss
+      - name: Twice-run native TUN reconnect, link loss, DNS A AAAA and kill-switch
         run: |
           set -euo pipefail
           for attempt in 1 2; do
@@ -56,4 +59,4 @@ jobs:
       - name: Test scope
         run: |
           echo "Direct gVisor TCP/IP stack in FoxTunnel binary, no sing-box process."
-          echo "Isolated netns only; namespace resolver lookup, IPv6 UDP and child SIGKILL exercised. Production leak audits remain separate."
+          echo "Isolated netns only; remote HTTPS exit restart, live uplink flap, A/AAAA, IPv6 UDP and child SIGKILL tested. Production leak audits remain separate."

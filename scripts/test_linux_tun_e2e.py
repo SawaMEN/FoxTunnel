@@ -344,6 +344,81 @@ class TUNEndToEnd(unittest.TestCase):
                                                   qtype=qtype):
                                     self.assert_probe(cns, qtype, destination, 53, True)
 
+                if native:
+                    # Stage 6/4: a live client must fail closed while its real
+                    # authenticated HTTPS exit disappears, then recover *new*
+                    # TCP/UDP/DNS sessions when that exit returns. Never
+                    # relax the persistent nft policy during reconnection.
+                    stop(server)
+                    self.wait_alive(client, 0.1, 'native VPN during exit outage')
+                    guard = cmd("ip", "netns", "exec", cns, "nft", "list",
+                                "table", "inet", companion.TABLE).stdout
+                    self.assertIn("policy drop", guard)
+                    for kind, address, port in (
+                        ("tcp", "198.18.0.9", 5657),
+                        ("udp", "fd42:2::9", 5656),
+                        ("dns", "198.18.0.9", 53),
+                        ("dns6", "fd42:2::9", 53),
+                    ):
+                        with self.subTest(phase="exit-down", kind=kind, address=address):
+                            self.assert_probe(cns, kind, address, port, False)
+
+                    server = fox_start(sns, "server",
+                                       "--listen", "198.18.0.1:8443",
+                                       "--cert", str(cert), "--key", str(key),
+                                       "--allow-private", "--enable-udp")
+                    self.wait_alive(server, 0.4, 'restarted HTTPS exit')
+                    for kind, address, port in (
+                        ("tcp", "198.18.0.9", 5657),
+                        ("tcp", "fd42:2::9", 5657),
+                        ("udp", "198.18.0.9", 5656),
+                        ("udp", "fd42:2::9", 5656),
+                        ("dns", "198.18.0.9", 53),
+                        ("dns6", "fd42:2::9", 53),
+                    ):
+                        with self.subTest(phase="exit-restored", kind=kind, address=address):
+                            self.assert_probe_eventually(cns, kind, address, port)
+                    self.assertIn("policy drop", cmd("ip", "netns", "exec", cns,
+                                                  "nft", "list", "table", "inet",
+                                                  companion.TABLE).stdout)
+
+                    # Physical link loss *while* the native VPN is running is
+                    # distinct from the existing link-loss test after exit.
+                    # Verify both families are denied, recover the uplink and
+                    # restore routes removed by the kernel, then confirm the
+                    # same client can reopen protected flows.
+                    cmd("ip", "-n", cns, "link", "set", "fcwan0", "down")
+                    for kind, address, port in (
+                        ("tcp", "198.18.0.9", 5657),
+                        ("udp", "fd42:2::9", 5656),
+                        ("dns6", "198.18.0.9", 53),
+                    ):
+                        with self.subTest(phase="uplink-down", kind=kind, address=address):
+                            self.assert_probe(cns, kind, address, port, False)
+                    cmd("ip", "-n", cns, "link", "set", "fcwan0", "up")
+                    cmd("ip", "-n", cns, "addr", "replace", "198.18.0.2/30",
+                        "dev", "fcwan0")
+                    cmd("ip", "-n", cns, "-6", "addr", "replace",
+                        "fd42:1::2/64", "dev", "fcwan0", "nodad")
+                    cmd("ip", "-n", cns, "route", "replace", "default",
+                        "via", "198.18.0.1", "dev", "fcwan0")
+                    cmd("ip", "-n", cns, "-6", "route", "replace", "default",
+                        "via", "fd42:1::1", "dev", "fcwan0")
+                    self.wait_alive(client, 0.1, 'native VPN after link restore')
+                    for kind, address, port in (
+                        ("tcp", "198.18.0.9", 5657),
+                        ("tcp", "fd42:2::9", 5657),
+                        ("udp", "198.18.0.9", 5656),
+                        ("udp", "fd42:2::9", 5656),
+                        ("dns", "198.18.0.9", 53),
+                        ("dns6", "fd42:2::9", 53),
+                    ):
+                        with self.subTest(phase="uplink-restored", kind=kind, address=address):
+                            self.assert_probe_eventually(cns, kind, address, port)
+                    self.assertIn("policy drop", cmd("ip", "netns", "exec", cns,
+                                                  "nft", "list", "table", "inet",
+                                                  companion.TABLE).stdout)
+
                 # A dropped tunnel must NOT fall back to direct Internet.
                 if native:
                     children = Path(f'/proc/{client.pid}/task/{client.pid}/children').read_text().split()
@@ -472,6 +547,26 @@ class TUNEndToEnd(unittest.TestCase):
                 return
             time.sleep(0.2)
         raise RuntimeError("sing-box did not create ftun0")
+
+    def assert_probe_eventually(self, ns: str, kind: str, ip: str,
+                                port: int, timeout: float = 16):
+        """Retry new application requests, never replay an in-flight tunnel."""
+        until = time.monotonic() + timeout
+        last = None
+        while time.monotonic() < until:
+            last = subprocess.run(
+                ["ip", "netns", "exec", ns, sys.executable, "-c", PROBE,
+                 kind, ip, str(port)],
+                capture_output=True, text=True, timeout=12
+            )
+            if last.returncode == 0:
+                return
+            time.sleep(0.4)
+        self.fail(
+            f"{kind} {ip}:{port} did not recover within {timeout}s: "
+            f"status={last.returncode if last else 'none'} "
+            f"{last.stderr if last else ''}"
+        )
 
     def assert_probe(self, ns: str, kind: str, ip: str, port: int, expected: bool):
         result = subprocess.run(["ip", "netns", "exec", ns, sys.executable,

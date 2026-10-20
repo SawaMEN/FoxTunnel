@@ -82,6 +82,41 @@ class NativeNetworkTests(unittest.TestCase):
         self.assertIn(('resolvectl', 'revert', 'ftun0'), calls)
         self.assertFalse(any('flush' in c or 'replace' in c for c in calls))
 
+    def test_stage6_dns_failure_rolls_back_and_preserves_guard(self):
+        """Failed resolver setup leaves no routing bypass and never drops nft."""
+        invocations = []
+        def run(*args, check=True):
+            invocations.append(args)
+            if args[:2] == ('resolvectl', 'dns'):
+                raise subprocess.CalledProcessError(2, args)
+            return subprocess.CompletedProcess(args, 0, '', '')
+        network = self.network()
+        with patch.object(native, 'command', side_effect=run):
+            with self.assertRaises(subprocess.CalledProcessError):
+                network.configure()
+            network.close()
+        self.assertIn(('resolvectl', 'revert', 'ftun0'), invocations)
+        self.assertTrue(any(c[:4] == ('ip', '-4', 'rule', 'del')
+                            for c in invocations))
+        self.assertTrue(any(c[:4] == ('ip', '-6', 'rule', 'del')
+                            for c in invocations))
+        self.assertFalse(any(c and c[0] == 'nft' for c in invocations))
+
+    def test_stage6_guard_blocks_unsafe_restart(self):
+        """A second launcher cannot assume that an existing guard is safe."""
+        attempts = []
+        def run(*args, check=True):
+            attempts.append(args)
+            result = self.preflight_command(*args, check=check)
+            if args[:3] == ('nft', 'list', 'table'):
+                result.returncode = 0
+            return result
+        with patch.object(native.shutil, 'which', return_value='/bin/tool'), \
+             patch.object(native, 'command', side_effect=run):
+            with self.assertRaisesRegex(ValueError, 'guard already exists|already exists'):
+                self.network(dns_mode='none').preflight()
+        self.assertFalse(any({'add', 'del', '-f', 'flush'} & set(a) for a in attempts))
+
     def test_refuses_unmanaged_resolver(self):
         with patch.object(native.shutil, 'which', return_value='/bin/tool'), patch.object(native, 'command', side_effect=self.preflight_command), patch.object(native.os.path, 'realpath', return_value='/etc/resolv.conf'):
             with self.assertRaisesRegex(ValueError, 'systemd-resolved'):
