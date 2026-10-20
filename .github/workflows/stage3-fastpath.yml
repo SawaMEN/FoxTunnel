@@ -72,7 +72,9 @@ jobs:
       - name: Install NSS and NSPR headers
         run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
       - name: Formatting
-        run: test -z "$(gofmt -l internal/nsstls/nss.go internal/nsstls/stage3_ffi_nss_test.go)"
+        run: |
+          gofmt -d internal/nsstls/nss.go internal/nsstls/stage3_ffi_nss_test.go
+          test -z "$(gofmt -l internal/nsstls/nss.go internal/nsstls/stage3_ffi_nss_test.go)"
       - name: Vet NSS callback state
         run: go vet -tags nss ./internal/nsstls ./internal/tunnel
       - name: Race-test NSS callback errors and live TCP streams
