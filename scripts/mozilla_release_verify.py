@@ -28,6 +28,7 @@ REQUIRED = {
     "foxtunnel", "build.json", "LICENSE", "THIRD_PARTY_NOTICES.txt",
     "mozilla-runtime.json", "neqo-provenance.json",
     "rust-dependencies.json", "rust-license-index.json",
+    "integration.json", "INTEGRATION.md",
 }
 
 
@@ -127,7 +128,11 @@ def validate_bundle(archive: Path, metadata: Path, tag: str, commit: str) -> dic
     if not REQUIRED <= hashes.keys():
         raise ValueError("missing essential Mozilla archive members")
     build = documents["build.json"]
+    contract = read_json_bytes((Path(__file__).resolve().parents[1] / "integration/contract.json").read_bytes())
+    if not same_json(documents.get("integration.json"), contract):
+        raise ValueError("embedded integration contract mismatch")
     source_fields = {
+        "product": "protocol-core", "integration_schema": 1,
         "schema": 1, "version": tag, "commit": commit,
         "target": "linux/amd64/mozilla", "engine": "mozilla",
         "build_flavor": "mozilla", "protocol_draft": "foxtunnel-draft-0",

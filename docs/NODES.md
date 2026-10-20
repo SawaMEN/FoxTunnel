@@ -119,7 +119,7 @@ foxtunnel client --server https://ingress-1.example \
 ```
 
 This feature is **separate from TCP Bonding**; it cannot be combined with
-`--bond`, `--discover`, or `--tun`. The multi-node session fails closed
+`--bond` or `--discover`. The multi-node session fails closed
 if one trusted stream disconnects or refuses UDP v2, with no silent
 rerouting of existing UDP flows. It can reduce cross-flow queue blocking,
 but does not make a single game session have a lower ping or aggregate

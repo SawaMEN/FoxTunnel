@@ -90,6 +90,8 @@ def validate_metadata(p, version, commit):
                     variant='', build_flavor=flavor,
                     protocol_draft=DRAFT, default_tls_backend='nss',
                     tls_backends=['go', 'nss'] if flavor == 'nss' else ['go'])
+    if 'product' in p and (p['product'] != 'protocol-core' or type(p.get('integration_schema')) is not int or p['integration_schema'] != 1):
+        raise ValueError('invalid protocol core integration contract')
     if type(p.get('schema')) is not int or p['schema'] != 1:
         raise ValueError('unsupported artifact schema')
     if p.get('dirty') is not False or p.get('experimental') is not True:
@@ -177,6 +179,8 @@ def inspect_archive(path, metadata):
     executable = 'foxtunnel'
     libraries = metadata['runtime'].get('mozilla', {}).get('libraries', {})
     allowed = {executable, 'build.json', 'LICENSE', 'THIRD_PARTY_NOTICES.txt'}
+    if metadata.get('product') == 'protocol-core':
+        allowed |= {'integration.json', 'INTEGRATION.md'}
     if metadata['build_flavor'] == 'nss':
         allowed |= {'mozilla-runtime.json', *('lib/' + name for name in libraries)}
 
@@ -205,7 +209,7 @@ def inspect_archive(path, metadata):
                 if read > size:
                     raise ValueError('archive member exceeds declared size')
                 digest.update(block)
-                if name in ('build.json', 'mozilla-runtime.json'):
+                if name in ('build.json', 'mozilla-runtime.json', 'integration.json'):
                     data.extend(block)
         if read != size:
             raise ValueError('truncated archive member')
@@ -222,6 +226,10 @@ def inspect_archive(path, metadata):
     expected_build = {k: v for k, v in metadata.items() if k not in ARCHIVE_FIELDS}
     if not same_json(documents.get('build.json'), expected_build):
         raise ValueError('embedded build.json differs from release metadata')
+    if metadata.get('product') == 'protocol-core':
+        contract = read_json(Path(__file__).resolve().parents[1] / 'integration/contract.json')
+        if not same_json(documents.get('integration.json'), contract):
+            raise ValueError('embedded integration contract mismatch')
     if libraries:
         if 'licenses/Mozilla-about-license.html' not in hashes:
             raise ValueError('missing Mozilla license notices')

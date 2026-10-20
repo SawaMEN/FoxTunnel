@@ -48,10 +48,8 @@ When both variables are set, **no-auth fallback is rejected**.
 The same local handshake protects SOCKS5 TCP CONNECT and UDP
 ASSOCIATE. Partial/oversized credential pairs fail at startup;
 server-side comparisons use fixed-size constant-time digests.
-The experimental native Linux `--tun` integration currently creates
-an internal no-auth SOCKS connector and therefore **rejects** this
-optional local credential mode, rather than silently failing to
-authenticate.
+Device TUN and any internal packet-to-SOCKS adapter belong to the host VPN client.
+FoxTunnel no longer embeds a system VPN stack.
 
 Non-loopback SOCKS5 listeners require both sets of local credentials
 AND `--socks-allow-lan`:

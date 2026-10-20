@@ -79,6 +79,6 @@ A compatible Mozilla Linux amd64 bundle supports:
 
 The [v0.1.0-alpha.2](https://github.com/SawaMEN/FoxTunnel/releases/tag/v0.1.0-alpha.2) experimental bundle predates the most recent \`main\` merge. The connection file's transport is preserved.
 
-UDP ASSOCIATE requires \`--enable-udp\` on server and client; opt-in persistent UDP also requires the client's \`--udp-stream\`. Linux TUN requires those options, administrative permissions, and separately maintained routes/firewall/DNS. It is not a ready-made leak-proof VPN.
+UDP ASSOCIATE requires \`--enable-udp\` on server and client; opt-in persistent UDP also requires the client's \`--udp-stream\`. The host VPN client owns TUN, routing, firewall and DNS; the built-in TUN has been removed. See the [integration contract](INTEGRATION.md).
 
 See [Features and configuration](FEATURES.en.md) for details.

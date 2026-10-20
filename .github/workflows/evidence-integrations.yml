@@ -2,10 +2,10 @@ name: Evidence and external SDK integrations
 
 on:
   pull_request:
-    paths: ['foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/linux_tun_companion.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
+    paths: ['foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
   push:
     branches: [main]
-    paths: ['foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/linux_tun_companion.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
+    paths: ['foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
   workflow_dispatch:
 
 permissions:

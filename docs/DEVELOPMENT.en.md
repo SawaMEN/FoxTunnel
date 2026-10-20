@@ -15,7 +15,6 @@ This document collects build instructions, architecture, SDK usage, testing and 
 | \`internal/tunnel/\` | SOCKS5, HTTPS transport, client, server, authentication |
 | \`internal/nsstls/\` | Mozilla NSS integration |
 | \`internal/neqo/\`, \`rust/neqo-bridge/\` | Native Rust Neqo QUIC/H3 client |
-| \`internal/nativetun/\` | Experimental Linux TUN |
 | \`scripts/\`, \`.github/workflows/\` | Reproducible builds, checks, CI and releases |
 | \`docs/\` | Three primary guides, protocol contract and dated evidence |
 
@@ -41,7 +40,7 @@ python3 scripts/build_mozilla.py --version v0.0.0-ci
 
 This builds Go + NSS + Neqo and bundles the native libraries. The output is **not** a single statically linked executable; deploy the entire archive. A plain \`go build\` does not include the native Mozilla engine.
 
-CI covers Go, NSS, Neqo, real-socket HTTP/2/HTTP/3 and isolated experimental Linux TUN tests. CI loopback success is not evidence of stable operation on real carrier networks.
+CI covers Go, NSS, Neqo and real-socket HTTP/2/HTTP/3. Device TUN tests belong to host clients. CI loopback success is not evidence of stable operation on real carrier networks.
 
 ## Go SDK
 

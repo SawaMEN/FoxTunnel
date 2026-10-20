@@ -32,7 +32,7 @@ class ReleaseContract(unittest.TestCase):
                                   libraries={'libnss3.so': hashlib.sha256(b'library').hexdigest()})
                 runtime = dict(kind='bundled-nss', baseline='ubuntu-24.04', packages=['glibc', 'libgcc-s1'],
                                nss_version='3.130', mozilla=provenance)
-            p = dict(schema=1, version=self.args.version, commit='a' * 40, dirty=False,
+            p = dict(schema=1, product='protocol-core', integration_schema=1, version=self.args.version, commit='a' * 40, dirty=False,
                      experimental=True, build_date='2026-10-18T19:00:00Z', target=target,
                      goos=goos, goarch=arch,
                      variant='', build_flavor=flavor,
@@ -53,6 +53,7 @@ class ReleaseContract(unittest.TestCase):
         files = {'build.json': json.dumps(build).encode(), 'LICENSE': b'MIT',
                  'THIRD_PARTY_NOTICES.txt': b'notices', 'licenses/Go-LICENSE': b'BSD',
                  'foxtunnel': b'fixture executable, never run'}
+        files.update(release.integration_files())
         if p['build_flavor'] == 'nss':
             files.update({'mozilla-runtime.json': json.dumps(p['runtime']['mozilla']).encode(),
                           'licenses/Mozilla-about-license.html': b'Mozilla notices', 'lib/libnss3.so': b'library'})
@@ -103,6 +104,14 @@ class ReleaseContract(unittest.TestCase):
         self.verify_args.target = None
         with self.assertRaises(ValueError):
             verify.verify(self.verify_args)
+
+    def test_integration_contract_required_and_exact(self):
+        self.pack(0, lambda files: files.pop('integration.json'))
+        self.expect_index_error('required archive member')
+        self.pack(0, lambda files: files.update({'integration.json': b'{}'}))
+        self.expect_index_error('integration contract mismatch')
+        self.pack(0, lambda files: files.update({'install-vpn.sh': b'#!/bin/sh'}))
+        self.expect_index_error('unexpected archive member')
 
     def test_corruption_rejected(self):
         p = json.loads(self.entries[0].read_text())

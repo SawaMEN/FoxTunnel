@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
-	"github.com/SawaMEN/FoxTunnel/internal/nativetun"
 	"log"
 	"net"
 	"net/http"
@@ -265,12 +264,6 @@ func main() {
 			fs.BoolVar(udpMultiNode, "udp-multi-node", false, i18n.Text("opt in to per-destination UDP v2 stream sharding across explicit trusted servers"))
 		}
 		listen := fs.String("listen", "127.0.0.1:1080", i18n.Text("local SOCKS5 listening address"))
-		tunName := new(string)
-		tunMTU := new(uint)
-		if os.Args[1] == "client" {
-			fs.StringVar(tunName, "tun", "", i18n.Text("experimental native Linux TUN device name (requires UDP streaming; does not configure routes or firewall)"))
-			fs.UintVar(tunMTU, "tun-mtu", 1400, i18n.Text("native TUN MTU 1280-9000"))
-		}
 		maxConnections := fs.Int("max-connections", 256, i18n.Text("maximum local SOCKS sockets including incomplete handshakes"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
 		var fallbacks serverURLs
@@ -342,7 +335,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "node-pins-file", "socks-allow-lan", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "node-pins-file", "socks-allow-lan", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
 				default:
 					conflict = true
 				}
@@ -418,9 +411,6 @@ func main() {
 		}
 		if *udpMultiNode && (!*enableUDP || !*udpStream || *bonded || *discover || len(fallbacks) == 0) {
 			log.Fatal("--udp-multi-node requires --enable-udp --udp-stream and at least two explicit trusted servers, without --bond or --discover")
-		}
-		if *udpMultiNode && *tunName != "" {
-			log.Fatal("--udp-multi-node is not yet supported with --tun")
 		}
 		if *engineStatusInterval < 0 || (*engineStatusInterval > 0 && *engineStatusInterval < time.Second) {
 			log.Fatal("--engine-status-interval must be 0 or at least 1s")
@@ -504,9 +494,6 @@ func main() {
 		client.SOCKSPassword = os.Getenv("FOXTUNNEL_SOCKS_PASSWORD")
 		if err := client.ValidateSOCKSAuth(); err != nil {
 			log.Fatal(err)
-		}
-		if *tunName != "" && client.SOCKSUsername != "" {
-			log.Fatal("--tun currently uses a local no-auth SOCKS5 connector; local SOCKS credentials are not yet supported with TUN")
 		}
 		client.EnableUDP = *enableUDP
 		client.UDPStreaming = *udpStream
@@ -620,21 +607,6 @@ func main() {
 			if !client.AllowPublicSOCKS || client.SOCKSUsername == "" {
 				log.Fatal("non-loopback SOCKS5 requires explicit --socks-allow-lan plus FOXTUNNEL_SOCKS_USER/PASSWORD; SOCKS5 passwords are plaintext on the local network")
 			}
-		}
-		if *tunName != "" {
-			if !*enableUDP || !*udpStream || *bonded {
-				log.Fatal("--tun requires --enable-udp --udp-stream without --bond")
-			}
-			options := nativetun.Options{Name: *tunName, MTU: uint32(*tunMTU), SOCKS: listener.Addr().String()}
-			if err := nativetun.Validate(options); err != nil {
-				log.Fatal(err)
-			}
-			runner, err := nativetun.Start(ctx, options)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer runner.Close()
-			log.Printf("native Linux TUN ready: %s (routes, DNS and firewall MUST be configured separately)", *tunName)
 		}
 		log.Printf(i18n.Text("SOCKS5 listener: %s"), listener.Addr())
 		if err := client.ServeContext(ctx, listener); err != nil {

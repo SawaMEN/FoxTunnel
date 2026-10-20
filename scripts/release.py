@@ -31,6 +31,13 @@ def new_file(path, content):
         f.write(content)
 
 
+def integration_files():
+    return {
+        "integration.json": (ROOT / "integration/contract.json").read_bytes(),
+        "INTEGRATION.md": (ROOT / "docs/INTEGRATION.md").read_bytes(),
+    }
+
+
 def licenses(go, env):
     cmd = [go, 'list', '-buildvcs=false', '-mod=readonly', '-deps', '-json']
     if env['CGO_ENABLED'] == '1':
@@ -113,7 +120,10 @@ def build(a):
             raise ValueError('loaded NSS version differs from pinned Mozilla runtime')
         files = licenses(a.go, env)
         files.update(runtime_files)
+        files.update(integration_files())
         p = dict(schema=1, version=a.version, commit=commit, build_date=date, target=target, goos=a.os, goarch=env['GOARCH'], variant=variant, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', experimental=True, native_smoke_tested=native)
+        p['product'] = 'protocol-core'
+        p['integration_schema'] = 1
         p['go_version'] = go_version
         p['tls_backends'] = ['go', 'nss'] if a.backend == 'nss' else ['go']
         p['default_tls_backend'] = 'nss' if a.backend == 'nss' else 'go'
