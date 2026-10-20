@@ -2,6 +2,8 @@
 
 [Home](../README.en.md) · [Getting started](START.en.md) · [Русский](DEVELOPMENT.md)
 
+[Stage 8: evidence registry, external SDK integrations and audit handoff (Russian)](AUDIT-READINESS.md)
+
 This document collects build instructions, architecture, SDK usage, testing and release policy. Application setup belongs in [Getting started](START.en.md); optional switches are documented in [Features](FEATURES.en.md).
 
 ## Project layout

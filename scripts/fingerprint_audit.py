@@ -70,6 +70,11 @@ def read_profile(path: Path, kind: str) -> tuple[dict, str]:
     if not path.is_file() or path.stat().st_size > MAX_INPUT:
         raise ValueError("capture file missing or exceeds 4 MiB")
     data = path.read_bytes()
+    return decode_profile(data, kind), hashlib.sha256(data).hexdigest()
+
+
+def decode_profile(data: bytes, kind: str) -> dict:
+    """Validate one already-snapshotted observation without rereading its path."""
     raw = json.loads(data)
     if not isinstance(raw, dict) or raw.get("schema") != 1:
         raise ValueError("unsupported observation schema")
@@ -124,7 +129,7 @@ def read_profile(path: Path, kind: str) -> tuple[dict, str]:
             raise ValueError("capture provenance must identify endpoint decoding and scenario")
     else:
         raise ValueError("unsupported observation type")
-    return raw, hashlib.sha256(data).hexdigest()
+    return raw
 
 
 def path_value(data: dict, dotted: str):
