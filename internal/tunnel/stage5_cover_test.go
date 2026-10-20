@@ -103,8 +103,8 @@ func TestStage5CoverServesPinnedPublicFiles(t *testing.T) {
 	}
 	for _, redirect := range []struct{ from, to string }{
 		{"/docs", "/docs/"},
-		{"/docs/index.html", "./"},
-		{"/index.html", "./"},
+		{"/docs/index.html", "/docs/"},
+		{"/index.html", "/"},
 	} {
 		w := httptest.NewRecorder()
 		cover.ServeHTTP(w, httptest.NewRequest(http.MethodGet, redirect.from, nil))
