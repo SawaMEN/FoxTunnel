@@ -38,6 +38,8 @@ def gate_report_set(base: list[dict], candidate: list[dict],
                     require_wan: bool = True) -> dict:
     if not base or not candidate:
         raise ValueError("both baseline and candidate files are required")
+    if base_label == candidate_label:
+        raise ValueError("baseline and candidate must be distinct labels")
     reports = base + candidate
     first = base[0]
     mode, scenario = first["mode"], first["scenario"]
@@ -64,7 +66,7 @@ def gate_report_set(base: list[dict], candidate: list[dict],
         for report in source:
             day = dt.datetime.fromisoformat(report["created_at_utc"]).date().isoformat()
             selected = [r for r in report["samples"] if r.get("proxy") == label]
-            daily[day] = daily.get(day, 0) + len(selected)
+            daily[day] = daily.get(day, 0) + sum(1 for row in selected if row.get("ok") is True)
             for item in selected:
                 # Reject spoofed or unbounded metrics before computing a
                 # seemingly green comparison report.
@@ -89,6 +91,8 @@ def gate_report_set(base: list[dict], candidate: list[dict],
                 issues.append(label + ": fewer than 5 samples on a measured day")
         rows_by_label[label] = rows
         days_by_label[label] = daily
+    if require_wan and set(days_by_label[base_label]) != set(days_by_label[candidate_label]):
+        issues.append("baseline/candidate measurement UTC days differ")
     baseline = metrics_of(rows_by_label[base_label], mode)
     challenger = metrics_of(rows_by_label[candidate_label], mode)
 
