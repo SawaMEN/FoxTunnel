@@ -10,6 +10,12 @@ import (
 // Dial counts destination sockets (including DNS/dial time), not HTTP carriers.
 // The callback returns a raw socket; this wrapper preserves TCP half-close.
 func Dial(ctx context.Context, dial func(context.Context) (net.Conn, error)) (net.Conn, error) {
+	// A dial context often has a shorter deadline than the established
+	// connection. Check it at admission and at hand-off; do not attach it as
+	// a lifetime cancellation hook after a successful dial.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	g := from(ctx)
 	if g == nil {
 		return dial(ctx)
@@ -30,6 +36,28 @@ func Dial(ctx context.Context, dial func(context.Context) (net.Conn, error)) (ne
 	release := func() { c.mu.Lock(); a.tunnels--; c.mu.Unlock() }
 	conn, err := dial(ctx)
 	if err != nil {
+		if conn != nil {
+			_ = conn.Close()
+		}
+		release()
+		return nil, err
+	}
+	if conn == nil {
+		release()
+		return nil, ErrDenied
+	}
+	// A custom dialer may return a socket even after ctx cancellation or
+	// a credential rotation. Never hand such a socket to the caller.
+	c.mu.Lock()
+	revoked := c.closed || c.failed || g.ctx.Err() != nil
+	c.mu.Unlock()
+	if revoked {
+		_ = conn.Close()
+		release()
+		return nil, ErrDenied
+	}
+	if err := ctx.Err(); err != nil {
+		_ = conn.Close()
 		release()
 		return nil, err
 	}
@@ -42,7 +70,16 @@ func Dial(ctx context.Context, dial func(context.Context) (net.Conn, error)) (ne
 		w.stop = stop
 	}
 	w.stopMu.Unlock()
-	// Install stop before publishing: cancellation may run immediately.
+	// A revocation during installation can race the AfterFunc callback.
+	// Explicit rejection prevents publishing a revoked socket in that gap.
+	if g.ctx.Err() != nil {
+		_ = w.Close()
+		return nil, ErrDenied
+	}
+	if err := ctx.Err(); err != nil {
+		_ = w.Close()
+		return nil, err
+	}
 	return w, nil
 }
 

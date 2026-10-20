@@ -34,12 +34,14 @@ jobs:
           go-version: '1.26.9'
       - name: Format
         run: |
-          gofmt -d internal/authheader internal/access/access.go internal/tunnel/server.go internal/tunnel/access.go internal/tunnel/stage2_security_test.go
-          test -z "$(gofmt -l internal/authheader internal/access/access.go internal/tunnel/server.go internal/tunnel/access.go internal/tunnel/stage2_security_test.go)"
+          gofmt -d internal/authheader internal/access/access.go internal/access/stage2_revocation_test.go internal/tunnel/server.go internal/tunnel/access.go internal/tunnel/stage2_security_test.go
+          test -z "$(gofmt -l internal/authheader internal/access/access.go internal/access/stage2_revocation_test.go internal/tunnel/server.go internal/tunnel/access.go internal/tunnel/stage2_security_test.go)"
       - name: Static checks
         run: go vet ./internal/authheader ./internal/access ./internal/tunnel
       - name: Auth/parser and cover regression, race detector
         run: go test -race ./internal/authheader ./internal/access ./internal/tunnel -count=1 -timeout=120s
+      - name: Deterministic access revocation and non-cooperative dial regression
+        run: go test -race ./internal/access -run '^TestStage2' -count=20 -timeout=120s
       - name: Bounded Basic proxy auth fuzz
         run: go test ./internal/authheader -run '^$' -fuzz '^FuzzParse$' -fuzztime=2000x -parallel=2 -timeout=90s
       - name: Disclosure limits
