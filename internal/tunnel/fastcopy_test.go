@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"sync"
@@ -294,6 +295,76 @@ func BenchmarkFastCopyHTTPResponse(b *testing.B) {
 					n, err := mode.copy(fastCopyWriter{&out}, &original)
 					if n != int64(workload.size) || err != nil {
 						b.Fatal("copy failed", n, err)
+					}
+				}
+			})
+		}
+	}
+}
+
+type fastCopyDiscardResponse struct {
+	bytes int64
+}
+
+func (*fastCopyDiscardResponse) Header() http.Header { return nil }
+func (*fastCopyDiscardResponse) WriteHeader(int) {}
+func (r *fastCopyDiscardResponse) Write(p []byte) (int, error) {
+	r.bytes += int64(len(p))
+	return len(p), nil
+}
+func (*fastCopyDiscardResponse) Flush() {}
+
+// Runs over a real TCPConn rather than bytes.Reader, so the baseline really
+// selects net.TCPConn.WriteTo and its non-splice HTTP fallback.
+func BenchmarkFastCopyHTTPResponseTCP(b *testing.B) {
+	listener, err := net.ListenTCP("tcp", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer listener.Close()
+	for _, workload := range []struct {
+		name string
+		size int
+	}{{"64B", 64}, {"1MiB", 1 << 20}} {
+		payload := bytes.Repeat([]byte{0xDB}, workload.size)
+		for _, mode := range []struct {
+			name string
+			copy func(io.Writer, io.Reader) (int64, error)
+		}{{"tcp-writeto", fastCopy}, {"pooled-http", fastCopyHTTPResponse}} {
+			b.Run(mode.name+"/"+workload.name, func(b *testing.B) {
+				b.SetBytes(int64(workload.size))
+				b.ReportAllocs()
+				for i := 0; i < b.N; i++ {
+					b.StopTimer()
+					writer, err := net.DialTCP("tcp", nil, listener.Addr().(*net.TCPAddr))
+					if err != nil {
+						b.Fatal(err)
+					}
+					reader, err := listener.AcceptTCP()
+					if err != nil {
+						writer.Close()
+						b.Fatal(err)
+					}
+					completed := make(chan error, 1)
+					go func() {
+						_, copyErr := io.Copy(writer, bytes.NewReader(payload))
+						if err := writer.CloseWrite(); copyErr == nil {
+							copyErr = err
+						}
+						completed <- copyErr
+					}()
+					sink := new(fastCopyDiscardResponse)
+					dst := flushingWriter{w: sink, flusher: sink}
+					b.StartTimer()
+					n, copyErr := mode.copy(dst, reader)
+					b.StopTimer()
+					reader.Close()
+					writer.Close()
+					sendErr := <-completed
+					if copyErr != nil || sendErr != nil || n != int64(workload.size) ||
+						sink.bytes != int64(workload.size) {
+						b.Fatalf("TCP relay integrity n=%d got=%d: %v, send=%v",
+							n, sink.bytes, copyErr, sendErr)
 					}
 				}
 			})
