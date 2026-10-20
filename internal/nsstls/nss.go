@@ -116,8 +116,8 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 	return transport, nil
 }
 
-// ioFailure is immutable once published. The common successful I/O path
-// requires only an atomic nil-store, rather than a cross-direction mutex.
+// ioFailure is immutable once published. Read/Write reset fault state once per public operation. Successful
+// Go callbacks require no shared-state lock or atomic store.
 // Error allocations occur only on actual failures; cancellation and NSS
 // closing can overlap read and write callbacks.
 type ioFailure struct{ err error }
@@ -209,6 +209,9 @@ func (c *conn) Read(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
+	// Clear any previous operation's I/O error exactly once, rather than
+	// writing a shared state slot on every successful C -> Go read callback.
+	c.readFault.Store(nil)
 	var code C.int
 	n := C.ft_read(c.fd, unsafe.Pointer(&p[0]), C.int(min(len(p), 1<<30)), &code)
 	if n < 0 {
@@ -231,6 +234,9 @@ func (c *conn) Write(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
+	// Clear an earlier error at the start of a new NSS Write operation.
+	// Successful raw socket callbacks do not need an atomic store.
+	c.writeFault.Store(nil)
 	var code C.int
 	n := C.ft_write(c.fd, unsafe.Pointer(&p[0]), C.int(min(len(p), 1<<30)), &code)
 	if n < 0 {
@@ -272,11 +278,9 @@ func (c *conn) ConnectionState() tls.ConnectionState {
 func ft_go_read(handle C.uintptr_t, buffer unsafe.Pointer, length C.int) C.int {
 	c := cgo.Handle(handle).Value().(*conn)
 	n, err := c.raw.Read(unsafe.Slice((*byte)(buffer), int(length)))
-	// When NSS invokes a second read after a prior I/O failure, stale errors
-	// must not be returned if the new read succeeded. Publish immutable state.
-	if err == nil || errors.Is(err, io.EOF) {
-		c.readFault.Store(nil)
-	} else {
+	// A successful C -> Go callback makes no bookkeeping updates. Errors
+	// are scoped to the enclosing Read call and published immutably.
+	if err != nil && !errors.Is(err, io.EOF) {
 		c.readFault.Store(&ioFailure{err: err})
 	}
 	if n > 0 {
@@ -308,7 +312,6 @@ func ft_go_write(handle C.uintptr_t, buffer unsafe.Pointer, length C.int) C.int 
 			return -1
 		}
 	}
-	c.writeFault.Store(nil)
 	return C.int(total)
 }
 
