@@ -114,7 +114,7 @@ UDP RTT is *client-observed echo request/response time*, including
 SOCKS5-to-HTTPS encapsulation, not underlying physical path RTT. Loss
 includes timeouts, rejected associations and invalid responses, not
 pure network packet-loss estimates. Jitter is average absolute change
-between consecutive successful observed RTT samples; report this
+between consecutive successful RTT samples of the same UDP flow; report this
 approximation separately from RFC 3550 interarrival jitter.
 
 ## Three-day field acceptance, no automatic release
