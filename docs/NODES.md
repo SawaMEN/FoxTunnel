@@ -125,6 +125,15 @@ rerouting of existing UDP flows. It can reduce cross-flow queue blocking,
 but does not make a single game session have a lower ping or aggregate
 2–8 server bandwidth. Read the [Stage 3 limitations and test plan](ADAPTIVE-BONDING-STAGE3.md).
 
+## Stage 4: WAN performance and release validation
+
+A bounded external measurement tool is available:
+`scripts/bond_stage4_field.py` for TCP echo completion/goodput and UDP
+echo RTT/loss/jitter, and `scripts/bond_stage4_gate.py` for a strict
+three-day acceptance review. The CI socket smoke runs only on loopback
+and **cannot** establish that Bonding increases remote VDS speed or
+lowers actual game ping. See the [Stage 4 independent VDS protocol](ADAPTIVE-BONDING-STAGE4.md).
+
 ## Compatibility
 
 The main branch now also contains experimental UDP and Linux TUN.
