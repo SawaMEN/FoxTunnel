@@ -48,8 +48,10 @@ jobs:
         run: go test -race ./internal/tunnel -run '^(TestFastCopy|TestStreamOutlivesSetupTimeoutAndHalfClose|TestCancelledStreamClosesSilentDestination|TestParallelStreams|TestAccessRevocationIsolationAllTransports)' -count=1 -timeout=120s
       - name: Fuzz bounded stream-copy correctness
         run: go test ./internal/tunnel -run '^$' -fuzz '^FuzzFastCopy$' -fuzztime=2000x -parallel=2 -timeout=90s
-      - name: Stdlib vs pooled copy benchmarks
-        run: go test ./internal/tunnel -run '^$' -bench '^BenchmarkFastCopyBaselineVsPool$' -benchmem -benchtime=100ms -count=1 -timeout=90s
+      - name: Fuzz HTTP downstream copy (no WriterTo shortcuts)
+        run: go test ./internal/tunnel -run '^$' -fuzz '^FuzzFastCopyHTTPResponse$' -fuzztime=2000x -parallel=2 -timeout=90s
+      - name: Stdlib vs pooled copy and HTTP response microbenchmarks
+        run: go test ./internal/tunnel -run '^$' -bench '^BenchmarkFastCopy(BaselineVsPool|HTTPResponse)$' -benchmem -benchtime=100ms -count=1 -timeout=90s
       - name: Profile runner offline validation
         run: python3 -m unittest discover -s scripts -p test_stage3_profile.py -v
       - name: Scope statement

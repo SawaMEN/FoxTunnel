@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"net/http/httptest"
 	"strconv"
 	"sync"
 	"testing"
@@ -183,6 +184,116 @@ func BenchmarkFastCopyBaselineVsPool(b *testing.B) {
 					n, err := candidate.copy(dst, src)
 					if err != nil || n != int64(workload.size) {
 						b.Fatalf("mismatched byte count %d: %v", n, err)
+					}
+				}
+			})
+		}
+	}
+}
+
+type fastCopyHookReader struct {
+	io.Reader
+	writeToCalled bool
+}
+
+func (r *fastCopyHookReader) WriteTo(io.Writer) (int64, error) {
+	r.writeToCalled = true
+	return 0, errors.New("unusable transport WriteTo should be skipped")
+}
+
+type fastCopyHookWriter struct {
+	io.Writer
+	readFromCalled bool
+}
+
+func (w *fastCopyHookWriter) ReadFrom(io.Reader) (int64, error) {
+	w.readFromCalled = true
+	return 0, errors.New("unexpected ReadFrom hook")
+}
+
+func TestFastCopyHTTPResponseSkipsTransportHooks(t *testing.T) {
+	for _, size := range []int{0, 1, 64, 32 << 10, (128 << 10) + 3} {
+		t.Run(strconv.Itoa(size), func(t *testing.T) {
+			original := bytes.Repeat([]byte{0xCD}, size)
+			src := &fastCopyHookReader{Reader: bytes.NewReader(original)}
+			sink := httptest.NewRecorder()
+			flushed := flushingWriter{w: sink, flusher: sink}
+			dst := &fastCopyHookWriter{Writer: flushed}
+			n, err := fastCopyHTTPResponse(dst, src)
+			if err != nil || n != int64(size) || !bytes.Equal(sink.Body.Bytes(), original) {
+				t.Fatalf("flushed copy: bytes=%d size=%d err=%v", n, size, err)
+			}
+			if src.writeToCalled || dst.readFromCalled {
+				t.Fatal("TCP/HTTP optional fast path must not bypass pooled scratch")
+			}
+			if size > 0 && !sink.Flushed {
+				t.Fatal("interactive HTTP response was never flushed")
+			}
+		})
+	}
+}
+
+func TestFastCopyHTTPResponseShortWriteAndError(t *testing.T) {
+	_, err := fastCopyHTTPResponse(shortFastWriter{},
+		fastCopyReader{bytes.NewReader([]byte("bytes"))})
+	if !errors.Is(err, io.ErrShortWrite) {
+		t.Fatalf("short write lost: %v", err)
+	}
+	payload := bytes.Repeat([]byte{0xFC}, 43<<10)
+	input := &errorFastReader{data: payload}
+	var output bytes.Buffer
+	n, err := fastCopyHTTPResponse(fastCopyWriter{&output}, input)
+	if !errors.Is(err, io.ErrUnexpectedEOF) || n != int64(len(payload)) ||
+		!bytes.Equal(output.Bytes(), payload) {
+		t.Fatalf("partial HTTP response copied %d bytes, err=%v", n, err)
+	}
+}
+
+func FuzzFastCopyHTTPResponse(f *testing.F) {
+	f.Add([]byte{})
+	f.Add([]byte("small"))
+	f.Add(bytes.Repeat([]byte("p"), fastCopyBufferSize+2))
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if len(data) > 1<<20 {
+			t.Skip()
+		}
+		source := &fastCopyHookReader{Reader: bytes.NewReader(data)}
+		var output bytes.Buffer
+		n, err := fastCopyHTTPResponse(fastCopyWriter{&output}, source)
+		if err != nil || n != int64(len(data)) || !bytes.Equal(output.Bytes(), data) || source.writeToCalled {
+			t.Fatal("response copy corrupt or unexpectedly used WriteTo")
+		}
+	})
+}
+
+// Compares the full downstream copy with no network and a source exposing
+// WriterTo, just like a TCPConn. Absolute numbers are CPU/cache sensitive and
+// are not a release speed gate.
+func BenchmarkFastCopyHTTPResponse(b *testing.B) {
+	for _, workload := range []struct {
+		name string
+		size int
+	}{{"64B", 64}, {"1MiB", 1 << 20}} {
+		payload := bytes.Repeat([]byte{0xBE}, workload.size)
+		for _, mode := range []struct {
+			name string
+			copy func(io.Writer, io.Reader) (int64, error)
+		}{{"auto-hooks", fastCopy}, {"pooled-http", fastCopyHTTPResponse}} {
+			b.Run(mode.name+"/"+workload.name, func(b *testing.B) {
+				var original bytes.Reader
+				var out bytes.Buffer
+				// bytes.Reader implements io.WriterTo and its optimized copy
+				// is *not* a TCPConn fallback. The benchmark therefore compares
+				// semantics and allocation only, NOT transport speed.
+				b.SetBytes(int64(workload.size))
+				b.ReportAllocs()
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					original.Reset(payload)
+					out.Reset()
+					n, err := mode.copy(fastCopyWriter{&out}, &original)
+					if n != int64(workload.size) || err != nil {
+						b.Fatal("copy failed", n, err)
 					}
 				}
 			})

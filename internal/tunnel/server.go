@@ -173,7 +173,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Flush small chunks immediately; otherwise an interactive tunnel can stall.
-	_, _ = fastCopy(outgoing, upstream)
+	_, _ = fastCopyHTTPResponse(outgoing, upstream)
 	_ = upstream.Close()
 	_ = r.Body.Close()
 	<-incomingDone

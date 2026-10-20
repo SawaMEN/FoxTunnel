@@ -33,3 +33,19 @@ func fastCopy(dst io.Writer, src io.Reader) (int64, error) {
 	}()
 	return io.CopyBuffer(dst, src, buf[:])
 }
+
+// readerOnly and writerOnly intentionally hide optional io.WriterTo and
+// io.ReaderFrom methods. On the server's TCP -> HTTP response path, neither
+// sendfile nor splice can work with a flushing HTTP ResponseWriter; avoid
+// the fallback scratch allocation inside net.TCPConn.WriteTo.
+// The existing fastCopy fast paths remain available on every other route.
+type readerOnly struct{ io.Reader }
+type writerOnly struct{ io.Writer }
+
+// fastCopyHTTPResponse uses the shared, scrubbed scratch buffer for TCP ->
+// streamed HTTP responses. No buffering delay is introduced: a flushingWriter
+// still flushes each successfully written chunk for interactive traffic.
+// Padding and authentication wrappers remain in the same order.
+func fastCopyHTTPResponse(dst io.Writer, src io.Reader) (int64, error) {
+	return fastCopy(writerOnly{dst}, readerOnly{src})
+}
