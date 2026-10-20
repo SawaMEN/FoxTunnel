@@ -14,7 +14,7 @@ trap cleanup EXIT
 
 go build -o "$work/foxtunnel" ./cmd/foxtunnel
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
-  -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' \
+  -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' \
   -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
 
 export FOXTUNNEL_USER=stage4-local
