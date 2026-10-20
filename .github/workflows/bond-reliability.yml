@@ -1,0 +1,25 @@
+name: Bond open idempotence stress
+on:
+  push:
+    branches: [main]
+    paths:
+      - "internal/bond/**"
+      - "internal/tunnel/bond.go"
+      - "internal/tunnel/bond_test.go"
+      - ".github/workflows/bond-reliability.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repeated-failover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Repeated lost OPEN ACK / node blackhole under Go race detector
+        run: go test -race ./internal/tunnel -run '^TestBondedLanesSOCKSGo$' -count=20 -timeout=12m

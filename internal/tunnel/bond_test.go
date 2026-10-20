@@ -58,6 +58,14 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 	exit := &Server{Username: "alice", Password: "secret", AllowPrivate: true, XHTTPSettings: route}
 	hub := exit.NewBondHub()
 	defer hub.Close()
+	// Count actual coordinator destination dials, not just listener accepts:
+	// duplicate OPEN retries must reuse one coordinator session and socket.
+	var hubDials atomic.Int64
+	originalDial := hub.Dial
+	hub.Dial = func(ctx context.Context, target string) (net.Conn, error) {
+		hubDials.Add(1)
+		return originalDial(ctx, target)
+	}
 	exit.Bond = hub
 	ready := make(chan struct{})
 	// Publish all server settings before a handler can read them. QUIC's
@@ -187,6 +195,9 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 		}
 	}
 	exchange(7)
+	if got := hubDials.Load(); got != 1 {
+		t.Fatalf("OPEN retry dialed destination %d times (accepted connections: %d)", got, destinations.Load())
+	}
 	if !lostOpen.Load() {
 		t.Fatal("lost open response was not exercised")
 	}
@@ -198,8 +209,8 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 	}
 	failed.Store(true)
 	exchange(31) // The same destination socket survives a blackholed entry node.
-	if destinations.Load() != 1 {
-		t.Fatalf("destination redialed: %d", destinations.Load())
+	if destinations.Load() != 1 || hubDials.Load() != 1 {
+		t.Fatalf("destination redialed: accepted=%d coordinator_dials=%d", destinations.Load(), hubDials.Load())
 	}
 	if err := conn.(*net.TCPConn).CloseWrite(); err != nil {
 		t.Fatal(err)
