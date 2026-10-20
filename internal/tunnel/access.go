@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
@@ -46,9 +47,23 @@ func (s *Server) cover(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if !s.acquireCover() {
+		// All public and rejected requests share this response on overload.
+		// The cover limit never consumes active authenticated tunnel slots.
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Retry-After", "1")
+		http.Error(w, "service temporarily unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	defer s.activeCoverRequests.Add(-1)
 	public := r.Clone(r.Context())
-	public.Header.Del("Proxy-Authorization")
-	public.Header.Del(paddingHeader)
-	public.Header.Del(targetHeader)
+	for key := range public.Header {
+		// Do not forward any FoxTunnel wire metadata (or credentials) to a
+		// custom cover handler. Compare actual keys to handle noncanonical maps.
+		if strings.EqualFold(key, "Proxy-Authorization") ||
+			strings.HasPrefix(strings.ToLower(key), "x-foxtunnel-") {
+			delete(public.Header, key)
+		}
+	}
 	s.Cover.ServeHTTP(w, public)
 }

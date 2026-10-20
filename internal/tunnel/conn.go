@@ -51,12 +51,12 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 		download = newPaddingReader(download)
 	}
 	go func() {
-		_, err := io.Copy(upload, upPeer)
+		_, err := fastCopy(upload, upPeer)
 		_ = stream.writer.CloseWithError(err)
 		_ = upPeer.Close()
 		conn.finished(err)
 	}()
-	go func() { _, err := io.Copy(downPeer, download); _ = downPeer.Close(); conn.finished(err) }()
+	go func() { _, err := fastCopy(downPeer, download); _ = downPeer.Close(); conn.finished(err) }()
 	return conn, nil
 }
 

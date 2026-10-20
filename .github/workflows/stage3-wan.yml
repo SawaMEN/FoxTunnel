@@ -1,0 +1,42 @@
+name: Stage 3 WAN Three-Way Harness
+
+on:
+  push:
+    branches: [up]
+    paths:
+      - 'scripts/stage3_wan.py'
+      - 'scripts/stage3_wan_gate.py'
+      - 'scripts/test_stage3_wan.py'
+      - 'scripts/compare_transports.py'
+      - 'scripts/stage1_vless.py'
+      - '.github/workflows/stage3-wan.yml'
+  pull_request:
+    paths:
+      - 'scripts/stage3_wan.py'
+      - 'scripts/stage3_wan_gate.py'
+      - 'scripts/test_stage3_wan.py'
+      - 'scripts/compare_transports.py'
+      - 'scripts/stage1_vless.py'
+      - '.github/workflows/stage3-wan.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-three-way-harness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Stage 3 scripts
+        run: python3 -m py_compile scripts/stage3_wan.py scripts/stage3_wan_gate.py
+      - name: Fake SOCKS echo and three-day gate edge cases
+        run: python3 -m unittest discover -s scripts -p test_stage3_wan.py -v
+      - name: Verify original Stage 1 comparison remains stable
+        run: python3 -m unittest discover -s scripts -p test_stage1_vless.py -v
+      - name: WAN evidence policy
+        run: echo 'Offline fake SOCKS loopback only; no independent WAN evidence, VDS access or Xray setup.'

@@ -1,7 +1,7 @@
 name: Linux TUN nftables network-namespace laboratory
 on:
   push:
-    branches: [main]
+    branches: [main, up]
     paths:
       - "scripts/linux_tun_companion.py"
       - "scripts/test_linux_tun_companion.py"
