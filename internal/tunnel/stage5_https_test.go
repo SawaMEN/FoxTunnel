@@ -19,9 +19,9 @@ func TestStage5CoverHTTPSConditionalAndCache(t *testing.T) {
 		t.Fatal(err)
 	}
 	files := map[string]string{
-		"index.html": "<html>Public page</html>",
+		"index.html":      "<html>Public page</html>",
 		"docs/index.html": "<html>Documentation</html>",
-		"docs/site.css": "body{color:black}",
+		"docs/site.css":   "body{color:black}",
 	}
 	modified := time.Now().Add(-2 * time.Hour).Truncate(time.Second)
 	for name, content := range files {
@@ -39,8 +39,8 @@ func TestStage5CoverHTTPSConditionalAndCache(t *testing.T) {
 	}
 
 	for _, testcase := range []struct {
-		name string
-		h2 bool
+		name      string
+		h2        bool
 		wantMajor int
 	}{
 		{"tls-http11", false, 1},
