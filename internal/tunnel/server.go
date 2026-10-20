@@ -185,10 +185,17 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Flush small chunks immediately; otherwise an interactive tunnel can stall.
-	_, _ = fastCopyHTTPResponse(outgoing, upstream)
+	_, downloadErr := fastCopyHTTPResponse(outgoing, upstream)
 	_ = upstream.Close()
 	_ = r.Body.Close()
 	<-incomingDone
+	if downloadErr != nil {
+		// Headers may already be committed. Returning normally would emit a
+		// successful END_STREAM and disguise a truncated TCP response as EOF.
+		// net/http converts ErrAbortHandler to a stream reset without a log
+		// stack, after the destination and upload worker have been released.
+		panic(http.ErrAbortHandler)
+	}
 }
 
 func (s *Server) authorized(r *http.Request) bool {

@@ -345,7 +345,14 @@ func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 			cancel()
 		}
 	}()
-	_, _ = io.Copy(conn, download)
+	_, downloadErr := io.Copy(conn, download)
+	if downloadErr != nil {
+		// The SOCKS-facing TCP stream has no error frame after CONNECT.
+		// Reset on a failed carrier rather than report a graceful EOF.
+		if tcp, ok := conn.(interface{ SetLinger(int) error }); ok {
+			_ = tcp.SetLinger(0)
+		}
+	}
 	cancel()
 	_ = conn.Close()
 	_ = writer.Close()

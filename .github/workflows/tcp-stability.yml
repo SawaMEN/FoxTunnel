@@ -1,0 +1,35 @@
+name: TCP core stability
+
+on:
+  push:
+    branches: [main]
+    paths: ['internal/**', 'foxtunnel*.go', 'go.*', '.github/workflows/tcp-stability.yml']
+  pull_request:
+    paths: ['internal/**', 'foxtunnel*.go', 'go.*', '.github/workflows/tcp-stability.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tcp:
+    strategy:
+      fail-fast: false
+      matrix:
+        tags: ['', 'nss']
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install NSS headers for the native matrix entry
+        if: matrix.tags == 'nss'
+        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
+      - name: Repeated reset, backpressure, teardown and no-replay regressions
+        run: go test -race -tags '${{ matrix.tags }}' ./internal/tunnel -run '^TestStage3TCP' -count=5 -timeout=180s
+      - name: Repeated half-close, cancellation, parallel load and carrier regressions
+        run: go test -race -tags '${{ matrix.tags }}' ./internal/tunnel -run '^Test(StreamOutlivesSetupTimeoutAndHalfClose|CancelledStreamClosesSilentDestination|ParallelStreams|NativeTransports|NSSNativeTransports|FallbackStopsOnHTTPOrPaddingFailure|EstablishedStreamIsNeverReplayed)$' -count=3 -timeout=180s

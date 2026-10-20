@@ -150,12 +150,14 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 		// Any response proves the peer answered. Do not reinterpret HTTP errors,
 		// negotiation failures or a response/deadline race as a network outage.
 		answered := resp != nil
+		// Unblock both upload and context-dependent response teardown first.
+		// Some duplex transports join their writer from Body.Close.
+		cancel()
+		reader.Close()
+		writer.Close()
 		if resp != nil {
 			resp.Body.Close()
 		}
-		reader.Close()
-		writer.Close()
-		cancel()
 		release()
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
