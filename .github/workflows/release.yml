@@ -121,17 +121,41 @@ jobs:
             dist/*.tar.gz
           if-no-files-found: error
   publish:
-    if: needs.request.outputs.publish == 'true'
+    if: github.event_name == 'push' && needs.request.outputs.publish == 'true'
     needs: [request, index]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: release-assets
           path: dist
+      - name: Revalidate downloaded archives before signing
+        env:
+          RELEASE_TAG: ${{ needs.request.outputs.version }}
+        run: python3 scripts/release.py verify --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
+      - name: Sign provenance for the exact release archives
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: dist/*.tar.gz
+          create-storage-record: false
+      - name: Verify signed provenance before publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for archive in dist/*.tar.gz; do
+            gh attestation verify "$archive" --repo "$GH_REPO" \
+              --signer-workflow "$GH_REPO/.github/workflows/release.yml" \
+              --source-digest "$GITHUB_SHA" --source-ref "$GITHUB_REF" \
+              --deny-self-hosted-runners
+          done
       - name: Publish immutable experimental release
         env:
           GH_TOKEN: ${{ github.token }}

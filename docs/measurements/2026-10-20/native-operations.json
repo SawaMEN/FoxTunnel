@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "kind": "native-cli-operations-workflow-log-summaries",
+  "workflow": {
+    "id": 39426721584,
+    "head_sha": "a3621705d7b1375df3457c7ce87483652e3c695e",
+    "run_started_at": "2026-10-20T13:00:11Z",
+    "html_url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39426721584",
+    "event": "pull_request",
+    "checkout_commit": "5f7aec23cdd1e49c10a800dff4029a318af924f3",
+    "source_tree": "56934512428c666014c7fce77d6bc847ea8a49c6",
+    "checkout_tree_matches_head": true
+  },
+  "settings": {
+    "duration_requested_seconds": 1800,
+    "parallel_per_carrier": 3,
+    "bytes_per_flow": 131072,
+    "max_new_flows_per_second": 24,
+    "recovery_budget_seconds": 30,
+    "min_success_percent": 99,
+    "max_rss_mib": 512,
+    "max_growth_mib": 192,
+    "max_fd_or_handles": 1024
+  },
+  "results": [
+    {
+      "runner": "macos-15",
+      "job_id": 118641038395,
+      "job_url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39426721584/job/118641038395",
+      "job_conclusion": "success",
+      "build": {
+        "transport_engines": [
+          "legacy"
+        ],
+        "quic_backends": [
+          "quic-go"
+        ],
+        "schema": 1,
+        "version": "v0.0.0-stage7.2",
+        "commit": "5f7aec23cdd1e49c10a800dff4029a318af924f3",
+        "build_date": "unknown",
+        "goos": "darwin",
+        "goarch": "arm64",
+        "go_version": "go1.26.9",
+        "build_flavor": "go",
+        "tls_backends": [
+          "go"
+        ],
+        "default_tls_backend": "go",
+        "protocol_draft": "foxtunnel-draft-0",
+        "experimental": true,
+        "dirty": false
+      },
+      "summary": {
+        "passed": true,
+        "elapsed_seconds": 1800.334,
+        "load": {
+          "h2": {
+            "attempted": 14346,
+            "succeeded": 14346
+          },
+          "h3": {
+            "attempted": 14346,
+            "succeeded": 14346
+          }
+        },
+        "resources_passed": true,
+        "resources": {
+          "server": {
+            "initial_rss_kib": 14144,
+            "last_rss_kib": 18816,
+            "peak": {
+              "rss_kib": 19712
+            },
+            "growth_kib": 4672
+          },
+          "h2": {
+            "initial_rss_kib": 15680,
+            "last_rss_kib": 23696,
+            "peak": {
+              "rss_kib": 24880
+            },
+            "growth_kib": 8016
+          },
+          "h3": {
+            "initial_rss_kib": 16112,
+            "last_rss_kib": 20112,
+            "peak": {
+              "rss_kib": 22016
+            },
+            "growth_kib": 4000
+          }
+        },
+        "outage_detected": {
+          "h2": true,
+          "h3": true
+        },
+        "same_client_recovered": {
+          "h2": true,
+          "h3": true
+        },
+        "recovery_seconds": 1.418
+      }
+    },
+    {
+      "runner": "ubuntu-24.04",
+      "job_id": 118641038679,
+      "job_url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39426721584/job/118641038679",
+      "job_conclusion": "success",
+      "build": {
+        "transport_engines": [
+          "legacy"
+        ],
+        "quic_backends": [
+          "quic-go"
+        ],
+        "schema": 1,
+        "version": "v0.0.0-stage7.2",
+        "commit": "5f7aec23cdd1e49c10a800dff4029a318af924f3",
+        "build_date": "unknown",
+        "goos": "linux",
+        "goarch": "amd64",
+        "go_version": "go1.26.9",
+        "build_flavor": "go",
+        "tls_backends": [
+          "go"
+        ],
+        "default_tls_backend": "go",
+        "protocol_draft": "foxtunnel-draft-0",
+        "experimental": true,
+        "dirty": false
+      },
+      "summary": {
+        "passed": true,
+        "elapsed_seconds": 1800.14,
+        "load": {
+          "h2": {
+            "attempted": 17757,
+            "succeeded": 17757
+          },
+          "h3": {
+            "attempted": 17757,
+            "succeeded": 17757
+          }
+        },
+        "resources_passed": true,
+        "resources": {
+          "server": {
+            "initial_rss_kib": 16920,
+            "last_rss_kib": 21732,
+            "peak": {
+              "rss_kib": 22468,
+              "fd_count": 11
+            },
+            "growth_kib": 4812
+          },
+          "h2": {
+            "initial_rss_kib": 18572,
+            "last_rss_kib": 24608,
+            "peak": {
+              "rss_kib": 25736,
+              "fd_count": 9
+            },
+            "growth_kib": 6036
+          },
+          "h3": {
+            "initial_rss_kib": 19336,
+            "last_rss_kib": 21208,
+            "peak": {
+              "rss_kib": 21844,
+              "fd_count": 10
+            },
+            "growth_kib": 1872
+          }
+        },
+        "outage_detected": {
+          "h2": true,
+          "h3": true
+        },
+        "same_client_recovered": {
+          "h2": true,
+          "h3": true
+        },
+        "recovery_seconds": 1.318
+      }
+    },
+    {
+      "runner": "windows-latest",
+      "job_id": 118641038718,
+      "job_url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39426721584/job/118641038718",
+      "job_conclusion": "success",
+      "build": {
+        "transport_engines": [
+          "legacy"
+        ],
+        "quic_backends": [
+          "quic-go"
+        ],
+        "schema": 1,
+        "version": "v0.0.0-stage7.2",
+        "commit": "5f7aec23cdd1e49c10a800dff4029a318af924f3",
+        "build_date": "unknown",
+        "goos": "windows",
+        "goarch": "amd64",
+        "go_version": "go1.26.9",
+        "build_flavor": "go",
+        "tls_backends": [
+          "go"
+        ],
+        "default_tls_backend": "go",
+        "protocol_draft": "foxtunnel-draft-0",
+        "experimental": true,
+        "dirty": false
+      },
+      "summary": {
+        "passed": true,
+        "elapsed_seconds": 1800.188,
+        "load": {
+          "h2": {
+            "attempted": 20145,
+            "succeeded": 20144
+          },
+          "h3": {
+            "attempted": 20145,
+            "succeeded": 20143
+          }
+        },
+        "resources_passed": true,
+        "resources": {
+          "server": {
+            "initial_rss_kib": 13048,
+            "last_rss_kib": 15432,
+            "peak": {
+              "rss_kib": 18904,
+              "handle_count": 160
+            },
+            "growth_kib": 2384
+          },
+          "h2": {
+            "initial_rss_kib": 16092,
+            "last_rss_kib": 15800,
+            "peak": {
+              "rss_kib": 26440,
+              "handle_count": 279
+            },
+            "growth_kib": 0
+          },
+          "h3": {
+            "initial_rss_kib": 16604,
+            "last_rss_kib": 13540,
+            "peak": {
+              "rss_kib": 23164,
+              "handle_count": 280
+            },
+            "growth_kib": 0
+          }
+        },
+        "outage_detected": {
+          "h2": true,
+          "h3": true
+        },
+        "same_client_recovered": {
+          "h2": true,
+          "h3": true
+        },
+        "recovery_seconds": 10.343
+      }
+    }
+  ],
+  "scope": [
+    "Exact aggregate summaries and laboratory build metadata copied from completed GitHub job logs; full per-OS report.json files are retained separately as workflow artifacts.",
+    "Loopback Go H2/H3 on the named native runners only. No WAN, NSS/Neqo soak, TUN or production leak claim.",
+    "All three measured recovery times are below 30 seconds. The subsequently added strict elapsed-budget guard is covered by separate deterministic regression tests.",
+    "PR head and tested checkout commit differ because checkout uses the synthetic PR merge; compare source trees when reusing this evidence."
+  ]
+}

@@ -103,6 +103,23 @@ def stop(process):
         process.wait(timeout=5)
 
 
+def recover_clients(names, trial, budget):
+    start = time.monotonic()
+    recovered = dict.fromkeys(names, False)
+    while not all(recovered.values()) and time.monotonic() - start < budget:
+        for name in recovered:
+            if time.monotonic() - start >= budget:
+                break
+            if not recovered[name]:
+                recovered[name] = trial(name)['ok']
+        if not all(recovered.values()):
+            time.sleep(.1)
+    elapsed = time.monotonic() - start
+    # A socket trial can finish after the loop's deadline check. Late
+    # success must not silently extend the declared recovery budget.
+    return recovered, elapsed, all(recovered.values()) and elapsed <= budget
+
+
 def run(args):
     binary, cert, key = (p.resolve(strict=True) for p in (args.binary, args.cert, args.key))
     env = {k: v for k, v in os.environ.items() if not k.startswith('FOXTUNNEL_')}
@@ -174,26 +191,20 @@ def run(args):
             for name in counts:
                 outage[name] = not trial(name)['ok']
             server_start()
-            recovery_start = time.monotonic()
-            recovered = dict.fromkeys(counts, False)
-            while not all(recovered.values()) and time.monotonic() - recovery_start < args.recovery_seconds:
-                for name in counts:
-                    if not recovered[name]:
-                        recovered[name] = trial(name)['ok']
-                time.sleep(.1)
+            recovered, recovery_elapsed, recovery_pass = recover_clients(counts, trial, args.recovery_seconds)
             memory = {name: {'initial_rss_kib': first[name]['rss_kib'], 'last_rss_kib': last[name]['rss_kib'],
                       'peak': peak[name], 'growth_kib': max(0, last[name]['rss_kib'] - first[name]['rss_kib'])} for name in first}
             resource_pass = all(row['peak']['rss_kib'] <= args.max_rss_mib * 1024 and row['growth_kib'] <= args.max_growth_mib * 1024
                                 and row['peak'].get('fd_count', 0) <= 1024 and row['peak'].get('handle_count', 0) <= 1024 for row in memory.values())
             load_pass = all(row['attempted'] >= 2 * args.parallel and row['succeeded'] / row['attempted'] * 100 >= 99 for row in counts.values())
-            passed = load_pass and resource_pass and elapsed >= args.seconds and all(outage.values()) and all(recovered.values())
+            passed = load_pass and resource_pass and elapsed >= args.seconds and all(outage.values()) and recovery_pass
             return {'schema': 1, 'kind': 'native-cli-operations-soak', 'passed': passed, 'platform': sys.platform,
                     'created_at_utc': dt.datetime.now(dt.timezone.utc).isoformat(), 'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
                     'duration_requested_seconds': args.seconds, 'elapsed_seconds': round(elapsed, 3), 'resource_samples': samples,
                     'parallel_per_carrier': args.parallel, 'batch_pause_seconds': batch_pause,
                     'max_new_flows_per_second': 2 * args.parallel / batch_pause, 'bytes_per_flow': args.bytes, 'load': counts, 'resources': memory,
                     'resources_passed': resource_pass, 'resources_scope': 'pre-restart load phase', 'outage_detected': outage, 'same_client_recovered': recovered,
-                    'recovery_seconds': round(time.monotonic() - recovery_start, 3), 'recovery_budget_seconds': args.recovery_seconds,
+                    'recovery_seconds': round(recovery_elapsed, 3), 'recovery_budget_seconds': args.recovery_seconds, 'recovery_passed': recovery_pass,
                     'limits': ['Loopback Go H2/H3 only; no NSS/Neqo, WAN handover, TUN or production leak claim.',
                                'Working-set/RSS budget is not a proof that every native allocation is leak-free.',
                                'Recovery is for new requests only; submitted streams are never replayed.']}

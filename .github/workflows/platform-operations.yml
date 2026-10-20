@@ -56,7 +56,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Native lifecycle, certificate renewal and listener release
-        run: go test -race ./cmd/foxtunnel ./internal/tlsidentity ./internal/tunnel -run 'TestServerCertificateReloadAndShutdownH2H3|TestProcessSIGTERMAndCertificateSIGHUP|TestClientSIGTERMClosesIncompleteSOCKS|TestCertificateReloadRetainsLastValidPair|TestServeContextStopsActiveAndIncompleteConnections|TestH3BlackholedSetupRecoversOnNewPathAndPreservesExistingStream|TestH3DeadlineRetiresPoolWithoutReplayOrClosingLiveBody|TestH3CallerCancellationAndHTTPRejectionDoNotRetirePool|TestH3AlreadyCancelledRequestDoesNotCreatePool' -count=1 -timeout=90s
+        run: go test -race ./cmd/foxtunnel ./internal/tlsidentity ./internal/tunnel -run 'TestServerCertificateReloadAndShutdownH2H3|TestProcessSIGTERMAndCertificateSIGHUP|TestClientSIGTERMClosesIncompleteSOCKS|TestCertificateReloadRetainsLastValidPair|TestServeContextStopsActiveAndIncompleteConnections|TestH3BlackholedSetupRecoversOnNewPathAndPreservesExistingStream|TestH3DeadlineRetiresPoolWithoutReplayOrClosingLiveBody|TestH3CallerCancellationAndHTTPRejectionDoNotRetirePool|TestH3AlreadyCancelledRequestDoesNotCreatePool|TestH3LateOldDeadlineDoesNotRetireNewPool|TestH3IdleCleanupPreservesActiveDuplexBody' -count=1 -timeout=90s
       - name: Build two reviewed native installation candidates
         shell: bash
         run: |

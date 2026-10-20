@@ -121,3 +121,95 @@ func TestH3AlreadyCancelledRequestDoesNotCreatePool(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestH3LateOldDeadlineDoesNotRetireNewPool(t *testing.T) {
+	started := make(chan struct{})
+	finished := make(chan error, 1)
+	var timeout context.CancelCauseFunc
+	var pools []*fakeH3Pool
+	transport := &h3RecoveryTransport{newPool: func() h3Pool {
+		pool := &fakeH3Pool{roundTrip: func(r *http.Request) (*http.Response, error) {
+			switch r.URL.Path {
+			case "/late":
+				close(started)
+				<-r.Context().Done()
+				return nil, r.Context().Err()
+			case "/timeout":
+				timeout(context.DeadlineExceeded)
+				return nil, context.Canceled
+			default:
+				return &http.Response{Body: http.NoBody}, nil
+			}
+		}}
+		pools = append(pools, pool)
+		return pool
+	}}
+	defer transport.CloseIdleConnections()
+	lateCtx, cancelLate := context.WithCancelCause(context.Background())
+	defer cancelLate(nil)
+	late, _ := http.NewRequestWithContext(lateCtx, "GET", "https://localhost/late", nil)
+	go func() { _, err := transport.RoundTrip(late); finished <- err }()
+	<-started
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(nil)
+	timeout = cancel
+	request, _ := http.NewRequestWithContext(ctx, "GET", "https://localhost/timeout", nil)
+	if _, err := transport.RoundTrip(request); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	next, _ := http.NewRequest("GET", "https://localhost/new", nil)
+	response, err := transport.RoundTrip(next)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if len(pools) != 2 || pools[0].closed.Load() != 0 {
+		t.Fatal("retired pool closed while old setup still active")
+	}
+	cancelLate(context.DeadlineExceeded)
+	if err := <-finished; !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	response, err = transport.RoundTrip(next)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if len(pools) != 2 || pools[1].calls.Load() != 2 || pools[1].closed.Load() != 0 || pools[0].closed.Load() != 1 {
+		t.Fatal("late old deadline retired the new pool, replayed a request or leaked old pool")
+	}
+}
+
+func TestH3IdleCleanupPreservesActiveDuplexBody(t *testing.T) {
+	var pools []*fakeH3Pool
+	transport := &h3RecoveryTransport{newPool: func() h3Pool {
+		pool := &fakeH3Pool{roundTrip: func(*http.Request) (*http.Response, error) {
+			return &http.Response{Body: io.NopCloser(strings.NewReader("active"))}, nil
+		}}
+		pools = append(pools, pool)
+		return pool
+	}}
+	defer transport.CloseIdleConnections()
+	request, _ := http.NewRequest("GET", "https://localhost", nil)
+	active, err := transport.RoundTrip(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer active.Body.Close()
+	transport.CloseIdleConnections()
+	if pools[0].closed.Load() != 0 {
+		t.Fatal("idle cleanup closed active duplex stream")
+	}
+	if data, err := io.ReadAll(active.Body); err != nil || string(data) != "active" {
+		t.Fatal("active body no longer readable", err)
+	}
+	next, err := transport.RoundTrip(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next.Body.Close()
+	active.Body.Close()
+	if len(pools) != 2 || pools[0].closed.Load() != 1 || pools[1].closed.Load() != 0 {
+		t.Fatal("idle cleanup did not drain only the old pool")
+	}
+}
