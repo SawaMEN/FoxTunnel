@@ -1,0 +1,56 @@
+name: Stage 5 HTTPS Cover Isolation
+
+on:
+  push:
+    branches: [up]
+    paths:
+      - 'internal/tunnel/cover.go'
+      - 'internal/tunnel/cover_test.go'
+      - 'internal/tunnel/stage5_cover_test.go'
+      - 'internal/tunnel/stage5_routing_test.go'
+      - 'internal/tunnel/stage5_https_test.go'
+      - 'internal/tunnel/stage5_load_test.go'
+      - 'internal/tunnel/stage5_h3_test.go'
+      - 'internal/tunnel/access.go'
+      - 'internal/tunnel/server.go'
+      - '.github/workflows/stage5-cover.yml'
+  pull_request:
+    paths:
+      - 'internal/tunnel/cover.go'
+      - 'internal/tunnel/cover_test.go'
+      - 'internal/tunnel/stage5_cover_test.go'
+      - 'internal/tunnel/stage5_routing_test.go'
+      - 'internal/tunnel/stage5_https_test.go'
+      - 'internal/tunnel/stage5_load_test.go'
+      - 'internal/tunnel/stage5_h3_test.go'
+      - 'internal/tunnel/access.go'
+      - 'internal/tunnel/server.go'
+      - '.github/workflows/stage5-cover.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cover-isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Go formatting
+        run: |
+          gofmt -d internal/tunnel/server.go internal/tunnel/access.go internal/tunnel/cover.go internal/tunnel/cover_test.go internal/tunnel/stage5_cover_test.go internal/tunnel/stage5_routing_test.go internal/tunnel/stage5_https_test.go internal/tunnel/stage5_load_test.go internal/tunnel/stage5_h3_test.go
+          test -z "$(gofmt -l internal/tunnel/server.go internal/tunnel/access.go internal/tunnel/cover.go internal/tunnel/cover_test.go internal/tunnel/stage5_cover_test.go internal/tunnel/stage5_routing_test.go internal/tunnel/stage5_https_test.go internal/tunnel/stage5_load_test.go internal/tunnel/stage5_h3_test.go)"
+      - name: Go vet
+        run: go vet ./internal/tunnel
+      - name: Race-tested public cover and authentication regressions
+        run: go test -race ./internal/tunnel -run '^(TestStage5|TestCover|TestStage2Cover)' -count=4 -timeout=150s
+      - name: Repeated symlink and static HTTP serving tests
+        run: go test ./internal/tunnel -run '^TestStage5' -count=20 -timeout=120s
+      - name: Bounded-cover admission microbenchmark
+        run: go test ./internal/tunnel -run '^$' -bench '^BenchmarkStage5PublicCoverAdmission$' -benchmem -benchtime=200ms -count=1 -timeout=90s
+      - name: Scope statement
+        run: echo 'Local TLS H1/H2 and real UDP QUIC/H3 cover and authenticated SOCKS checks; no WAN or Firefox/DPI parity claim.'

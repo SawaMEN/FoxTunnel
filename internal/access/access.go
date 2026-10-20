@@ -6,12 +6,12 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/base64"
 	"errors"
 	"math"
 	"net/http"
+
+	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 )
@@ -337,15 +337,7 @@ func (c *Controller) Begin(r *http.Request) (context.Context, func(), error) {
 	if !c.attempt.take(time.Now(), c.policy.AttemptsPerSecond, c.policy.AttemptBurst) {
 		return deny(ErrDenied)
 	}
-	h := r.Header.Values("Proxy-Authorization")
-	if len(h) != 1 || len(h[0]) > 2048 || len(h[0]) < 7 || !strings.EqualFold(h[0][:6], "Basic ") {
-		return deny(ErrDenied)
-	}
-	raw, err := base64.StdEncoding.DecodeString(strings.TrimSpace(h[0][6:]))
-	if err != nil {
-		return deny(ErrDenied)
-	}
-	name, password, ok := strings.Cut(string(raw), ":")
+	name, password, ok := authheader.Parse(r.Header)
 	if !ok {
 		return deny(ErrDenied)
 	}

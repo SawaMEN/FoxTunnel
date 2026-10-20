@@ -29,8 +29,11 @@ for family, host in ((socket.AF_INET, '198.18.0.1'),
                      (socket.AF_INET6, 'fd42:1::1')):
     for kind, port in ((socket.SOCK_STREAM, 8443),
                        (socket.SOCK_STREAM, 9443),
+                       (socket.SOCK_STREAM, 53),
+                       (socket.SOCK_STREAM, 853),
                        (socket.SOCK_DGRAM, 8443),
-                       (socket.SOCK_DGRAM, 53)):
+                       (socket.SOCK_DGRAM, 53),
+                       (socket.SOCK_DGRAM, 853)):
         s = socket.socket(family, kind)
         if family == socket.AF_INET6:
             s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
@@ -202,17 +205,23 @@ class NamespaceGuardTests(unittest.TestCase):
         self.probe("fd42:1::1", 9443, "tcp", False)
 
     def test_b_dns_and_unsolicited_udp_are_blocked(self):
-        self.probe("198.18.0.1", 53, "udp", False)
-        self.probe("fd42:1::1", 53, "udp", False)
-        self.probe("198.18.0.1", 8443, "udp", False)
+        for address in ("198.18.0.1", "fd42:1::1"):
+            for kind, port in (("udp", 53), ("tcp", 53),
+                               ("udp", 853), ("tcp", 853),
+                               ("udp", 8443)):
+                with self.subTest(address=address, kind=kind, port=port):
+                    self.probe(address, port, kind, False)
 
     def test_c_quic_only_carrier_uses_udp_allowlist(self):
         self.drop_guard()
         self.install("udp")
         self.probe("198.18.0.1", 8443, "udp", True)
         self.probe("fd42:1::1", 8443, "udp", True)
-        self.probe("198.18.0.1", 8443, "tcp", False)
-        self.probe("198.18.0.1", 53, "udp", False)
+        for address in ("198.18.0.1", "fd42:1::1"):
+            for kind, port in (("tcp", 8443), ("udp", 53),
+                               ("tcp", 53), ("tcp", 853), ("udp", 853)):
+                with self.subTest(address=address, kind=kind, port=port):
+                    self.probe(address, port, kind, False)
 
     def test_z_guard_survives_server_process_exit(self):
         self.stop_server()

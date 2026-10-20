@@ -1,0 +1,44 @@
+name: Stage 1 VLESS baseline harness (offline only)
+
+on:
+  push:
+    branches: [up]
+    paths:
+      - 'scripts/stage1_vless.py'
+      - 'scripts/stage1_vless_gate.py'
+      - 'scripts/test_stage1_vless.py'
+      - 'scripts/stage1_udp_vless.py'
+      - 'scripts/stage1_udp_vless_gate.py'
+      - 'scripts/test_stage1_udp_vless.py'
+      - '.github/workflows/stage1-vless.yml'
+  pull_request:
+    paths:
+      - 'scripts/stage1_vless.py'
+      - 'scripts/stage1_vless_gate.py'
+      - 'scripts/test_stage1_vless.py'
+      - 'scripts/stage1_udp_vless.py'
+      - 'scripts/stage1_udp_vless_gate.py'
+      - 'scripts/test_stage1_udp_vless.py'
+      - '.github/workflows/stage1-vless.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage1-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python compilation
+        run: python3 -m py_compile scripts/stage1_vless.py scripts/stage1_vless_gate.py scripts/stage1_udp_vless.py scripts/stage1_udp_vless_gate.py
+      - name: Local TCP echo, report redaction, resource monitoring, three-day gate fixture
+        run: python3 -m unittest discover -s scripts -p test_stage1_vless.py -v
+      - name: UDP SOCKS5 echo, release gates and report redaction
+        run: python3 -m unittest discover -s scripts -p test_stage1_udp_vless.py -v
+      - name: Declare scope
+        run: echo 'Offline socket tests only; no claim of independent VDS or VLESS performance.'

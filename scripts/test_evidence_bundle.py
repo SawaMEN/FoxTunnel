@@ -54,6 +54,42 @@ class EvidenceContracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'hash mismatch'):
             evidence.validate(self.root)
 
+    def test_registry_keeps_strict_ja3_validation_after_hash_review(self):
+        entry = self.registry['observations'][0]
+        path = self.root / entry['path']
+        raw = json.loads(path.read_text())
+        raw['hello']['ja3'] = 'forged'
+        data = json.dumps(raw).encode()
+        path.write_bytes(data)
+        entry['sha256'] = hashlib.sha256(data).hexdigest()
+        self.save()
+        with self.assertRaisesRegex(ValueError, 'JA3'):
+            evidence.validate(self.root)
+
+    def test_quic_registry_kind_maps_to_strict_capture_decoder(self):
+        raw = {'schema': 1, 'kind': 'h3-quic-observation', 'capture_method': 'endpoint',
+               'capture_scenario': 'synthetic unit fixture, not a measured profile',
+               'quic': {'version': 1, 'tls_alpn': 'h3', 'initial_datagram_size': 1200,
+                        'transport_parameters': [{'id': 1, 'value': 2000}]},
+               'h3': {'settings': [{'id': 6, 'value': 1024}]}}
+        data = json.dumps(raw).encode()
+        name = 'docs/measurements/unit-quic.json'
+        (self.root / name).write_bytes(data)
+        self.registry['observations'].append(dict(id='unit-quic', path=name, sha256=hashlib.sha256(data).hexdigest(),
+                                                 kind='quic_h3', subject='foxtunnel', scope='controlled-loopback', source_commit=None))
+        self.registry['comparison']['foxtunnel_quic_h3'] = 'unit-quic'
+        self.save()
+        result = evidence.validate(self.root)
+        self.assertEqual(result['coverage']['foxtunnel_quic_h3'], 'observed')
+        self.assertFalse(result['all_six_captures_present'])
+        raw['quic']['transport_parameters'].append({'id': 1, 'value': 5000})
+        data = json.dumps(raw).encode()
+        (self.root / name).write_bytes(data)
+        self.registry['observations'][-1]['sha256'] = hashlib.sha256(data).hexdigest()
+        self.save()
+        with self.assertRaisesRegex(ValueError, 'decoded QUIC/H3'):
+            evidence.validate(self.root)
+
     def test_incomplete_native_matrix_not_promoted_to_pass(self):
         self.edit_operations(lambda raw: raw['results'].pop())
         with self.assertRaisesRegex(ValueError, 'matrix'):

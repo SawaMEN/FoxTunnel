@@ -150,7 +150,8 @@ def validate(root, manifest=MANIFEST):
             summary = operations(raw, entry['source_commit'])
         else:
             require(entry['scope'] in ('historical-loopback', 'controlled-loopback'), 'unsupported capture scope')
-            raw = fingerprints.decode_profile(payload, entry['kind'])
+            capture_kind = 'h3_quic' if entry['kind'] == 'quic_h3' else entry['kind']
+            raw = fingerprints.decode_profile(payload, capture_kind)
             summary = {'scope': entry['scope'], 'source_commit': entry['source_commit']}
         observed[name] = (entry, raw)
         summaries.append({**entry, 'validation': summary})
