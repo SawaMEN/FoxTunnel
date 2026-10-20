@@ -16,3 +16,5 @@ graph; native CI also runs it with `--tags nss` and `--tags nss,neqo`.
 
 Dated results belong in [measurements](../docs/measurements/); implementation
 progress belongs in the [current plan](../docs/IMPLEMENTATION-PLAN.md).
+
+- `wire-capture/`: isolated pinned Firefox/NaiveProxy/FoxTunnel TLS-H2 and endpoint-decoded H3 research fixture.
