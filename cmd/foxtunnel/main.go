@@ -247,6 +247,10 @@ func main() {
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		link := fs.String("link", "", i18n.Text("vetroff connection link (prefer --link-file for secrets)"))
 		linkFile := fs.String("link-file", "", i18n.Text("read vetroff connection link from file or - for stdin"))
+		shareOut := new(string)
+		if os.Args[1] == "share" {
+			fs.StringVar(shareOut, "out", "", i18n.Text("create private mode-0600 connection link file instead of printing credentials"))
+		}
 		enableUDP := new(bool)
 		udpStream := new(bool)
 		udpMultiNode := new(bool)
@@ -342,12 +346,7 @@ func main() {
 			} else if *linkFile == "-" {
 				imported, importErr = profile.Read(os.Stdin)
 			} else {
-				file, err := os.Open(*linkFile)
-				if err != nil {
-					log.Fatal(i18n.Text("cannot read connection link file"))
-				}
-				imported, importErr = profile.Read(file)
-				file.Close()
+				imported, importErr = profile.ReadSecretFile(*linkFile)
 			}
 			if importErr != nil {
 				log.Fatal(importErr)
@@ -375,7 +374,14 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(exported)
+			if *shareOut != "" {
+				if err := profile.WriteSecretFile(*shareOut, exported); err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println("private connection link saved")
+			} else {
+				fmt.Println(exported)
+			}
 			return
 		}
 		if user == "" || password == "" {
@@ -483,6 +489,11 @@ func main() {
 			log.Fatal(err)
 		}
 		client.MaxConnections = *maxConnections
+		client.SOCKSUsername = os.Getenv("FOXTUNNEL_SOCKS_USER")
+		client.SOCKSPassword = os.Getenv("FOXTUNNEL_SOCKS_PASSWORD")
+		if err := client.ValidateSOCKSAuth(); err != nil {
+			log.Fatal(err)
+		}
 		client.EnableUDP = *enableUDP
 		client.UDPStreaming = *udpStream
 		client.UDPMultiNode = *udpMultiNode
@@ -580,6 +591,11 @@ func main() {
 			log.Fatal(err)
 		}
 		defer listener.Close()
+		if addr, ok := listener.Addr().(*net.TCPAddr); !ok || !addr.IP.IsLoopback() {
+			if client.SOCKSUsername == "" {
+				log.Fatal("non-loopback SOCKS5 listener requires FOXTUNNEL_SOCKS_USER and FOXTUNNEL_SOCKS_PASSWORD; protect even authenticated SOCKS5 with TLS or firewall")
+			}
+		}
 		if *tunName != "" {
 			if !*enableUDP || !*udpStream || *bonded {
 				log.Fatal("--tun requires --enable-udp --udp-stream without --bond")
