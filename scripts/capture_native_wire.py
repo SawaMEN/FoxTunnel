@@ -218,7 +218,7 @@ def main():
         manifest = dict(schema=1, kind='controlled-wire-capture-set',
                         checkout_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                         worktree_dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)),
-                        versions=versions, firefox_fixture_overrides={'allow_h3_with_fixture_CA':True, 'force_h3_test_mapping':True, 'content_sandbox_disabled':True}, archives={'firefox':mozilla['archives']['amd64']['sha256'], 'naive':lock['naive_sha256']},
+                        versions=versions, network_scope='IPv4 loopback with localhost SNI; DNS family and failover are not measured', firefox_fixture_overrides={'allow_h3_with_fixture_CA':True, 'force_h3_test_mapping':True, 'content_sandbox_disabled':True}, archives={'firefox':mozilla['archives']['amd64']['sha256'], 'naive':lock['naive_sha256']},
                         executable_sha256={'firefox':mozilla_runtime.digest(firefox), 'naive':mozilla_runtime.digest(naive), 'endpoint':mozilla_runtime.digest(args.endpoint)},
                         observations=observations,
                         scope='Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for FoxTunnel. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained.')

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -126,6 +127,9 @@ func save(path string, v any) error {
 	return e
 }
 func sample(origin, cert, backend, protocol string) error {
+	// All three subjects use the same IPv4 loopback path. Keep SNI and
+	// hostname verification at localhost while avoiding a UDP ::1 first choice.
+	origin = strings.Replace(origin, "//localhost:", "//127.0.0.1:", 1)
 	c, e := tunnel.NewClient(origin, "fixture", "local-only", cert)
 	if e != nil {
 		return e
@@ -149,6 +153,9 @@ func sample(origin, cert, backend, protocol string) error {
 		if e = c.SetQUICBackend("neqo", false, 2*time.Second); e != nil {
 			return e
 		}
+	}
+	if e = c.SetServerIdentity("localhost", ""); e != nil {
+		return e
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

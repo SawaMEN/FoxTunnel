@@ -33,3 +33,9 @@ amd64 with GTK/Firefox dependencies and NSS certutil. See the Neqo workflow.
 For H3, Firefox's third-party-root fallback heuristic is disabled because this
 fixture uses an imported test CA. Certificate/hostname verification stays on.
 This explicit override is recorded in the capture-set manifest.
+
+All clients are pinned to IPv4 loopback; TLS SNI/hostname verification remains
+localhost. Firefox disables IPv6 DNS in this profile, Naive uses an explicit
+resolver rule, and FoxTunnel uses a numeric origin plus explicit SNI. This avoids
+confounding first-family UDP resolution with transport metadata; DNS/failover
+behavior is outside this fixture.
