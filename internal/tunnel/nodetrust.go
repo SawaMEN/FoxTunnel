@@ -2,7 +2,7 @@ package tunnel
 
 import (
 	"bytes"
-		"errors"
+	"errors"
 	"io"
 	"net/url"
 	"os"
