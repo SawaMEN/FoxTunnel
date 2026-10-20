@@ -307,7 +307,7 @@ type fastCopyDiscardResponse struct {
 }
 
 func (*fastCopyDiscardResponse) Header() http.Header { return nil }
-func (*fastCopyDiscardResponse) WriteHeader(int) {}
+func (*fastCopyDiscardResponse) WriteHeader(int)     {}
 func (r *fastCopyDiscardResponse) Write(p []byte) (int, error) {
 	r.bytes += int64(len(p))
 	return len(p), nil
