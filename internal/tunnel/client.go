@@ -198,12 +198,19 @@ func (c *Client) SetTLSBackend(name string) error {
 			resolved = "nss"
 		}
 	}
+	// Preserve strict per-origin trust on TLS backend/profile changes.
+	var nodePolicies map[string]tlsidentity.Policy
+	if old, ok := c.transport.(*identityPool); ok {
+		old.mu.Lock()
+		nodePolicies = old.nodePolicies
+		old.mu.Unlock()
+	}
 	transport, err := makeNativeTransport(c.nativeTransport, resolved, c.tlsConfig, basicAuth(c.Username, c.Password), c.xhttpSettings, c.h2ReceiveProfile, c.tlsClientProfile, c.quic)
 	if err != nil {
 		return err
 	}
 	c.transport.CloseIdleConnections()
-	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, quic: c.quic, h2ReceiveProfile: c.h2ReceiveProfile, tlsClientProfile: c.tlsClientProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, entries: make(map[string]identityEntry), monitor: c.nodeMetrics}
+	c.transport = &identityPool{base: transport, config: c.tlsConfig.Clone(), backend: resolved, mode: c.nativeTransport, quic: c.quic, h2ReceiveProfile: c.h2ReceiveProfile, tlsClientProfile: c.tlsClientProfile, xhttpSettings: c.xhttpSettings, auth: basicAuth(c.Username, c.Password), primary: c.ServerURL.Scheme + "://" + c.ServerURL.Host, policy: c.identity, nodePolicies: nodePolicies, entries: make(map[string]identityEntry), monitor: c.nodeMetrics}
 	c.backend = name
 	return nil
 }
