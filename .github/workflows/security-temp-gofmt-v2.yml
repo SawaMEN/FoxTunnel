@@ -1,0 +1,27 @@
+name: Temporary security Go formatting v2
+on:
+  push:
+    branches: [feature/security-hardening-tls-socks-secrets]
+    paths:
+      - '.github/workflows/security-temp-gofmt-v2.yml'
+permissions:
+  contents: write
+jobs:
+  gofmt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/security-hardening-tls-socks-secrets
+          persist-credentials: true
+      - name: Format all project Go files and push formatting
+        run: |
+          gofmt -w internal/tunnel/nodetrust.go internal/tunnel/nodetrust_test.go
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git add internal/tunnel/nodetrust.go internal/tunnel/nodetrust_test.go
+            git commit -m "style(security): format strict pin manifest validation"
+            git push origin HEAD:feature/security-hardening-tls-socks-secrets
+          fi
