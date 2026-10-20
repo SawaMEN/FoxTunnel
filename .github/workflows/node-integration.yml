@@ -44,6 +44,10 @@ jobs:
         run: |
           go test ./internal/bond -run '^TestTraffic' -count=3 -timeout=120s
           go test ./internal/tunnel -run '^Test(BondTraffic|DiscoveredBondTraffic)' -count=3 -timeout=120s
+      - name: UDP independent-flow sharding regression
+        run: |
+          go test ./internal/tunnel -run '^Test(UDPMultiNode|UDPIngress)' -count=3 -timeout=120s
+          go test -race ./internal/tunnel -run '^Test(UDPMultiNode|UDPIngress)' -count=1 -timeout=120s
       - name: Capture isolated selection microbenchmarks
         run: |
           go test ./internal/bond -run '^$' -bench 'BenchmarkBond(PathSelection|SkewAndQueue|AdaptivePick)' -benchmem -benchtime=300ms -count=3 | tee node-bench.txt
