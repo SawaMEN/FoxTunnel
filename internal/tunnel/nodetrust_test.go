@@ -71,6 +71,12 @@ func TestExplicitNodePinsBoundToEveryOrigin(t *testing.T) {
 			if err := c.SetNodePinsFile(path); err != nil {
 				t.Fatal(err)
 			}
+			if err := c.SetTLSBackend("go"); err != nil {
+				t.Fatal("TLS backend refresh dropped node trust", err)
+			}
+			if err := c.SetServerIdentity("", pin); err == nil {
+				t.Fatal("late overriding primary pin accepted")
+			}
 			// Ensure a primary-origin pin does not allow another entry
 			// to bypass its independent configured mismatch.
 			for i, endpoint := range endpoints {
