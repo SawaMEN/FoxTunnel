@@ -433,9 +433,8 @@ func (f *forwarder) udpFlow(conn adapter.UDPConn) {
 			}
 			return
 		}
-		if n == 0 {
-			continue
-		}
+		// A zero-length UDP datagram is valid. SOCKS5 still carries its
+		// destination header, and the remote echo must preserve the packet.
 		last.Store(time.Now().UnixNano())
 		packetDst.Data = buf[:n]
 		raw, err := udpproto.Encode(packetDst)
