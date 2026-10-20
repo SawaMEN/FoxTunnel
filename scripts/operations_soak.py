@@ -187,7 +187,7 @@ def run(args):
                     'created_at_utc': dt.datetime.now(dt.timezone.utc).isoformat(), 'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
                     'duration_requested_seconds': args.seconds, 'elapsed_seconds': round(elapsed, 3), 'resource_samples': samples,
                     'parallel_per_carrier': args.parallel, 'bytes_per_flow': args.bytes, 'load': counts, 'resources': memory,
-                    'resources_passed': resource_pass, 'outage_detected': outage, 'same_client_recovered': recovered,
+                    'resources_passed': resource_pass, 'resources_scope': 'pre-restart load phase', 'outage_detected': outage, 'same_client_recovered': recovered,
                     'recovery_seconds': round(time.monotonic() - recovery_start, 3), 'recovery_budget_seconds': args.recovery_seconds,
                     'limits': ['Loopback Go H2/H3 only; no NSS/Neqo, WAN handover, TUN or production leak claim.',
                                'Working-set/RSS budget is not a proof that every native allocation is leak-free.',

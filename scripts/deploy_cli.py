@@ -55,6 +55,27 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def sync_directory(path):
+    if os.name != 'nt':
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+
+def sync_bundle(path):
+    # Persist contents and their directory entries before making activation
+    # durable. This prevents a durable pointer to merely cached bundle files.
+    for child in path.rglob('*'):
+        if child.is_file():
+            with child.open('r+b') as stream:
+                os.fsync(stream.fileno())
+    for directory in sorted((p for p in path.rglob('*') if p.is_dir()), key=lambda p: len(p.parts), reverse=True):
+        sync_directory(directory)
+    sync_directory(path)
+
+
 def atomic_json(path, data):
     fd, name = tempfile.mkstemp(prefix='.state-', dir=path.parent)
     try:
@@ -64,12 +85,7 @@ def atomic_json(path, data):
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(name, path)
-        if os.name != 'nt':
-            directory = os.open(path.parent, os.O_RDONLY)
-            try:
-                os.fsync(directory)
-            finally:
-                os.close(directory)
+        sync_directory(path.parent)
     finally:
         Path(name).unlink(missing_ok=True)
 
@@ -201,6 +217,7 @@ class Deployment:
             record = {'schema': 1, 'identity': expected_sha, 'version': version, 'commit': commit,
                       'goos': goos, 'goarch': arch, 'build_flavor': info['build_flavor'], 'files': files}
             atomic_json(package / 'installation.json', record)
+            sync_bundle(package)
             destination = self.releases / expected_sha
             if destination.exists() or destination.is_symlink():
                 _, old_record = self.bundle(expected_sha)
@@ -208,6 +225,7 @@ class Deployment:
                     raise ValueError('existing release differs; refusing to overwrite')
             else:
                 os.rename(package, destination)
+                sync_directory(self.releases)
             if state['active'] != expected_sha:
                 atomic_json(self.state_path, {'schema': 1, 'active': expected_sha, 'previous': state['active']})
             return record
