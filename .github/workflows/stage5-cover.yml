@@ -10,6 +10,7 @@ on:
       - 'internal/tunnel/stage5_routing_test.go'
       - 'internal/tunnel/stage5_https_test.go'
       - 'internal/tunnel/stage5_load_test.go'
+      - 'internal/tunnel/stage5_h3_test.go'
       - 'internal/tunnel/access.go'
       - 'internal/tunnel/server.go'
       - '.github/workflows/stage5-cover.yml'
@@ -21,6 +22,7 @@ on:
       - 'internal/tunnel/stage5_routing_test.go'
       - 'internal/tunnel/stage5_https_test.go'
       - 'internal/tunnel/stage5_load_test.go'
+      - 'internal/tunnel/stage5_h3_test.go'
       - 'internal/tunnel/access.go'
       - 'internal/tunnel/server.go'
       - '.github/workflows/stage5-cover.yml'
@@ -40,8 +42,8 @@ jobs:
           go-version: '1.26.9'
       - name: Go formatting
         run: |
-          gofmt -d internal/tunnel/cover.go internal/tunnel/cover_test.go internal/tunnel/stage5_cover_test.go internal/tunnel/stage5_routing_test.go internal/tunnel/stage5_https_test.go internal/tunnel/stage5_load_test.go
-          test -z "$(gofmt -l internal/tunnel/cover.go internal/tunnel/cover_test.go internal/tunnel/stage5_cover_test.go internal/tunnel/stage5_routing_test.go internal/tunnel/stage5_https_test.go internal/tunnel/stage5_load_test.go)"
+          gofmt -d internal/tunnel/cover.go internal/tunnel/cover_test.go internal/tunnel/stage5_cover_test.go internal/tunnel/stage5_routing_test.go internal/tunnel/stage5_https_test.go internal/tunnel/stage5_load_test.go internal/tunnel/stage5_h3_test.go
+          test -z "$(gofmt -l internal/tunnel/cover.go internal/tunnel/cover_test.go internal/tunnel/stage5_cover_test.go internal/tunnel/stage5_routing_test.go internal/tunnel/stage5_https_test.go internal/tunnel/stage5_load_test.go internal/tunnel/stage5_h3_test.go)"
       - name: Go vet
         run: go vet ./internal/tunnel
       - name: Race-tested public cover and authentication regressions
