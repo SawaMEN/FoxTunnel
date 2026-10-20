@@ -37,8 +37,8 @@ type identityPool struct {
 	policy           tlsidentity.Policy
 	// Optional explicit trust policy for each configured origin.
 	// Set before Serve, immutable for the lifetime of the transport.
-	nodePolicies     map[string]tlsidentity.Policy
-	entries          map[string]identityEntry
+	nodePolicies map[string]tlsidentity.Policy
+	entries      map[string]identityEntry
 }
 
 func makeTLStransport(backend string, config *tls.Config, receiveProfile, clientProfile string) (tlsTransport, error) {

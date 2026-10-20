@@ -39,8 +39,8 @@ func TestLocalSOCKSAuthValidTCPAndUDP(t *testing.T) {
 		_ = client.SetDeadline(time.Now().Add(2 * time.Second))
 		type result struct {
 			command byte
-			target string
-			err error
+			target  string
+			err     error
 		}
 		done := make(chan result, 1)
 		go func() {
@@ -100,7 +100,10 @@ func TestLocalSOCKSAuthRejectsWrongPassword(t *testing.T) {
 }
 
 func TestLocalSOCKSCredentialConfiguration(t *testing.T) {
-	for _, tc := range []struct{ user, pass string; good bool }{
+	for _, tc := range []struct {
+		user, pass string
+		good       bool
+	}{
 		{"", "", true}, {"alice", "strong-pass", true},
 		{"", "pass", false}, {"alice", "", false},
 		{strings.Repeat("u", 256), "pass", false},

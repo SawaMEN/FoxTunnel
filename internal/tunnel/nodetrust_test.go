@@ -109,7 +109,7 @@ func TestNodePinsFailClosedOnMissingOrSymlinkedFile(t *testing.T) {
 	}
 	path := filepath.Join(t.TempDir(), "pins.json")
 	missing := nodePinsDocument{Version: 1, Nodes: []nodePinEntry{{
-		URL: "https://example.com",
+		URL:       "https://example.com",
 		PinSHA256: tlsidentity.Pin(&x509.Certificate{RawSubjectPublicKeyInfo: []byte("key")}),
 	}}}
 	b, err := json.Marshal(missing)

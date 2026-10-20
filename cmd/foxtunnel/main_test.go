@@ -179,7 +179,6 @@ func TestShareXHTTPRouteCLI(t *testing.T) {
 	}
 }
 
-
 func TestPrivateShareFileAndImportPermissions(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
