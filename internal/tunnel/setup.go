@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
 	"io"
 	"net"
 	"net/http"
@@ -59,6 +60,9 @@ func (c *Client) SetFallbackServers(rawURLs []string) error {
 	}
 	c.fallbackServers = endpoints
 	c.preferredEndpoint.Store(0)
+	c.schedulerMu.Lock()
+	c.adaptiveState = nodeperf.SelectionState{}
+	c.schedulerMu.Unlock()
 	return nil
 }
 
@@ -132,7 +136,9 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 				}
 			}
 			if err == nil {
-				c.preferredEndpoint.Store(uint32(index))
+				if c.balance != "adaptive" {
+					c.preferredEndpoint.Store(uint32(index))
+				}
 				c.endpointResult(index, false)
 				return &openStream{response: resp, reader: reader, writer: writer, cancel: cancel, release: release}, nil
 			}
@@ -232,16 +238,50 @@ func dialGoH2(ctx context.Context, network, addr string, config *tls.Config) (ne
 // SetBalance configures new-stream scheduling before Serve. A stream is never
 // striped or replayed; counts include both setup and established streams.
 func (c *Client) SetBalance(mode string) error {
+	if mode == "adaptive" && (c.bondClient != nil || c.bondDiscovery != nil) {
+		return errors.New("adaptive balance cannot be combined with bond")
+	}
 	switch mode {
-	case "failover", "round-robin", "least-active":
+	case "failover", "round-robin", "least-active", "adaptive":
 	default:
 		return fmt.Errorf(i18n.Text("unknown balance mode %q"), mode)
 	}
+	c.schedulerMu.Lock()
 	c.balance = mode
+	c.adaptiveState = nodeperf.SelectionState{}
+	c.schedulerMu.Unlock()
 	return nil
 }
 func (c *Client) reserveEndpoint(tried []bool) (int, func()) {
 	c.schedulerMu.Lock()
+	if c.balance == "adaptive" && c.nodeMetrics != nil {
+		endpoints := append([]*url.URL{c.ServerURL}, c.fallbackServers...)
+		candidates := make([]nodeperf.Candidate, len(tried))
+		for i := range tried {
+			candidates[i] = nodeperf.Candidate{
+				Origin:  endpoints[i].Scheme + "://" + endpoints[i].Host,
+				Active:  c.activeEndpoints[i],
+				RetryAt: c.endpointRetryAt[i],
+				Tried:   tried[i],
+			}
+		}
+		selected, next := nodeperf.Select(candidates, c.nodeMetrics.Snapshot(), c.adaptiveState, time.Now())
+		c.adaptiveState = next
+		if selected < 0 {
+			c.schedulerMu.Unlock()
+			return -1, func() {}
+		}
+		c.activeEndpoints[selected]++
+		c.schedulerMu.Unlock()
+		var once sync.Once
+		return selected, func() {
+			once.Do(func() {
+				c.schedulerMu.Lock()
+				c.activeEndpoints[selected]--
+				c.schedulerMu.Unlock()
+			})
+		}
+	}
 	start := int(c.preferredEndpoint.Load() % uint32(len(tried)))
 	if c.balance == "round-robin" || c.balance == "least-active" {
 		start = int(c.nextEndpoint % uint64(len(tried)))

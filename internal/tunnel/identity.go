@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
@@ -23,6 +24,7 @@ type identityEntry struct {
 type identityPool struct {
 	mu               sync.Mutex
 	base             tlsTransport
+	monitor          *nodeperf.Monitor
 	config           *tls.Config
 	backend          string
 	mode             string
@@ -118,6 +120,9 @@ func (p *identityPool) RoundTrip(r *http.Request) (*http.Response, error) {
 func (p *identityPool) roundTrip(r *http.Request, policy tlsidentity.Policy) (*http.Response, error) {
 	transport, err := p.forPolicy(r.URL.Scheme+"://"+r.URL.Host, policy)
 	if err != nil {
+		if p.monitor != nil {
+			p.monitor.Observe(r.URL.Scheme+"://"+r.URL.Host, 0, 0, err)
+		}
 		// RoundTripper owns closing request bodies, even when selecting the
 		// identity-specific transport fails before any network I/O.
 		if r.Body != nil {
@@ -128,6 +133,9 @@ func (p *identityPool) roundTrip(r *http.Request, policy tlsidentity.Policy) (*h
 	if policy.SNI != "" && r.Method != http.MethodConnect {
 		r = r.Clone(r.Context())
 		r.Host = policy.SNI
+	}
+	if p.monitor != nil {
+		return monitoredRoundTrip(p.monitor, transport, r)
 	}
 	return transport.RoundTrip(r)
 }

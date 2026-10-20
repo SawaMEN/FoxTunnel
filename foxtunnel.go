@@ -16,6 +16,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
@@ -32,6 +33,10 @@ var ErrCapacity = errors.New("foxtunnel client connection limit reached")
 
 // TransportStatus contains only local aggregate transport counters and fixed codes.
 type TransportStatus = enginestatus.Snapshot
+
+// NodeStatus reports bounded passive HTTPS carrier observations per node.
+// It contains origin hostnames, not credentials, paths or target addresses.
+type NodeStatus = nodeperf.Snapshot
 
 type Credentials struct{ Username, Password string }
 type ClientConfig struct {
@@ -54,6 +59,7 @@ type ClientConfig struct {
 	ConnectTimeout       time.Duration
 	MaxConnections       int // Combined active SOCKS/direct connections and pending direct dials; 0 uses 256.
 	FallbackServers      []string
+	Balance              string // Empty preserves failover; adaptive enables passive-metric route selection.
 }
 
 // Client is configured at construction and may be shared by concurrent callers.
@@ -104,6 +110,13 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if err = core.SetFallbackServers(config.FallbackServers); err != nil {
 		return nil, err
 	}
+	mode := config.Balance
+	if mode == "" {
+		mode = "failover"
+	}
+	if err = core.SetBalance(mode); err != nil {
+		return nil, err
+	}
 	limit := config.MaxConnections
 	if limit == 0 {
 		limit = 256
@@ -121,6 +134,12 @@ func NewClient(config ClientConfig) (*Client, error) {
 // Status returns a concurrency-safe snapshot. No addresses or secrets.
 func (c *Client) Status() TransportStatus {
 	return c.core.TransportStatus()
+}
+
+// NodeStatuses returns an independent snapshot of measured node traffic.
+// It neither probes nodes nor changes route selection.
+func (c *Client) NodeStatuses() []NodeStatus {
+	return c.core.NodeStatus()
 }
 
 // NotifyNetworkChange clears cached UDP unreachability after a confirmed

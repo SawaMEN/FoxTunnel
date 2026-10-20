@@ -266,12 +266,18 @@ func main() {
 		fs.Var(&fallbacks, "fallback-server", i18n.Text("explicit trusted HTTPS proxy fallback (repeat up to seven times)"))
 		bondPipeline := fs.String("bond-pipeline", "auto", i18n.Text("bond pipeline: auto, 4 or 8 (higher depth uses more memory)"))
 		bondLanes := new(bool)
+		bondRoute := new(string)
+		bondAdaptive := new(bool)
+		bondAutoTune := new(bool)
 		if os.Args[1] == "client" {
 			fs.BoolVar(bondLanes, "bond-lanes", false, i18n.Text("experimental persistent bond channels and small-write batching (requires --bond)"))
+			fs.StringVar(bondRoute, "bond-route", "legacy", i18n.Text("bond path scheduling: legacy or smart (requires --bond --discover and direct hub entry)"))
+			fs.BoolVar(bondAdaptive, "bond-adaptive", false, i18n.Text("experimental ACKed-data throughput and queue-aware bond scheduling (requires --bond)"))
+			fs.BoolVar(bondAutoTune, "bond-autotune", false, i18n.Text("conservative 4/8-slot tuning from ACKed throughput (requires --bond --bond-adaptive)"))
 		}
 		bonded := fs.Bool("bond", false, i18n.Text("experimental multi-node stream bonding; nodes must share one hub"))
 		discover := fs.Bool("discover", false, i18n.Text("obtain trusted bond nodes and capacity weights from the main HTTPS node"))
-		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active"))
+		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active, adaptive"))
 		attemptTimeout := fs.Duration("fallback-attempt-timeout", 5*time.Second, i18n.Text("setup time per endpoint when fallbacks are configured"))
 		padding := fs.Bool("padding", false, i18n.Text("require experimental initial-record padding (server must enable it)"))
 		engine := new(string)
@@ -283,8 +289,12 @@ func main() {
 		quicBackend, h3Fallback := new(string), new(string)
 		quicTimeout := new(time.Duration)
 		engineStatusInterval := new(time.Duration)
+		nodeStatusInterval := new(time.Duration)
+		bondMetricsInterval := new(time.Duration)
 		if os.Args[1] == "client" {
 			fs.DurationVar(engineStatusInterval, "engine-status-interval", 0, i18n.Text("optional local engine status JSON log interval; 0 disables, minimum 1s"))
+			fs.DurationVar(nodeStatusInterval, "node-status-interval", 0, i18n.Text("optional local passive node metrics JSON log interval; 0 disables, minimum 1s"))
+			fs.DurationVar(bondMetricsInterval, "bond-metrics-interval", 0, i18n.Text("optional local Bond path goodput and queue JSON log interval; 0 disables, minimum 1s"))
 		}
 		*quicBackend = "quic-go"
 		*h3Fallback = "none"
@@ -312,7 +322,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "bond-route", "bond-adaptive", "bond-autotune", "bond-metrics-interval", "node-status-interval":
 				default:
 					conflict = true
 				}
@@ -387,6 +397,30 @@ func main() {
 		if *engineStatusInterval < 0 || (*engineStatusInterval > 0 && *engineStatusInterval < time.Second) {
 			log.Fatal("--engine-status-interval must be 0 or at least 1s")
 		}
+		if *nodeStatusInterval < 0 || (*nodeStatusInterval > 0 && *nodeStatusInterval < time.Second) {
+			log.Fatal("--node-status-interval must be 0 or at least 1s")
+		}
+		if *bondRoute != "" && *bondRoute != "legacy" && *bondRoute != "smart" {
+			log.Fatal("--bond-route must be legacy or smart")
+		}
+		if *bondMetricsInterval < 0 || (*bondMetricsInterval > 0 && *bondMetricsInterval < time.Second) {
+			log.Fatal("--bond-metrics-interval must be 0 or at least 1s")
+		}
+		if *bondMetricsInterval > 0 && !*bonded {
+			log.Fatal("--bond-metrics-interval requires --bond")
+		}
+		if *bondAutoTune && (!*bonded || !*bondAdaptive) {
+			log.Fatal("--bond-autotune requires --bond --bond-adaptive")
+		}
+		if *bondAdaptive && !*bonded {
+			log.Fatal("--bond-adaptive requires --bond")
+		}
+		if *bondRoute == "smart" && (!*bonded || !*discover) {
+			log.Fatal("--bond-route smart requires --bond --discover")
+		}
+		if *bonded && *balance == "adaptive" {
+			log.Fatal("--balance adaptive is not supported with --bond; bond has its own scheduler")
+		}
 		if *bondLanes && !*bonded {
 			log.Fatal(i18n.Text("bond lanes require --bond"))
 		}
@@ -450,6 +484,9 @@ func main() {
 			log.Fatal(i18n.Text("bond pipeline must be auto, 4 or 8"))
 		}
 		client.BondLanes = *bondLanes
+		client.BondRoute = *bondRoute
+		client.BondAdaptive = *bondAdaptive
+		client.BondAutoTune = *bondAutoTune
 		if *bonded {
 			var err error
 			if *discover {
@@ -475,6 +512,42 @@ func main() {
 					case <-ticker.C:
 						if data, err := json.Marshal(client.TransportStatus()); err == nil {
 							log.Printf("engine_status=%s", data)
+						}
+					}
+				}
+			}()
+		}
+		if *nodeStatusInterval > 0 {
+			ticker := time.NewTicker(*nodeStatusInterval)
+			defer ticker.Stop()
+			done := make(chan struct{})
+			defer close(done)
+			go func() {
+				for {
+					select {
+					case <-done:
+						return
+					case <-ticker.C:
+						if data, err := json.Marshal(client.NodeStatus()); err == nil {
+							log.Printf("node_status=%s", data)
+						}
+					}
+				}
+			}()
+		}
+		if *bondMetricsInterval > 0 {
+			ticker := time.NewTicker(*bondMetricsInterval)
+			defer ticker.Stop()
+			done := make(chan struct{})
+			defer close(done)
+			go func() {
+				for {
+					select {
+					case <-done:
+						return
+					case <-ticker.C:
+						if data, err := json.Marshal(client.BondMetrics()); err == nil {
+							log.Printf("bond_metrics=%s", data)
 						}
 					}
 				}

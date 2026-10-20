@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -62,6 +63,27 @@ func (s *Server) ConfigureCluster(path string) error {
 	return nil
 }
 
+// Coordinator and cluster URLs are already validated HTTPS origins.
+// Canonicalize optional :443 and hostname case for direct/relay recognition.
+func bondOriginKey(u *url.URL) string {
+	port := u.Port()
+	if port == "" {
+		port = "443"
+	}
+	return net.JoinHostPort(strings.ToLower(u.Hostname()), port)
+}
+
+func sameBondOrigin(a, b *url.URL) bool {
+	return a.Scheme == "https" && b.Scheme == "https" && bondOriginKey(a) == bondOriginKey(b)
+}
+
+func bondRouteMode(value string) string {
+	if value == "smart" {
+		return "smart"
+	}
+	return ""
+}
+
 type bondDiscovery struct {
 	mu                 sync.Mutex
 	current            *bond.Client
@@ -75,7 +97,7 @@ type bondDiscovery struct {
 // coordinator. Its listed origins receive the same credentials after TLS/h2.
 // Call after TLS/timeouts, before Serve. A failed initial fetch fails closed.
 func (c *Client) EnableBondDiscovery(ctx context.Context) error {
-	if c.bondDiscovery != nil || c.bondClient != nil || len(c.fallbackServers) != 0 || c.Padding || (c.BondPipeline != 0 && c.BondPipeline != 4 && c.BondPipeline != 8) || (c.FallbackAttemptTimeout > 0 && c.FallbackAttemptTimeout < 100*time.Millisecond) {
+	if (c.BondRoute != "" && c.BondRoute != "legacy" && c.BondRoute != "smart") || c.balance == "adaptive" || c.bondDiscovery != nil || c.bondClient != nil || len(c.fallbackServers) != 0 || c.Padding || (c.BondPipeline != 0 && c.BondPipeline != 4 && c.BondPipeline != 8) || (c.FallbackAttemptTimeout > 0 && c.FallbackAttemptTimeout < 100*time.Millisecond) {
 		return i18n.Error("invalid cluster configuration")
 	}
 	c.bondDiscovery = &bondDiscovery{}
@@ -154,6 +176,23 @@ func (c *Client) discoveredBond(ctx context.Context) (*bond.Client, error) {
 		d.refreshing = make(chan struct{})
 		d.mu.Unlock()
 		m, transient, err := c.fetchCluster(ctx)
+		if err == nil && c.BondRoute == "smart" {
+			// Restrict smart routing to an explicit direct hub plus one or more
+			// authenticated single-relay paths. Never chain arbitrary relays.
+			direct, relay := false, false
+			for _, n := range m.Nodes {
+				u, _ := cluster.Origin(n.URL)
+				if sameBondOrigin(u, c.ServerURL) {
+					direct = true
+				} else {
+					relay = true
+				}
+			}
+			if !direct || !relay {
+				err = i18n.Error("smart bond routes require the coordinator hub and at least one relay in the manifest")
+				transient = false
+			}
+		}
 		d.mu.Lock()
 		if ctx.Err() != nil {
 			close(d.refreshing)
@@ -186,7 +225,11 @@ func (c *Client) discoveredBond(ctx context.Context) (*bond.Client, error) {
 						}
 					}
 				}
-				d.current = &bond.Client{Endpoints: endpoints, Weights: weights, ExpectedHub: m.HubID, Transport: transport, Username: c.Username, Password: c.Password, AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout, Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes}
+				d.current = &bond.Client{Endpoints: endpoints, Weights: weights, ExpectedHub: m.HubID,
+					RouteMode: bondRouteMode(c.BondRoute), DirectOrigin: bondOriginKey(c.ServerURL),
+					Transport: transport, Username: c.Username, Password: c.Password,
+					AttemptTimeout: c.FallbackAttemptTimeout, SetupTimeout: c.ConnectTimeout,
+					Pipeline: c.BondPipeline, PersistentLanes: c.BondLanes, Adaptive: c.BondAdaptive, AutoTune: c.BondAutoTune}
 				d.manifest = m
 			}
 			d.expires = now.Add(time.Duration(m.ValidFor) * time.Second)
