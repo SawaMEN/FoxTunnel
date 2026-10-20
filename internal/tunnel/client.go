@@ -39,6 +39,10 @@ type Client struct {
 	// MaxConnections bounds local SOCKS sockets, including incomplete handshakes.
 	// Configure before Serve; zero uses 256.
 	MaxConnections int
+	// Optional credentials for the LOCAL SOCKS5 listener, never forwarded
+	// to remote FoxTunnel nodes. Configure before Serve.
+	SOCKSUsername string
+	SOCKSPassword string
 	// EnableUDP permits experimental SOCKS5 UDP ASSOCIATE; off by default.
 	EnableUDP bool
 	// UDPStreaming selects the v2 persistent multiplexed UDP carrier; requires EnableUDP.
@@ -268,7 +272,7 @@ func (c *Client) handle(conn net.Conn) { c.handleContext(context.Background(), c
 func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
-	command, target, err := socks5Request(conn)
+	command, target, err := socks5RequestAuth(conn, c.SOCKSUsername, c.SOCKSPassword)
 	if err != nil {
 		return
 	}
@@ -334,28 +338,11 @@ func socks5Handshake(conn net.Conn) (string, error) {
 }
 
 func socks5Request(conn net.Conn) (byte, string, error) {
-	var hello [2]byte
-	if _, err := io.ReadFull(conn, hello[:]); err != nil {
-		return 0, "", err
-	}
-	if hello[0] != 5 || hello[1] == 0 {
-		return 0, "", errors.New(i18n.Text("unsupported SOCKS greeting"))
-	}
-	methods := make([]byte, int(hello[1]))
-	if _, err := io.ReadFull(conn, methods); err != nil {
-		return 0, "", err
-	}
-	noAuth := false
-	for _, m := range methods {
-		if m == 0 {
-			noAuth = true
-		}
-	}
-	if !noAuth {
-		_, _ = conn.Write([]byte{5, 0xff})
-		return 0, "", errors.New(i18n.Text("SOCKS no-auth method unavailable"))
-	}
-	if _, err := conn.Write([]byte{5, 0}); err != nil {
+	return socks5RequestAuth(conn, "", "")
+}
+
+func socks5RequestAuth(conn net.Conn, user, password string) (byte, string, error) {
+	if err := socks5Greeting(conn, user, password); err != nil {
 		return 0, "", err
 	}
 	var h [4]byte
