@@ -162,8 +162,8 @@ func BenchmarkBondAdaptivePick(b *testing.B) {
 			for i := range c.paths {
 				c.Endpoints[i] = &url.URL{Scheme: "https", Host: "example.org"}
 				c.paths[i] = pathState{
-					latency: time.Duration(20+5*i) * time.Millisecond,
-					uploadBps: float64(5_000_000 / (i + 1)),
+					latency:       time.Duration(20+5*i) * time.Millisecond,
+					uploadBps:     float64(5_000_000 / (i + 1)),
 					uploadSamples: 5, lastUpload: now,
 				}
 			}
