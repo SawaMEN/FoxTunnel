@@ -38,7 +38,12 @@ def download(url, path, expected, bound):
 
 def wait_file(path, process, seconds=25):
     deadline = time.monotonic() + seconds
-    while not path.exists():
+    while True:
+        try:
+            if json.loads(path.read_text()).get('origin'):
+                return
+        except (OSError, ValueError):
+            pass
         if process.poll() is not None:
             raise ValueError('capture endpoint exited before ready')
         if time.monotonic() >= deadline:
@@ -87,7 +92,8 @@ def trigger_socks(port):
             pass
 
 
-def capture(endpoint, firefox, naive, cert, key, work, subject, protocol, env):
+def capture(endpoint, firefox, naive, cert, key, work, subject, protocol, env, ca=None):
+    trust = ca or cert
     out, ready = work / f'{subject}-{protocol}.json', work / f'{subject}-{protocol}-ready.json'
     args = [str(endpoint), '--protocol', protocol, '--cert', str(cert), '--key', str(key),
             '--ready', str(ready), '--out', str(out)]
@@ -103,7 +109,7 @@ def capture(endpoint, firefox, naive, cert, key, work, subject, protocol, env):
                 profile = work / f'firefox-{protocol}-profile'
                 profile.mkdir(mode=0o700)
                 subprocess.run(['certutil', '-N', '--empty-password', '-d', 'sql:' + str(profile)], check=True)
-                subprocess.run(['certutil', '-A', '-n', 'fixture', '-t', 'P,,', '-i', str(cert), '-d', 'sql:' + str(profile)], check=True)
+                subprocess.run(['certutil', '-A', '-n', 'fixture', '-t', 'CT,,', '-i', str(trust), '-d', 'sql:' + str(profile)], check=True)
                 prefs = {'browser.shell.checkDefaultBrowser': False, 'browser.startup.homepage_override.mstone': 'ignore',
                          'app.update.auto': False, 'app.update.enabled': False, 'datareporting.policy.dataSubmissionEnabled': False,
                          'toolkit.telemetry.enabled': False, 'network.captive-portal-service.enabled': False,
@@ -122,7 +128,7 @@ def capture(endpoint, firefox, naive, cert, key, work, subject, protocol, env):
                     sock.bind(('127.0.0.1', 0))
                     port = sock.getsockname()[1]
                 scheme = 'https' if protocol == 'h2' else 'quic'
-                client_env = dict(env, SSL_CERT_FILE=str(cert), SSL_CERT_DIR=str(work / 'empty-roots'))
+                client_env = dict(env, SSL_CERT_FILE=str(trust), SSL_CERT_DIR=str(work / 'empty-roots'))
                 client = subprocess.Popen([str(naive), f'--listen=socks://127.0.0.1:{port}',
                     '--proxy=' + origin.replace('https://', scheme + '://fixture:local-only@'),
                     '--host-resolver-rules=MAP localhost 127.0.0.1'], env=client_env, stdout=log, stderr=log)
@@ -179,14 +185,31 @@ def main():
         if mozilla['firefox_version'] not in versions['firefox'] or lock['naive_version'] not in versions['naive']:
             raise ValueError('executable version differs from pin')
         certdir = work / 'cert'
-        subprocess.run(['go', 'run', './integration/operations-cert', '--out', str(certdir)], cwd=ROOT, check=True)
+        certdir.mkdir(mode=0o700)
+        ca, cakey = certdir / 'ca.pem', certdir / 'ca.key'
         cert, key = certdir / 'cert.pem', certdir / 'key.pem'
+        # A real lab CA + signed leaf, not a Firefox certificate exception.
+        subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes',
+            '-days', '1', '-subj', '/CN=Isolated wire fixture CA',
+            '-addext', 'basicConstraints=critical,CA:TRUE',
+            '-addext', 'keyUsage=critical,keyCertSign,cRLSign',
+            '-keyout', str(cakey), '-out', str(ca)], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        csr = certdir / 'leaf.csr'
+        subprocess.run(['openssl', 'req', '-new', '-newkey', 'ec', '-pkeyopt',
+            'ec_paramgen_curve:P-256', '-nodes', '-subj', '/CN=localhost',
+            '-keyout', str(key), '-out', str(csr)], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        extensions = certdir / 'extensions'
+        extensions.write_text('basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:localhost,IP:127.0.0.1\n')
+        subprocess.run(['openssl', 'x509', '-req', '-in', str(csr), '-CA', str(ca),
+            '-CAkey', str(cakey), '-CAcreateserial', '-days', '1', '-extfile', str(extensions),
+            '-out', str(cert)], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        cert.write_bytes(cert.read_bytes() + ca.read_bytes())
         (work / 'empty-roots').mkdir()
         observations = []
         payloads = {}
         for subject in ('firefox', 'naive', 'foxtunnel'):
             for protocol in ('h2', 'h3'):
-                raw = capture(args.endpoint.resolve(), firefox, naive, cert, key, work, subject, protocol, env)
+                raw = capture(args.endpoint.resolve(), firefox, naive, cert, key, work, subject, protocol, env, ca=ca)
                 name = f'{subject}-{protocol}.json'
                 payloads[name] = raw
                 observations.append(dict(subject=subject, protocol=protocol, path=name,
