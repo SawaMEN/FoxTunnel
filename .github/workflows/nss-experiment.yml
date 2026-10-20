@@ -40,6 +40,8 @@ jobs:
         run: python3 scripts/check_core_boundaries.py --tags nss
       - name: Test NSS data transport with race detector
         run: go test -race -tags nss ./... -count=1 -timeout=120s
+      - name: Repeat core destination and managed UDP revocation security
+        run: go test -race -tags nss ./internal/tunnel -run '^TestSecurityStage5|^TestVerifiedSNIAndPinNSS$|^TestAccessRevocationIsolationNSS$' -count=3 -timeout=120s
       - name: Vet NSS adapter
         run: go vet -tags nss ./...
       - name: Build NSS client

@@ -236,6 +236,13 @@ func (s *Server) dialTarget(ctx context.Context, host, port string) (net.Conn, e
 	return access.Dial(ctx, func(ctx context.Context) (net.Conn, error) { return s.dialRawTarget(ctx, host, port) })
 }
 func (s *Server) dialRawTarget(ctx context.Context, host, port string) (net.Conn, error) {
+	dialer := &net.Dialer{Timeout: s.timeout(), KeepAlive: 30 * time.Second}
+	return s.dialResolvedTarget(ctx, host, port, dialer.DialContext)
+}
+
+// dialResolvedTarget owns resolution and passes only filtered numeric addresses
+// to the socket dialer. Keep DNS and dialing in this single policy boundary.
+func (s *Server) dialResolvedTarget(ctx context.Context, host, port string, dial contextDial) (net.Conn, error) {
 	resolver := s.Resolver
 	if resolver == nil {
 		resolver = net.DefaultResolver
@@ -262,22 +269,7 @@ func (s *Server) dialRawTarget(ctx context.Context, host, port string) (net.Conn
 	if len(permitted) == 0 {
 		return nil, errors.New(i18n.Text("no permitted destination addresses"))
 	}
-	dialer := &net.Dialer{Timeout: s.timeout(), KeepAlive: 30 * time.Second}
-	return dialFamilies(ctx, permitted, port, 250*time.Millisecond, dialer.DialContext)
-}
-
-func safePublicIP(ip netip.Addr) bool {
-	if !ip.IsValid() || !ip.IsGlobalUnicast() || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
-		return false
-	}
-	// Shared address space, documentation and benchmark ranges are not WAN destinations.
-	for _, prefix := range []string{"100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "2001:db8::/32", "fc00::/7"} {
-		p := netip.MustParsePrefix(prefix)
-		if p.Contains(ip) {
-			return false
-		}
-	}
-	return true
+	return dialFamilies(ctx, permitted, port, 250*time.Millisecond, dial)
 }
 
 type flushingWriter struct {
