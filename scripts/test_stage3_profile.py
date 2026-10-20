@@ -21,7 +21,7 @@ class Stage3ProfileTests(unittest.TestCase):
     def fake_go(self, a, *, fail=False, missing=None):
         expected, _ = profile.VARIANTS[a.variant]
         size, _ = profile.SCENARIOS[a.scenario]
-        output = (f"Benchmark{expected}/{size}-4  100  1250.5 ns/op  "
+        output = (f"{expected}/{size}-4  100  1250.5 ns/op  "
                   f"50.0 MB/s  1234 B/op  9 allocs/op\n").encode()
         def invoke(cmd, **kwargs):
             self.assertEqual(kwargs["cwd"], profile.ROOT)
@@ -51,7 +51,7 @@ class Stage3ProfileTests(unittest.TestCase):
             for scenario in profile.SCENARIOS:
                 fn, _ = profile.VARIANTS[variant]
                 size, bytes_size = profile.SCENARIOS[scenario]
-                line = (f"Benchmark{fn}/{size}-4   7  133.5 ns/op "
+                line = (f"{fn}/{size}-4   7  133.5 ns/op "
                         "  300.1 MB/s  64 B/op  2 allocs/op\n")
                 parsed = profile.parse_benchmark(line, variant, scenario)
                 self.assertEqual(parsed["iterations"], 7)
