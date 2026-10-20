@@ -102,12 +102,31 @@ func (c *Client) handleUDPAssociate(parent context.Context, control net.Conn) {
 			if err != nil || len(response) == 0 || ctx.Err() != nil {
 				return
 			}
-			if reply, err := udpproto.Parse(response); err != nil || reply.Port != datagram.Port {
+			if reply, err := udpproto.Parse(response); err != nil || !udpReplyMatchesRequest(datagram, reply) {
 				return
 			}
 			_, _ = socket.WriteToUDP(response, &source)
 		}()
 	}
+}
+
+// udpReplyMatchesRequest rejects a reply claiming an unrelated destination.
+// The remote exit resolves DNS hostnames; DNS lookups must never run on the
+// local UDP client. For a hostname request, the server's reply must name a
+// numeric resolved address; for a literal address, it must match exactly
+// (including IPv4-mapped IPv6 normalization).
+func udpReplyMatchesRequest(request, reply udpproto.Packet) bool {
+	if reply.Port != request.Port {
+		return false
+	}
+	origin, err := netip.ParseAddr(reply.Host)
+	if err != nil || origin.Zone() != "" || !origin.IsValid() {
+		return false
+	}
+	if dest, err := netip.ParseAddr(request.Host); err == nil {
+		return dest.Zone() == "" && dest.Unmap() == origin.Unmap()
+	}
+	return true // A DNS hostname is resolved by the authenticated exit.
 }
 
 func replyUDPAssociate(w net.Conn, a *net.UDPAddr) error {

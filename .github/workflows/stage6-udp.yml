@@ -1,0 +1,50 @@
+name: Stage 6 UDP Association and Stream Security
+
+on:
+  push:
+    branches: [up]
+    paths:
+      - 'internal/tunnel/udp_client.go'
+      - 'internal/tunnel/udp_stream_client.go'
+      - 'internal/tunnel/udp_multinode_client.go'
+      - 'internal/tunnel/udp_reply_guard.go'
+      - 'internal/tunnel/stage6_udp_test.go'
+      - 'internal/tunnel/stage6_udp_stream_security_test.go'
+      - 'internal/udpproto/**'
+      - '.github/workflows/stage6-udp.yml'
+  pull_request:
+    paths:
+      - 'internal/tunnel/udp*'
+      - 'internal/tunnel/stage6_udp*'
+      - 'internal/udpproto/**'
+      - '.github/workflows/stage6-udp.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  udp-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Verify Go formatting
+        run: |
+          files="internal/tunnel/udp_client.go internal/tunnel/udp_stream_client.go internal/tunnel/udp_multinode_client.go internal/tunnel/udp_reply_guard.go internal/tunnel/stage6_udp_test.go internal/tunnel/stage6_udp_stream_security_test.go"
+          gofmt -d $files
+          test -z "$(gofmt -l $files)"
+      - name: Go vet
+        run: go vet ./internal/tunnel ./internal/udpproto
+      - name: Race-tested UDP association and stream security
+        run: |
+          go test -race ./internal/tunnel -run '^(TestStage6UDP|TestUDPAssociate|TestUDPStream|TestUDPMultiNode)' -count=3 -timeout=150s
+      - name: Framing boundary regressions
+        run: go test ./internal/udpproto -count=5 -timeout=60s
+      - name: Repeated malformed and unsolicited wire tests
+        run: go test ./internal/tunnel -run '^TestStage6UDP' -count=5 -timeout=100s
+      - name: Scope
+        run: echo 'Loopback H2 UDP and parser tests only; no VDS or production anti-replay guarantee.'

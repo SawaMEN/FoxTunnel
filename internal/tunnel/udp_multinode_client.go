@@ -86,6 +86,7 @@ func (c *Client) handleUDPMultiNodeStream(parent context.Context, control net.Co
 	}
 
 	var source atomic.Pointer[net.UDPAddr]
+	guards := make([]udpReplyGuard, len(streams))
 	queues := make([]chan []byte, len(streams))
 	var workers sync.WaitGroup
 	for i, stream := range streams {
@@ -108,13 +109,16 @@ func (c *Client) handleUDPMultiNodeStream(parent context.Context, control net.Co
 				}
 			}
 		}(stream, queues[i])
-		go func(s *udpStream) {
+		go func(s *udpStream, guard *udpReplyGuard) {
 			defer workers.Done()
 			for {
 				wire, err := udpproto.ReadFrame(s.response)
 				if err != nil {
 					cancel()
 					return
+				}
+				if !guard.matches(wire) {
+					continue
 				}
 				dst := source.Load()
 				if dst == nil || ctx.Err() != nil {
@@ -126,7 +130,7 @@ func (c *Client) handleUDPMultiNodeStream(parent context.Context, control net.Co
 					return
 				}
 			}
-		}(stream)
+		}(stream, &guards[i])
 	}
 	defer func() {
 		cancel()
@@ -164,6 +168,9 @@ func (c *Client) handleUDPMultiNodeStream(parent context.Context, control net.Co
 		// independent of queue pressure. No per-packet exit switching.
 		index := udpIngressIndex(packet.Host, packet.Port, len(queues))
 		owned := append([]byte(nil), buf[:n]...)
+		// Each exit may reply only for destinations sent on its stream.
+		// A different trusted exit cannot forge a response for this flow.
+		guards[index].remember(packet)
 		select {
 		case <-ctx.Done():
 			return
