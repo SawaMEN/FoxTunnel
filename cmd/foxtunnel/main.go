@@ -323,6 +323,12 @@ func main() {
 		encryption := fs.String("encryption", "tls13", i18n.Text("encryption: tls13 (secure negotiation only)"))
 		connectTimeout := fs.Duration("connect-timeout", 15*time.Second, i18n.Text("maximum CONNECT setup time (does not limit stream lifetime)"))
 		ca := fs.String("ca-cert", "", i18n.Text("additional trusted certificate PEM"))
+		nodePinsFile := new(string)
+		allowPublicSOCKS := new(bool)
+		if os.Args[1] == "client" {
+			fs.StringVar(nodePinsFile, "node-pins-file", "", i18n.Text("owner-only JSON with separate SPKI pins for each explicit trusted HTTPS server"))
+			fs.BoolVar(allowPublicSOCKS, "socks-allow-lan", false, i18n.Text("explicitly permit non-loopback SOCKS5; requires local SOCKS password and a secure network"))
+		}
 		i18n.Parse(fs, os.Args[2:])
 		if *link != "" || *linkFile != "" {
 			if *link != "" && *linkFile != "" {
@@ -331,7 +337,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
+				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "tun", "tun-mtu", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "node-pins-file", "socks-allow-lan", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
 				default:
 					conflict = true
 				}
@@ -503,6 +509,15 @@ func main() {
 		if err := client.SetBalance(*balance); err != nil {
 			log.Fatal(err)
 		}
+		if *nodePinsFile != "" {
+			if *discover {
+				log.Fatal("--node-pins-file requires explicit configured nodes; use verified discovery identity policies for --discover")
+			}
+			if err := client.SetNodePinsFile(*nodePinsFile); err != nil {
+				log.Fatal(err)
+			}
+		}
+		client.AllowPublicSOCKS = *allowPublicSOCKS
 		client.FallbackAttemptTimeout = *attemptTimeout
 		client.ConnectTimeout = *connectTimeout
 		client.Padding = *padding
@@ -592,8 +607,8 @@ func main() {
 		}
 		defer listener.Close()
 		if addr, ok := listener.Addr().(*net.TCPAddr); !ok || !addr.IP.IsLoopback() {
-			if client.SOCKSUsername == "" {
-				log.Fatal("non-loopback SOCKS5 listener requires FOXTUNNEL_SOCKS_USER and FOXTUNNEL_SOCKS_PASSWORD; protect even authenticated SOCKS5 with TLS or firewall")
+			if !client.AllowPublicSOCKS || client.SOCKSUsername == "" {
+				log.Fatal("non-loopback SOCKS5 requires explicit --socks-allow-lan plus FOXTUNNEL_SOCKS_USER/PASSWORD; SOCKS5 passwords are plaintext on the local network")
 			}
 		}
 		if *tunName != "" {
