@@ -162,6 +162,15 @@ func socksHandshakeError(ctx context.Context, err error) error {
 	if contextErr := ctx.Err(); contextErr != nil {
 		return contextErr
 	}
+	// The network read deadline and the context timer share the same
+	// deadline. The socket may report timeout slightly before ctx.Err()
+	// becomes observable; keep the contextual failure identity.
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
+			return context.DeadlineExceeded
+		}
+	}
 	return err
 }
 
