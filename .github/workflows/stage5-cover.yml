@@ -53,4 +53,4 @@ jobs:
       - name: Bounded-cover admission microbenchmark
         run: go test ./internal/tunnel -run '^$' -bench '^BenchmarkStage5PublicCoverAdmission$' -benchmem -benchtime=200ms -count=1 -timeout=90s
       - name: Scope statement
-        run: echo 'Static local HTTPS site isolation only; external fingerprint/DPI parity not claimed.'
+        run: echo 'Local TLS H1/H2 and real UDP QUIC/H3 cover and authenticated SOCKS checks; no WAN or Firefox/DPI parity claim.'
