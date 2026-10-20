@@ -139,6 +139,21 @@ def udp_flow(proxy: tcp.Address, target: tcp.Address, rounds: int, timeout: floa
     return results
 
 
+def per_flow_jitter(rows: list[dict]) -> float | None:
+    # A single UDP flow stays on one exit; never infer jitter from the
+    # difference between two distinct flows or independently routed VDS.
+    by_flow = {}
+    for row in rows:
+        if row.get("ok") and row.get("rtt_ms") is not None:
+            by_flow.setdefault(row.get("flow", 1), []).append(
+                (row.get("round", 0), row["rtt_ms"]))
+    differences = []
+    for values in by_flow.values():
+        values.sort()
+        differences.extend(abs(b[1] - a[1]) for a, b in zip(values, values[1:]))
+    return round(statistics.mean(differences), 3) if differences else None
+
+
 def summarize(rows: list[dict], mode: str) -> dict:
     success = [r for r in rows if r["ok"]]
     result = {"attempted": len(rows), "successful": len(success),
@@ -150,8 +165,7 @@ def summarize(rows: list[dict], mode: str) -> dict:
                       rtt_p95_ms=tcp.percentile(rtt, .95),
                       rtt_p99_ms=tcp.percentile(rtt, .99),
                       loss_pct=round(100 * result["failed"] / len(rows), 3) if rows else None,
-                      jitter_mean_abs_delta_ms=round(statistics.mean(
-                          abs(b - a) for a, b in zip(rtt, rtt[1:])), 3) if len(rtt) > 1 else None)
+                      jitter_mean_abs_delta_ms=per_flow_jitter(rows))
     else:
         finish = [r["completion_ms"] for r in success]
         speed = [r["payload_mbps"] for r in success]
