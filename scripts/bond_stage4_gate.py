@@ -14,6 +14,7 @@ from pathlib import Path
 import statistics
 
 import compare_transports as metrics
+import bond_stage4_field as probe
 
 MIN_DAYS = 3
 MIN_DAILY_SAMPLES = 5
@@ -139,8 +140,7 @@ def metrics_of(rows: list[dict], mode: str) -> dict:
         result["median_mbps"] = round(statistics.median(r["payload_mbps"] for r in ok), 3)
     else:
         result["loss_pct"] = round(100 * (len(rows) - len(ok)) / len(rows), 3)
-        result["jitter_mean_abs_delta_ms"] = round(statistics.mean(
-            abs(y - x) for x, y in zip(times, times[1:])), 3) if len(times) > 1 else None
+        result["jitter_mean_abs_delta_ms"] = probe.per_flow_jitter(rows)
     return result
 
 
