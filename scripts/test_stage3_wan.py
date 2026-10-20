@@ -29,8 +29,10 @@ def fake_report(day: int, scenario: str) -> dict:
                 "integrity_failure": False,
             })
     return {
-        "schema": 1, "kind": "foxtunnel-stage3-3way",
-        "created_at_utc": f"2026-10-{day:02d}T10:00:00+00:00",
+        "schema": 2, "kind": "foxtunnel-stage3-3way",
+        "started_at_utc": f"2026-10-{day:02d}T10:00:00+00:00",
+        "finished_at_utc": f"2026-10-{day:02d}T10:01:00+00:00",
+        "created_at_utc": f"2026-10-{day:02d}T10:01:00+00:00",
         "scenario": scenario, "environment": "wan",
         "wan_attested_by_operator": True, "wan_verified_by_tool": False,
         "configuration": {
@@ -40,6 +42,7 @@ def fake_report(day: int, scenario: str) -> dict:
             "warmup": 2, "timeout_seconds": 30,
         },
         "samples": rows,
+        "warmup_failures": {label: 0 for label in runner.LABELS},
         "resources": {
             label: {"cpu_percent_one_core": 8 if label == "candidate" else 10,
                     "rss_peak_mib": 48 if label == "candidate" else 55}
@@ -94,6 +97,9 @@ class Stage3WanTests(unittest.TestCase):
             self.assertFalse(report["wan_attested_by_operator"])
             self.assertFalse(report["wan_verified_by_tool"])
             self.assertIsNone(report["resources"])
+            self.assertEqual(report["schema"], 2)
+            self.assertEqual(report["warmup_failures"], {name: 0 for name in runner.LABELS})
+            self.assertLess(report["started_at_utc"], report["finished_at_utc"])
             serialized = output.read_text()
             self.assertNotIn("echo.private.example", serialized)
             self.assertNotIn("127.0.0.1", serialized)
@@ -183,6 +189,51 @@ class Stage3WanTests(unittest.TestCase):
         doc[1]["samples"].append(copy.deepcopy(doc[1]["samples"][-1]))
         with self.assertRaisesRegex(ValueError, "population"):
             gate.evaluate(doc)
+
+    def test_gate_rejects_failed_warmup_and_invalid_counts(self):
+        data = reports()
+        data[0]["warmup_failures"]["baseline"] = 1
+        verdict = gate.evaluate(data)
+        self.assertFalse(verdict["passed"])
+        self.assertIn("SOCKS warmup failures observed", verdict["issues"])
+
+        data = reports()
+        data[0]["warmup_failures"]["candidate"] = 7  # warmup*parallel=2
+        with self.assertRaisesRegex(ValueError, "warmup"):
+            gate.evaluate(data)
+
+        data = reports()
+        del data[0]["warmup_failures"]
+        with self.assertRaisesRegex(ValueError, "warmup"):
+            gate.evaluate(data)
+
+        data = reports()
+        data[0]["warmup_failures"]["vless"] = True
+        with self.assertRaisesRegex(ValueError, "warmup"):
+            gate.evaluate(data)
+
+    def test_gate_rejects_mismatched_capture_intervals(self):
+        data = reports()
+        data[0]["started_at_utc"] = "2026-10-18T23:59:59+00:00"
+        data[0]["finished_at_utc"] = "2026-10-19T00:00:01+00:00"
+        data[0]["created_at_utc"] = data[0]["finished_at_utc"]
+        with self.assertRaisesRegex(ValueError, "UTC day boundary"):
+            gate.evaluate(data)
+
+        data = reports()
+        data[0]["finished_at_utc"] = "2026-10-18T09:59:59+00:00"
+        with self.assertRaisesRegex(ValueError, "capture interval"):
+            gate.evaluate(data)
+
+        data = reports()
+        data[0]["created_at_utc"] = "2026-10-18T10:07:00+00:00"
+        with self.assertRaisesRegex(ValueError, "capture interval"):
+            gate.evaluate(data)
+
+        data = reports()
+        data[0]["started_at_utc"] = "2026-10-18T10:00:00"
+        with self.assertRaisesRegex(ValueError, "timezone"):
+            gate.evaluate(data)
 
     def test_gate_fails_low_sample_size_and_bad_input(self):
         doc = reports()

@@ -41,7 +41,7 @@ def ratio(a, b):
 
 def load(path: Path) -> dict:
     doc = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(doc, dict) or doc.get("schema") != 1 or doc.get("kind") != "foxtunnel-stage3-3way":
+    if not isinstance(doc, dict) or doc.get("schema") != 2 or doc.get("kind") != "foxtunnel-stage3-3way":
         raise ValueError("not a stage3 three-way sanitized report")
     return doc
 
@@ -110,7 +110,7 @@ def evaluate(reports: list[dict]) -> dict:
     seen = {scenario: set() for scenario in SCENARIOS}
     measurements = []
     for report in reports:
-        if report.get("schema") != 1 or report.get("kind") != "foxtunnel-stage3-3way":
+        if report.get("schema") != 2 or report.get("kind") != "foxtunnel-stage3-3way":
             raise ValueError("invalid report kind/schema")
         scenario = report.get("scenario")
         if scenario not in SCENARIOS:
@@ -126,13 +126,32 @@ def evaluate(reports: list[dict]) -> dict:
             common = constant
         elif constant != common:
             raise ValueError("mixed client revisions, transports or benchmark parameters")
-        timestamp = dt.datetime.fromisoformat(report["created_at_utc"])
-        if timestamp.tzinfo is None or timestamp.utcoffset() is None:
-            raise ValueError("timestamp must be offset-aware")
-        day = timestamp.astimezone(dt.timezone.utc).date().isoformat()
+        start = dt.datetime.fromisoformat(report["started_at_utc"])
+        finish = dt.datetime.fromisoformat(report["finished_at_utc"])
+        created = dt.datetime.fromisoformat(report["created_at_utc"])
+        if any(t.tzinfo is None or t.utcoffset() is None for t in (start, finish, created)):
+            raise ValueError("start/finish/creation timestamps must have a timezone")
+        start, finish, created = (t.astimezone(dt.timezone.utc)
+                                  for t in (start, finish, created))
+        elapsed = (finish - start).total_seconds()
+        # A run overlapping two calendar dates is not an unambiguous UTC-day
+        # measurement; it must not count toward the three-day gate.
+        if start.date() != finish.date():
+            raise ValueError("benchmark crossed UTC day boundary")
+        if elapsed <= 0 or elapsed > 7260 or abs((created - finish).total_seconds()) > 1:
+            raise ValueError("invalid benchmark capture interval")
+        day = start.date().isoformat()
         if day in seen[scenario]:
             raise ValueError("duplicate UTC day for scenario")
         seen[scenario].add(day)
+        warmup = report.get("warmup_failures")
+        if (not isinstance(warmup, dict) or set(warmup) != set(runner.LABELS) or
+                any(type(warmup[label]) is not int or
+                    not 0 <= warmup[label] <= config["warmup"] * config["parallel"]
+                    for label in runner.LABELS)):
+            raise ValueError("missing or invalid warmup counts")
+        if any(warmup[label] for label in runner.LABELS):
+            issues.append("SOCKS warmup failures observed")
         if report.get("environment") != "wan" or report.get("wan_attested_by_operator") is not True:
             issues.append("operator WAN attestation missing")
         if report.get("wan_verified_by_tool") is not False:
@@ -196,6 +215,8 @@ def evaluate(reports: list[dict]) -> dict:
         measurements.append({
             "utc_day": day, "scenario": scenario, "stats": stats,
             "candidate_vs": contrasts, "resource_ratios": resource_ratios,
+            "warmup_failures": {label: warmup[label] for label in runner.LABELS},
+            "duration_seconds": round(elapsed, 3),
         })
     for scenario in SCENARIOS:
         if len(seen[scenario]) < 3:

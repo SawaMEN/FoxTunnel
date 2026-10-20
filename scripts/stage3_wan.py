@@ -121,23 +121,32 @@ def measure(a: argparse.Namespace) -> dict:
                 "--bytes", str(size), "--timeout", str(a.timeout),
                 "--out", str(raw)]
         sampler.start()
+        started_at_utc = dt.datetime.now(dt.timezone.utc).isoformat()
         try:
             result = subprocess.run(
                 cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL, timeout=a.budget_seconds, check=False)
         finally:
             resources = sampler.finish()
+        finished_at_utc = dt.datetime.now(dt.timezone.utc).isoformat()
         if result.returncode not in (0, 2) or not raw.is_file():
             raise RuntimeError("three-way echo benchmark incomplete")
         detail = json.loads(raw.read_text(encoding="utf-8"))
     if detail.get("schema") != 1 or set(detail.get("summary", {})) != set(LABELS):
         raise ValueError("unexpected three-way raw report")
+    warmup = detail.get("warmup_failures")
+    if (not isinstance(warmup, dict) or set(warmup) != set(LABELS) or
+            any(type(warmup[label]) is not int or not 0 <= warmup[label] <=
+                a.warmup * a.parallel for label in LABELS)):
+        raise ValueError("unexpected warmup population")
     samples = [stage1.sanitize(row) for row in detail["samples"]]
     if len(samples) != 3 * a.rounds * a.parallel:
         raise ValueError("incomplete measurement set")
     return {
-        "schema": 1, "kind": "foxtunnel-stage3-3way",
-        "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "schema": 2, "kind": "foxtunnel-stage3-3way",
+        "created_at_utc": finished_at_utc,
+        "started_at_utc": started_at_utc,
+        "finished_at_utc": finished_at_utc,
         "scenario": a.scenario, "environment": a.environment,
         "wan_attested_by_operator": a.environment == "wan" and a.confirm_independent_vds,
         "wan_verified_by_tool": False,
@@ -149,7 +158,7 @@ def measure(a: argparse.Namespace) -> dict:
             "bytes_per_flow": size, "rounds": a.rounds, "parallel": a.parallel,
             "warmup": a.warmup, "timeout_seconds": a.timeout,
         },
-        "samples": samples, "resources": resources,
+        "samples": samples, "warmup_failures": warmup, "resources": resources,
         "limitations": [
             "Only operator-attested WAN; infrastructure, versions and PID identity not verified.",
             "Comparisons include total SOCKS client and remote server behavior.",
