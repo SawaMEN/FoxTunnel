@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -17,10 +16,9 @@ func TestBondTrafficConfigurationPropagation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Close()
-	relay, _ := url.Parse("https://relay.example")
 	c.BondTraffic = "auto"
 	c.BondAdaptive = true
-	if err := c.SetFallbackServers([]*url.URL{relay}); err != nil {
+	if err := c.SetFallbackServers([]string{"https://relay.example"}); err != nil {
 		t.Fatal(err)
 	}
 	if err := c.EnableBond(); err != nil {
