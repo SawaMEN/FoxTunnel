@@ -61,8 +61,9 @@ private/loopback/link-local destinations are denied unless explicitly enabled.
 WSS/XHTTP carry authenticated H2 CONNECT/POST session bytes, not VLESS; they do
 not invoke an Xray executable. Outer and inner authentication are both required.
 XHTTP HTTP Host may differ from dial endpoint/SNI; TLS identity is checked
-independently. [XHTTP.en.md](../FEATURES.en.md) specifies route/UUID/sequence parsing,
-content types, headers, padding, bounded reservations and expiry. Client packet-up
+independently. [Feature notes](../FEATURES.en.md) introduce these experimental carriers.
+The limits below document the current implementation; a full independent
+XHTTP extension contract is outside the minimal TCP/H2 conformance scope. Client packet-up
 payloads are at most 32 KiB, four unacknowledged sequence positions; complete a
 POST body before starting the next. Server reserves at most eight packets, each
 at most 64 KiB, including in-progress reads and delivery. Sequence starts at zero,
@@ -129,7 +130,7 @@ zero or more frames: a 2-byte length L followed by one complete packet.
 L must be 1..1232 and the packet itself must pass the rules above. Length zero,
 oversize, truncation, reserved/fragment fields or invalid destinations terminate
 the association; they never switch to v1 or unframed traffic. Clean EOF at a
-frame boundary closes the association. Server sends/flushed HTTP 200 headers
+frame boundary closes the association. Server sends and flushes HTTP 200 headers
 before reading frames, so strict negotiation finishes before client frames.
 
 The reference server bounds each stream to 16 connected destination sockets,

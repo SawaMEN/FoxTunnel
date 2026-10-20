@@ -99,3 +99,13 @@ No actual draft-1 implementation exists: future-version tests use deliberate
 unsupported values and cannot establish real draft-0/draft-1 interoperability.
 The old-peer fixtures intentionally omit the new headers. Pin old binaries
 separately when certifying a release compatibility matrix.
+
+## Executable revision check
+
+The dedicated `Wire draft compatibility` workflow builds the actual previous
+CLI from `97036bf8dafddff7c46497c91488a87222132b05` and runs it against the
+current Go SDK. It verifies legacy-client/current-server and
+current-client/legacy-server TCP/H2 echo, plus refusal when the current side
+requires negotiation. This complements missing-header and future-version
+fixtures; it is not certification of every published archive or UDP/extension
+combination across all historical tags.
