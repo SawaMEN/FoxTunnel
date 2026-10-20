@@ -39,6 +39,13 @@ jobs:
           go test -race -tags nss,neqo ./internal/tunnel -run '^TestSecurityStage5ManagedUDPIsolationNeqo$' -count=3 -timeout=120s
           go test -race -tags nss,neqo ./internal/tunnel -run '^TestStage4Neqo' -count=3 -timeout=120s
           go test -race -tags nss,neqo ./internal/neqo ./internal/tunnel -run 'TestNeqo|TestQUIC|TestIndependentH3|TestBlockedUDP|TestALPNFailure|TestConcurrentDuplex|TestTrustBeforeCredentials|TestRealQUIC|TestPeerReset|TestMalformed' -count=3 -timeout=60s
+      - name: Repeat native lifecycle with strict cgo pointer checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/neqo -run '^TestStage6' -count=5 -timeout=120s
+          GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/nsstls -run '^TestConcurrentCloseUnblocksRead$|^TestHandshakeCancellation$|^TestStage3NSS' -count=8 -timeout=120s
       - name: Verify explicit backend reporting
         shell: bash
         run: |
@@ -52,6 +59,21 @@ jobs:
           assert v['neqo_version']=='0.33.0' and v['nss_version']=='3.130'
           assert v['quic_backends']==['quic-go','neqo']
           PY
+      - name: Comparable native CPU RSS throughput and allocations
+        shell: bash
+        run: |
+          set -euo pipefail
+          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          python3 -m unittest discover -s scripts -p test_build_neqo.py
+          python3 -m unittest discover -s scripts -p test_native_backend_metrics.py
+          go test -c -tags nss,neqo -o /tmp/native-backend.test ./internal/tunnel
+          python3 scripts/native_backend_metrics.py --binary /tmp/native-backend.test --versions /tmp/neqo-version.json --out /tmp/native-backend-metrics.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-backend-metrics
+          path: /tmp/native-backend-metrics.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Retain provenance and dependency license inventory
         uses: actions/upload-artifact@v4
         with:

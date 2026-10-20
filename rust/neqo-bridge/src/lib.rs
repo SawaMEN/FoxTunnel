@@ -462,4 +462,17 @@ mod tests {
         let mut data = vec![0; MAX_META];
         assert!(put(&mut data, b"a").is_err());
     }
+    #[test]
+    fn null_and_oversized_buffers_are_rejected() {
+        unsafe {
+            assert_eq!(bytes(std::ptr::null(), 0, 1), Ok(&[][..]));
+            assert!(bytes(std::ptr::null(), 1, 1).is_err());
+            assert!(bytes(std::ptr::null(), 2, 1).is_err());
+            assert!(ftn_new(std::ptr::null(), 1).is_null());
+            assert_eq!(ftn_input(std::ptr::null_mut(), std::ptr::null(), 1), -1);
+            assert_eq!(ftn_auth(std::ptr::null_mut()), -1);
+            assert_eq!(ftn_shutdown(std::ptr::null_mut()), -1);
+            ftn_free(std::ptr::null_mut());
+        }
+    }
 }
