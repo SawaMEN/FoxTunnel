@@ -21,6 +21,9 @@ MAX_FDS = 512
 MAX_FD_GROWTH = 48
 MAX_SOCKET_GROWTH = 32
 MAX_WORKERS = 3
+# Match the longest native UDP flow inactivity timeout (30 seconds).
+# A two-second cooldown falsely labels still-valid mappings as leaks.
+IDLE_COOLDOWN_SECONDS = 34
 
 # Exercises both address families and both DNS answer types.
 PROBES = (
@@ -127,9 +130,10 @@ def run(namespace: str, pids: dict[str, int], duration: float, *,
             batches += 1
             sleep(0.25)
     elapsed = clock() - begin
-    # Let closed UDP associations and TCP connections release descriptors.
-    # Final sample must be taken AFTER cooldown, not during peak load.
-    sleep(2)
+    # The native forwarder permits non-DNS UDP mappings to remain idle
+    # for 30 seconds. Wait past that genuine deadline before evaluating
+    # persistent FD/socket growth; never call an active mapping a leak.
+    sleep(IDLE_COOLDOWN_SECONDS)
     samples.append({name: sample(pid) for name, pid in pids.items()})
     resource_report = evaluate(samples)
     load_ok = (batches >= 2 and elapsed >= duration
@@ -142,6 +146,7 @@ def run(namespace: str, pids: dict[str, int], duration: float, *,
         "elapsed_seconds": round(elapsed, 3),
         "batches": batches,
         "max_parallel": MAX_WORKERS,
+        "idle_cooldown_seconds": IDLE_COOLDOWN_SECONDS,
         "load": counts,
         "resources": resource_report,
         "scope": ("Real native processes in isolated Linux netns only; RSS and "

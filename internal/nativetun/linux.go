@@ -27,9 +27,14 @@ import (
 )
 
 const (
-	maxActiveTCP   = 256
-	maxActiveUDP   = 128
+	maxActiveTCP = 256
+	maxActiveUDP = 128
+	// Regular UDP applications retain their flow mapping for 30 seconds.
+	// DNS lookups create short-lived source ports; keeping each of those
+	// associations alive for 30 seconds consumes the entire UDP admission
+	// pool under ordinary resolver churn and drops new DNS requests.
 	udpIdle        = 30 * time.Second
+	udpDNSIdle     = 3 * time.Second
 	connectTimeout = 8 * time.Second
 )
 
@@ -358,6 +363,16 @@ func (f *forwarder) HandleUDP(conn adapter.UDPConn) {
 	}
 	go func() { defer release(f.udpSlots); defer conn.Close(); f.udpFlow(conn) }()
 }
+// udpFlowIdleFor keeps established non-DNS UDP mappings stable while
+// releasing ephemeral DNS source ports promptly. A delayed DNS response
+// after this idle window is dropped rather than creating a new association.
+func udpFlowIdleFor(port uint16) time.Duration {
+	if port == 53 {
+		return udpDNSIdle
+	}
+	return udpIdle
+}
+
 func (f *forwarder) udpFlow(conn adapter.UDPConn) {
 	id := conn.ID()
 	ip, ok := netip.AddrFromSlice(id.LocalAddress.AsSlice())
@@ -369,6 +384,7 @@ func (f *forwarder) udpFlow(conn adapter.UDPConn) {
 		return
 	}
 	packetDst := udpproto.Packet{Host: ip.String(), Port: id.LocalPort}
+	idle := udpFlowIdleFor(packetDst.Port)
 	ctx, cancel := context.WithTimeout(f.ctx, connectTimeout)
 	ctrl, udp, err := dialUDPSOCKS(ctx, f.socks)
 	cancel()
@@ -393,7 +409,7 @@ func (f *forwarder) udpFlow(conn adapter.UDPConn) {
 			n, err := udp.Read(buf[:])
 			if err != nil {
 				if ne, ok := err.(net.Error); ok && ne.Timeout() {
-					if time.Since(time.Unix(0, last.Load())) > udpIdle {
+					if time.Since(time.Unix(0, last.Load())) > idle {
 						closeAll()
 						return
 					}
@@ -419,7 +435,7 @@ func (f *forwarder) udpFlow(conn adapter.UDPConn) {
 		n, _, err := conn.ReadFrom(buf[:])
 		if err != nil {
 			if ne, ok := err.(net.Error); ok && ne.Timeout() {
-				if time.Since(time.Unix(0, last.Load())) > udpIdle {
+				if time.Since(time.Unix(0, last.Load())) > idle {
 					return
 				}
 				select {
