@@ -152,6 +152,10 @@ def run(args):
             sample()
             start = time.monotonic()
             samples = 0
+            # Windows loopback TIME_WAIT shares a finite ephemeral-port pool
+            # between SOCKS applications and exit dials. Sustain parallel data
+            # transfers without turning this soak into port-exhaustion stress.
+            batch_pause = max(.25, args.parallel / 12)
             with concurrent.futures.ThreadPoolExecutor(max_workers=2 * args.parallel) as pool:
                 while time.monotonic() - start < args.seconds:
                     futures = {pool.submit(trial, name): name for name in counts for _ in range(args.parallel)}
@@ -163,7 +167,7 @@ def run(args):
                     samples += 1
                     # Bound CPU/connection churn while retaining continuous,
                     # parallel payload transfers for the entire requested time.
-                    time.sleep(.03)
+                    time.sleep(batch_pause)
             elapsed = time.monotonic() - start
             outage = {}
             stop(processes['server'])
@@ -186,7 +190,8 @@ def run(args):
             return {'schema': 1, 'kind': 'native-cli-operations-soak', 'passed': passed, 'platform': sys.platform,
                     'created_at_utc': dt.datetime.now(dt.timezone.utc).isoformat(), 'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
                     'duration_requested_seconds': args.seconds, 'elapsed_seconds': round(elapsed, 3), 'resource_samples': samples,
-                    'parallel_per_carrier': args.parallel, 'bytes_per_flow': args.bytes, 'load': counts, 'resources': memory,
+                    'parallel_per_carrier': args.parallel, 'batch_pause_seconds': batch_pause,
+                    'max_new_flows_per_second': 2 * args.parallel / batch_pause, 'bytes_per_flow': args.bytes, 'load': counts, 'resources': memory,
                     'resources_passed': resource_pass, 'resources_scope': 'pre-restart load phase', 'outage_detected': outage, 'same_client_recovered': recovered,
                     'recovery_seconds': round(time.monotonic() - recovery_start, 3), 'recovery_budget_seconds': args.recovery_seconds,
                     'limits': ['Loopback Go H2/H3 only; no NSS/Neqo, WAN handover, TUN or production leak claim.',
@@ -218,7 +223,9 @@ def main(argv=None):
         parser.error('output must be a new report in an existing directory')
     report = run(args)
     write_exclusive(args.out, json.dumps(report, sort_keys=True) + '\n', 0o600)
-    print(json.dumps({'passed': report['passed'], 'elapsed_seconds': report['elapsed_seconds'], 'load': report['load']}))
+    print(json.dumps({'passed': report['passed'], 'elapsed_seconds': report['elapsed_seconds'], 'load': report['load'], 'resources_passed': report['resources_passed'], 'resources': report['resources'],
+                      'outage_detected': report['outage_detected'], 'same_client_recovered': report['same_client_recovered'],
+                      'recovery_seconds': report['recovery_seconds']}))
     return 0 if report['passed'] else 1
 
 
