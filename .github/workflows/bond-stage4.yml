@@ -1,0 +1,43 @@
+name: Stage 4 field harness and release gates (lab only)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/bond-stage4.yml'
+      - 'scripts/bond_stage4_field.py'
+      - 'scripts/bond_stage4_gate.py'
+      - 'scripts/udp_echo_server.py'
+      - 'scripts/test_bond_stage4.py'
+      - 'scripts/bond_stage4_lab_smoke.sh'
+      - 'internal/bond/**'
+      - 'internal/tunnel/**'
+      - 'cmd/foxtunnel/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  field-harness-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage 4 stdlib socket probe and fail-closed gate tests
+        run: python3 -m unittest discover -s scripts -p 'test_bond_stage4.py' -v
+      - name: Compile Python field scripts
+        run: python3 -m py_compile scripts/bond_stage4_field.py scripts/bond_stage4_gate.py scripts/udp_echo_server.py
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Verify local Bond and UDP multi-node regression
+        run: |
+          go test -race ./internal/bond ./internal/tunnel -run '^Test(Adaptive|Traffic|UDPMultiNode|UDPIngress)' -count=1 -timeout=120s
+          go vet ./...
+      - name: Real FoxTunnel HTTP/2 TCP and two-node UDP socket smoke (LOOPBACK ONLY)
+        timeout-minutes: 10
+        run: bash scripts/bond_stage4_lab_smoke.sh
+      - name: Do not present CI as external WAN evidence
+        run: |
+          echo 'Only local sockets and software invariants tested.'
+          echo 'No independent VDS, WAN latency or throughput assertions were made.'
