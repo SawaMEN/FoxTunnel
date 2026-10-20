@@ -1,0 +1,86 @@
+name: Stage 4 Firefox Fingerprint Evidence
+
+on:
+  push:
+    branches: [up]
+    paths:
+      - 'scripts/fingerprint_audit.py'
+      - 'scripts/test_fingerprint_audit.py'
+      - 'internal/h2profile/**'
+      - 'internal/tunnel/h2_profile*_test.go'
+      - '.github/workflows/stage4-fingerprint.yml'
+  pull_request:
+    paths:
+      - 'scripts/fingerprint_audit.py'
+      - 'scripts/test_fingerprint_audit.py'
+      - 'internal/h2profile/**'
+      - 'internal/tunnel/h2_profile*_test.go'
+      - '.github/workflows/stage4-fingerprint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  historical-evidence-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate integrity of ClientHello and QUIC observations
+        run: |
+          python3 -m py_compile scripts/fingerprint_audit.py scripts/test_fingerprint_audit.py
+          python3 -m unittest discover -s scripts -p test_fingerprint_audit.py -v
+      - name: Redacted comparison against captured Firefox 158
+        run: |
+          umask 077
+          out="$RUNNER_TEMP/fox-stage4-audit.json"
+          python3 scripts/fingerprint_audit.py \
+            --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
+            --foxtunnel docs/measurements/2026-10-19/nss-firefox158-page.json \
+            --out "$out"
+          python3 - "$out" <<'PY'
+          import json, sys
+          from pathlib import Path
+          audit = json.loads(Path(sys.argv[1]).read_text())
+          diff = audit['comparisons_to_firefox']['foxtunnel']
+          assert not diff['metadata_equal']
+          assert diff['tls']['counts']['different'] > 0
+          assert diff['http2']['counts']['different'] > 0
+          assert diff['quic_http3']['counts']['not_measured'] > 0
+          assert not audit['all_three_and_both_protocols_measured']
+          assert not audit['scenario_equivalence_verified']
+          print('PASS: historical mismatches preserved; H3 and Naive unmeasured')
+          PY
+      - name: Scope statement
+        run: echo 'Historical captures differ; no current Firefox full parity claim.'
+
+  h2-real-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [go, nss]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.9'
+      - name: Install NSS headers
+        if: matrix.backend == 'nss'
+        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
+      - name: Verify real H2 SETTINGS and flow-control behavior
+        env:
+          BACKEND: ${{ matrix.backend }}
+        run: |
+          if [ "$BACKEND" = nss ]; then
+            go test -tags nss ./internal/tunnel -run '^TestNSSHTTP2ReceiveProfile(CreditRenewal|TLSRejection|Cancellation)?$' -count=1 -timeout=120s
+          else
+            go test ./internal/tunnel -run '^TestHTTP2ReceiveProfile(CreditRenewal|TLSRejection|Cancellation)?$' -count=1 -timeout=120s
+          fi
+      - name: Scope statement
+        run: echo 'H2 receive settings and flow control only; not Necko header/framing parity.'

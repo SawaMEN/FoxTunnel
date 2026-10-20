@@ -1,7 +1,7 @@
 name: Native FoxTunnel Linux TUN end-to-end
 on:
   push:
-    branches: [main]
+    branches: [main, up]
     paths:
       - "internal/nativetun/**"
       - "scripts/linux_native_vpn.py"
@@ -36,8 +36,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Offline TCP/UDP parser tests
-        run: go test ./internal/nativetun -count=1
+      - name: Offline TCP/UDP parser and cancelled SOCKS handshake tests
+        run: go test -race ./internal/nativetun -count=2 -timeout=90s
       - name: Build FoxTunnel including embedded userspace TCP/IP stack
         run: go build -o "$RUNNER_TEMP/foxtunnel" ./cmd/foxtunnel
       - name: Install isolated network tools

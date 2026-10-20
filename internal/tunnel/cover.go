@@ -25,55 +25,114 @@ func NewCover(root string) (http.Handler, error) {
 			http.NotFound(w, r)
 			return
 		}
-		name := path.Clean("/" + r.URL.Path)
-		for _, segment := range strings.Split(name, "/") {
-			lower := strings.ToLower(segment)
-			ext := path.Ext(lower)
-			if strings.HasPrefix(segment, ".") || lower == "server.json" || lower == "connection.txt" || lower == "cluster.json" || ext == ".key" || ext == ".pem" || ext == ".p12" || ext == ".pfx" {
+		// Check the original path segments before cleaning. A dotfile must
+		// not become a public path by hiding it behind ../ components.
+		for _, part := range strings.Split(r.URL.Path, "/") {
+			if forbiddenCoverSegment(part) {
 				http.NotFound(w, r)
 				return
 			}
 		}
+		name := path.Clean("/" + r.URL.Path)
 		confined, err := os.OpenRoot(root)
 		if err != nil {
 			http.NotFound(w, r)
 			return
 		}
 		defer confined.Close()
-		files := http.FileServer(http.FS(confined.FS()))
 		relative := strings.TrimPrefix(name, "/")
 		if relative == "" {
 			relative = "."
 		}
-		f, err := confined.Open(relative)
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		info, err := f.Stat()
-		_ = f.Close()
+		file, info, err := openPublicFile(confined, relative)
 		if err != nil {
 			http.NotFound(w, r)
 			return
 		}
 		if info.IsDir() {
-			index, err := confined.Open(strings.TrimPrefix(path.Join(name, "index.html"), "/"))
-			if err != nil {
-				http.NotFound(w, r)
+			if !strings.HasSuffix(r.URL.Path, "/") {
+				_ = file.Close()
+				http.Redirect(w, r, r.URL.Path+"/", http.StatusMovedPermanently)
 				return
 			}
-			stat, err := index.Stat()
-			_ = index.Close()
-			if err != nil || !stat.Mode().IsRegular() {
+			_ = file.Close()
+			file, info, err = openPublicFile(confined, path.Join(relative, "index.html"))
+			if err != nil || !info.Mode().IsRegular() {
+				if file != nil {
+					_ = file.Close()
+				}
 				http.NotFound(w, r)
 				return
 			}
 		} else if !info.Mode().IsRegular() {
+			_ = file.Close()
 			http.NotFound(w, r)
 			return
 		}
-		files.ServeHTTP(w, r)
+		defer file.Close()
+		if strings.HasSuffix(r.URL.Path, "/index.html") {
+			http.Redirect(w, r, "./", http.StatusMovedPermanently)
+			return
+		}
+		// Serve the same already-verified file descriptor. Do not let a
+		// second FileServer.Open re-resolve a symlink after validation.
+		http.ServeContent(w, r, info.Name(), info.ModTime(), file)
 	}), nil
+}
+
+func forbiddenCoverSegment(segment string) bool {
+	lower := strings.ToLower(segment)
+	ext := path.Ext(lower)
+	return strings.HasPrefix(segment, ".") ||
+		lower == "server.json" || lower == "connection.txt" ||
+		lower == "cluster.json" ||
+		ext == ".key" || ext == ".pem" || ext == ".p12" || ext == ".pfx"
+}
+
+// openPublicFile checks every component for symlinks and forbidden names
+// before opening a file from the confined root. Only already-opened regular
+// files are served. Public directories must be controlled by the operator:
+// untrusted writers must not be allowed to mutate the tree concurrently.
+func openPublicFile(root *os.Root, relative string) (*os.File, os.FileInfo, error) {
+	var componentInfo os.FileInfo
+	var current string
+	for _, segment := range strings.Split(relative, "/") {
+		if segment == "" || segment == "." {
+			continue
+		}
+		if forbiddenCoverSegment(segment) {
+			return nil, nil, fs.ErrPermission
+		}
+		current = path.Join(current, segment)
+		info, err := root.Lstat(current)
+		if err != nil {
+			return nil, nil, err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil, nil, fs.ErrPermission
+		}
+		componentInfo = info
+	}
+	if current == "" {
+		current = "."
+	}
+	if componentInfo == nil {
+		var err error
+		componentInfo, err = root.Lstat(current)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	file, err := root.Open(current)
+	if err != nil {
+		return nil, nil, err
+	}
+	openedInfo, err := file.Stat()
+	if err != nil || !os.SameFile(componentInfo, openedInfo) {
+		_ = file.Close()
+		return nil, nil, fs.ErrPermission
+	}
+	return file, openedInfo, nil
 }
 
 // CheckPublicRoot prevents accidentally publishing configured private files.

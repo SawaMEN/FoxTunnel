@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/base64"
 	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/access"
+	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
@@ -40,11 +40,16 @@ type Server struct {
 	Padding bool
 	// MaxTunnels bounds authenticated dialing/relay work across this Server.
 	// Zero uses 256. Configure before serving and do not copy Server after use.
-	MaxTunnels       int
-	activeTunnels    atomic.Int64
-	activeWebSockets atomic.Int64
-	xhttpOnce        sync.Once
-	xhttpServer      *xhttp.Server
+	MaxTunnels int
+	// MaxCoverRequests limits concurrent public/unauthorized HTTP handlers,
+	// independently of authenticated tunnels. Zero uses 64. Configure before
+	// serving and do not copy Server after first use.
+	MaxCoverRequests    int
+	activeTunnels       atomic.Int64
+	activeCoverRequests atomic.Int64
+	activeWebSockets    atomic.Int64
+	xhttpOnce           sync.Once
+	xhttpServer         *xhttp.Server
 	// Cover serves ordinary requests and rejected probes. Nil returns a plain 404.
 	Cover http.Handler
 	// Bond is an opt-in hub or relay, behind the same authentication boundary.
@@ -107,15 +112,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	// Select the tunnel only after authentication; rejected requests use the
 	// same handler as the public website and never dial a destination.
 	if r.Method != http.MethodConnect || (r.ProtoMajor != 2 && r.ProtoMajor != 3) || !s.authorized(r) {
-		if s.Cover != nil {
-			public := r.Clone(r.Context())
-			public.Header.Del("Proxy-Authorization")
-			public.Header.Del(paddingHeader)
-			public.Header.Del(targetHeader)
-			s.Cover.ServeHTTP(w, public)
-		} else {
-			http.NotFound(w, r)
-		}
+		s.cover(w, r)
 		return
 	}
 	padded, err := paddingRequested(r.Header)
@@ -170,7 +167,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	incomingDone := make(chan struct{})
 	go func() {
 		defer close(incomingDone)
-		_, err := io.Copy(upstream, incoming)
+		_, err := fastCopy(upstream, incoming)
 		if err != nil {
 			_ = upstream.Close()
 			return
@@ -181,7 +178,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Flush small chunks immediately; otherwise an interactive tunnel can stall.
-	_, _ = io.Copy(outgoing, upstream)
+	_, _ = fastCopyHTTPResponse(outgoing, upstream)
 	_ = upstream.Close()
 	_ = r.Body.Close()
 	<-incomingDone
@@ -192,15 +189,7 @@ func (s *Server) authorized(r *http.Request) bool {
 		return access.Authenticated(r.Context())
 	}
 
-	auth := r.Header.Get("Proxy-Authorization")
-	if len(auth) < 7 || !strings.EqualFold(auth[:6], "Basic ") {
-		return false
-	}
-	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(auth[6:]))
-	if err != nil {
-		return false
-	}
-	user, pass, ok := strings.Cut(string(decoded), ":")
+	user, pass, ok := authheader.Parse(r.Header)
 	if !ok || s.Username == "" || s.Password == "" {
 		return false
 	}
@@ -286,6 +275,24 @@ func (fw flushingWriter) Write(p []byte) (int, error) {
 	n, err := fw.w.Write(p)
 	fw.flusher.Flush()
 	return n, err
+}
+
+// acquireCover bounds potentially slow local file reads and custom cover
+// handlers without consuming the admission slots reserved for tunnels.
+func (s *Server) acquireCover() bool {
+	limit := s.MaxCoverRequests
+	if limit <= 0 {
+		limit = 64
+	}
+	for {
+		active := s.activeCoverRequests.Load()
+		if active >= int64(limit) {
+			return false
+		}
+		if s.activeCoverRequests.CompareAndSwap(active, active+1) {
+			return true
+		}
+	}
 }
 
 func (s *Server) acquireTunnel() bool {
