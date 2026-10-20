@@ -44,11 +44,15 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq iproute2 nftables openssl
-      - name: Native TUN IPv4 IPv6 TCP UDP DNS kill-switch and link loss
+      - name: Twice-run native TUN IPv4 IPv6 TCP UDP DNS A AAAA kill-switch and link loss
         run: |
-          sudo env FOXTUNNEL_TUN_E2E=1 FOXTUNNEL_TUN_NATIVE=1 \
-            FOXTUNNEL_LAB_FOXTUNNEL="$RUNNER_TEMP/foxtunnel" \
-            python3 -m unittest discover -s scripts -p test_linux_tun_e2e.py -v
+          set -euo pipefail
+          for attempt in 1 2; do
+            echo "Isolated TUN and DNS A/AAAA E2E run ${attempt}/2"
+            sudo env FOXTUNNEL_TUN_E2E=1 FOXTUNNEL_TUN_NATIVE=1 \
+              FOXTUNNEL_LAB_FOXTUNNEL="$RUNNER_TEMP/foxtunnel" \
+              python3 -m unittest discover -s scripts -p test_linux_tun_e2e.py -v
+          done
       - name: Test scope
         run: |
           echo "Direct gVisor TCP/IP stack in FoxTunnel binary, no sing-box process."

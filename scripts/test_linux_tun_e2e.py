@@ -59,15 +59,23 @@ while True:
             continue
         if len(request) < 17:
             continue
-        # Minimal, test-only A-response for fixed name "fox.lab".
+        # Fixed lab-only DNS A and AAAA replies; preserve question type,
+        # class and transaction ID, and never ask the host resolver.
         if request[12:21] != b"\x03fox\x03lab\x00":
             continue
         question_end = 25
-        if request[question_end - 4:question_end] != b"\x00\x01\x00\x01":
+        qtype = request[21:23]
+        if request[23:25] != b"\x00\x01":
             continue
-        # DNS header is exactly 12 bytes total, including the 2-byte ID.
+        if qtype == b"\x00\x01":
+            rdata = bytes([198, 18, 0, 9])
+        elif qtype == b"\x00\x1c":
+            rdata = socket.inet_pton(socket.AF_INET6, "fd42:2::9")
+        else:
+            continue
         header = request[:2] + b"\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00"
-        answer = b"\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x01\x00\x04" + bytes([198,18,0,9])
+        answer = (b"\xc0\x0c" + request[21:25] +
+                  b"\x00\x00\x00\x01" + struct.pack("!H", len(rdata)) + rdata)
         sock.sendto(header + request[12:question_end] + answer, peer)
 """
 
@@ -123,16 +131,23 @@ elif kind == "resolve":
         success = socket.gethostbyname("fox.lab") == "198.18.0.9"
     except OSError:
         success = False
-elif kind == "dns":
+elif kind in ("dns", "dns6"):
     s = socket.socket(family, socket.SOCK_DGRAM)
     s.settimeout(3.0)
-    question = b"\x03fox\x03lab\x00\x00\x01\x00\x01"
+    qtype = 1 if kind == "dns" else 28
+    question = b"\x03fox\x03lab\x00" + struct.pack("!HH", qtype, 1)
     wire = b"\x2a\x2b\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00" + question
+    expected = (bytes([198, 18, 0, 9]) if qtype == 1 else
+                socket.inet_pton(socket.AF_INET6, "fd42:2::9"))
     try:
         s.sendto(wire, (host, port))
         answer = s.recv(512)
-        success = (len(answer) >= 41 and answer[:2] == b"\x2a\x2b"
-                   and bytes([198,18,0,9]) in answer[25:])
+        # Check the complete fixed-size DNS lab response, not merely
+        # a marker anywhere in unrelated or malformed payload.
+        prefix = wire[:2] + b"\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00"
+        rr = (b"\xc0\x0c" + struct.pack("!HHI", qtype, 1, 1)
+              + struct.pack("!H", len(expected)) + expected)
+        success = answer == prefix + question + rr
     except OSError as exc:
         print(f"DNS probe failed: {exc!r}", file=sys.stderr)
         success = False
@@ -316,7 +331,11 @@ class TUNEndToEnd(unittest.TestCase):
                 dns_target = "198.18.0.9" if native else "9.9.9.9"
                 self.assert_probe(cns, "dns", dns_target, 53, True)
                 if native:
-                    self.assert_probe(cns, "dns", "fd42:2::9", 53, True)
+                    # One protected DNS server, both qtypes and both network
+                    # families. Answers must match the exact DNS wire format.
+                    for destination in ("198.18.0.9", "fd42:2::9"):
+                        self.assert_probe(cns, "dns", destination, 53, True)
+                        self.assert_probe(cns, "dns6", destination, 53, True)
 
                 # A dropped tunnel must NOT fall back to direct Internet.
                 if native:
@@ -333,6 +352,9 @@ class TUNEndToEnd(unittest.TestCase):
                              "table", "inet", companion.TABLE).stdout
                 self.assertIn("policy drop", output)
                 self.assert_probe(cns, "dns", dns_target, 53, False)
+                if native:
+                    self.assert_probe(cns, "dns6", "198.18.0.9", 53, False)
+                    self.assert_probe(cns, "dns6", "fd42:2::9", 53, False)
 
                 # Explicitly stop sing-box: its TUN routes disappear, but the
                 # independently installed output guard must not disappear.
@@ -352,6 +374,9 @@ class TUNEndToEnd(unittest.TestCase):
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
                 self.assert_probe(cns, "udp", "198.18.0.9", 5656, False)
                 self.assert_probe(cns, "dns", "198.18.0.9", 53, False)
+                if native:
+                    self.assert_probe(cns, "dns6", "198.18.0.9", 53, False)
+                    self.assert_probe(cns, "dns6", "fd42:2::9", 53, False)
                 cmd("ip", "-n", cns, "link", "set", "fcwan0", "down")
                 self.assert_probe(cns, "tcp", "198.18.0.9", 5657, False)
                 cmd("ip", "-n", cns, "link", "set", "fcwan0", "up")
@@ -375,6 +400,9 @@ class TUNEndToEnd(unittest.TestCase):
                 self.assert_probe(cns, 'udp', '198.18.0.9', 5656, True)
                 self.assert_probe(cns, 'udp', 'fd42:2::9', 5656, True)
                 self.assert_probe(cns, 'dns', '198.18.0.9', 53, True)
+                if native:
+                    self.assert_probe(cns, 'dns6', '198.18.0.9', 53, True)
+                    self.assert_probe(cns, 'dns6', 'fd42:2::9', 53, True)
             except Exception:
                 for ns in created:
                     for suffix in (("route", "show", "table", "all"),
