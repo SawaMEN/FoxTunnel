@@ -43,6 +43,9 @@ type Client struct {
 	// to remote FoxTunnel nodes. Configure before Serve.
 	SOCKSUsername string
 	SOCKSPassword string
+	// AllowPublicSOCKS permits a non-loopback listener only when local
+	// RFC1929 credentials are configured. No confidentiality on that link.
+	AllowPublicSOCKS bool
 	// EnableUDP permits experimental SOCKS5 UDP ASSOCIATE; off by default.
 	EnableUDP bool
 	// UDPStreaming selects the v2 persistent multiplexed UDP carrier; requires EnableUDP.
@@ -244,6 +247,13 @@ func (c *Client) Serve(listener net.Listener) error {
 
 // ServeContext cancels SOCKS relay requests and closes the listener on ctx end.
 func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error {
+	if err := c.ValidateSOCKSAuth(); err != nil {
+		return err
+	}
+	if addr, ok := listener.Addr().(*net.TCPAddr); ok && !addr.IP.IsLoopback() &&
+		(!c.AllowPublicSOCKS || c.SOCKSUsername == "") {
+		return errors.New("non-loopback SOCKS5 requires explicit LAN opt-in and local credentials")
+	}
 	stop := context.AfterFunc(ctx, func() { _ = listener.Close() })
 	defer stop()
 	limit := c.MaxConnections
