@@ -254,6 +254,9 @@ func (c *Client) Serve(listener net.Listener) error {
 
 // ServeContext cancels SOCKS relay requests and closes the listener on ctx end.
 func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error {
+	ctx, cancel := context.WithCancel(ctx)
+	var workers sync.WaitGroup
+	defer func() { cancel(); workers.Wait() }()
 	if err := c.ValidateSOCKSAuth(); err != nil {
 		return err
 	}
@@ -278,7 +281,8 @@ func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error 
 		}
 		select {
 		case slots <- struct{}{}:
-			go func() { defer func() { <-slots }(); c.handleContext(ctx, conn) }()
+			workers.Add(1)
+			go func() { defer workers.Done(); defer func() { <-slots }(); c.handleContext(ctx, conn) }()
 		default:
 			_ = conn.Close()
 		}
@@ -288,6 +292,8 @@ func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error 
 func (c *Client) handle(conn net.Conn) { c.handleContext(context.Background(), conn) }
 func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
+	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
+	defer stop()
 	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
 	command, target, err := socks5RequestAuth(conn, c.SOCKSUsername, c.SOCKSPassword)
 	if err != nil {
@@ -301,10 +307,10 @@ func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 	}
 
 	if c.bondClient != nil || c.bondDiscovery != nil {
-		c.handleBond(conn, target)
+		c.handleBondContext(ctx, conn, target)
 		return
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	stream, err := c.openTunnel(ctx, target)
 	if err != nil {

@@ -78,7 +78,11 @@ func (c *Client) EnableBond() error {
 	return nil
 }
 func (c *Client) handleBond(conn net.Conn, target string) {
-	ctx, cancel := context.WithCancel(context.Background())
+	c.handleBondContext(context.Background(), conn, target)
+}
+
+func (c *Client) handleBondContext(ctx context.Context, conn net.Conn, target string) {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	carrier := c.bondClient
 	if c.bondDiscovery != nil {

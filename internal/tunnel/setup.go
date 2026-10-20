@@ -108,7 +108,8 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 		}
 		index, release := c.reserveEndpoint(tried)
 		tried[index] = true
-		attemptCtx, cancel := context.WithCancel(ctx)
+		attemptCtx, abort := context.WithCancelCause(ctx)
+		cancel := func() { abort(context.Canceled) }
 		reader, writer := io.Pipe()
 		req, err := http.NewRequestWithContext(attemptCtx, http.MethodConnect, endpoints[index].String(), reader)
 		if err != nil {
@@ -123,7 +124,7 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 		if c.Padding {
 			req.Header.Set(paddingHeader, paddingVersion)
 		}
-		timer := time.AfterFunc(budget, cancel)
+		timer := time.AfterFunc(budget, func() { abort(context.DeadlineExceeded) })
 		resp, err := c.transport.RoundTrip(req)
 		timedOut := !timer.Stop()
 		if err == nil && !timedOut && attemptCtx.Err() == nil {

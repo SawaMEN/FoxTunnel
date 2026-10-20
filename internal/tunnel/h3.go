@@ -25,13 +25,15 @@ func quicConfig() *quic.Config {
 func newH3Transport(config *tls.Config) tlsTransport {
 	cfg := config.Clone()
 	cfg.NextProtos = []string{http3.NextProtoH3}
-	t := &http3.Transport{TLSClientConfig: cfg, QUICConfig: quicConfig(), DisableCompression: true, MaxResponseHeaderBytes: 32 << 10}
-	// Complete the handshake before sending credentials. Each connection owns
-	// its UDP socket, so closing idle connections also releases their sockets.
-	t.Dial = func(ctx context.Context, addr string, tlsCfg *tls.Config, qCfg *quic.Config) (*quic.Conn, error) {
-		return quic.DialAddr(ctx, addr, tlsCfg, qCfg)
-	}
-	return postTransport{tlsTransport: t, host: config.ServerName}
+	recovery := &h3RecoveryTransport{newPool: func() h3Pool {
+		t := &http3.Transport{TLSClientConfig: cfg.Clone(), QUICConfig: quicConfig(), DisableCompression: true, MaxResponseHeaderBytes: 32 << 10}
+		// Complete verified TLS before credentials; each connection owns UDP.
+		t.Dial = func(ctx context.Context, addr string, tlsCfg *tls.Config, qCfg *quic.Config) (*quic.Conn, error) {
+			return quic.DialAddr(ctx, addr, tlsCfg, qCfg)
+		}
+		return t
+	}}
+	return postTransport{tlsTransport: recovery, host: config.ServerName}
 }
 
 // ServeHTTP3 serves the same authorization, destination policy, discovery and
