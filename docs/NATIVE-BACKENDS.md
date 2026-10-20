@@ -74,6 +74,37 @@ python3 scripts/native_backend_metrics.py --binary /tmp/native-backend.test \
   --versions /tmp/native-versions.json --out /tmp/new-native-metrics.json
 ~~~
 
+## Полученные результаты
+
+[CI run](https://github.com/SawaMEN/FoxTunnel/actions/runs/39495650155),
+PR runtime `b6d33368`, synthetic checkout `6a81cec9` (оба родителя проверены).
+AMD EPYC 7763, Linux amd64, Go 1.26.9, pinned NSS 3.130/Neqo 0.33.0.
+[Полные 24 samples](measurements/2026-10-21/native-backend-metrics.json) и
+[происхождение](measurements/2026-10-21/native-backend-provenance.json) сохранены
+из CI artifact; SHA-256 ZIP совпал с digest GitHub.
+CLI собран как dev: его `commit: unknown` и `dirty: true` — build defaults;
+отдельно измеренный `checkout_commit` известен, `worktree_dirty: false`.
+
+Медианы трёх повторов. CPU — user+system конкретного child целиком, в миллисекундах;
+peak RSS — MiB. Колонки ns/op/MB/s и process CPU/RSS имеют разные границы времени,
+описанные выше; CPU не является стоимостью одного exchange.
+
+| Backend | Сценарий | µs/exchange | MB/s | CPU процесса, ms | Peak RSS, MiB |
+|---|---|---:|---:|---:|---:|
+| go-h2 | small | 198.2 | 0.32 | 95.3 | 26.0 |
+| go-h2 | bulk | 3874.3 | 270.65 | 158.3 | 27.0 |
+| nss-h2 | small | 251.0 | 0.25 | 119.4 | 24.2 |
+| nss-h2 | bulk | 4889.1 | 214.47 | 193.1 | 28.3 |
+| go-h3 | small | 200.1 | 0.32 | 95.4 | 24.6 |
+| go-h3 | bulk | 9924.3 | 105.66 | 366.0 | 31.0 |
+| neqo-h3 | small | 332.7 | 0.19 | 151.3 | 27.8 |
+| neqo-h3 | bulk | 29624.7 | 35.40 | 1015.1 | 34.9 |
+
+В этом конкретном прогоне Neqo-H3 уступает Go-H3 по bulk throughput и использует
+больше CPU/RSS. Это исходная точка для оптимизации, не вывод о любых сетях или
+преимущество NSS/Neqo над другими реализациями. Между тремя короткими повторами
+не измерен полноценный доверительный интервал, а общие runner могут испытывать шум.
+
 ## Открытые измерения
 
 Нужны одинаковые сценарии, OS/network endpoint и идентифицируемые source/build

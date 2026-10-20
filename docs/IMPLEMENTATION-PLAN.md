@@ -173,16 +173,30 @@ CI и собственная ревизия не заменяют независ
 
 ## Этап 6 из 10 — NSS и Neqo
 
-**Выполнено 1 из 5 задач; нативный lifecycle и замеры ожидают CI.**
-Знаменатель зафиксирован до изменений.
+**Выполнено 3 из 5 задач.** Изменения в [PR #41](https://github.com/SawaMEN/FoxTunnel/pull/41),
+построенном поверх PR #40; слияние в main ещё не выполнено.
 
 - [x] Подтвердить согласованность compiler/Cargo/Go API/runtime pins и отказ при дрейфе.
-- [ ] Проверить FFI lifecycle: повторные engine teardown, отмена, borrowed buffers и cgo pointers.
-- [ ] Получить воспроизводимую CPU/RSS/скорость/alloc матрицу Go-H2/NSS-H2/Go-H3/Neqo-H3 на одном runner.
+- [x] Проверить FFI lifecycle: повторные engine teardown, отмена, borrowed buffers и cgo pointers.
+- [x] Получить воспроизводимую CPU/RSS/скорость/alloc матрицу Go-H2/NSS-H2/Go-H3/Neqo-H3 на одном runner.
 - [ ] Получить сопоставимые свежие Firefox/NaiveProxy/FoxTunnel TLS/H2 захваты с версиями и происхождением.
 - [ ] Получить endpoint-decoded QUIC/H3 измерения трёх реализаций в одинаковом сценарии.
 
-[Pins, FFI и методика измерений](NATIVE-BACKENDS.md).
+Подтверждение runtime-ревизии `b6d33368`:
+
+- [Neqo CI: native/ABI/clippy/race и вся ресурсная матрица](https://github.com/SawaMEN/FoxTunnel/actions/runs/39495650155).
+  Neqo lifecycle повторён пять раз с cgocheck2/race; NSS close/отмена — восемь раз.
+- [NSS](https://github.com/SawaMEN/FoxTunnel/actions/runs/39495650236),
+  [Go](https://github.com/SawaMEN/FoxTunnel/actions/runs/39495650303),
+  [SDK на трёх ОС](https://github.com/SawaMEN/FoxTunnel/actions/runs/39495650187).
+- [24 исходных resource samples и медианы](measurements/2026-10-21/native-backend-metrics.json),
+  [происхождение и SHA-256](measurements/2026-10-21/native-backend-provenance.json).
+
+Замер выполнен на synthetic PR merge `6a81cec9`, родители `db426f26` и `b6d33368`;
+это не выпуск. Следующий коммит сохраняет только измерения и документацию.
+Локально прошли 146 Python-тестов (2 skipped), go vet и пробный Go benchmark runner.
+
+[Pins, FFI, результаты и методика измерений](NATIVE-BACKENDS.md).
 Исторические захваты с неполной идентичностью не закрывают пункты 4–5.
 Зелёные interop-тесты не доказывают совпадение fingerprint или превосходство по скорости.
 
