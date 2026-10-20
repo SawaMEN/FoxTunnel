@@ -23,7 +23,7 @@ func TestMalformedPackets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mutations := [][]byte{{}, {0, 0, 0, 1}, append([]byte(nil), ok[:len(ok)-1]...)}
+	mutations := [][]byte{{}, {0, 0, 0, 1}}
 	for i := 0; i < len(ok); i++ {
 		if i == len(ok)-1 {
 			continue
@@ -47,10 +47,31 @@ func TestMalformedPackets(t *testing.T) {
 		t.Fatal("oversize accepted")
 	}
 	for _, p := range []Packet{{Host: "foo", Port: 0, Data: []byte{1}},
-		{Host: "foo", Port: 1}, {Host: "ab\r\n", Port: 1, Data: []byte{1}},
+		{Host: "ab\r\n", Port: 1, Data: []byte{1}},
 		{Host: "example", Port: 53, Data: make([]byte, MaxDatagram)}} {
 		if _, err := Encode(p); err == nil {
 			t.Fatalf("encoded %+v", p)
+		}
+	}
+}
+
+func TestEmptyDatagramRoundTrip(t *testing.T) {
+	for _, host := range []string{"198.18.0.9", "fd42:2::9", "echo.example"} {
+		wire, err := Encode(Packet{Host: host, Port: 5656})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var stream bytes.Buffer
+		if err := WriteFrame(&stream, wire); err != nil {
+			t.Fatal(err)
+		}
+		got, err := ReadFrame(&stream)
+		if err != nil {
+			t.Fatal(err)
+		}
+		packet, err := Parse(got)
+		if err != nil || packet.Host != host || packet.Port != 5656 || len(packet.Data) != 0 {
+			t.Fatalf("empty datagram: %+v %v", packet, err)
 		}
 	}
 }
