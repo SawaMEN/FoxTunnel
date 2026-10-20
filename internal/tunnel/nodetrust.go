@@ -2,8 +2,7 @@ package tunnel
 
 import (
 	"bytes"
-	"encoding/json"
-	"errors"
+		"errors"
 	"io"
 	"net/url"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/safejson"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 )
 
@@ -57,9 +57,7 @@ func (c *Client) SetNodePinsFile(path string) error {
 		return errors.New("invalid node pins file size")
 	}
 	var doc nodePinsDocument
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.DisallowUnknownFields()
-	if dec.Decode(&doc) != nil || dec.Decode(new(any)) != io.EOF ||
+	if safejson.Decode(bytes.NewReader(data), maxNodePinsFile, &doc) != nil ||
 		doc.Version != 1 || len(doc.Nodes) != len(c.fallbackServers)+1 {
 		return errors.New("invalid node pins document")
 	}
