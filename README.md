@@ -35,6 +35,7 @@ go build -o foxtunnel ./cmd/foxtunnel
 ./foxtunnel version --json
 ./foxtunnel server --help
 ./foxtunnel client --help
+./foxtunnel check-config --help
 ```
 
 Команда `client` — адаптер ядра к SOCKS5, `server` — серверная часть протокола.
@@ -43,6 +44,7 @@ go build -o foxtunnel ./cmd/foxtunnel
 
 ## Документация
 
+- [Обновление ядра — 8 этапов, ветка update](docs/UPDATE.md).
 - [Контракт интеграции](docs/INTEGRATION.md).
 - [Ручной запуск ядра](docs/START.md).
 - [Транспорты и параметры](docs/FEATURES.md).

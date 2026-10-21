@@ -37,6 +37,11 @@ func main() {
 	password := os.Getenv("FOXTUNNEL_PASSWORD")
 
 	switch os.Args[1] {
+	case "check-config":
+		if err := checkConfigCommand(os.Args[2:], os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
 	case "access":
 		if err := accessCommand(os.Args[2:]); err != nil {
 			log.Fatal(err)
@@ -658,7 +663,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access> [flags] (credentials: environment or vetroff link)"))
+	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access|check-config> [flags] (credentials: environment or vetroff link)"))
 	os.Exit(2)
 }
 
