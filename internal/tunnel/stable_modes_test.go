@@ -22,6 +22,7 @@ func testStableNativeBondModes(t *testing.T, backend string) {
 					carrier = "lanes"
 				}
 				t.Run(mode+"/"+traffic+"/"+carrier, func(t *testing.T) {
+					t.Parallel() // Independent TLS/relay fixtures; avoid serial timeout accumulation.
 					testBondedSOCKSNativeLanes(t, backend, 0, true, mode, lanes, traffic)
 				})
 			}
