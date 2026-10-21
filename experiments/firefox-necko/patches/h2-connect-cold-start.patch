@@ -1,0 +1,14 @@
+--- a/netwerk/protocol/http/nsHttpConnection.cpp
++++ b/netwerk/protocol/http/nsHttpConnection.cpp
+@@ -1761,7 +1761,10 @@
+   const uint32_t maxWriteAttempts = 128;
+   uint32_t writeAttempts = 0;
+ 
+-  if (mTransactionCaps & NS_HTTP_CONNECT_ONLY) {
++  // CONNECT_ONLY belongs to the inner tunnel, not the multiplexed proxy
++  // session. Closing the latter would abort the first CONNECT on a cold H2
++  // connection before the transaction can restart on its tunnel stream.
++  if ((mTransactionCaps & NS_HTTP_CONNECT_ONLY) && !mSpdySession) {
+     if (!mConnInfo->UsingConnect()) {
+       // A CONNECT has been requested for this connection but will never
+       // be performed. This should never happen.

@@ -1,0 +1,13 @@
+--- a/netwerk/protocol/http/Http2StreamTunnel.cpp
++++ b/netwerk/protocol/http/Http2StreamTunnel.cpp
+@@ -28,9 +28,8 @@
+ NS_INTERFACE_MAP_BEGIN(Http2StreamTunnel)
+   NS_INTERFACE_MAP_ENTRY(nsITransport)
+   NS_INTERFACE_MAP_ENTRY_CONCRETE(Http2StreamTunnel)
+-  NS_INTERFACE_MAP_ENTRY(nsITransport)
+   NS_INTERFACE_MAP_ENTRY(nsISocketTransport)
+-NS_INTERFACE_MAP_END
++NS_INTERFACE_MAP_END_INHERITING(Http2StreamBase)
+ 
+ Http2StreamTunnel::Http2StreamTunnel(Http2Session* session, int32_t priority,
+                                      uint64_t bcId,

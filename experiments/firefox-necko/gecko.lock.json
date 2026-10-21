@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/mozilla-firefox/firefox.git",
+  "revision": "0f76fed7aea1f77db85afbf5a895754d8ad971d7",
+  "platform": "linux-amd64",
+  "patches": [
+    {
+      "path": "experiments/firefox-necko/patches/h2-connect-cold-start.patch",
+      "sha256": "6f38d7e4a9f28e2af99c56390116065d53159f8801972c29f73ef71f382b1882",
+      "source_path": "netwerk/protocol/http/nsHttpConnection.cpp",
+      "before_sha256": "be841353d229da17da27914792d734bf06c1fa18fe669ceda5f242fb6910b160",
+      "after_sha256": "db3134e010156ca232e5be667ad020d65a4f9564fabced0f60a4c3d05865e66b"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-tunnel-xpcom-identity.patch",
+      "sha256": "b05ffbd698750739b2da6460f49482a216f4967d0cf156c2ad896389991ee0bb",
+      "source_path": "netwerk/protocol/http/Http2StreamTunnel.cpp",
+      "before_sha256": "6303f9f5518d78ac02fd203cc57779e8e009d010118a731efc4b853a818fe649",
+      "after_sha256": "5b5a7e1096d8cdac80ff25daaf8968b121cd61e03c30b7c7424054b276c0d77d"
+    }
+  ]
+}

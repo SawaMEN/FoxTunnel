@@ -54,6 +54,17 @@ func (b *lockedBuffer) text() string { b.Lock(); defer b.Unlock(); return b.buff
 // test, not a mock of the native runtime. Ordinary tests skip it unless a
 // matching xpcshell + libxul runtime was explicitly supplied.
 func TestGeckoCONNECT(t *testing.T) {
+	testGeckoCONNECT(t, true)
+}
+
+// Separate the native handoff gate from directional EOF support. Both gates
+// are required before this experiment may become a supported transport.
+func TestGeckoCONNECTHandoff(t *testing.T) {
+	testGeckoCONNECT(t, false)
+}
+
+func testGeckoCONNECT(t *testing.T, halfClose bool) {
+	t.Helper()
 	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
 	if runtime == "" {
 		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
@@ -73,7 +84,15 @@ func TestGeckoCONNECT(t *testing.T) {
 					if err != nil {
 						return
 					}
-					go func() { defer c.Close(); data, _ := io.ReadAll(c); _, _ = c.Write(data) }()
+					go func() {
+						defer c.Close()
+						if halfClose {
+							data, _ := io.ReadAll(c)
+							_, _ = c.Write(data)
+						} else {
+							_, _ = io.Copy(c, c)
+						}
+					}()
 				}
 			}()
 			server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true}
@@ -154,8 +173,17 @@ func TestGeckoCONNECT(t *testing.T) {
 					conn.Close()
 					t.Fatal(err)
 				}
-				conn.(*net.TCPConn).CloseWrite()
-				data, err := io.ReadAll(conn)
+				var data []byte
+				if halfClose {
+					if err := conn.(*net.TCPConn).CloseWrite(); err != nil {
+						conn.Close()
+						t.Fatal(err)
+					}
+					data, err = io.ReadAll(conn)
+				} else {
+					data = make([]byte, len(payload))
+					_, err = io.ReadFull(conn, data)
+				}
 				conn.Close()
 				if err != nil || !bytes.Equal(data, payload) {
 					t.Fatal("half-close/binary payload", len(data), err)
