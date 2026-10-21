@@ -9,5 +9,12 @@
   "nss_version": "3.130",
   "nspr_headers_url": "https://archive.ubuntu.com/ubuntu/pool/main/n/nspr/libnspr4-dev_4.39-1ubuntu1_amd64.deb",
   "nspr_headers_sha256": "1a02eba12723edd29ccd905a352b54e4bf4a69c08ef14509786808badddd66f3",
-  "initial_target": "linux/amd64"
+  "initial_target": "linux/amd64",
+  "source_patch": {
+    "path": "rust/patches/neqo-classic-connect-half-close.patch",
+    "sha256": "059af7d64e7f6b22e18b2c1e0191b7ca3dcbd5776505a5b64e13c2eb882de8b9",
+    "source_path": "neqo-http3/src/connection.rs",
+    "before_sha256": "17c54864ef79aa59d4d863ccc1e2e61ff3ed19023553a683ba8cb4cdb3b85437",
+    "after_sha256": "14770314a3a2c20c510aa3ddec145327f598f069ce0ca912aa23bb2c06841324"
+  }
 }

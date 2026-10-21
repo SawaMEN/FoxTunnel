@@ -48,6 +48,10 @@ def download(url, destination, expected):
 
 
 def validate_lock(lock):
+    patch = lock['source_patch']
+    if patch['path'] != 'rust/patches/neqo-classic-connect-half-close.patch' or patch['source_path'] != 'neqo-http3/src/connection.rs':
+        raise ValueError('unexpected Neqo source patch path')
+    mozilla_runtime.check_hash(ROOT / patch['path'], patch['sha256'])
     cargo = tomllib.loads((CRATE / 'Cargo.lock').read_text())
     for name, key in [('neqo-http3', 'neqo'), ('nss-rs', 'nss_rs')]:
         packages = [p for p in cargo['package'] if p['name'] == name]
@@ -93,6 +97,44 @@ def validate_runtime(runtime):
     for name, expected in data['libraries'].items():
         mozilla_runtime.check_hash(runtime / 'lib' / name, expected)
     mozilla_runtime.inspect_libraries(runtime, lock['libraries'], 'amd64')
+
+
+def apply_source_patch(source, patch, revision):
+    """Patch only a pinned checkout in this build's private Cargo home.
+
+    The unmodified Cargo.lock still identifies upstream. The separately pinned
+    patch and both file hashes describe the exact change in build provenance.
+    """
+    head = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
+    if head != revision:
+        raise ValueError('Neqo patch source revision differs')
+    changes = subprocess.check_output(['git', '-C', str(source), 'diff', '--name-only', 'HEAD'], text=True).splitlines()
+    if changes and changes != [patch['source_path']]:
+        raise ValueError('unexpected changes in private Neqo checkout')
+    target = source / patch['source_path']
+    current = mozilla_runtime.digest(target)
+    if current == patch['after_sha256']:
+        return
+    mozilla_runtime.check_hash(target, patch['before_sha256'])
+    patch_file = ROOT / patch['path']
+    mozilla_runtime.check_hash(patch_file, patch['sha256'])
+    run(['git', '-C', source, 'apply', '--check', patch_file])
+    run(['git', '-C', source, 'apply', patch_file])
+    mozilla_runtime.check_hash(target, patch['after_sha256'])
+
+
+def prepare_patched_neqo(out, env, lock):
+    # Never alter another project's Cargo cache. Following cargo commands must
+    # retain this home too, otherwise they could rebuild stock Neqo unnoticed.
+    env['CARGO_HOME'] = str(out / 'cargo-home')
+    run(['cargo', 'fetch', '--locked'], cwd=CRATE, env=env)
+    matches = list((out / 'cargo-home/git/checkouts').glob('neqo-*/*/neqo-http3/src/connection.rs'))
+    if len(matches) != 1:
+        raise ValueError('expected one pinned Neqo checkout in private Cargo home')
+    apply_source_patch(matches[0].parents[2], lock['source_patch'], lock['neqo_commit'])
+    # Cargo fingerprints Git dependencies by revision, not local patch bytes.
+    # Rebuild this crate on every preparation, including a reused build output.
+    run(['cargo', 'clean', '-p', 'neqo-http3'], cwd=CRATE, env=env)
 
 
 def source_headers(destination, commit):
@@ -193,13 +235,14 @@ def main():
     (pc / 'nspr.pc').write_text('Name: nspr\nDescription: FoxTunnel pinned Mozilla NSPR\nVersion: 4.39\nLibs: -L' + str(runtime / 'lib') + ' -lplds4 -lplc4 -lnspr4\nCflags: -I' + str(nspr) + '\n')
     if env.get('CARGO_TARGET_DIR'):
         raise ValueError('unset CARGO_TARGET_DIR: the ABI link path is crate target/release')
+    prepare_patched_neqo(out, env, lock)
     run(['cargo', 'build', '--locked', '--release'], cwd=CRATE, env=env)
     export_licenses(out, env)
     # Go's build cache does not watch external static archives. A local C
     # header makes the Rust archive part of the cgo package's source hash.
     archive_hash=mozilla_runtime.digest(CRATE / 'target/release/libfoxtunnel_neqo.a')
     (ROOT / 'internal/neqo/build_stamp.h').write_text('#define FT_NEQO_ARCHIVE_SHA256 "' + archive_hash + '"\n')
-    selected = {key: env[key] for key in ['PKG_CONFIG_PATH', 'LD_LIBRARY_PATH', 'CGO_LDFLAGS']}
+    selected = {key: env[key] for key in ['PKG_CONFIG_PATH', 'LD_LIBRARY_PATH', 'CGO_LDFLAGS', 'CARGO_HOME']}
     (out / 'env.sh').write_text(''.join('export ' + key + '=' + shlex.quote(value) + '\n' for key, value in selected.items()))
     (out / 'provenance.json').write_text(json.dumps(dict(schema=1, **{k: v for k, v in lock.items() if k != 'schema'}), indent=2) + '\n')
     print('Built experimental Neqo ABI 1; source ' + str(out / 'env.sh') + ' before Go -tags nss,neqo builds/tests. No release published.')

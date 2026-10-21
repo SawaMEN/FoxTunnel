@@ -52,6 +52,9 @@ go test -race -tags nss,neqo ./... -count=1 -timeout=120s
 [`neqo.lock.json`](../scripts/neqo.lock.json),
 [`mozilla-runtime.lock.json`](../scripts/mozilla-runtime.lock.json),
 Cargo.lock и rust-toolchain.toml. Скрипты проверяют их согласованность.
+Исправление half-close для classic CONNECT закреплено в `neqo.lock.json`
+вместе с SHA-256 патча и обеих версий файла. Сборщик применяет его в приватном
+Cargo home; последующие Rust-команды должны использовать созданный `env.sh`.
 Для полного Mozilla-архива есть `python3 scripts/build_mozilla.py --version v0.0.0-ci`.
 Это отдельный build; команда сама не публикует релиз.
 
