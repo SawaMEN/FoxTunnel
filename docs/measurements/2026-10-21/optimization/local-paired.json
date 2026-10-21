@@ -1,0 +1,1066 @@
+{
+  "base_commit": "262579f445fc3a8f2936af5278605c6450f29269",
+  "benchmark_sha256": "a95da9ba214b63195b943cf052c07e1f15524769379ebe115ae0341208010bb1",
+  "benchtime": "250ms",
+  "binary_sha256": {
+    "base": "ba818c68f972d4c6f440a2746552f654adcbab43dcd02982f7f3261de6a49327",
+    "head": "73e53d5d87d9bb9d03dd7cc34da433030d51653c24636592cdab6c0febc06c14"
+  },
+  "binary_toolchains": {
+    "base": "/tmp/stage10-base.test: go1.26.10\n\tpath\tgithub.com/SawaMEN/FoxTunnel/internal/multihop.test\n\tmod\tgithub.com/SawaMEN/FoxTunnel\t(devel)\t\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=amd64\n\tbuild\tGOOS=linux\n\tbuild\tGOAMD64=v1\n",
+    "head": "/tmp/stage10-head.test: go1.26.10\n\tpath\tgithub.com/SawaMEN/FoxTunnel/internal/multihop.test\n\tmod\tgithub.com/SawaMEN/FoxTunnel\t(devel)\t\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=amd64\n\tbuild\tGOOS=linux\n\tbuild\tGOAMD64=v1\n"
+  },
+  "budget": {
+    "extra_allocations": 0,
+    "extra_bytes": 0,
+    "max_relative_mad": 0.15,
+    "max_time_ratio": 1.25
+  },
+  "comparison": [
+    {
+      "base": {
+        "allocations": 3,
+        "bytes": 384,
+        "ns": 391.1,
+        "relative_mad": 0.041165942214267504
+      },
+      "case": "BenchmarkStage10Selector/16/cold",
+      "head": {
+        "allocations": 3,
+        "bytes": 384,
+        "ns": 398.0,
+        "relative_mad": 0.014572864321608068
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 1.0176425466632575
+    },
+    {
+      "base": {
+        "allocations": 2,
+        "bytes": 256,
+        "ns": 223.2,
+        "relative_mad": 0.025089605734767
+      },
+      "case": "BenchmarkStage10Selector/16/cooldown",
+      "head": {
+        "allocations": 2,
+        "bytes": 256,
+        "ns": 223.5,
+        "relative_mad": 0.034899328859060455
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 1.0013440860215055
+    },
+    {
+      "base": {
+        "allocations": 3,
+        "bytes": 384,
+        "ns": 668.8,
+        "relative_mad": 0.022876794258373308
+      },
+      "case": "BenchmarkStage10Selector/16/fresh",
+      "head": {
+        "allocations": 3,
+        "bytes": 384,
+        "ns": 667.5,
+        "relative_mad": 0.022921348314606675
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 0.9980562200956938
+    },
+    {
+      "base": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 49.27,
+        "relative_mad": 0.010554089709762595
+      },
+      "case": "BenchmarkStage10Selector/2/cold",
+      "head": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 52.85,
+        "relative_mad": 0.02346263008514668
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 1.072660848386442
+    },
+    {
+      "base": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 28.25,
+        "relative_mad": 0.019823008849557476
+      },
+      "case": "BenchmarkStage10Selector/2/cooldown",
+      "head": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 30.38,
+        "relative_mad": 0.048716260697827536
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 1.0753982300884954
+    },
+    {
+      "base": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 97.35,
+        "relative_mad": 0.03133025166923484
+      },
+      "case": "BenchmarkStage10Selector/2/fresh",
+      "head": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 97.48,
+        "relative_mad": 0.04452195322117361
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 1.0013353877760658
+    },
+    {
+      "base": {
+        "allocations": 3,
+        "bytes": 192,
+        "ns": 242.2,
+        "relative_mad": 0.006193228736581338
+      },
+      "case": "BenchmarkStage10Selector/8/cold",
+      "head": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 151.5,
+        "relative_mad": 0.030363036303630325
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 0.6255161023947151
+    },
+    {
+      "base": {
+        "allocations": 2,
+        "bytes": 128,
+        "ns": 137.3,
+        "relative_mad": 0.04297159504734142
+      },
+      "case": "BenchmarkStage10Selector/8/cooldown",
+      "head": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 87.04,
+        "relative_mad": 0.050781250000000014
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 0.6339402767662053
+    },
+    {
+      "base": {
+        "allocations": 3,
+        "bytes": 192,
+        "ns": 389.4,
+        "relative_mad": 0.03261427837699021
+      },
+      "case": "BenchmarkStage10Selector/8/fresh",
+      "head": {
+        "allocations": 0,
+        "bytes": 0,
+        "ns": 288.8,
+        "relative_mad": 0.04743767313019386
+      },
+      "passed": true,
+      "stable": true,
+      "time_ratio": 0.7416538263995892
+    }
+  ],
+  "cpu": 1,
+  "head_commit": "2e0c3184d853dee7d1187e24db3a8f51a178319f",
+  "host": {
+    "cpu": "x86_64",
+    "logical_cpus": 9,
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "kind": "paired-scheduler-optimization",
+  "passed": true,
+  "repeats": 7,
+  "samples": [
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 726282,
+          "ns": 391.1
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1338658,
+          "ns": 258.3
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 460705,
+          "ns": 684.1
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 6507540,
+          "ns": 48.75
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10827854,
+          "ns": 28.81
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2829626,
+          "ns": 98.51
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 1276672,
+          "ns": 242.5
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 2,
+          "bytes": 128,
+          "iterations": 2100872,
+          "ns": 126.4
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 771142,
+          "ns": 376.7
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 2829626\t        98.51 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 6507540\t        48.75 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10827854\t        28.81 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t  771142\t       376.7 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1276672\t       242.5 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 2100872\t       126.4 ns/op\t     128 B/op\t       2 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  460705\t       684.1 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  726282\t       391.1 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1338658\t       258.3 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "88303d2b67461ce597a1cfb6a038e6b07547de9349749d91db85fce911a2d548",
+      "repeat": 0,
+      "variant": "base"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 832824,
+          "ns": 356.4
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1443952,
+          "ns": 206.7
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 422678,
+          "ns": 622.0
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5532360,
+          "ns": 53.42
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 9975632,
+          "ns": 29.31
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2702768,
+          "ns": 115.1
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2035012,
+          "ns": 146.0
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3483819,
+          "ns": 82.62
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1000000,
+          "ns": 275.1
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 2702768\t       115.1 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5532360\t        53.42 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t 9975632\t        29.31 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t 1000000\t       275.1 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cold          \t 2035012\t       146.0 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 3483819\t        82.62 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  422678\t       622.0 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  832824\t       356.4 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1443952\t       206.7 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "7a3e177fd6afc69eaceb11a1a3ef670049e8cb3474fd41a0514b0711a20e4cec",
+      "repeat": 0,
+      "variant": "head"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 691813,
+          "ns": 369.1
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1398838,
+          "ns": 214.3
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 430068,
+          "ns": 614.4
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5943918,
+          "ns": 51.61
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10699158,
+          "ns": 28.38
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3169167,
+          "ns": 96.13
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2008543,
+          "ns": 151.5
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3666698,
+          "ns": 82.58
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1000000,
+          "ns": 279.7
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 3169167\t        96.13 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5943918\t        51.61 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10699158\t        28.38 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t 1000000\t       279.7 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cold          \t 2008543\t       151.5 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 3666698\t        82.58 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  430068\t       614.4 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  691813\t       369.1 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1398838\t       214.3 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "656ed22804ba215389f6e4cbeb96ef38ea94578f6313e46e024767ddf4762cce",
+      "repeat": 1,
+      "variant": "head"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 804596,
+          "ns": 365.3
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1370754,
+          "ns": 214.8
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 429084,
+          "ns": 693.2
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 6316380,
+          "ns": 48.08
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10833890,
+          "ns": 27.74
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3090646,
+          "ns": 90.1
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 1338205,
+          "ns": 243.9
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 2,
+          "bytes": 128,
+          "iterations": 2227413,
+          "ns": 143.2
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 686586,
+          "ns": 402.2
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 3090646\t        90.10 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 6316380\t        48.08 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10833890\t        27.74 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t  686586\t       402.2 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1338205\t       243.9 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 2227413\t       143.2 ns/op\t     128 B/op\t       2 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  429084\t       693.2 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  804596\t       365.3 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1370754\t       214.8 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "8b632effe8e78cea21107db71b10bd245ac0e3c652a06cec23dc850351306431",
+      "repeat": 1,
+      "variant": "base"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 717301,
+          "ns": 375.0
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1393730,
+          "ns": 217.6
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 413632,
+          "ns": 623.9
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 6027411,
+          "ns": 49.13
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10495646,
+          "ns": 28.25
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3224950,
+          "ns": 92.63
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 1287055,
+          "ns": 230.2
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 2,
+          "bytes": 128,
+          "iterations": 2324511,
+          "ns": 130.0
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 743086,
+          "ns": 375.1
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 3224950\t        92.63 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 6027411\t        49.13 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10495646\t        28.25 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t  743086\t       375.1 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1287055\t       230.2 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 2324511\t       130.0 ns/op\t     128 B/op\t       2 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  413632\t       623.9 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  717301\t       375.0 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1393730\t       217.6 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "2d8346724c2efa0a62d9b6dd5cc210a50adcf22951db354ec0aaed096b0206ff",
+      "repeat": 2,
+      "variant": "base"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 660471,
+          "ns": 398.0
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1327357,
+          "ns": 223.5
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 410926,
+          "ns": 667.5
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5847888,
+          "ns": 51.38
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10487047,
+          "ns": 28.9
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3158715,
+          "ns": 93.14
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2058601,
+          "ns": 147.9
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3377122,
+          "ns": 87.04
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1000000,
+          "ns": 271.6
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 3158715\t        93.14 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5847888\t        51.38 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10487047\t        28.90 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t 1000000\t       271.6 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cold          \t 2058601\t       147.9 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 3377122\t        87.04 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  410926\t       667.5 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  660471\t       398.0 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1327357\t       223.5 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "ac13c6f2b4b987285067f08277afe2474ba90ee90dde81a1dc1ff79d18fb7019",
+      "repeat": 2,
+      "variant": "head"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 709652,
+          "ns": 393.4
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1241120,
+          "ns": 230.8
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 394522,
+          "ns": 679.7
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5879139,
+          "ns": 52.85
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10550154,
+          "ns": 31.17
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3128720,
+          "ns": 96.8
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2107773,
+          "ns": 146.5
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3271477,
+          "ns": 93.19
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1000000,
+          "ns": 288.8
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 3128720\t        96.80 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5879139\t        52.85 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10550154\t        31.17 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t 1000000\t       288.8 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cold          \t 2107773\t       146.5 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 3271477\t        93.19 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  394522\t       679.7 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  709652\t       393.4 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1241120\t       230.8 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "9ff4f89b707a1bdf19e285eb83514c6b003b96ad555654206d3a79894c1270ff",
+      "repeat": 3,
+      "variant": "head"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 633873,
+          "ns": 405.0
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1386042,
+          "ns": 227.7
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 421879,
+          "ns": 668.8
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5629758,
+          "ns": 49.74
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 11223174,
+          "ns": 27.51
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3068469,
+          "ns": 97.35
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 1226575,
+          "ns": 240.7
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 2,
+          "bytes": 128,
+          "iterations": 2149852,
+          "ns": 141.0
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 678082,
+          "ns": 400.8
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 3068469\t        97.35 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5629758\t        49.74 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t11223174\t        27.51 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t  678082\t       400.8 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1226575\t       240.7 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 2149852\t       141.0 ns/op\t     128 B/op\t       2 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  421879\t       668.8 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  633873\t       405.0 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1386042\t       227.7 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "ca83c115623ba940d5fbde334ea30bdb4f09af5483b44511a7bb1c68316b38e6",
+      "repeat": 3,
+      "variant": "base"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 805089,
+          "ns": 370.9
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1383774,
+          "ns": 219.5
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 438370,
+          "ns": 616.6
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 6486459,
+          "ns": 49.27
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 11218854,
+          "ns": 27.98
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3231422,
+          "ns": 112.9
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 1340490,
+          "ns": 223.9
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 2,
+          "bytes": 128,
+          "iterations": 2333031,
+          "ns": 127.6
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 760968,
+          "ns": 387.8
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 3231422\t       112.9 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 6486459\t        49.27 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t11218854\t        27.98 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t  760968\t       387.8 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1340490\t       223.9 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 2333031\t       127.6 ns/op\t     128 B/op\t       2 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  438370\t       616.6 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  805089\t       370.9 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1383774\t       219.5 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "2169fb7ea20f065a1590127536ccb3cf526f990323ef73bd4f099503a66a3b8a",
+      "repeat": 4,
+      "variant": "base"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 690482,
+          "ns": 403.8
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1355684,
+          "ns": 219.9
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 355317,
+          "ns": 844.0
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5827632,
+          "ns": 52.35
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10245729,
+          "ns": 32.68
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3259438,
+          "ns": 97.48
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1889628,
+          "ns": 158.4
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3520932,
+          "ns": 106.9
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1000000,
+          "ns": 332.8
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 3259438\t        97.48 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5827632\t        52.35 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10245729\t        32.68 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t 1000000\t       332.8 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1889628\t       158.4 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 3520932\t       106.9 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  355317\t       844.0 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  690482\t       403.8 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1355684\t       219.9 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "489c25c8cfde67e455ac22b25a04d290b693a1e493de8f1c069e65fd35ebafcb",
+      "repeat": 4,
+      "variant": "head"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 670922,
+          "ns": 406.0
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1000000,
+          "ns": 257.2
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 460797,
+          "ns": 682.8
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5442811,
+          "ns": 55.02
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 9137178,
+          "ns": 33.02
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2831470,
+          "ns": 104.6
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1914235,
+          "ns": 156.1
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3221452,
+          "ns": 87.95
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1000000,
+          "ns": 305.9
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 2831470\t       104.6 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5442811\t        55.02 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t 9137178\t        33.02 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t 1000000\t       305.9 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1914235\t       156.1 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 3221452\t        87.95 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  460797\t       682.8 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  670922\t       406.0 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1000000\t       257.2 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "3df5a3573c9c8828bc27ecbf546fa96a623a4795e2ea1dba1df7e957fb045d79",
+      "repeat": 5,
+      "variant": "head"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 662736,
+          "ns": 417.1
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1223296,
+          "ns": 241.9
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 408474,
+          "ns": 667.4
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5827237,
+          "ns": 52.47
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10253010,
+          "ns": 30.51
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2996892,
+          "ns": 100.4
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 1266440,
+          "ns": 242.2
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 2,
+          "bytes": 128,
+          "iterations": 2126416,
+          "ns": 137.3
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 730401,
+          "ns": 389.4
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 2996892\t       100.4 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5827237\t        52.47 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10253010\t        30.51 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t  730401\t       389.4 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1266440\t       242.2 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 2126416\t       137.3 ns/op\t     128 B/op\t       2 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  408474\t       667.4 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  662736\t       417.1 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1223296\t       241.9 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "791c153cdc91582120f7d4a35bb6451de5084ec880bafd4b14dde3890ac5d239",
+      "repeat": 5,
+      "variant": "base"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 681704,
+          "ns": 404.5
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1354518,
+          "ns": 223.2
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 374856,
+          "ns": 675.1
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5968266,
+          "ns": 51.28
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 10315056,
+          "ns": 31.14
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2903320,
+          "ns": 96.88
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 1258233,
+          "ns": 242.4
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 2,
+          "bytes": 128,
+          "iterations": 2093031,
+          "ns": 140.8
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 3,
+          "bytes": 192,
+          "iterations": 716660,
+          "ns": 465.4
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 2903320\t        96.88 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5968266\t        51.28 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t10315056\t        31.14 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t  716660\t       465.4 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1258233\t       242.4 ns/op\t     192 B/op\t       3 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 2093031\t       140.8 ns/op\t     128 B/op\t       2 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  374856\t       675.1 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  681704\t       404.5 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1354518\t       223.2 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "f9754ad62fd4d1468e29ebe19728de5ffdf83a14b04de4c0f57ab6a24c3a1451",
+      "repeat": 6,
+      "variant": "base"
+    },
+    {
+      "cases": {
+        "BenchmarkStage10Selector/16/cold": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 806400,
+          "ns": 398.0
+        },
+        "BenchmarkStage10Selector/16/cooldown": {
+          "allocations": 2,
+          "bytes": 256,
+          "iterations": 1351957,
+          "ns": 231.3
+        },
+        "BenchmarkStage10Selector/16/fresh": {
+          "allocations": 3,
+          "bytes": 384,
+          "iterations": 392815,
+          "ns": 656.6
+        },
+        "BenchmarkStage10Selector/2/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 5264008,
+          "ns": 55.56
+        },
+        "BenchmarkStage10Selector/2/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 9345942,
+          "ns": 30.38
+        },
+        "BenchmarkStage10Selector/2/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 2901756,
+          "ns": 103.4
+        },
+        "BenchmarkStage10Selector/8/cold": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 1879988,
+          "ns": 151.8
+        },
+        "BenchmarkStage10Selector/8/cooldown": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 3543163,
+          "ns": 85.12
+        },
+        "BenchmarkStage10Selector/8/fresh": {
+          "allocations": 0,
+          "bytes": 0,
+          "iterations": 993772,
+          "ns": 297.6
+        }
+      },
+      "log": "goos: linux\ngoarch: amd64\npkg: github.com/SawaMEN/FoxTunnel/internal/multihop\ncpu: AMD EPYC 9V74 80-Core Processor                \nBenchmarkStage10Selector/2/fresh         \t 2901756\t       103.4 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cold          \t 5264008\t        55.56 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/2/cooldown      \t 9345942\t        30.38 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/fresh         \t  993772\t       297.6 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cold          \t 1879988\t       151.8 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/8/cooldown      \t 3543163\t        85.12 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkStage10Selector/16/fresh        \t  392815\t       656.6 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cold         \t  806400\t       398.0 ns/op\t     384 B/op\t       3 allocs/op\nBenchmarkStage10Selector/16/cooldown     \t 1351957\t       231.3 ns/op\t     256 B/op\t       2 allocs/op\nPASS\n",
+      "log_sha256": "1f3eb3cff2daf35160de29ccb201e6e99715f697610f61a58ea1dad1080e3917",
+      "repeat": 6,
+      "variant": "head"
+    }
+  ],
+  "schema": 1,
+  "scope": "Same-host serial scheduler microbenchmarks, not WAN throughput or native transport measurements."
+}
