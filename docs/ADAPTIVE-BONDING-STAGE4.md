@@ -1,5 +1,7 @@
 # Stage 4 — independent WAN measurement and release gates
 
+> Historical development/measurement record. Current supported TCP Bond status: [XHTTP/Bond stability contract](XHTTP-BOND-STABILITY.md). Performance/default-rollout claims still require their own measurements.
+
 [Node guide](NODES.md) · [Stage 3 UDP flow sharding](ADAPTIVE-BONDING-STAGE3.md) ·
 [Existing benchmark criteria](NODE-BENCHMARK-AND-MERGE.md)
 

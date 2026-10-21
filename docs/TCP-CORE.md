@@ -4,7 +4,8 @@
 
 The baseline carriers are H2 CONNECT, H2 POST and WebSocket carrying inner H2.
 NSS is an alternate verified TLS backend. H3/Neqo have additional experimental
-network-recovery requirements; XHTTP and multi-node/bond remain experimental.
+network-recovery requirements. XHTTP and advanced TCP Bond have a separate
+[supported stability contract](XHTTP-BOND-STABILITY.md).
 The regression matrix does not constitute a production-performance guarantee.
 
 ## Stream semantics
@@ -60,7 +61,7 @@ worker in Body.Close; reversing that order can deadlock a refused connection.
 The `TCP core stability` workflow repeats the following under the Go race
 detector for Go and NSS builds:
 
-- Twelve reset-after-prefix cases per backend: CONNECT/POST/WSS, plain/padded,
+- Twenty-four reset-after-prefix cases per backend: CONNECT/POST/WSS/XHTTP, plain/padded,
   direct DialContext and local SOCKS.
 - Exhausted-upload-credit simulation, bounded copy acceptance, read/write
   deadline reset, cancellation and reservation release.

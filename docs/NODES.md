@@ -1,9 +1,11 @@
-# Node routing and Adaptive Bonding — experimental
+# Node routing and supported TCP Bond modes
 
 [Home](../README.md) · [Features](FEATURES.md) · [Benchmark and merge gates](NODE-BENCHMARK-AND-MERGE.md)
 
 FoxTunnel supports up to eight explicitly trusted HTTPS ingress servers
 and a common exit for Bonding. The following settings are **opt-in**.
+The supported XHTTP/TCP Bond scope and required regression matrix are in the
+[stability contract](XHTTP-BOND-STABILITY.md). Stable modes remain opt-in.
 TLS validation, authentication, the Bond block wire format and server
 limits stay unchanged. These features **have not** been validated to
 improve latency or throughput across actual networks.
@@ -136,10 +138,9 @@ lowers actual game ping. See the [Stage 4 independent VDS protocol](ADAPTIVE-BON
 
 ## Compatibility
 
-The main branch now also contains experimental UDP and Linux TUN.
-Those features are **not** compatible with Bonding today; this
-node-routing work preserves existing UDP/TUN behavior and does not
-implement Bonding for application UDP.
+UDP multi-node is a separate opt-in mode and cannot be combined with TCP
+Bonding. System TUN, routing and DNS belong to the host application; the
+protocol-core does not implement application UDP Bonding.
 
 Before making the optional features defaults or deploying them in
 sensitive environments, review the

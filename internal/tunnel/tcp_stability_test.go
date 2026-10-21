@@ -18,7 +18,7 @@ func TestStage3TCPResetIsNotEOF(t *testing.T) {
 }
 
 func testStage3TCPResetIsNotEOF(t *testing.T, backend string) {
-	for _, mode := range []string{"h2-connect", "h2-post", "wss"} {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		for _, padding := range []bool{false, true} {
 			for _, socks := range []bool{false, true} {
 				label := mode

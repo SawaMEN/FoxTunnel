@@ -1,5 +1,7 @@
 # Adaptive Bonding: stage 1 (baseline and safe scheduling)
 
+> Historical development/measurement record. Current supported TCP Bond status: [XHTTP/Bond stability contract](XHTTP-BOND-STABILITY.md). Performance/default-rollout claims still require their own measurements.
+
 [Node configuration](NODES.md) · [Benchmark gates](NODE-BENCHMARK-AND-MERGE.md)
 
 ## Objective and boundaries

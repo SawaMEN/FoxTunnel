@@ -19,7 +19,7 @@ The server sees connection destinations. FoxTunnel is **not** an anonymity netwo
 | \`h2-post\` | Alternate HTTP/2 POST streaming |
 | \`h3-post\` | HTTP/3 over QUIC; needs a working UDP path |
 | \`wss\` | WebSocket over TLS |
-| \`xhttp-stream-one\`, \`xhttp-stream-up\`, \`xhttp-packet-up\` | Experimental XHTTP variants |
+| \`xhttp-stream-one\`, \`xhttp-stream-up\`, \`xhttp-packet-up\` | Stable, explicitly selected XHTTP carriers |
 
 The selected transport must be supported by both ends. A \`--link-file\` preserves its configured transport.
 
@@ -71,3 +71,5 @@ Optional cluster ingress, bond streams, fallback servers and managed user quotas
 - Do not enable \`--allow-private\` on an exposed public server without strict isolation.
 - Configure host firewall, DNS and fail-closed routing separately if attempting whole-device interception.
 - Neither local throughput measurements nor matched HTTP/2 settings prove production stability or DPI resistance.
+
+XHTTP and advanced TCP Bond modes have a [supported stability contract](XHTTP-BOND-STABILITY.md), including opt-in configuration, bounded resources, retry and half-close semantics. Their status does not change the Go API or Neqo release policy.

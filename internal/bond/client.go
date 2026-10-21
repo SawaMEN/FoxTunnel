@@ -43,9 +43,9 @@ type Client struct {
 	// Pipeline is 0 (automatic), 4, or 8. Configure before Open.
 	Pipeline int
 	// PersistentLanes opts into negotiated records-v1 channels and coalescing.
-	// Default RPC is retained until relay throughput regressions are resolved.
+	// RPC remains the default; lanes are an explicit per-session optimization.
 	PersistentLanes bool
-	// Adaptive enables experimental throughput-aware data block scheduling.
+	// Adaptive enables throughput-aware data block scheduling.
 	// Default false retains the prior Bonding scheduler and wire protocol.
 	Adaptive bool
 	// AutoTune controls the bounded 4/8-slot pipeline from measured data.
@@ -68,6 +68,7 @@ type Client struct {
 	routeMetrics []multihop.Measurement
 	routeState   multihop.State
 	next         uint64
+	adaptiveNext [2]uint64 // Independent upload/download exploration clocks.
 }
 
 func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
@@ -203,6 +204,7 @@ func (c *Client) ResetRouteQuality() {
 	c.routeMetrics = make([]multihop.Measurement, len(c.Endpoints))
 	c.routeState = multihop.State{}
 	c.qualityEpoch++
+	c.adaptiveNext = [2]uint64{}
 	for i := range c.paths {
 		p := &c.paths[i]
 		p.latency = 0

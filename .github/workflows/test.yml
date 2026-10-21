@@ -30,7 +30,7 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Test with race detector
-        run: go test -race ./... -count=1 -timeout=60s
+        run: go test -race ./... -count=1 -timeout=120s
       - name: Fuzz protocol capability parsing
         run: go test ./internal/tunnel -run '^$' -fuzz '^FuzzProtocolTokens$' -fuzztime=10000x -parallel=2 -timeout=60s
       - name: Fuzz padding decoder

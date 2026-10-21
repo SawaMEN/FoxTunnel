@@ -1,5 +1,7 @@
 # Node performance: stage 5/5 benchmark and merge gates
 
+> Historical development/measurement record. Current supported TCP Bond status: [XHTTP/Bond stability contract](XHTTP-BOND-STABILITY.md). Performance/default-rollout claims still require their own measurements.
+
 Stage 5 adds `--bond-autotune` and reproducible benchmark targets. It
 **does not** prove lower latency or more bandwidth on the internet.
 

@@ -1,0 +1,86 @@
+name: XHTTP and Bond stability
+
+on:
+  push:
+    branches: [main]
+    paths: ['internal/**', 'cmd/foxtunnel/**', 'go.*', '.github/workflows/stable-xhttp-bond.yml']
+  pull_request:
+    paths: ['internal/**', 'cmd/foxtunnel/**', 'go.*', '.github/workflows/stable-xhttp-bond.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+      - name: Repeated codec lifecycle and combined scheduling matrix
+        run: go test -race ./internal/xhttp ./internal/bond -count=5 -timeout=240s
+      - name: Real carrier resets half-close ACK loss and ingress failure
+        env:
+          FOXTUNNEL_STABLE_MATRIX: full
+        run: go test -race -json ./internal/tunnel -run '^TestStableNativeBondModes$|^TestStage3TCPResetIsNotEOF$|^TestXHTTP' -count=1 -timeout=240s > stable-native.jsonl
+      - name: Regression of duplex ingress exploration
+        run: go test ./internal/bond -run '^TestAdaptiveBondHTTP2MultiIngressIntegrity$|^TestStableAdaptiveExploration' -count=100 -timeout=180s
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stable-native-${{ matrix.os }}
+          path: stable-native.jsonl
+          retention-days: 14
+
+  sustained:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+      - name: Three-minute held XHTTP and smart adaptive Bond sessions
+        env:
+          FOXTUNNEL_STABLE_SECONDS: '180'
+        run: go test -race -json ./internal/xhttp ./internal/bond -run '^TestStable.*Sustained$' -count=1 -timeout=5m > stable-sustained.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stable-sustained
+          path: stable-sustained.jsonl
+          retention-days: 14
+
+  nss:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+      - name: Install NSS build headers
+        run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
+      - name: Full native NSS carrier and Bond combinations
+        env:
+          FOXTUNNEL_STABLE_MATRIX: full
+        run: go test -race -tags nss -json ./internal/tunnel -run '^TestStableNativeBondModesNSS$|^TestStage3TCPResetIsNotEOFWithNSS$|^TestXHTTPSettingsNSS$|^TestVerifiedSNIAndPinNSS$' -count=1 -timeout=240s > stable-nss.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stable-nss
+          path: stable-nss.jsonl
+          retention-days: 14

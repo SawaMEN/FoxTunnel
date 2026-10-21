@@ -1,5 +1,7 @@
 # Adaptive Bonding — stage 2: traffic-aware scheduling
 
+> Historical development/measurement record. Current supported TCP Bond status: [XHTTP/Bond stability contract](XHTTP-BOND-STABILITY.md). Performance/default-rollout claims still require their own measurements.
+
 [Node guide](NODES.md) · [Stage 1](ADAPTIVE-BONDING-STAGE1.md) ·
 [WAN benchmark and merge gates](NODE-BENCHMARK-AND-MERGE.md)
 
