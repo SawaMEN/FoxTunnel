@@ -93,6 +93,7 @@ func (c *Client) reserveForClass(tried []bool, op byte, payloadBytes int, priori
 		if _, err := rand.Read(seed[:]); err == nil {
 			c.next = binary.BigEndian.Uint64(seed[:])
 		}
+		c.adaptiveNext = [2]uint64{c.next, c.next}
 	}
 	now := time.Now()
 	qualityEpoch := c.qualityEpoch
