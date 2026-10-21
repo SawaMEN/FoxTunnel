@@ -29,7 +29,7 @@ jobs:
         run: python3 -m py_compile scripts/bond_stage4_field.py scripts/bond_stage4_gate.py scripts/udp_echo_server.py
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26.9'
+          go-version: '1.26.10'
       - name: Verify local Bond and UDP multi-node regression
         run: |
           go test -race ./internal/bond ./internal/tunnel -run '^Test(Adaptive|Traffic|UDPMultiNode|UDPIngress)' -count=1 -timeout=120s
