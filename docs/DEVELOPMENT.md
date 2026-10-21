@@ -138,7 +138,9 @@ TLS и авторизация, фильтрация назначений/DNS, к
 Обычный `go test` использует двухсекундные held sessions и native mode `auto`.
 Полный native matrix включается `FOXTUNNEL_STABLE_MATRIX=full`, длительность —
 `FOXTUNNEL_STABLE_SECONDS=180`. Короткий прогон не заменяет длительный CI.
-JSON test events сохраняются в CI artifacts на 14 дней.
+JSON test events сохраняются в CI artifacts на 14 дней. Длительный запуск
+задаёт `-parallel=8`, чтобы все шесть Bond сценариев стартовали одновременно
+также на runner с четырьмя CPU; длительность каждого остаётся 180 секунд.
 
 Wire endpoints и capability `records-v1` сохраняются. Новое несовместимое framing
 требует отдельной версии endpoint/capability. Изменения framing, ACK, лимитов,
