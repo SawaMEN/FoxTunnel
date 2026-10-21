@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"strings"
 	"sync"
 	"time"
 
@@ -65,13 +64,7 @@ func (s *Server) ConfigureCluster(path string) error {
 
 // Coordinator and cluster URLs are already validated HTTPS origins.
 // Canonicalize optional :443 and hostname case for direct/relay recognition.
-func bondOriginKey(u *url.URL) string {
-	port := u.Port()
-	if port == "" {
-		port = "443"
-	}
-	return net.JoinHostPort(strings.ToLower(u.Hostname()), port)
-}
+func bondOriginKey(u *url.URL) string { return cluster.OriginKey(u) }
 
 func sameBondOrigin(a, b *url.URL) bool {
 	return a.Scheme == "https" && b.Scheme == "https" && bondOriginKey(a) == bondOriginKey(b)
@@ -97,6 +90,9 @@ type bondDiscovery struct {
 // coordinator. Its listed origins receive the same credentials after TLS/h2.
 // Call after TLS/timeouts, before Serve. A failed initial fetch fails closed.
 func (c *Client) EnableBondDiscovery(ctx context.Context) error {
+	if pool, ok := c.transport.(*identityPool); ok && len(pool.nodePolicies) != 0 {
+		return i18n.Error("cannot combine dynamic discovery and static per-node SPKI pins")
+	}
 	if err := validateBondTraffic(c.BondTraffic, c.BondAdaptive); err != nil {
 		return err
 	}

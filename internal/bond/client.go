@@ -14,11 +14,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/multihop"
 	"github.com/quic-go/quic-go/http3"
@@ -193,13 +193,7 @@ func (c *Client) reserveForClass(tried []bool, op byte, payloadBytes int, priori
 	}
 }
 
-func bondOrigin(u *url.URL) string {
-	port := u.Port()
-	if port == "" {
-		port = "443"
-	}
-	return net.JoinHostPort(strings.ToLower(u.Hostname()), port)
-}
+func bondOrigin(u *url.URL) string { return cluster.OriginKey(u) }
 
 // ResetRouteQuality invalidates all measured route durations after a confirmed
 // OS network transition without disrupting established hub sessions.

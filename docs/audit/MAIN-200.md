@@ -1,7 +1,7 @@
 # Аудит main: цель — 200 подтверждённых ошибок
 
 База первого пакета: `653c985c66f0594e270adfcafa05fcd7ac71a933`.
-Подтверждены и исправлены **18 из запрошенных 200** разных дефектов.
+Подтверждены и исправлены **19 из запрошенных 200** разных дефектов.
 Это промежуточный результат, не утверждение о завершении аудита или наличии
 ровно 200 ошибок. Варианты входных данных и повторные проявления одной ошибки
 отдельно не считаются. Замечания по стилю в счётчик не входят.
@@ -32,10 +32,12 @@ production-кода. Для новых processhost-сценариев измен
 | 016 | После kill основного процесса унаследованный stdout мог удерживать Close сверх пятисекундного бюджета | `processhost.TestAuditShutdownClosesDescendantHeldOutput` |
 | 017 | Уже отменённый DialContext сначала создавал запрос с новым фоновым lifetime и мог обратиться к транспорту до асинхронной отмены | `tunnel.TestAuditCancelledDialNeverStartsTransport` |
 | 018 | Запрет публикации версии v0.0.0-ci применялся к release request, но обходился публикацией tag с этим именем | `ReleaseRequest.test_audit_ci_tag_cannot_publish` |
+| 019 | Smart Bond принимал эквивалентное написание адреса координатора за relay, отвергал допустимую topology или применял relay tax к прямому маршруту | `tunnel.TestAuditSmartBondRecognizesCoordinatorAliases` |
 
 Исправление 012 дополнительно закрывает request body и отказывает неизвестному
 origin в identity pool с обязательными per-node pins. Конфигурация fallback
-фиксируется до установки пинов. Изменения TLS backend/profile сохраняют pins.
+фиксируется до установки пинов. Включение dynamic discovery после статических
+per-node pins также отвергается до I/O (`TestAuditPinnedClientRejectsDynamicDiscoveryBeforeIO`). Изменения TLS backend/profile сохраняют pins.
 
 Единая функция проверки credentials сохраняет UTF-8 имена статических
 профилей и произвольные байты пароля в wire-парсере, ограничивает длины и
@@ -52,3 +54,8 @@ accounts с ASCII username не расширяется.
 
 NSS/Neqo и платформенные результаты CI фиксируются отдельно после выполнения;
 наличие локального PASS не выдаётся за native CI или независимый security review.
+
+## Проверки дополнения 019
+
+- Полный Go race-набор и `go vet ./...` повторно прошли после изменения.
+- Для первого коммита пакета все 17 PR workflows завершились успешно, включая native platform operations, NSS и Neqo.
