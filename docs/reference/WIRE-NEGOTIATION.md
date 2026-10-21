@@ -1,6 +1,6 @@
 # Draft-0 version and capability negotiation
 
-[Wire specification](WIRE-DRAFT-0.md) · [Implementation plan](../IMPLEMENTATION-PLAN.md)
+[Wire specification](WIRE-DRAFT-0.md) · [Development](../DEVELOPMENT.md)
 
 This optional extension preserves draft-0 payload bytes and route names. It is
 an authenticated per-request offer/confirmation, not a new cipher, browser

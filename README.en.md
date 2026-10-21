@@ -1,36 +1,35 @@
 # FoxTunnel
 
-**[Русский](README.md)**
+[Русский](README.md)
 
-FoxTunnel is an independent VPN protocol core for client and server-panel
-integration. It carries TCP and experimental UDP over HTTPS transports without
-requiring sing-box or Xray. It is not a standalone whole-device VPN application.
+FoxTunnel is a Go tunnel protocol core. It carries TCP and UDP over HTTPS
+as a standalone process or Go library, without sing-box or Xray.
 
-Use the public Go API (`NewClient`, `DialContext`, `ServeSOCKS`, `NewServer`) or
-supervise the core as a process: `client` provides a local SOCKS5 adapter and
-`server` serves the protocol. Hiddify owns device VPN/TUN/routing/DNS; 3x-ui owns
-server provisioning, certificates, configuration and process supervision.
+The client exposes SOCKS5 on `127.0.0.1:1080`; the server forwards traffic to
+destinations. The host application owns TUN, routing and device DNS.
 
-## Integration bundles
+## Start
 
-The standard release ships only Linux amd64 and arm64 NSS core archives containing
-`foxtunnel`, pinned `lib/` runtime, `build.json`, `integration.json`,
-`INTEGRATION.md` and licenses. Keep the bundle together. The experimental
-Mozilla/Neqo variant is a separate Linux amd64 build.
-No GUI, APK, DMG, VPN installer, native TUN stack or native-language SDK is included.
-Android/Apple/Dart/C bindings require separate host integration work.
+Download a complete bundle from [Releases](https://github.com/SawaMEN/FoxTunnel/releases)
+or build the Go version with Go 1.26.10+:
 
 ```sh
 go build -o foxtunnel ./cmd/foxtunnel
 ./foxtunnel version --json
 ```
 
-- [Integration contract](docs/INTEGRATION.md): interfaces, lifecycle, platform limits.
-- [Manual core setup](docs/START.en.md).
-- [Transports and options](docs/FEATURES.en.md).
-- [Architecture and development](docs/DEVELOPMENT.en.md).
-- [Implementation plan: 10 stages and progress (Russian)](docs/IMPLEMENTATION-PLAN.md).
+- [Setup](docs/START.md) — server, client and troubleshooting (Russian).
+- [Options](docs/FEATURES.md) — transports, UDP, nodes and Bonding (Russian).
+- [Integration](docs/INTEGRATION.md) — Go API and process contract (English).
+- [Development](docs/DEVELOPMENT.md) — builds, tests and measurements (Russian).
+- [Operations](docs/OPERATIONS.md) — access, certificates and releases (Russian).
 
-The API and wire draft are experimental; pin a tested tag/commit. Loopback CI
-measurements do not prove DPI resistance or host VPN leak protection.
+Standard bundles target Linux amd64/arm64 with NSS; Mozilla/Neqo for Linux amd64
+has a separate build. Keep `lib/` beside the executable.
+No GUI, APK, DMG or system VPN adapter is included.
+
+The API and wire protocol remain experimental: pin a tested tag or commit.
+NSS/Neqo do not guarantee a Firefox fingerprint or censorship resistance.
 [MIT license](LICENSE).
+
+XHTTP and advanced TCP Bond have a [supported stability contract](docs/FEATURES.md#стабильность-xhttp-и-tcp-bond); their opt-in defaults are preserved. Public Go API and Neqo retain their separate status.

@@ -1,20 +1,17 @@
 # Research fixtures
 
-These programs collect measurements and exercise native APIs. They are not
-the FoxTunnel client/server runtime and are not shipped in integration bundles.
+[Development](../docs/DEVELOPMENT.md)
 
-- `nss-clienthello/`: native NSS ClientHello capture probe.
-- `neqo-ffi/`: standalone Neqo FFI experiment, C ABI probe and Go H3 fixture.
-- `../cmd/ft-fingerprint/` and `../cmd/ft-webprofile/`: measurement tools.
-- `../rust/neqo-bridge/`: the opt-in runtime bridge; unlike the standalone
-  experiment, this is used by native Neqo builds and must stay in the runtime tree.
+These tools are separate from the client/server runtime and are excluded from
+integration bundles.
 
-Keep native fixtures independently reproducible. Production code in the public
-SDK and `cmd/foxtunnel` must not import research packages or measurement helpers.
-`python3 scripts/check_core_boundaries.py` verifies the transitive Go dependency
-graph; native CI also runs it with `--tags nss` and `--tags nss,neqo`.
+| Directory | Purpose |
+|---|---|
+| [nss-clienthello](nss-clienthello/README.md) | Capture a native NSS ClientHello |
+| [neqo-ffi](neqo-ffi/README.md) | Standalone Rust/C UDP and certificate-rejection probe |
+| [wire-capture](wire-capture/README.md) | Controlled Firefox/NaiveProxy/FoxTunnel observations |
+| `../cmd/ft-fingerprint/`, `../cmd/ft-webprofile/` | TLS/H2 measurement tools |
 
-Dated results belong in [measurements](../docs/measurements/); implementation
-progress belongs in the [current plan](../docs/IMPLEMENTATION-PLAN.md).
-
-- `wire-capture/`: isolated pinned Firefox/NaiveProxy/FoxTunnel TLS-H2 and endpoint-decoded H3 research fixture.
+The runtime Neqo bridge lives separately in `../rust/neqo-bridge/`.
+`scripts/check_core_boundaries.py` prevents runtime imports of research packages.
+Dated results belong in [measurements](../docs/measurements/).

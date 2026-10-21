@@ -1,21 +1,12 @@
-# Эксперимент захвата ClientHello Mozilla NSS
+# NSS ClientHello capture
 
-**Русский** · [English](README.en.md) · [Документация](../../docs/DEVELOPMENT.md)
+[Development](../../docs/DEVELOPMENT.md)
 
-> **Назначение:** Отдельный инструмент записи ClientHello NSS для контролируемых сравнений.
+A local C probe that sends a TLS 1.3 ClientHello with h2/http1.1 ALPN to
+`127.0.0.1`. The recorder closes before a full handshake. This is a measurement
+tool, not the runtime TLS adapter or a Firefox fingerprint.
 
-Отдельная программа C с NSS/NSPR предназначена **только для захвата приветствия**.
-Она подключается лишь к `127.0.0.1`, отправляет ClientHello TLS 1.3 с ALPN
-`h2`/`http/1.1` и заданным SNI. Ожидается, что инструмент захвата закроет
-соединение, не завершив рукопожатие.
-
-**Это не транспорт данных FoxTunnel и не полный отпечаток Firefox.**
-Здесь нет HTTP/2, подключения к удалённым сервисам и принятия либо проверки
-сертификата. Транспорт данных обязан проверять цепочку и имя, управлять доверием,
-таймерами и параллельностью; намеренно незавершённое рукопожатие туда переносить
-нельзя.
-
-## Сборка Debian/Ubuntu
+Build from the repository root on Debian/Ubuntu:
 
 ```sh
 sudo apt-get install libnss3-dev libnspr4-dev pkg-config
@@ -24,27 +15,17 @@ cc -std=c11 -Wall -Wextra -Werror -O2 \
   -o nss-clienthello $(pkg-config --libs nss nspr)
 ```
 
-## Захват
-
-Первый терминал:
+Start the recorder:
 
 ```sh
 go run ./cmd/ft-fingerprint --listen 127.0.0.1:19443 --out nss.json
 ```
 
-Второй терминал:
+In another terminal:
 
 ```sh
 ./nss-clienthello 19443 example.org
 ```
 
-Сообщение программы указывает на попытку рукопожатия. JSON захвата подтверждает,
-что ClientHello действительно получен и разобран. Сравнивайте его с
-`ft-fingerprint --sample-go` и реальным Firefox, записывая версии библиотек и
-браузера. NSS сама по себе не включает Necko и не воспроизводит порядок/настройки
-ClientHello Firefox.
-
-Инструмент использует системную NSS при сборке и запуске. Для выпуска нужно
-фиксировать проверенную версию NSS/NSPR, сопровождать исправления уязвимостей и
-отдельно поддерживать жизненный цикл Windows/macOS/Linux.
-Язык сообщений по умолчанию русский; `FOXTUNNEL_LANG=en` включает английский.
+Inspect the captured JSON and record `pkg-config --modversion nss nspr`.
+The system NSS version can differ from Firefox's bundled version.
