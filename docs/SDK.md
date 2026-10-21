@@ -51,6 +51,14 @@ closed snapshot и закрывает канал; cleanup counts ещё могу
 HTTP headers или payload. Транспортный статус означает выбор маршрута,
 не успешную авторизацию или готовность удалённого сервера.
 
+`Snapshot().Transport.Operations` содержит фиксированные счётчики setup TCP,
+обмена UDP-v1, открытия UDP-stream-v2, отказов admission и восстановления.
+В JSON это `transport.operations`; длительности указаны в микросекундах.
+`Active` считает незавершённые вызовы, а не открытые потоки. Эти же агрегаты
+доступны в `Status()` и `WatchStatus`; schema 1 допускает новые JSON-поля.
+Область измерения, причины и ограничения:
+[метрики и причины отказов](UPDATE.md#4-метрики-и-причины-отказов).
+
 ## Process host без native ABI
 
 `github.com/SawaMEN/FoxTunnel/processhost` импортирует только стандартную

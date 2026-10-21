@@ -54,6 +54,8 @@ type ConnectResponseError struct {
 	HTTPStatus int
 }
 
+func (e *ConnectResponseError) HTTPResponseStatus() int { return e.HTTPStatus }
+
 func (e *ConnectResponseError) Error() string {
 	return fmt.Sprintf(i18n.Text("CONNECT rejected (HTTP/%d status %d)"), e.HTTPMajor, e.HTTPStatus)
 }

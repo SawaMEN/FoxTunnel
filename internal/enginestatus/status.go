@@ -10,29 +10,32 @@ import (
 // Snapshot is a thread-safe copy. A selected route does not mean an HTTP
 // request succeeded, and the last route may differ from concurrent requests.
 type Snapshot struct {
-	Schema          int       `json:"schema"`
-	Engine          string    `json:"engine"`
-	Transport       string    `json:"transport"`
-	TLSBackend      string    `json:"tls_backend"`
-	QUICBackend     string    `json:"quic_backend"`
-	H3Fallback      string    `json:"h3_fallback"`
-	State           string    `json:"state"`
-	LastRoute       string    `json:"last_route,omitempty"`
-	LastReason      string    `json:"last_reason,omitempty"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	NetworkChanges  uint64    `json:"network_changes"`
-	H3Probes        uint64    `json:"h3_probes"`
-	H3Reachable     uint64    `json:"h3_reachable"`
-	H3Unreachable   uint64    `json:"h3_unreachable"`
-	H3ProbeRejected uint64    `json:"h3_probe_rejected"`
-	H3Selected      uint64    `json:"h3_selected"`
-	H2Selected      uint64    `json:"h2_selected"`
-	ActiveProbes    int       `json:"active_probes"`
+	Operations      Operations `json:"operations"`
+	Schema          int        `json:"schema"`
+	Engine          string     `json:"engine"`
+	Transport       string     `json:"transport"`
+	TLSBackend      string     `json:"tls_backend"`
+	QUICBackend     string     `json:"quic_backend"`
+	H3Fallback      string     `json:"h3_fallback"`
+	State           string     `json:"state"`
+	LastRoute       string     `json:"last_route,omitempty"`
+	LastReason      string     `json:"last_reason,omitempty"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	NetworkChanges  uint64     `json:"network_changes"`
+	H3Probes        uint64     `json:"h3_probes"`
+	H3Reachable     uint64     `json:"h3_reachable"`
+	H3Unreachable   uint64     `json:"h3_unreachable"`
+	H3ProbeRejected uint64     `json:"h3_probe_rejected"`
+	H3Selected      uint64     `json:"h3_selected"`
+	H2Selected      uint64     `json:"h2_selected"`
+	ActiveProbes    int        `json:"active_probes"`
 }
 
 type Recorder struct {
-	mu sync.Mutex
-	s  Snapshot
+	mu                         sync.Mutex
+	s                          Snapshot
+	failureEpoch               uint64
+	failureSince, networkSince time.Time
 }
 
 func New() *Recorder {
@@ -61,8 +64,10 @@ func (r *Recorder) Configure(engine, transport, tlsBackend, quicBackend, fallbac
 	if fallback == "" {
 		fallback = "none"
 	}
-	r.s.Engine, r.s.Transport, r.s.TLSBackend = engine, transport, tlsBackend
-	r.s.QUICBackend, r.s.H3Fallback = quicBackend, fallback
+	r.s.Engine = fixedName(engine, "legacy", "mozilla")
+	r.s.Transport = fixedName(transport, "h2-connect", "h2-post", "h3-post", "wss", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up")
+	r.s.TLSBackend = fixedName(tlsBackend, "auto", "go", "nss")
+	r.s.QUICBackend, r.s.H3Fallback = fixedName(quicBackend, "quic-go", "neqo"), fixedName(fallback, "none", "h2")
 	r.s.State, r.s.LastRoute, r.s.LastReason = "configured", "", ""
 	r.s.UpdatedAt = time.Now().UTC()
 }
@@ -114,9 +119,19 @@ func (r *Recorder) Route(route, reason string) {
 		r.mu.Unlock()
 		return
 	}
-	r.s.LastRoute, r.s.LastReason = route, reason
+	r.s.LastRoute = route
+	r.s.LastReason = fixedName(reason, "direct", "cooldown", "unreachable", "probe", "network-change")
 	r.s.UpdatedAt = time.Now().UTC()
 	r.mu.Unlock()
+}
+
+func fixedName(value string, allowed ...string) string {
+	for _, name := range allowed {
+		if value == name {
+			return name
+		}
+	}
+	return "unknown"
 }
 
 func (r *Recorder) NetworkChanged() {
@@ -125,6 +140,7 @@ func (r *Recorder) NetworkChanged() {
 	}
 	r.mu.Lock()
 	r.s.NetworkChanges++
+	r.networkSince = time.Now()
 	r.s.State, r.s.LastReason = "network-changed", "network-change"
 	r.s.UpdatedAt = time.Now().UTC()
 	r.mu.Unlock()

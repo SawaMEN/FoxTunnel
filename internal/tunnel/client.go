@@ -289,6 +289,7 @@ func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error 
 			workers.Add(1)
 			go func() { defer workers.Done(); defer func() { <-slots }(); c.handleContext(ctx, conn) }()
 		default:
+			c.status.Reject(enginestatus.SOCKSCapacity)
 			_ = conn.Close()
 		}
 	}

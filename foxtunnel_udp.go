@@ -5,6 +5,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 )
 
@@ -32,6 +33,7 @@ func (c *Client) reserveUDP() error {
 		return net.ErrClosed
 	}
 	if c.pending+len(c.conns)+len(c.udpConns) >= c.limit {
+		c.core.RecordRejection(enginestatus.SDKCapacity)
 		return ErrCapacity
 	}
 	c.pending++

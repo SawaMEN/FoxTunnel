@@ -174,6 +174,7 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 	}
 	if c.pending+len(c.conns)+len(c.udpConns) >= c.limit {
 		c.mu.Unlock()
+		c.core.RecordRejection(enginestatus.SDKCapacity)
 		return nil, ErrCapacity
 	}
 	c.pending++
@@ -303,6 +304,7 @@ func (l *ownedListener) Accept() (net.Conn, error) {
 		}
 		if l.owner.pending+len(l.owner.conns)+len(l.owner.udpConns) >= l.owner.limit {
 			l.owner.mu.Unlock()
+			l.owner.core.RecordRejection(enginestatus.SDKCapacity)
 			raw.Close()
 			continue
 		}

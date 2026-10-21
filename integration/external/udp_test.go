@@ -61,6 +61,9 @@ func TestPublicUDPAPIAndOwnership(t *testing.T) {
 			if _, err = client.ExchangeUDP(ctx, d); !errors.Is(err, ft.ErrCapacity) {
 				t.Fatal("one-shot escaped UDP limit", err)
 			}
+			if got := client.Snapshot().Transport.Operations.Rejections.SDKCapacity; got != 3 {
+				t.Fatal("shared TCP/UDP admission rejections were not reported", got)
+			}
 			wait, stop := context.WithTimeout(ctx, 25*time.Millisecond)
 			_, err = flow.Receive(wait)
 			stop()

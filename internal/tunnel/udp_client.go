@@ -11,6 +11,7 @@ import (
 	"net/netip"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 )
 
@@ -90,6 +91,7 @@ func (c *Client) handleUDPAssociate(parent context.Context, control net.Conn) {
 		select {
 		case slots <- struct{}{}:
 		default:
+			c.status.Reject(enginestatus.UDPPendingCapacity)
 			continue // Capacity bound: fail closed instead of unlimited goroutines.
 		}
 		owned := append([]byte(nil), buf[:n]...)
@@ -152,7 +154,15 @@ func replyUDPAssociate(w net.Conn, a *net.UDPAddr) error {
 	return err
 }
 
-func (c *Client) exchangeUDP(ctx context.Context, wire []byte) ([]byte, error) {
+func (c *Client) exchangeUDP(ctx context.Context, wire []byte) (reply []byte, err error) {
+	ticket := c.status.BeginOperation(enginestatus.UDPExchange)
+	defer func() {
+		reason := operationReason(err)
+		if err == nil && len(reply) == 0 {
+			reason = enginestatus.NoResponse
+		}
+		c.status.FinishOperation(ticket, reason)
+	}()
 	u := *c.ServerURL
 	u.Path = udpPath
 	u.RawPath = ""
@@ -182,7 +192,7 @@ func (c *Client) exchangeUDP(ctx context.Context, wire []byte) ([]byte, error) {
 		return nil, nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("UDP relay refused")
+		return nil, &UDPResponseError{HTTPStatus: resp.StatusCode}
 	}
 	data, err := io.ReadAll(io.LimitReader(resp.Body, udpproto.MaxDatagram+1))
 	if err != nil {

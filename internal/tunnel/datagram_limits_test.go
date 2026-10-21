@@ -98,4 +98,10 @@ func TestStage4UDPIncomingQueueIsBounded(t *testing.T) {
 	if len(flow.queue) != udpStreamQueued || cap(flow.queue) != udpStreamQueued {
 		t.Fatal("receive queue bound", len(flow.queue), cap(flow.queue))
 	}
+	for c.TransportStatus().Operations.Rejections.UDPReceiveDropped != 100-udpStreamQueued && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if got := c.TransportStatus().Operations.Rejections.UDPReceiveDropped; got != 100-udpStreamQueued {
+		t.Fatal("dropped UDP datagrams were not recorded", got)
+	}
 }

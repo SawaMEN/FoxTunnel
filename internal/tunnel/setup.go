@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
 	"io"
@@ -78,7 +79,9 @@ func (s *openStream) close() {
 // openTunnel performs only CONNECT setup. Application bytes are never written
 // here, so a failed setup can move to another explicitly configured origin.
 // An HTTP response or verification/protocol failure is always terminal.
-func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, error) {
+func (c *Client) openTunnel(ctx context.Context, target string) (stream *openStream, err error) {
+	ticket := c.status.BeginOperation(enginestatus.TCPSetup)
+	defer func() { c.status.FinishOperation(ticket, operationReason(err)) }()
 	endpoints := append([]*url.URL{c.ServerURL}, c.fallbackServers...)
 	tried := make([]bool, len(endpoints))
 	timeout := c.ConnectTimeout
