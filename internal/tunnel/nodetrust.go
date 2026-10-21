@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"strings"
 
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/safejson"
@@ -64,7 +63,7 @@ func (c *Client) SetNodePinsFile(path string) error {
 	configured := make(map[string]string, len(c.fallbackServers)+1)
 	for _, endpoint := range append([]*url.URL{c.ServerURL}, c.fallbackServers...) {
 		origin := endpoint.Scheme + "://" + endpoint.Host
-		configured[strings.ToLower(origin)] = origin
+		configured[cluster.OriginKey(endpoint)] = origin
 	}
 	policies := make(map[string]tlsidentity.Policy, len(configured))
 	for _, entry := range doc.Nodes {
@@ -76,7 +75,7 @@ func (c *Client) SetNodePinsFile(path string) error {
 		if err != nil {
 			return errors.New("invalid node SPKI pin or SNI")
 		}
-		key := strings.ToLower(node.Scheme + "://" + node.Host)
+		key := cluster.OriginKey(node)
 		origin, ok := configured[key]
 		if !ok || policies[origin] != (tlsidentity.Policy{}) {
 			return errors.New("node pins file includes a duplicate or unconfigured HTTPS origin")

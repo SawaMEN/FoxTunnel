@@ -86,6 +86,9 @@ func StartClient(ctx context.Context, options ClientOptions) (*Client, error) {
 	defer cancel()
 	version := exec.CommandContext(checkCtx, options.Executable, "version", "--json")
 	version.Env = cleanEnv()
+	// A descendant can inherit stdout after version itself has exited. Bound
+	// pipe draining independently from CommandContext's direct-child kill.
+	version.WaitDelay = time.Second
 	var output boundedOutput
 	version.Stdout = &output
 	if err := version.Run(); err != nil {
@@ -137,6 +140,9 @@ func StartClient(ctx context.Context, options ClientOptions) (*Client, error) {
 				case <-c.done:
 				case <-timer.C:
 					cmd.Process.Kill()
+					// The direct child may leave an inherited stdout pipe in
+					// another process. Unblock the scanner before reaping.
+					stdout.Close()
 				}
 			}()
 		})

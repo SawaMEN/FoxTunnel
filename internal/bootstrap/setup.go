@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/safejson"
@@ -58,7 +59,7 @@ func validCredentials(c ServerConfig) bool {
 	if c.UsersFile != "" || c.UsersState != "" {
 		return c.UsersFile != "" && c.UsersState != "" && c.Username == "" && c.Password == ""
 	}
-	return c.Username != "" && !strings.Contains(c.Username, ":") && len(c.Username) <= 256 && c.Password != "" && len(c.Password) <= 1024
+	return authheader.ValidCredentials(c.Username, c.Password)
 }
 
 func ReadServer(path string) (ServerConfig, error) {
@@ -165,7 +166,12 @@ func Generate(o Options) error {
 		return ErrSetup
 	}
 	out = filepath.Join(parent, filepath.Base(out))
-	config := ServerConfig{EnableUDP: o.EnableUDP, Version: 1, Listen: ":443", Certificate: certPath, PrivateKey: keyPath, Username: "vetroff", MaxTunnels: 256, MaxConnections: 512}
+	port := u.Port()
+	if port == "" {
+		port = "443"
+	}
+	listen := net.JoinHostPort("", port)
+	config := ServerConfig{EnableUDP: o.EnableUDP, Version: 1, Listen: listen, Certificate: certPath, PrivateKey: keyPath, Username: "vetroff", MaxTunnels: 256, MaxConnections: 512}
 	var secret [32]byte
 	if _, err := rand.Read(secret[:]); err != nil {
 		return ErrSetup
@@ -181,7 +187,18 @@ func Generate(o Options) error {
 		if err != nil {
 			return ErrSetup
 		}
-		for _, private := range []string{out, keyPath} {
+		info, err := os.Stat(public)
+		if err != nil || !info.IsDir() {
+			return ErrSetup
+		}
+		for _, private := range []string{out, keyPath, o.JoinLinkFile} {
+			if private == "" {
+				continue
+			}
+			private, err = filepath.Abs(private)
+			if err != nil {
+				return ErrSetup
+			}
 			if resolved, err := filepath.EvalSymlinks(private); err == nil {
 				private = resolved
 			}
@@ -192,12 +209,7 @@ func Generate(o Options) error {
 		}
 	}
 	if o.JoinLinkFile != "" {
-		f, err := os.Open(o.JoinLinkFile)
-		if err != nil {
-			return ErrSetup
-		}
-		joined, err := profile.Read(f)
-		f.Close()
+		joined, err := profile.ReadSecretFile(o.JoinLinkFile)
 		if err != nil || !joined.Discover {
 			return ErrSetup
 		}
@@ -216,7 +228,7 @@ func Generate(o Options) error {
 		config.ClusterFile = filepath.Join(out, "cluster.json")
 	}
 	if linkConfig.Transport == "h3-post" {
-		config.H3Listen = ":443"
+		config.H3Listen = listen
 	}
 	if o.JoinLinkFile == "" && xhttp.IsMode(linkConfig.Transport) && linkConfig.XHTTPPath == "" {
 		// The route is independent of the access secret. Joined/legacy profiles
@@ -305,8 +317,10 @@ func AddNode(serverFile, nodeFile string) error {
 		return ErrConfig
 	}
 	replaced := false
+	newOrigin, _ := cluster.Origin(node.URL)
 	for i, n := range config.Nodes {
-		if n.URL == node.URL {
+		oldOrigin, _ := cluster.Origin(n.URL)
+		if cluster.OriginKey(oldOrigin) == cluster.OriginKey(newOrigin) {
 			config.Nodes[i] = node
 			replaced = true
 		}

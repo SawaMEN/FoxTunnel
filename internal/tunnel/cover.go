@@ -123,6 +123,10 @@ func openPublicFile(root *os.Root, relative string) (*os.File, os.FileInfo, erro
 			return nil, nil, err
 		}
 	}
+	// Reject FIFOs and devices before Open: opening them can block forever.
+	if !componentInfo.IsDir() && !componentInfo.Mode().IsRegular() {
+		return nil, nil, fs.ErrPermission
+	}
 	file, err := root.Open(current)
 	if err != nil {
 		return nil, nil, err

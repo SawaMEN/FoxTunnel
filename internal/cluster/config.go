@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -53,6 +54,20 @@ func Origin(raw string) (*url.URL, error) {
 	return u, nil
 }
 
+// OriginKey identifies an already-validated origin independently of DNS case,
+// numeric port spelling and compressed IPv6 representation.
+func OriginKey(u *url.URL) string {
+	host := strings.ToLower(u.Hostname())
+	if ip, err := netip.ParseAddr(u.Hostname()); err == nil {
+		host = ip.String()
+	}
+	port := 443
+	if u.Port() != "" {
+		port, _ = strconv.Atoi(u.Port())
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port))
+}
+
 func validateNodes(nodes []Node) error {
 	if len(nodes) < 1 || len(nodes) > 8 {
 		return ErrInvalid
@@ -70,12 +85,7 @@ func validateNodes(nodes []Node) error {
 			return ErrInvalid
 		}
 		n.SNI, n.PinSHA256 = policy.SNI, policy.PinSHA256
-		port := u.Port()
-		if port == "" {
-			port = "443"
-		}
-		p, _ := strconv.Atoi(port)
-		key := net.JoinHostPort(strings.ToLower(u.Hostname()), strconv.Itoa(p))
+		key := OriginKey(u)
 		if seen[key] || n.Weight < 1 || n.Weight > 100 {
 			return ErrInvalid
 		}

@@ -9,10 +9,10 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
@@ -344,7 +344,7 @@ type ServerConfig struct {
 type Server struct{ core *tunnel.Server }
 
 func NewServer(config ServerConfig) (*Server, error) {
-	if (config.Access == nil && (config.Credentials.Username == "" || config.Credentials.Password == "" || strings.Contains(config.Credentials.Username, ":"))) || (config.Access != nil && (config.Credentials.Username != "" || config.Credentials.Password != "")) {
+	if (config.Access == nil && !authheader.ValidCredentials(config.Credentials.Username, config.Credentials.Password)) || (config.Access != nil && (config.Credentials.Username != "" || config.Credentials.Password != "")) {
 		return nil, errors.New("server credentials required")
 	}
 	if config.MaxTunnels < 0 || config.DialTimeout < 0 {

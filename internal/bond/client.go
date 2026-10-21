@@ -14,11 +14,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/multihop"
 	"github.com/quic-go/quic-go/http3"
@@ -193,13 +193,7 @@ func (c *Client) reserveForClass(tried []bool, op byte, payloadBytes int, priori
 	}
 }
 
-func bondOrigin(u *url.URL) string {
-	port := u.Port()
-	if port == "" {
-		port = "443"
-	}
-	return net.JoinHostPort(strings.ToLower(u.Hostname()), port)
-}
+func bondOrigin(u *url.URL) string { return cluster.OriginKey(u) }
 
 // ResetRouteQuality invalidates all measured route durations after a confirmed
 // OS network transition without disrupting established hub sessions.
@@ -309,6 +303,13 @@ func (c *Client) requestViaClass(ctx context.Context, transport http.RoundTrippe
 				}
 			}
 			resp.Body.Close()
+		}
+		// EOF belongs only to a download record. Control/upload ACKs never
+		// carry payload: accepting a different success shape can silently
+		// discard bytes or acknowledge an upload that was never delivered.
+		if err == nil && ((status == http.StatusCreated && (op != opRead || len(data) != 0)) ||
+			(status == http.StatusOK && (op == opWrite || op == opFin || op == opClose) && len(data) != 0)) {
+			err = errors.New("invalid bond success record")
 		}
 		if err == nil && op == opRead && status == 200 && len(data) == 0 {
 			err = io.ErrUnexpectedEOF

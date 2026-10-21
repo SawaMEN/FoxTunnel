@@ -2,10 +2,12 @@ package tunnel
 
 import (
 	"crypto/tls"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
@@ -116,10 +118,31 @@ func (p *identityPool) forPolicy(origin string, policy tlsidentity.Policy) (tlsT
 	p.entries[key] = identityEntry{transport: transport, touched: time.Now()}
 	return transport, nil
 }
+
+// Primary identity remains mandatory when discovery spells the same HTTPS
+// origin using a different DNS case, numeric port or IPv6 representation.
+func sameIdentityOrigin(a, b string) bool {
+	if a == b {
+		return true
+	}
+	left, err := cluster.Origin(a)
+	if err != nil {
+		return false
+	}
+	right, err := cluster.Origin(b)
+	return err == nil && cluster.OriginKey(left) == cluster.OriginKey(right)
+}
+
 func (p *identityPool) RoundTrip(r *http.Request) (*http.Response, error) {
 	origin := r.URL.Scheme + "://" + r.URL.Host
-	policy := p.nodePolicies[origin]
-	if policy == (tlsidentity.Policy{}) && origin == p.primary {
+	policy, pinned := p.nodePolicies[origin]
+	if len(p.nodePolicies) != 0 && !pinned {
+		if r.Body != nil {
+			_ = r.Body.Close()
+		}
+		return nil, errors.New("HTTPS origin lacks a configured SPKI policy")
+	}
+	if policy == (tlsidentity.Policy{}) && sameIdentityOrigin(origin, p.primary) {
 		policy = p.policy
 	}
 	return p.roundTrip(r, policy)
