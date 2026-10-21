@@ -241,7 +241,7 @@ Swift/JNI bridges и приложения-хосты в текущую рабо�
 ## Этап 9 из 10 — релизы
 
 **Выполнено 6 из 6 задач.** [PR #44](https://github.com/SawaMEN/FoxTunnel/pull/44),
-база — main `3292c9ac`; публичный release этим PR не создаётся.
+изменения включены в main merge-коммитом `bd5fddb3`. Публичный release не создан.
 
 - [x] Закрепить состав двух минимальных Linux NSS архивов и SDK/process/wire metadata.
 - [x] Проверить совпадение байтов двух независимых сборок на каждом native runner.
@@ -268,20 +268,32 @@ inner archive SHA-256, состава и metadata выполнена повто�
 
 ## Этап 10 из 10 — оптимизация
 
-**Локально подтверждено 4 из 6 задач.** Работа ведётся поверх PR #44; этап 8 отложен.
+**Подтверждено 5 из 6 задач.** Изменения [PR #45](https://github.com/SawaMEN/FoxTunnel/pull/45)
+включены в main merge-коммитом `43cd0e7f`; этап 8 отложен.
 
 - [x] Воспроизводимые парные benchmarks с исходными выборками, версиями и hashes.
 - [x] Пороги CPU/allocations и отказ при неполных или нестабильных измерениях.
 - [x] Оптимизация по профилю с сохранением семантики выбора маршрутов.
 - [x] Повторная multi-node/bonding/UDP матрица с race detector.
-- [ ] Длительные H2/H3 соединения, отмена и восстановление после перезапуска.
+- [x] Длительные H2/H3 соединения, отмена и восстановление после перезапуска.
 - [ ] Ресурсные бюджеты и сохранённые результаты native CI.
 
 [Локальный парный отчёт](measurements/2026-10-21/optimization/local-paired.json)
 для runtime `2e0c3184`: 9/9 случаев, по 7 повторов каждой версии.
 Все пороги выполнены. Полный Go race suite, пять routing race suites,
 три повторных Bond/UDP tunnel suites и 157 Python-тестов (2 skipped) прошли.
-CI и десятиминутные проверки ещё выполняются.
+Десятиминутные H2/H3 same-destination streams прошли в
+[CI 39546631821](https://github.com/SawaMEN/FoxTunnel/actions/runs/39546631821).
+Его отдельный десятиминутный resource/restart gate пока выполняется;
+последний пункт остаётся открытым до проверки и сохранения отчёта.
+
+Windows launcher теперь ожидает завершения дочернего процесса и передаёт
+его exit status. [Native operations CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39547762455)
+прошёл на Linux, macOS и Windows. После исправления прошли 159 Python-тестов,
+2 skipped. Единичный сбой Bond с accepted=2/coordinator_dials=1 не повторился
+в 100 локальных запусках и полном
+[security rerun](https://github.com/SawaMEN/FoxTunnel/actions/runs/39547762431).
+Его причина пока не установлена; исправленным он не объявляется.
 
 [Методика и пороги этапа](OPTIMIZATION.md).
 
