@@ -47,10 +47,13 @@ func testBondedSOCKSNative(t *testing.T, backend string, depth int, discover boo
 func TestBondedLanesSOCKSGo(t *testing.T) {
 	testBondedSOCKSNativeLanes(t, "go", 8, false, "h2-connect", true)
 }
-func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discover bool, mode string, lanes bool) {
+func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discover bool, mode string, lanes bool, traffic ...string) {
 	var destinations atomic.Int64
 	target := testDestination(t, func(c net.Conn) { destinations.Add(1); _, _ = io.Copy(c, c) })
-	client, addr := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+	client, addr, stopClient := testClientWithStop(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+	// Join relay workers before endpoint cleanups retire their idle transports.
+	// Otherwise a final lane retry may open a carrier after that idle snapshot.
+	defer stopClient()
 	route := xhttp.Settings{}
 	if xhttp.IsMode(mode) {
 		route, _ = xhttp.Normalize("/cluster/shared-api", "cluster-route.example")
@@ -136,6 +139,11 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 	client.FallbackAttemptTimeout = 250 * time.Millisecond
 	client.BondLanes = lanes
 	client.BondPipeline = depth
+	if len(traffic) > 0 {
+		client.BondAdaptive = true
+		client.BondAutoTune = true
+		client.BondTraffic = traffic[0]
+	}
 	if discover {
 		file := filepath.Join(t.TempDir(), "cluster.json")
 		config, _ := json.Marshal(cluster.Config{Version: 1, Nodes: []cluster.Node{{URL: a.URL, Weight: 3, SNI: "example.com", PinSHA256: tlsidentity.Pin(a.Certificate())}, {URL: b.URL, Weight: 1, SNI: "example.com", PinSHA256: tlsidentity.Pin(b.Certificate())}}})

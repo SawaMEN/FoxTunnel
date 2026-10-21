@@ -101,7 +101,7 @@ func main() {
 		cert := fs.String("cert", "", i18n.Text("TLS certificate PEM"))
 		key := fs.String("key", "", i18n.Text("TLS private key PEM"))
 		padding := fs.Bool("padding", false, i18n.Text("enable experimental negotiated initial-record padding"))
-		bondHub := fs.Bool("bond-hub", false, i18n.Text("enable experimental common exit for bonded streams"))
+		bondHub := fs.Bool("bond-hub", false, i18n.Text("enable common exit for bonded streams"))
 		bondRelay := fs.String("bond-upstream", "", i18n.Text("trusted HTTPS common exit; run this server as a bond relay"))
 		bondCA := fs.String("bond-ca-cert", "", i18n.Text("additional trusted PEM for the common exit"))
 		bondSNI := fs.String("bond-sni", "", i18n.Text("verified TLS server name for the common exit"))
@@ -299,13 +299,13 @@ func main() {
 		bondTraffic := new(string)
 		*bondTraffic = "legacy"
 		if os.Args[1] == "client" {
-			fs.BoolVar(bondLanes, "bond-lanes", false, i18n.Text("experimental persistent bond channels and small-write batching (requires --bond)"))
+			fs.BoolVar(bondLanes, "bond-lanes", false, i18n.Text("persistent bond channels and small-write batching (requires --bond)"))
 			fs.StringVar(bondRoute, "bond-route", "legacy", i18n.Text("bond path scheduling: legacy or smart (requires --bond --discover and direct hub entry)"))
-			fs.BoolVar(bondAdaptive, "bond-adaptive", false, i18n.Text("experimental ACKed-data throughput and queue-aware bond scheduling (requires --bond)"))
+			fs.BoolVar(bondAdaptive, "bond-adaptive", false, i18n.Text("ACKed-data throughput and queue-aware bond scheduling (requires --bond)"))
 			fs.BoolVar(bondAutoTune, "bond-autotune", false, i18n.Text("conservative 4/8-slot tuning from ACKed throughput (requires --bond --bond-adaptive)"))
 			fs.StringVar(bondTraffic, "bond-traffic", "legacy", i18n.Text("opt-in Bond TCP traffic scheduling: legacy, auto, latency, throughput (requires --bond-adaptive)"))
 		}
-		bonded := fs.Bool("bond", false, i18n.Text("experimental multi-node stream bonding; nodes must share one hub"))
+		bonded := fs.Bool("bond", false, i18n.Text("multi-node stream bonding; nodes must share one hub"))
 		discover := fs.Bool("discover", false, i18n.Text("obtain trusted bond nodes and capacity weights from the main HTTPS node"))
 		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active, adaptive"))
 		attemptTimeout := fs.Duration("fallback-attempt-timeout", 5*time.Second, i18n.Text("setup time per endpoint when fallbacks are configured"))

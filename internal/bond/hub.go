@@ -1,4 +1,4 @@
-// Package bond is an experimental bounded multi-node byte-stream carrier.
+// Package bond is a bounded multi-node byte-stream carrier.
 // The HTTPS/authentication layer is supplied by internal/tunnel. It is not MPQUIC.
 package bond
 

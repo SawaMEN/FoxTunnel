@@ -14,6 +14,8 @@ Mozilla/Neqo has a separate Linux amd64 bundle.
 Verify archive hashes and provenance before running it. `version --json` reports
 the actual compiled backends and `product: protocol-core`, integration/SDK/process
 schemas. It checks metadata, not provenance by itself.
+The additive `feature_stability` map identifies supported XHTTP/TCP Bond modes;
+`experimental` still describes the overall SDK/release policy. See [mode guarantees](FEATURES.md#стабильность-xhttp-и-tcp-bond).
 
 There are no APK, DMG, AAR, XCFramework, Swift/JNI/Dart bindings or public C ABI
 packages. Go builds support their Go targets; NSS/Neqo have separate restrictions.

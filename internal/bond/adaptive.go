@@ -106,6 +106,15 @@ func adaptiveRate(p pathState, op byte, now time.Time) (float64, bool) {
 // Reservations account for work queued on each path, preventing fast paths
 // from being overloaded while a slow ingress causes head-of-line stalls.
 func (c *Client) pickAdaptive(tried []bool, op byte, bytes int, now time.Time) int {
+	// Count data decisions independently in each direction: shared read/control
+	// traffic must not consume every exploration slot of an upload-only path.
+	direction := 0
+	if op == opRead {
+		direction = 1
+	}
+	sequence := c.adaptiveNext[direction]
+	c.adaptiveNext[direction]++
+
 	// Bond has at most eight trusted ingress endpoints. Keep selection on the
 	// hot path allocation-free: a data block must not build candidate slices.
 	// These two passes preserve the legacy tie, cooldown and exploration rules.
@@ -137,7 +146,7 @@ func (c *Client) pickAdaptive(tried []bool, op byte, bytes int, now time.Time) i
 		bytes = chunkSize
 	}
 
-	start := int(c.next % uint64(len(tried)))
+	start := int(sequence % uint64(len(tried)))
 	best, bestScore := -1, math.MaxFloat64
 	unknown := -1
 	for offset := range tried {
@@ -188,7 +197,7 @@ func (c *Client) pickAdaptive(tried []bool, op byte, bytes int, now time.Time) i
 		}
 	}
 	// Preserve the existing bounded fraction of real-data exploration.
-	if unknown >= 0 && (best < 0 || c.next%adaptiveExploreEvery == 0) {
+	if unknown >= 0 && (best < 0 || sequence%adaptiveExploreEvery == 0) {
 		return unknown
 	}
 	if best >= 0 {

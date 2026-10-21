@@ -44,6 +44,9 @@ func DialWithSettings(ctx context.Context, rt http.RoundTripper, origin, mode, a
 	return dialWithWindow(ctx, rt, origin, mode, auth, host, settings, clientPacketWindow)
 }
 func dialWithWindow(ctx context.Context, rt http.RoundTripper, origin, mode, auth, host string, settings Settings, window int) (net.Conn, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if window < 1 || window > clientPacketWindow {
 		return nil, errHandshake
 	}

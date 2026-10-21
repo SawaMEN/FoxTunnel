@@ -31,3 +31,5 @@ No GUI, APK, DMG or system VPN adapter is included.
 The API and wire protocol remain experimental: pin a tested tag or commit.
 NSS/Neqo do not guarantee a Firefox fingerprint or censorship resistance.
 [MIT license](LICENSE).
+
+XHTTP and advanced TCP Bond have a [supported stability contract](docs/FEATURES.md#стабильность-xhttp-и-tcp-bond); their opt-in defaults are preserved. Public Go API and Neqo retain their separate status.

@@ -22,6 +22,43 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/webprofile"
 )
 
+// The fixture stops capture after verified application I/O, not on a one-second
+// timer that can truncate an otherwise valid exchange on a loaded race runner.
+type profileCaptureListener struct {
+	net.Listener
+	mu      sync.Mutex
+	conn    net.Conn
+	stopped bool
+}
+
+func (l *profileCaptureListener) Accept() (net.Conn, error) {
+	conn, err := l.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	l.mu.Lock()
+	if l.stopped {
+		conn.Close()
+	} else {
+		l.conn = conn
+	}
+	l.mu.Unlock()
+	return conn, nil
+}
+func (l *profileCaptureListener) stopCapture() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.stopped = true
+	if l.conn != nil {
+		l.conn.Close()
+	}
+}
+func (l *profileCaptureListener) Close() error {
+	err := l.Listener.Close()
+	l.stopCapture()
+	return err
+}
+
 func TestHTTP2ReceiveProfile(t *testing.T) { testHTTP2ReceiveProfile(t, "go") }
 func testHTTP2ReceiveProfile(t *testing.T, backend string, clientProfiles ...string) {
 	for _, mode := range []string{"h2-connect", "h2-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
@@ -37,14 +74,15 @@ func testHTTP2ReceiveProfile(t *testing.T, backend string, clientProfiles ...str
 			if e != nil {
 				t.Fatal(e)
 			}
-			defer l.Close()
+			observer := &profileCaptureListener{Listener: l}
+			defer observer.Close()
 			type capture struct {
 				p webprofile.Profile
 				e error
 			}
 			result := make(chan capture, 1)
 			go func() {
-				p, e := webprofile.Capture(l, &tls.Config{Certificates: endpoint.TLS.Certificates}, &Server{Username: "alice", Password: "secret", AllowPrivate: true}, "test", time.Second)
+				p, e := webprofile.Capture(observer, &tls.Config{Certificates: endpoint.TLS.Certificates}, &Server{Username: "alice", Password: "secret", AllowPrivate: true}, "test", 10*time.Second)
 				result <- capture{p, e}
 			}()
 			client, e := NewClient("https://"+l.Addr().String(), "alice", "secret", ca)
@@ -86,6 +124,7 @@ func testHTTP2ReceiveProfile(t *testing.T, backend string, clientProfiles ...str
 			_, e = io.ReadFull(stream.response.Body, got)
 			stream.close()
 			client.Close()
+			observer.stopCapture()
 			if e != nil || !bytes.Equal(got, payload) {
 				t.Fatal("echo", len(got), e)
 			}

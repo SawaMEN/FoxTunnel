@@ -22,7 +22,7 @@
 
 ```sh
 go build -o foxtunnel ./cmd/foxtunnel
-go test -race ./... -count=1 -timeout=60s
+go test -race ./... -count=1 -timeout=120s
 go vet ./...
 go mod tidy -diff
 python3 scripts/check_docs_links.py
@@ -36,7 +36,7 @@ NSS-сборка на Linux требует C-компилятор, pkg-config, N
 ```sh
 sudo apt-get install libnss3-dev libnspr4-dev pkg-config
 go build -tags nss -o foxtunnel ./cmd/foxtunnel
-go test -race -tags nss ./... -count=1 -timeout=60s
+go test -race -tags nss ./... -count=1 -timeout=240s
 ```
 
 Для Linux amd64 NSS + Neqo:
@@ -115,3 +115,35 @@ TLS и авторизация, фильтрация назначений/DNS, к
 отмена/освобождение ресурсов, FFI и происхождение архивов.
 Отчёт должен указывать commit, платформы, build tags, находки и повторную проверку.
 Не публикуйте приватные профили, ключи, пользовательский трафик и сырые захваты.
+
+## Стабильность XHTTP и TCP Bond
+
+Поддерживаемые режимы и ограничения описаны в [настройках](FEATURES.md#стабильность-xhttp-и-tcp-bond).
+[Workflow XHTTP and Bond stability](../.github/workflows/stable-xhttp-bond.yml)
+является обязательной регрессионной матрицей для изменений этих реализаций:
+
+- Пять race-прогонов полного XHTTP/Bond набора на Linux/macOS/Windows.
+- 30 сочетаний RPC/lanes, pipeline auto/4/8 и пяти scheduling profiles.
+- Native Go: 7 carriers × 3 traffic modes × RPC/lanes = 42 случая.
+  NSS: 6 × 3 × 2 = 36 случаев. Каждый проверяет реальные SOCKS/TLS,
+  потерю OPEN/write ACK, отказ ingress, payload, один coordinator dial и half-close.
+- Reset после prefix во всех XHTTP с padding и без, через DialContext/SOCKS;
+  CA/SNI/SPKI, pairing, backpressure, body/gap timeouts и admission limits.
+- Восстановление после закрытия negotiated idle lane без redial/replay.
+- 100 повторов exploration и реального multi-ingress H2. Раздельные счётчики
+  upload/download исключают постоянное вытеснение одного направления другим.
+- Held sessions по 180 секунд: три XHTTP и шесть Smart/Adaptive/AutoTune/traffic
+  Bond сочетаний. Проверяются целостность, смена метрик, cleanup и reservations.
+
+Обычный `go test` использует двухсекундные held sessions и native mode `auto`.
+Полный native matrix включается `FOXTUNNEL_STABLE_MATRIX=full`, длительность —
+`FOXTUNNEL_STABLE_SECONDS=180`. Короткий прогон не заменяет длительный CI.
+JSON test events сохраняются в CI artifacts на 14 дней. Длительный запуск
+задаёт `-parallel=8`, чтобы все шесть Bond сценариев стартовали одновременно
+также на runner с четырьмя CPU; длительность каждого остаётся 180 секунд.
+
+Wire endpoints и capability `records-v1` сохраняются. Новое несовместимое framing
+требует отдельной версии endpoint/capability. Изменения framing, ACK, лимитов,
+дедупликации, TLS policy или cleanup требуют повторения матрицы. EOF в Bond
+допустим только для download, а malformed ACK/payload должен завершаться ошибкой.
+Стабильность реализации не заменяет отдельный security review или WAN-измерения.

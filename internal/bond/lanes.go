@@ -282,6 +282,14 @@ func (t *laneTransport) roundTripInto(r *http.Request, buffer []byte) (*http.Res
 		result.err = r.Context().Err()
 	}
 	t.release(l, result.err != nil || l.reader == nil)
+	// A negotiated lane can be retired while idle although its hub session
+	// is still live. This is a carrier failure, not an application pipe close:
+	// retry the same idempotent record on a fresh lane/entry. Never convert a
+	// failed initial TLS/auth negotiation or caller cancellation into a retry.
+	if errors.Is(result.err, io.ErrClosedPipe) && l.reader != nil &&
+		r.Context().Err() == nil && t.ctx.Err() == nil {
+		result.err = errors.Join(io.ErrUnexpectedEOF, result.err)
+	}
 	if errors.Is(result.err, errLaneUnsupported) {
 		// No operation record has been sent: only the session binding. A legacy
 		// relay can omit the capability even when a different entry advertised it.

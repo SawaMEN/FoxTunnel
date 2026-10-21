@@ -81,7 +81,7 @@ type Client struct {
 	}
 	// BondPipeline is 0 (automatic), 4 or 8; set before EnableBond.
 	BondPipeline int
-	// BondLanes is an experimental local opt-in; set before enabling bond.
+	// BondLanes opts into persistent lanes; set before enabling bond.
 	BondLanes bool
 	// BondAdaptive opts into measured ACKed block throughput scheduling.
 	BondAdaptive bool

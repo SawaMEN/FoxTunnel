@@ -104,5 +104,33 @@ Bonding, discovery и hub среди разрешённых входов. Явн
 запрещает частные и локальные назначения; `--allow-private` предназначен
 для контролируемого окружения.
 
-API, UDP и дополнительные режимы остаются экспериментальными. Измерения
+Публичный Go API, UDP, Neqo и Firefox profiles сохраняют отдельный экспериментальный статус. Измерения
 на loopback не подтверждают ускорение в Интернете или обход DPI/ТСПУ.
+
+## Стабильность XHTTP и TCP Bond
+
+Все три XHTTP-варианта и TCP Bond RPC/lanes, smart routing, Adaptive, AutoTune
+и traffic modes поддерживаются как стабильные возможности. Они включаются явно;
+параметры по умолчанию и существующие wire endpoints сохраняются.
+`version --json` сообщает их точечный статус в `feature_stability`.
+Общий `experimental: true` относится к выпуску/SDK и другим возможностям.
+
+XHTTP использует HTTPS/H2 с Go TLS либо Linux NSS и собственный внутренний
+HTTP/2 FoxTunnel. Это не VLESS и не обещание совместимости с Xray.
+Bond поддерживается поверх H2 CONNECT/POST, WSS, всех трёх XHTTP и Go H3.
+Go-матрица проверяется на Linux/macOS/Windows, NSS — на Linux; статус backend
+Neqo этим не меняется.
+
+`CloseWrite` завершает upload с сохранением ответа; отмена/Close освобождает
+worker, HTTP requests, paired sessions и reservations. Потеря ACK в Bond
+повторяет ту же дедуплицируемую запись на том же hub; XHTTP packet POST после
+неоднозначного ACK не переигрывается. Ошибка/reset не должны превращаться в
+чистый EOF. Закрытие idle lane допускает повтор той же записи на новом канале
+с сохранением hub session и сокета назначения. Upload и download в Adaptive
+имеют независимые exploration clocks.
+
+Lanes могут быть медленнее RPC при определённых RTT и очередях. AutoTune
+использует goodput подтверждённых HTTP operations, а не свободную полосу.
+Отказ общего hub завершает старый TCP session. Стабильный статус не обещает
+WAN-ускорения, снижения ping или совпадения fingerprint.
+[Обязательная матрица проверок](DEVELOPMENT.md#стабильность-xhttp-и-tcp-bond).
