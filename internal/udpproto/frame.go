@@ -22,6 +22,9 @@ func ReadFrame(r io.Reader) ([]byte, error) {
 	}
 	data := make([]byte, size)
 	if _, err := io.ReadFull(r, data); err != nil {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
 		return nil, err
 	}
 	if _, err := Parse(data); err != nil {

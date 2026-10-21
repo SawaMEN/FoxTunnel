@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
@@ -110,7 +111,7 @@ func NewClient(rawURL, user, password, caFile string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	if user == "" || password == "" || strings.Contains(user, ":") {
+	if !authheader.ValidCredentials(user, password) {
 		return nil, errors.New(i18n.Text("nonempty credentials and a username without colon are required"))
 	}
 	roots, err := x509.SystemCertPool()

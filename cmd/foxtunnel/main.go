@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/access"
+	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
@@ -154,7 +155,7 @@ func main() {
 				log.Fatal(err)
 			}
 			defer controller.Close()
-		} else if user == "" || password == "" {
+		} else if !authheader.ValidCredentials(user, password) {
 			log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 		}
 

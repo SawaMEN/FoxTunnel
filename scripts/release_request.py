@@ -22,6 +22,8 @@ def resolve(root, event, ref, before, commit):
     if event == 'push' and ref.startswith('refs/tags/'):
         version = ref.removeprefix('refs/tags/')
         validate_version(version)
+        if version == 'v0.0.0-ci':
+            raise ValueError('CI version cannot be published from a tag')
         return dict(version=version, publish='true', source='tag')
     if event == 'push' and ref == 'refs/heads/main' and requested is not None:
         if not all(re.fullmatch(r'[0-9a-f]{40}', value) for value in (before, commit)) or before == '0' * 40:

@@ -191,6 +191,8 @@ func (m *Monitor) InvalidateQuality() {
 		n.recentIndex, n.recentCount, n.recentFailures = 0, 0, 0
 		n.hasLatency = false
 		n.previousMS = 0
+		n.trafficFrom, n.lastTransfer = time.Time{}, time.Time{}
+		n.windowUpload, n.windowDownload = 0, 0
 	}
 }
 

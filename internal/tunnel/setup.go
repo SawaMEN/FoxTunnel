@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 )
@@ -35,16 +34,13 @@ func parseServerURL(raw string) (*url.URL, error) {
 // Every origin receives the configured proxy credentials, but only after TLS
 // verification. No discovery, redirects, cleartext fallback or protocol change.
 func (c *Client) SetFallbackServers(rawURLs []string) error {
+	if pool, ok := c.transport.(*identityPool); ok && len(pool.nodePolicies) != 0 {
+		return errors.New("configure fallback servers before per-node SPKI pins")
+	}
 	if len(rawURLs) >= maxProxyEndpoints {
 		return fmt.Errorf(i18n.Text("at most %d fallback servers are allowed"), maxProxyEndpoints-1)
 	}
-	key := func(u *url.URL) string {
-		port := u.Port()
-		if port == "" {
-			port = "443"
-		}
-		return net.JoinHostPort(strings.ToLower(u.Hostname()), port)
-	}
+	key := cluster.OriginKey
 	seen := map[string]bool{key(c.ServerURL): true}
 	endpoints := make([]*url.URL, 0, len(rawURLs))
 	for _, raw := range rawURLs {

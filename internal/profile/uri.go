@@ -8,13 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/SawaMEN/FoxTunnel/internal/authheader"
+	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
@@ -51,26 +51,16 @@ func (c *Config) normalize() error {
 	if c.Version != 1 || len(c.Servers) < 1 || len(c.Servers) > 8 {
 		return invalid()
 	}
-	if c.Username == "" || c.Password == "" || strings.Contains(c.Username, ":") || len(c.Username) > 256 || len(c.Password) > 1024 || !utf8.ValidString(c.Username) || !utf8.ValidString(c.Password) {
+	if !authheader.ValidCredentials(c.Username, c.Password) || !utf8.ValidString(c.Password) {
 		return invalid()
 	}
 	seen := make(map[string]bool)
 	for _, raw := range c.Servers {
-		u, err := url.Parse(raw)
-		if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.Opaque != "" || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.ContainsAny(u.Host, "\x00\r\n\t ") {
+		u, err := cluster.Origin(raw)
+		if err != nil {
 			return invalid()
 		}
-		port := u.Port()
-		if port == "" {
-			port = "443"
-		} else {
-			n, err := strconv.Atoi(port)
-			if err != nil || n < 1 || n > 65535 {
-				return invalid()
-			}
-			port = strconv.Itoa(n)
-		}
-		key := net.JoinHostPort(strings.ToLower(u.Hostname()), port)
+		key := cluster.OriginKey(u)
 		if seen[key] {
 			return invalid()
 		}

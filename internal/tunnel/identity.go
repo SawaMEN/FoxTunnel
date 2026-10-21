@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"crypto/tls"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -118,7 +119,13 @@ func (p *identityPool) forPolicy(origin string, policy tlsidentity.Policy) (tlsT
 }
 func (p *identityPool) RoundTrip(r *http.Request) (*http.Response, error) {
 	origin := r.URL.Scheme + "://" + r.URL.Host
-	policy := p.nodePolicies[origin]
+	policy, pinned := p.nodePolicies[origin]
+	if len(p.nodePolicies) != 0 && !pinned {
+		if r.Body != nil {
+			_ = r.Body.Close()
+		}
+		return nil, errors.New("HTTPS origin lacks a configured SPKI policy")
+	}
 	if policy == (tlsidentity.Policy{}) && origin == p.primary {
 		policy = p.policy
 	}

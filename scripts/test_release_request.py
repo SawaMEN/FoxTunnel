@@ -57,6 +57,10 @@ class ReleaseRequest(unittest.TestCase):
         self.assertEqual(dict(version='v0.2.0-rc.1', publish='true', source='tag'),
                          self.resolve(self.before, ref='refs/tags/v0.2.0-rc.1'))
 
+    def test_audit_ci_tag_cannot_publish(self):
+        with self.assertRaisesRegex(ValueError, 'CI version'):
+            self.resolve(self.before, ref='refs/tags/v0.0.0-ci')
+
     def test_malformed_request_fails_even_in_pr(self):
         for data in [dict(schema=True, version='v1.0.0'), dict(schema=2, version='v1.0.0'),
                      dict(schema=1, version='v0.0.0-ci'), dict(schema=1, version='v1.0.0\npublish=true'),

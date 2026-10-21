@@ -16,6 +16,9 @@ import (
 // caller owns the returned connection and must close it. Only network tcp is
 // supported because address-family selection is performed at the remote exit.
 func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if network != "tcp" {
 		return nil, net.UnknownNetworkError(network)
 	}
