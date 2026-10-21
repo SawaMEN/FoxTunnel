@@ -1,128 +1,117 @@
-# Для разработчиков
+# Разработка
 
-[На главную](../README.md) · [Быстрый старт](START.md) · [English](DEVELOPMENT.en.md)
+[Главная](../README.md) · [Интеграция](INTEGRATION.md) · [Эксплуатация](OPERATIONS.md)
 
-[Доказательства, внешние SDK-интеграции и подготовка к аудиту — этап 8](AUDIT-READINESS.md)
+## Структура
 
-Здесь собраны сведения для сборки, интеграции и проверки FoxTunnel. Повседневную настройку ищите в [Быстром старте](START.md); транспортные флаги — в [Возможностях](FEATURES.md).
-
-Текущий [план реализации и прогресс](IMPLEMENTATION-PLAN.md) содержит 10 этапов.
-Номера в прежних лабораторных отчётах относятся к историческому плану.
-
-## Структура проекта
-
-| Путь | Что находится |
+| Путь | Назначение |
 |---|---|
-| `cmd/foxtunnel/` | Командная строка: setup, server, client и другие команды |
-| `foxtunnel.go` | Публичный Go SDK |
-| `internal/tunnel/` | SOCKS5, HTTPS-обмен, аутентификация, клиент и сервер |
-| `internal/nsstls/` | Интеграция TLS-библиотеки Mozilla NSS |
-| `internal/neqo/` и `rust/neqo-bridge/` | QUIC/HTTP3-клиент Neqo и Rust bridge |
-| `scripts/` | Сборка, проверки, исследования и стенды |
-| `.github/workflows/` | CI, сборка и выпуск |
-| `docs/` | Три основных руководства, протокольный контракт и исходные замеры |
+| `cmd/foxtunnel/` | CLI ядра |
+| `foxtunnel*.go`, `processhost/` | Публичные API |
+| `internal/tunnel/` | Клиент, сервер, SOCKS5 и транспорты |
+| `internal/access/` | Управление доступом и учёт |
+| `internal/nsstls/` | NSS TLS-адаптер |
+| `internal/neqo/`, `rust/neqo-bridge/` | Neqo и runtime FFI |
+| `examples/`, `integration/external/` | Примеры и внешний потребитель SDK |
+| `experiments/` | Отдельные исследовательские стенды |
+| `scripts/`, `.github/workflows/` | Сборка, CI и релизы |
 
-FoxTunnel написан преимущественно на Go. NSS — нативная библиотека, а Neqo — Rust-компонент с FFI. Go TLS и quic-go остаются доступными в обычной сборке.
+## Сборка и проверки
 
-## Сборка и тестирование
+Из корня репозитория, Go 1.26.10+:
 
-Для обычной сборки требуется Go **1.26 или новее**:
-
-~~~bash
+```sh
 go build -o foxtunnel ./cmd/foxtunnel
-go test ./...
-go test -race ./...
+go test -race ./... -count=1 -timeout=60s
 go vet ./...
+go mod tidy -diff
 python3 scripts/check_docs_links.py
 python3 scripts/check_core_boundaries.py
-go mod tidy -diff
-(cd integration/external && go mod tidy -diff)
-~~~
+python3 -m unittest discover -s scripts -p 'test_*.py'
+(cd integration/external && go mod tidy -diff && go test -race ./... -count=1 -timeout=90s)
+```
 
-**Нативная Mozilla-сборка (эксперимент, Linux amd64):** кроме Go потребуются совместимые инструменты C/C++, NSS/NSPR, Rust и зависимости, описанные закреплённым скриптом:
+NSS-сборка на Linux требует C-компилятор, pkg-config, NSS/NSPR headers:
 
-~~~bash
-python3 scripts/build_mozilla.py --version v0.0.0-ci
-~~~
+```sh
+sudo apt-get install libnss3-dev libnspr4-dev pkg-config
+go build -tags nss -o foxtunnel ./cmd/foxtunnel
+go test -race -tags nss ./... -count=1 -timeout=60s
+```
 
-Скрипт формирует дистрибутив Go + NSS + Neqo. Архив содержит исполняемый файл и динамические библиотеки; их нужно распространять **вместе**. Из обычной `go build` такая сборка не получится. Для CI в репозитории есть отдельные workflow с закреплёнными версиями зависимостей.
+Для Linux amd64 NSS + Neqo:
 
-Не делайте выводы о сетевой маскировке по одному успешному тесту. CI проверяет TLS/H2, QUIC/H3 и UDP преимущественно на локальном стенде. Системный TUN проверяется на стороне клиента. Для заявлений о скорости, устойчивости и работе при ограничениях нужны независимые измерения на реальных маршрутах.
+```sh
+python3 scripts/build_neqo.py
+. rust/neqo-bridge/target/foxtunnel-build/env.sh
+go build -tags nss,neqo -o foxtunnel ./cmd/foxtunnel
+go test -race -tags nss,neqo ./... -count=1 -timeout=120s
+```
 
-## Публичный Go SDK
+Версии Rust, Neqo, NSS и источники закреплены в
+[`neqo.lock.json`](../scripts/neqo.lock.json),
+[`mozilla-runtime.lock.json`](../scripts/mozilla-runtime.lock.json),
+Cargo.lock и rust-toolchain.toml. Скрипты проверяют их согласованность.
+Для полного Mozilla-архива есть `python3 scripts/build_mozilla.py --version v0.0.0-ci`.
+Это отдельный build; команда сама не публикует релиз.
 
-Основная точка входа:
+## Протокол и нативные границы
 
-~~~go
-package main
+[Wire draft 0](reference/WIRE-DRAFT-0.md) описывает форматы;
+[согласование версий](reference/WIRE-NEGOTIATION.md) — необязательное расширение.
+Release tag, SDK/process schemas и wire draft версионируются отдельно.
+Закрепляйте проверенные версии обоих концов.
 
-import (
-    "context"
-    "log"
+NSS выполняет TLS; Go x509 проверяет CA, имя и дополнительные pin до отправки
+HTTP-авторизации. Сессии/билеты NSS отключены; эквивалентность Firefox OCSP
+и закрытия TLS не заявляется. Neqo принадлежит одному Go actor на OS thread.
+Rust не хранит Go-указатели; буферы заимствуются синхронно на вызов ABI.
+Отмена должна вернуть владение и завершить операцию до освобождения памяти.
+Объявления находятся в `internal/neqo/bridge.h`.
 
-    foxtunnel "github.com/SawaMEN/FoxTunnel"
-)
+Runtime не должен зависеть от исследовательских пакетов. Проверка
+`check_core_boundaries.py` также запускается с `--tags nss` и `--tags nss,neqo`.
+Внешний модуль `integration/external` проверяет только публичный контракт.
+Платформенная матрица Go SDK не подтверждает поддержку NSS/Neqo на этих же ОС.
 
-func main() {
-    client, err := foxtunnel.NewClient(foxtunnel.ClientConfig{
-        ServerURL: "https://vpn.example.com",
-        Credentials: foxtunnel.Credentials{
-            Username: "user",
-            Password: "replace-with-real-secret",
-        },
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer client.Close()
+## Измерения и аудит
 
-    conn, err := client.DialContext(context.Background(), "tcp", "example.com:443")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer conn.Close()
-    // Используйте conn для TCP-обмена.
-}
-~~~
+Исходные результаты сохраняются в [measurements/](measurements/);
+[реестр](evidence/registry.json) связывает выбранные файлы с хешами и источниками.
+Это исторические результаты конкретных сборок, а не оценка текущего main.
 
-Точный состав полей и интерфейсов определён в `foxtunnel.go` — это единственный источник истины для сборки с данным коммитом. В клиенте доступны выбор движка/транспорта, политика TLS, прямой dial, SOCKS, локальная диагностика `Status()` и хук смены сети `NotifyNetworkChange()`. Объект нужно сконфигурировать **до параллельных вызовов**. Экспериментальные функции могут меняться между prerelease-версиями.
+| Инструмент | Проверка |
+|---|---|
+| `fingerprint_audit.py` | Сопоставление выбранных TLS/H2/H3 метаданных |
+| `capture_native_wire.py` | Общий стенд Firefox/NaiveProxy/FoxTunnel |
+| `native_backend_metrics.py` | CPU/RSS и loopback-обмен backend-вариантов |
+| `field_h2_h3.py`, `bond_stage4_field.py` | Внешние echo-измерения |
+| `soak_h2_h3.py`, `operations_soak.py` | Нагрузка и восстановление |
+| `optimization_gate.py`, `bond_stage4_gate.py` | Проверка сравнительных отчётов |
+| `sdk_evidence.py`, `evidence_bundle.py` | Сводки SDK и пакет для рецензента |
 
-Для серверного встраивания предусмотрен `NewServer(ServerConfig)`, возвращающий HTTP handler: вызывающее приложение отвечает за TLS-сертификат, HTTPS-сервер и жизненный цикл listener. Есть пример `examples/embed/` и тесты внешнего Go-модуля в `integration/external/`.
+Скрипты находятся в `scripts/`; параметры доступны через `--help`.
+Для пакета рецензента укажите новый файл в существующем приватном каталоге:
 
-Не импортируйте `internal/`: Go защищает эти пакеты как непубличные. Указывайте конкретную версию модуля.
+```sh
+python3 scripts/evidence_bundle.py --out /private/new-audit-handoff.json
+```
 
-## Протокол и совместимость
+Экспорт проверяет хеши реестра и фиксирует текущий checkout и входы зависимостей.
+Это не resolved SBOM или независимый аудит. Внешняя SDK-матрица требует run/pass
+всех 22 сценариев; пропуски не засчитываются. См.
+[сохранённое происхождение SDK](measurements/2026-10-21/sdk/provenance.json).
 
-FoxTunnel использует собственный экспериментальный обмен поверх стандартного TLS 1.3 и HTTP/2 или HTTP/3. Версия wire draft — `foxtunnel-draft-0`. Для совместимости закрепляйте **одну проверенную версию на клиенте и сервере**. Изменение поведения не обязательно совместимо с более старой сборкой.
+[Сравнение wire-метаданных](measurements/2026-10-21/wire/comparison.json)
+показывает различия с Firefox. Методы приложений и сценарии различаются;
+совпадение отдельных полей не доказывает неразличимость.
+[Backend-замеры](measurements/2026-10-21/native-backend-metrics.json)
+и [длительная нагрузка](measurements/2026-10-20/native-operations.json)
+относятся к указанным в них исходникам и стендам.
+Не выдавайте loopback за WAN, задержку HTTP за ping, а ошибки запросов за потерю пакетов.
 
-Низкоуровневые правила формата находятся в [Wire draft 0](reference/WIRE-DRAFT-0.md). Для обычного пользователя эта спецификация не нужна.
-
-Защита строится на проверяемом TLS, сертификатах CA/SNI, опциональном SPKI pin и отдельной HTTP-авторизации. Собственное шифрование на замену TLS не применяется. TLS и proxy identity не отменяют необходимость защиты приватных файлов, лимитов соединений и контроля выходных адресов.
-
-## Релизы
-
-Проверяйте актуальные [GitHub Releases](https://github.com/SawaMEN/FoxTunnel/releases), а не угадывайте имя архива. Экспериментальный [v0.1.0-alpha.2](https://github.com/SawaMEN/FoxTunnel/releases/tag/v0.1.0-alpha.2) для Linux amd64 содержит NSS 3.130 и Neqo 0.33.0. Он собран по коммиту до слияния веток в `main`.
-
-- **Основной workflow:** версионные сборки для поддерживаемых платформ; конкретный состав зависит от тега.
-- **Mozilla workflow:** отдельно выпускает только экспериментальные версии Linux amd64 по контролируемому запросу версии в ветке `update`. Обычный push не публикует релиз.
-- Для скачанного пакета проверьте контрольные суммы и, если доступны, файлы метаданных. `scripts/release.py` и `scripts/mozilla_release_verify.py` помогают проверять соответствующие форматы. Они не заменяют доверие к источнику публикации.
-- Перед выпуском нужны пройденные CI, воспроизводимая сборка, проверка TLS, работа обоих транспортов и отдельные полевые испытания для заявлений о реальной стабильности.
-
-Сведения о конкретных версиях в `docs/releases/` являются **историческими заметками**, а не инструкцией по установке последнего `main`.
-
-## Исследования и измерения
-
-Исходные JSON-замеры остаются в `docs/measurements/`. Существующие эксперименты показали успешную локальную работу NSS/H2 и Neqo/H3 и совпадение отдельных HTTP/2 SETTINGS с Firefox 158. При этом TLS-отпечаток отличался, а пригодных для полного тройного сравнения NaiveProxy/Firefox/FoxTunnel QUIC/H3 данных не хватает.
-
-Отсутствующие измерения — это **не совпадение**. Для сравнений есть `scripts/fingerprint_audit.py`, для реального echo — `scripts/field_h2_h3.py`, для локальной нагрузки — `scripts/soak_h2_h3.py`. Любой результат должен содержать версию, сценарий, маршрут и ограничения. Локальный loopback нельзя выдавать за замер на мобильном операторе.
-
-## Ограничения и вклад
-
-- Проект экспериментальный, не сертифицированный системный VPN.
-- UDP, Neqo, кластер и bond требуют отдельных проверок совместимости и безопасности.
-- Нет гарантий обхода ТСПУ, полного Firefox fingerprint, отсутствия DNS-утечек или стабильной работы в любых сетях.
-- Не публикуйте приватные конфигурации, сертификатные ключи, пользовательские данные и pcap с секретами.
-
-Перед PR выполняйте тесты, не удаляйте чужие платформы и явно описывайте, какие режимы проверены, а какие остались экспериментальными. Лицензия репозитория — MIT.
-
-Эксплуатация, сигналы остановки, обновление TLS и границы платформенных проверок описаны в [OPERATIONS.md](OPERATIONS.md).
+Независимая проверка безопасности остаётся открытой. Область review:
+TLS и авторизация, фильтрация назначений/DNS, квоты и отзыв доступа,
+отмена/освобождение ресурсов, FFI и происхождение архивов.
+Отчёт должен указывать commit, платформы, build tags, находки и повторную проверку.
+Не публикуйте приватные профили, ключи, пользовательский трафик и сырые захваты.

@@ -1,30 +1,19 @@
-# FoxTunnel Neqo ABI 1
+# Neqo runtime bridge
 
-[Documentation](../../docs/DEVELOPMENT.en.md) · [Neqo HTTP/3](../../docs/DEVELOPMENT.en.md)
+[Build and tests](../../docs/DEVELOPMENT.md) · [Integration](../../docs/INTEGRATION.md)
 
-> **Opt-in Neqo HTTP/3 client (ABI 1).** Linux amd64 only, separate pinned Rust/NSS toolchain, CA/SNI/SPKI validation before HTTP credentials. Not in public archives.
+This opt-in Linux amd64 bridge implements the runtime Neqo HTTP/3 client.
+It is separate from the standalone experiment in `experiments/neqo-ffi/`.
 
-Build with `python3 scripts/build_neqo.py` from the repository root. Source the
-reported env.sh before Go `-tags nss,neqo` builds/tests. Linux amd64 is the initial
-supported target; regular release archives exclude this experiment.
+Run `python3 scripts/build_neqo.py` from the repository root and source the
+reported `env.sh` before Go builds/tests with `-tags nss,neqo`.
+Cargo.lock, rust-toolchain.toml and scripts/neqo.lock.json pin the inputs.
+The standard Linux NSS archives use quic-go for H3; Mozilla/Neqo bundles are separate.
 
-The Rust library is statically linked, owns the pinned Mozilla protocol state
-and retains no Go pointers. One Go actor pins the creating OS thread for every
-ABI call. Caller-provided byte slices are borrowed synchronously. ABI entry
-points catch Rust panics and return a terminal negative result; callers discard
-the engine after an error. Certificate authentication is paused for Go's ordinary
-CA/hostname/pin verification. There is no accepted HTTP request before that gate.
+[bridge.h](../../internal/neqo/bridge.h) defines ABI 1 and ownership.
+One Go actor owns the engine on its creating OS thread. Rust retains no Go pointers;
+buffers are borrowed synchronously. ABI panics become terminal errors.
+CA/hostname/SPKI validation must complete before HTTP credentials are sent.
 
-The C declarations and ownership contract are in
-[bridge.h](../../internal/neqo/bridge.h). [Full design, trust, queue limits and
-fallback rules](../../docs/DEVELOPMENT.en.md).
-
-`Cargo.lock` pins all dependencies. `rust-toolchain.toml` and
-`scripts/neqo.lock.json` pin compiler and Mozilla revisions. The build exports
-Rust dependency license texts and attribution plus provenance; the generated
-C header also makes the external Rust archive visible to Go's build cache.
-
-A separate opt-in `linux/amd64/mozilla` **build-only** archive is now
-assembled by `scripts/build_mozilla.py` / the manually dispatched
-`Mozilla unified bundle` workflow. Normal NSS releases remain unchanged.
-This does not make Neqo production-ready or publish a GitHub Release.
+The builder exports dependency licenses/provenance and a generated archive-hash
+header for Go's build cache. Building the bridge does not publish a release.

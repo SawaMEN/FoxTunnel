@@ -187,7 +187,7 @@ def bundle(root, manifest=MANIFEST):
     return {'schema': 1, 'kind': 'foxtunnel-audit-handoff', 'checkout_commit': checked_out, 'worktree_dirty': dirty,
             'evidence': evidence, 'dependency_inputs': inventory,
             'dependency_scope': 'Reviewed lockfile digests only; not a resolved SBOM or vulnerability-scan result.',
-            'review_guide': 'docs/AUDIT-READINESS.md'}
+            'review_guide': 'docs/DEVELOPMENT.md'}
 
 
 def main(argv=None):
