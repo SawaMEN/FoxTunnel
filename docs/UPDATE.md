@@ -341,6 +341,12 @@ Bond setup, HEAD/probes и ошибки передачи уже открытых
 protocol-core и Markdown-ссылок. NSS/Neqo в локальные проверки не входят;
 их tagged workflows запускаются после публикации коммита.
 
+После публикации этапа 4 прошли
+[Go CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39675845729),
+[NSS CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39675845724),
+[Neqo CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39675846037) и
+[build audit](https://github.com/SawaMEN/FoxTunnel/actions/runs/39675845840).
+
 ## 5. Оптимизация Neqo/H3
 
 - [ ] Получить свежую парную baseline Go-H3/Neqo-H3 на одном runner.
@@ -348,6 +354,17 @@ protocol-core и Markdown-ссылок. NSS/Neqo в локальные пров�
 - [ ] Устранить подтверждённое профилем узкое место.
 - [ ] Повторить payload, cancellation, backpressure и FFI/race проверки.
 - [ ] Сохранить сравнение до/после с CPU/RSS, разбросом и ревизиями.
+
+Стенд `scripts/update_h3_profile.py` запускается в Neqo CI для `update`
+после сборки и проверок native runtime. Он измеряет Go-H3 и Neqo-H3 одним
+бинарником на одном Linux amd64 runner: прогрев, семь повторов с чередованием
+порядка, 64B/1MiB, медиана/min/max/MAD, process CPU/RSS и Go allocations.
+Отдельные прогоны собирают Go CPU/alloc profiles и сохраняют только таблицы
+символов в JSON; сырые профили не публикуются. Go allocation profiles не видят
+Rust/C allocations, CPU profile относит native время к cgo и не профилирует
+внутренности Rust. Поэтому эти данные сами по себе не объясняют стоимость
+каждой внутренней операции Neqo. Baseline ожидает фактического завершения CI;
+наличие скрипта не засчитывает измерение или ускорение.
 
 Целевое ускорение заранее не обещается. Старые loopback-цифры служат основанием
 для исследования; новый результат должен быть измерен отдельно.

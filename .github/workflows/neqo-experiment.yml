@@ -74,6 +74,21 @@ jobs:
           path: /tmp/native-backend-metrics.json
           if-no-files-found: error
           retention-days: 7
+      - name: Update stage 5 paired H3 baseline and Go-side profiles
+        if: github.ref == 'refs/heads/update'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          python3 -m unittest discover -s scripts -p test_update_h3_profile.py -v
+          python3 scripts/update_h3_profile.py --binary /tmp/native-backend.test --versions /tmp/neqo-version.json --out /tmp/update-h3-profile.json
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/update'
+        with:
+          name: update-h3-profile
+          path: /tmp/update-h3-profile.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Fresh pinned Firefox NaiveProxy FoxTunnel TLS H2 and decoded H3
         shell: bash
         run: |
