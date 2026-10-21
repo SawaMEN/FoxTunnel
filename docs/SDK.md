@@ -130,3 +130,24 @@ run/pass каждого случая и успешный пакет; skip или
 NetworkExtension, socket bypass, DNS, IPv6, kill switch и UI принадлежат
 host-приложению. Swift/JNI ABI, готовые Android/macOS приложения и внедрение
 в Hiddify/3x-ui здесь не заявляются. Независимый security review остаётся открытым.
+
+## Подтверждённая native матрица
+
+[CI 39540666188](https://github.com/SawaMEN/FoxTunnel/actions/runs/39540666188)
+проверил runtime `034b4fc040d699a0824882058bec36b8ecabcad6` на synthetic checkout
+`ce1d3d086821b1a9773c58670cc38ff1df2fa46c`. Родители checkout проверены:
+base `b124c16a` и runtime head `034b4fc0`. Все три job завершились success.
+Original JSON извлечены из CI artifacts; SHA-256 каждого ZIP сверён с digest
+GitHub, SHA-256 каждого отчёта сохранён в [provenance](measurements/2026-10-21/sdk/provenance.json).
+
+| Native runner | Обязательные run/pass | Исходный отчёт |
+|---|---:|---|
+| Ubuntu 24.04 | 22 / 22 | [Linux](measurements/2026-10-21/sdk/external-sdk-ubuntu-24.04.json) |
+| macOS 15 | 22 / 22 | [macOS](measurements/2026-10-21/sdk/external-sdk-macos-15.json) |
+| Windows latest | 22 / 22 | [Windows](measurements/2026-10-21/sdk/external-sdk-windows-latest.json) |
+
+Каждый отчёт имеет `worktree_dirty: false`, hash фактических go-test events
+и полный список обязательных случаев, включая настоящий process-host H2/H3.
+CLI собран на runner из проверяемого checkout с race detector. Это 66 выполнений
+22 сценариев на трёх ОС; не 66 различных сценариев. Отчёты измеряют указанную
+runtime-ревизию, не произвольный future checkout или готовые релизные binaries.
