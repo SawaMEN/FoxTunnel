@@ -1,7 +1,7 @@
 # Аудит main: цель — 200 подтверждённых ошибок
 
 База первого пакета: `653c985c66f0594e270adfcafa05fcd7ac71a933`.
-Подтверждены и исправлены **20 из запрошенных 200** разных дефектов.
+Подтверждены и исправлены **21 из запрошенных 200** разных дефектов.
 Это промежуточный результат, не утверждение о завершении аудита или наличии
 ровно 200 ошибок. Варианты входных данных и повторные проявления одной ошибки
 отдельно не считаются. Замечания по стилю в счётчик не входят.
@@ -34,6 +34,7 @@ production-кода. Для новых processhost-сценариев измен
 | 018 | Запрет публикации версии v0.0.0-ci применялся к release request, но обходился публикацией tag с этим именем | `ReleaseRequest.test_audit_ci_tag_cannot_publish` |
 | 019 | Smart Bond принимал эквивалентное написание адреса координатора за relay, отвергал допустимую topology или применял relay tax к прямому маршруту | `tunnel.TestAuditSmartBondRecognizesCoordinatorAliases` |
 | 020 | Bond принимал EOF вместо ACK для upload/FIN/close и молча отбрасывал payload в EOF/ACK; некорректный ответ выдавался за успех | `bond.TestAuditRejectsMalformedSuccessRecords` |
+| 021 | При alias основного HTTPS origin из discovery (например, ведущий ноль в порте) primary SPKI/SNI policy не наследовалась; действительная CA позволяла обойти обязательный pin | `tunnel.TestAuditPrimaryPinAppliesToDiscoveredOriginAlias` (реальный HTTPS/H2) |
 
 Исправление 012 дополнительно закрывает request body и отказывает неизвестному
 origin в identity pool с обязательными per-node pins. Конфигурация fallback
@@ -64,3 +65,7 @@ NSS/Neqo и платформенные результаты CI фиксирую�
 ## Проверки дополнения 020
 
 Пять вариантов некорректного ответа воспроизведены до исправления; полный Bond-набор и полный Go-набор с race detector, `go vet`, Markdown links и core boundaries прошли после исправления.
+
+## Проверки дополнения 021
+
+Реальный HTTPS/H2 тест сначала воспроизвёл обход неправильного primary pin через alias порта; после исправления оба написания отвергают неправильный pin, а правильный pin разрешает alias. TLS/discovery регрессии повторены пять раз с race detector. Полный Go race-набор, `go vet`, core boundaries, Markdown links и diff check прошли.
