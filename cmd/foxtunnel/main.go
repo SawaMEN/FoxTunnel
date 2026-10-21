@@ -16,6 +16,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/FoxTunnel/internal/contract"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
@@ -69,6 +70,7 @@ func main() {
 
 	case "setup":
 		fs := i18n.NewFlagSet("foxtunnel setup")
+		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict (strict generates a direct single-node profile)")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (setup generates a random route by default)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
@@ -84,7 +86,11 @@ func main() {
 		web := fs.String("web-root", "", i18n.Text("public website directory for ordinary requests and rejected probes"))
 		enableUDP := fs.Bool("enable-udp", false, i18n.Text("experimental SOCKS5 UDP request/response relay on generated server"))
 		i18n.Parse(fs, os.Args[2:])
-		if err := bootstrap.Generate(bootstrap.Options{Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, EnableUDP: *enableUDP}); err != nil {
+		wirePolicy, err := contract.ParseProtocolPolicy(*protocolPolicy)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := bootstrap.Generate(bootstrap.Options{ProtocolPolicy: wirePolicy, Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, EnableUDP: *enableUDP}); err != nil {
 			log.Fatal(i18n.Text(err.Error()))
 		}
 		fmt.Println(i18n.Text("configuration created: server.json, connection.txt and node.json (secrets not printed)"))
@@ -101,6 +107,7 @@ func main() {
 		return
 	case "server":
 		fs := i18n.NewFlagSet("foxtunnel server")
+		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict (TCP/UDP; incompatible with bond/discovery)")
 		eventsJSON := fs.Bool("events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
 		stdinEOF := fs.Bool("shutdown-on-stdin-eof", false, "gracefully stop when the host closes stdin")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
@@ -125,6 +132,10 @@ func main() {
 		allowPrivate := fs.Bool("allow-private", false, i18n.Text("permit private/loopback destination IPs (unsafe on public deployments)"))
 		enableUDP := fs.Bool("enable-udp", false, i18n.Text("enable experimental authenticated UDP relay (one request/response per HTTPS POST)"))
 		i18n.Parse(fs, os.Args[2:])
+		wirePolicy, err := contract.ParseProtocolPolicy(*protocolPolicy)
+		if err != nil {
+			log.Fatal(err)
+		}
 		if *configFile != "" {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
@@ -149,6 +160,10 @@ func main() {
 			*bondHub, *bondRelay, *bondCA = config.BondHub, config.BondUpstream, config.BondCA
 			*bondSNI, *bondPin = config.BondSNI, config.BondPin
 			*maxTunnels, *maxConnections = config.MaxTunnels, config.MaxConnections
+			wirePolicy = config.ProtocolPolicy
+		}
+		if wirePolicy == contract.ProtocolStrict && (*bondHub || *bondRelay != "" || *clusterFile != "") {
+			log.Fatal("strict protocol policy is not supported with bond/discovery")
 		}
 		var controller *access.Controller
 		if *usersFile != "" || *usersState != "" {
@@ -198,7 +213,7 @@ func main() {
 		if err != nil {
 			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
 		}
-		handler := &tunnel.Server{Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, EnableUDP: *enableUDP, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		handler := &tunnel.Server{RequireProtocolNegotiation: wirePolicy == contract.ProtocolStrict, Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, EnableUDP: *enableUDP, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()
@@ -277,6 +292,7 @@ func main() {
 
 	case "client", "share":
 		fs := i18n.NewFlagSet("foxtunnel " + os.Args[1])
+		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict; a connection profile owns this setting")
 		eventsJSON, stdinEOF := new(bool), new(bool)
 		if os.Args[1] == "client" {
 			fs.BoolVar(eventsJSON, "events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
@@ -366,6 +382,10 @@ func main() {
 		if *stdinEOF && *linkFile == "-" {
 			log.Fatal("stdin shutdown requires a separate connection file")
 		}
+		wirePolicy, err := contract.ParseProtocolPolicy(*protocolPolicy)
+		if err != nil {
+			log.Fatal(err)
+		}
 		if *link != "" || *linkFile != "" {
 			if *link != "" && *linkFile != "" {
 				log.Fatal(i18n.Text("choose either --link or --link-file"))
@@ -407,12 +427,16 @@ func main() {
 			*padding = imported.Padding
 			*connectTimeout, _ = time.ParseDuration(imported.ConnectTimeout)
 			*attemptTimeout, _ = time.ParseDuration(imported.AttemptTimeout)
+			wirePolicy = imported.ProtocolPolicy
+		}
+		if wirePolicy == contract.ProtocolStrict && (*bonded || *discover) {
+			log.Fatal("strict protocol policy is not supported with bond/discovery")
 		}
 		if os.Args[1] == "share" {
 			if user == "" || password == "" {
 				log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 			}
-			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Transport: *nativeTransport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
+			exported, err := profile.Encode(profile.Config{ProtocolPolicy: wirePolicy, Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Transport: *nativeTransport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -499,6 +523,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		client.RequireProtocolNegotiation = wirePolicy == contract.ProtocolStrict
 		intent := transportengine.Config{
 			Engine: *engine, Transport: *nativeTransport,
 			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,

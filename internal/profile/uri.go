@@ -15,6 +15,7 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/contract"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
@@ -24,30 +25,38 @@ const Scheme = "vetroff"
 const MaxLinkBytes = 16 << 10
 
 type Config struct {
-	XHTTPPath      string   `json:"xhttp_path,omitempty"`
-	XHTTPHost      string   `json:"xhttp_host,omitempty"`
-	Version        int      `json:"v"`
-	Servers        []string `json:"servers"`
-	Username       string   `json:"username"`
-	Password       string   `json:"password"`
-	Transport      string   `json:"transport,omitempty"`
-	TLSBackend     string   `json:"tls,omitempty"`
-	SNI            string   `json:"sni,omitempty"`
-	PinSHA256      string   `json:"pin_sha256,omitempty"`
-	Encryption     string   `json:"encryption,omitempty"`
-	Balance        string   `json:"balance,omitempty"`
-	Bond           bool     `json:"bond,omitempty"`
-	Discover       bool     `json:"discover,omitempty"`
-	Pipeline       string   `json:"pipeline,omitempty"`
-	Padding        bool     `json:"padding,omitempty"`
-	ConnectTimeout string   `json:"connect_timeout,omitempty"`
-	AttemptTimeout string   `json:"attempt_timeout,omitempty"`
+	ProtocolPolicy contract.ProtocolPolicy `json:"protocol_policy,omitempty"`
+	XHTTPPath      string                  `json:"xhttp_path,omitempty"`
+	XHTTPHost      string                  `json:"xhttp_host,omitempty"`
+	Version        int                     `json:"v"`
+	Servers        []string                `json:"servers"`
+	Username       string                  `json:"username"`
+	Password       string                  `json:"password"`
+	Transport      string                  `json:"transport,omitempty"`
+	TLSBackend     string                  `json:"tls,omitempty"`
+	SNI            string                  `json:"sni,omitempty"`
+	PinSHA256      string                  `json:"pin_sha256,omitempty"`
+	Encryption     string                  `json:"encryption,omitempty"`
+	Balance        string                  `json:"balance,omitempty"`
+	Bond           bool                    `json:"bond,omitempty"`
+	Discover       bool                    `json:"discover,omitempty"`
+	Pipeline       string                  `json:"pipeline,omitempty"`
+	Padding        bool                    `json:"padding,omitempty"`
+	ConnectTimeout string                  `json:"connect_timeout,omitempty"`
+	AttemptTimeout string                  `json:"attempt_timeout,omitempty"`
 }
 
 func invalid() error { return errors.New(i18n.Text("invalid vetroff connection link")) }
 
 // normalize validates a complete profile without opening files or sockets.
 func (c *Config) normalize() error {
+	if c.ProtocolPolicy.Validate() != nil || c.ProtocolPolicy == contract.ProtocolStrict && (c.Bond || c.Discover) {
+		return invalid()
+	}
+	// Legacy exports remain readable by old clients that reject unknown fields.
+	if c.ProtocolPolicy == contract.ProtocolLegacy {
+		c.ProtocolPolicy = ""
+	}
 	if c.Version != 1 || len(c.Servers) < 1 || len(c.Servers) > 8 {
 		return invalid()
 	}
@@ -184,6 +193,7 @@ func uniqueFields(data []byte) bool {
 	}
 	seen := make(map[string]bool)
 	allowed := map[string]bool{"v": true, "servers": true, "username": true, "password": true, "tls": true, "transport": true, "xhttp_path": true, "xhttp_host": true, "sni": true, "pin_sha256": true, "encryption": true, "balance": true, "bond": true, "discover": true, "pipeline": true, "padding": true, "connect_timeout": true, "attempt_timeout": true}
+	allowed["protocol_policy"] = true
 	for decoder.More() {
 		token, err := decoder.Token()
 		if err != nil {

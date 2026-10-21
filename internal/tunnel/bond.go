@@ -50,6 +50,9 @@ func validateBondTraffic(mode string, adaptive bool) error {
 }
 
 func (c *Client) EnableBond() error {
+	if c.RequireProtocolNegotiation {
+		return errors.New("strict protocol policy is not supported with bond/discovery")
+	}
 	if err := validateBondTraffic(c.BondTraffic, c.BondAdaptive); err != nil {
 		return err
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/contract"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
@@ -203,6 +204,7 @@ func checkServerConfig(path string, r *configReport) {
 	}
 	if r.OK {
 		r.Settings = map[string]any{"h3": c.H3Listen != "", "udp": c.EnableUDP, "managed_users": c.UsersFile != "", "bond_hub": c.BondHub, "bond_relay": c.BondUpstream != "", "max_tunnels": c.MaxTunnels, "max_connections": c.MaxConnections}
+		r.Settings["protocol_policy"] = c.ProtocolPolicy.Effective()
 	}
 }
 
@@ -230,6 +232,7 @@ func checkClientConfig(path, ca, engine string, r *configReport) {
 		return
 	}
 	defer client.Close()
+	client.RequireProtocolNegotiation = c.ProtocolPolicy == contract.ProtocolStrict
 	err = plan.Apply(client, c.SNI, c.PinSHA256)
 	if err == nil {
 		err = client.SetXHTTPSettings(c.XHTTPPath, c.XHTTPHost)
@@ -249,5 +252,6 @@ func checkClientConfig(path, ca, engine string, r *configReport) {
 	if r.OK {
 		status := client.TransportStatus()
 		r.Settings = map[string]any{"engine": status.Engine, "transport": status.Transport, "tls_backend": status.TLSBackend, "quic_backend": status.QUICBackend, "servers": len(c.Servers), "bond": c.Bond, "discover": c.Discover, "padding": c.Padding, "balance": c.Balance, "connect_timeout": c.ConnectTimeout, "attempt_timeout": c.AttemptTimeout, "nss_available": buildinfo.NSSAvailable}
+		r.Settings["protocol_policy"] = c.ProtocolPolicy.Effective()
 	}
 }

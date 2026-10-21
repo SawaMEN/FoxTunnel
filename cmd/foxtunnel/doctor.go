@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/contract"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
@@ -42,14 +43,15 @@ type doctorCheck struct {
 }
 
 type doctorReport struct {
-	Schema      int           `json:"schema"`
-	OK          bool          `json:"ok"`
-	Network     string        `json:"network"`
-	ServerIndex int           `json:"server_index"`
-	Transport   string        `json:"transport,omitempty"`
-	Engine      string        `json:"engine,omitempty"`
-	Checks      []doctorCheck `json:"checks"`
-	DurationMS  int64         `json:"duration_ms"`
+	ProtocolPolicy contract.ProtocolPolicy `json:"protocol_policy,omitempty"`
+	Schema         int                     `json:"schema"`
+	OK             bool                    `json:"ok"`
+	Network        string                  `json:"network"`
+	ServerIndex    int                     `json:"server_index"`
+	Transport      string                  `json:"transport,omitempty"`
+	Engine         string                  `json:"engine,omitempty"`
+	Checks         []doctorCheck           `json:"checks"`
+	DurationMS     int64                   `json:"duration_ms"`
 }
 
 func (r *doctorReport) add(stage string, started time.Time, reason string, err error) {
@@ -127,6 +129,9 @@ func doctorReason(err error, fallback string) string {
 	if err == nil {
 		return "ok"
 	}
+	if errors.Is(err, tunnel.ErrProtocolNegotiation) {
+		return "protocol_negotiation_failed"
+	}
 	var verification *tls.CertificateVerificationError
 	var authority x509.UnknownAuthorityError
 	var hostname x509.HostnameError
@@ -145,6 +150,8 @@ func doctorReason(err error, fallback string) string {
 	var response *tunnel.ConnectResponseError
 	if errors.As(err, &response) {
 		switch response.HTTPStatus {
+		case 426:
+			return "protocol_negotiation_failed"
 		case 401, 403, 407:
 			return "authentication_or_policy_rejected"
 		case 429, 503:
@@ -174,6 +181,7 @@ func runDoctor(ctx context.Context, o doctorOptions, lookup func(context.Context
 	if err != nil {
 		return r
 	}
+	r.ProtocolPolicy = c.ProtocolPolicy.Effective()
 	step = time.Now()
 	// Intentionally disable H3 fallback: a successful H2 fallback cannot prove
 	// this node's UDP/QUIC path works. Other nodes and discovery are not probed.
@@ -202,6 +210,7 @@ func runDoctor(ctx context.Context, o doctorOptions, lookup func(context.Context
 		return r
 	}
 	r.Transport, r.Engine = plan.Transport, plan.Engine
+	client.RequireProtocolNegotiation = c.ProtocolPolicy == contract.ProtocolStrict
 	client.Padding = c.Padding
 	client.ConnectTimeout, _ = time.ParseDuration(c.ConnectTimeout)
 	client.EnableUDP = o.network == "udp"

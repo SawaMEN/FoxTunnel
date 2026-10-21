@@ -12,10 +12,24 @@ versions are separate.
 
 Configure `RequireProtocolNegotiation: true` in the public Go `ClientConfig`
 and `ServerConfig` to require negotiation. Zero values intentionally retain
-legacy deployment policy, so old integrations continue to work. The CLI and
-existing profiles retain their legacy behavior; native host bindings/CLI policy
-plumbing are separate integration work. A strict client must never retry in
-legacy mode after a refusal, missing confirmation or unknown version.
+legacy deployment policy, so old integrations continue to work. The CLI exposes
+`--protocol-policy legacy|strict` on `setup`, `share`, `client` and `server`.
+Server JSON and connection profiles store the optional `protocol_policy` field.
+Omission means legacy; explicit null, empty and unknown values are rejected.
+Legacy profile exports omit the field so pre-policy readers still accept them.
+Strict profiles require a policy-aware reader; old readers reject the unknown
+field instead of silently ignoring the strict requirement.
+
+A profile owns its policy: `client`/`share --link-file` cannot be combined with
+`--protocol-policy`. Likewise a server JSON cannot be combined with server
+setting flags. `doctor` uses the profile policy and `check-config` reports it.
+A strict client must never retry in legacy mode after a refusal, missing
+confirmation or unknown version. Policy does not select a future wire version.
+
+Strict CLI/config deployments reject bond hubs, relays and discovery, whose
+RPCs have no negotiation contract. `setup --protocol-policy strict` generates a
+direct single-node profile and server, without a cluster. Legacy setup behavior
+is unchanged. Go public SDK configuration retains its existing boolean API.
 
 TLS verification and proxy authentication precede protocol handling. The new
 server validates a version/capability offer before reading a TCP/UDP body,
