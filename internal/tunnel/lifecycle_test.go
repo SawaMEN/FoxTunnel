@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/binary"
 	"encoding/pem"
@@ -18,6 +19,12 @@ import (
 )
 
 func testClient(t testing.TB, handler http.Handler) (*Client, string) {
+	t.Helper()
+	client, addr, _ := testClientWithStop(t, handler)
+	return client, addr
+}
+
+func testClientWithStop(t testing.TB, handler http.Handler) (*Client, string, func()) {
 	t.Helper()
 	upstream := httptest.NewUnstartedServer(handler)
 	upstream.EnableHTTP2 = true
@@ -37,9 +44,20 @@ func testClient(t testing.TB, handler http.Handler) (*Client, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = listener.Close() })
-	go func() { _ = client.Serve(listener) }()
-	return client, listener.Addr().String()
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	stop := func() {
+		cancel()
+		_ = listener.Close()
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Error("SOCKS workers did not stop")
+		}
+	}
+	t.Cleanup(stop)
+	go func() { defer close(done); _ = client.ServeContext(ctx, listener) }()
+	return client, listener.Addr().String(), stop
 }
 
 func connectSOCKS(t testing.TB, addr, target string) (net.Conn, byte) {

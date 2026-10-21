@@ -285,12 +285,15 @@ func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, se
 	inner := &http2.Transport{TLSClientConfig: config.Clone(), DisableCompression: true, IdleConnTimeout: 90 * time.Second}
 	t := &xhttpTransport{Transport: inner, outer: outer, carriers: make(map[net.Conn]bool)}
 	inner.DialTLSContext = func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+		t.mu.Lock()
+		generation := t.generation
+		t.mu.Unlock()
 		conn, err := xhttp.DialWithSettings(ctx, outer, "https://"+addr, mode, auth, config.ServerName, settings)
 		if err != nil {
 			return nil, err
 		}
 		t.mu.Lock()
-		if t.draining && t.active == 0 {
+		if (t.draining || generation != t.generation) && t.active == 0 {
 			t.mu.Unlock()
 			conn.Close()
 			return nil, net.ErrClosed
@@ -304,11 +307,12 @@ func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, se
 
 type xhttpTransport struct {
 	*http2.Transport
-	outer    tlsTransport
-	mu       sync.Mutex
-	active   int
-	draining bool
-	carriers map[net.Conn]bool
+	outer      tlsTransport
+	mu         sync.Mutex
+	active     int
+	draining   bool
+	generation uint64 // retires in-flight dials even after the idle map is drained
+	carriers   map[net.Conn]bool
 }
 type trackedCarrier struct {
 	net.Conn
@@ -336,6 +340,7 @@ func (t *xhttpTransport) CloseIdleConnections() {
 	// A carrier stays an active outer request while its inner HTTP/2 is idle.
 	// Retire it after its last inner body is released, preserving active streams.
 	t.mu.Lock()
+	t.generation++
 	t.draining = true
 	t.closeDrainedLocked()
 	t.mu.Unlock()

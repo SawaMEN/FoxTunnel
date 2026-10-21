@@ -50,7 +50,10 @@ func TestBondedLanesSOCKSGo(t *testing.T) {
 func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discover bool, mode string, lanes bool, traffic ...string) {
 	var destinations atomic.Int64
 	target := testDestination(t, func(c net.Conn) { destinations.Add(1); _, _ = io.Copy(c, c) })
-	client, addr := testClient(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+	client, addr, stopClient := testClientWithStop(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+	// Join relay workers before endpoint cleanups retire their idle transports.
+	// Otherwise a final lane retry may open a carrier after that idle snapshot.
+	defer stopClient()
 	route := xhttp.Settings{}
 	if xhttp.IsMode(mode) {
 		route, _ = xhttp.Normalize("/cluster/shared-api", "cluster-route.example")
