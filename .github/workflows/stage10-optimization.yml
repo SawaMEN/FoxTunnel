@@ -1,0 +1,75 @@
+name: Stage 10 paired optimization and sustained streams
+
+on:
+  pull_request:
+    paths:
+      - 'internal/**'
+      - 'go.mod'
+      - 'go.sum'
+      - 'scripts/optimization_gate.py'
+      - 'scripts/test_optimization_gate.py'
+      - '.github/workflows/stage10-optimization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  optimization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+      - name: Reject malformed evidence and exercise routing semantics
+        run: |
+          python3 -m unittest discover -s scripts -p test_optimization_gate.py -v
+          go test -race ./internal/multihop ./internal/bond ./internal/nodeperf -count=5 -timeout=120s
+          go test -race ./internal/tunnel -run 'Test.*Bond|TestUDPMultiNode|TestUDPIngress' -count=3 -timeout=180s
+      - name: Build identical benchmark sources against immutable base and candidate
+        env:
+          BASE_COMMIT: ${{ github.event.pull_request.base.sha || '262579f445fc3a8f2936af5278605c6450f29269' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage10-report
+          base=$(git rev-parse "$BASE_COMMIT^{commit}")
+          head=$(git rev-parse HEAD)
+          printf '%s\n' "$base" > stage10-report/base-commit.txt
+          printf '%s\n' "$head" > stage10-report/head-commit.txt
+          go version > stage10-report/toolchain.txt
+          git worktree add --detach "$RUNNER_TEMP/stage10-base" "$base"
+          cp internal/multihop/benchmark_stage10_test.go "$RUNNER_TEMP/stage10-base/internal/multihop/benchmark_stage10_test.go"
+          (cd "$RUNNER_TEMP/stage10-base" && go test -c -o "$RUNNER_TEMP/stage10-base.test" ./internal/multihop)
+          go test -c -o "$RUNNER_TEMP/stage10-head.test" ./internal/multihop
+          python3 scripts/optimization_gate.py --base "$RUNNER_TEMP/stage10-base.test" --head "$RUNNER_TEMP/stage10-head.test" --base-commit "$base" --head-commit "$head" --out stage10-report/paired.json
+      - name: Profiles of identical eight-node measured scenarios
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variant in base head; do
+            "$RUNNER_TEMP/stage10-$variant.test" -test.run='^$' -test.bench='^BenchmarkStage10Selector$/^8$/^fresh$' -test.cpu=1 -test.benchtime=2s -test.cpuprofile="stage10-report/$variant.cpu" > "stage10-report/$variant-profile-bench.txt"
+            go tool pprof -top "$RUNNER_TEMP/stage10-$variant.test" "stage10-report/$variant.cpu" > "stage10-report/$variant-profile.txt"
+          done
+      - name: Ten-minute same-destination streams with bounded cancellation
+        env:
+          FOXTUNNEL_LONG_STREAM_SECONDS: '600'
+        run: go test -race -json ./internal/tunnel -run '^TestStage10LongLivedH2H3$' -count=1 -timeout=12m > stage10-report/long-stream.jsonl
+      - name: Ten-minute native process resource budgets and restart recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -o "$RUNNER_TEMP/stage10-cli" ./cmd/foxtunnel
+          go run ./integration/operations-cert --out "$RUNNER_TEMP/stage10-cert"
+          python3 scripts/operations_soak.py --binary "$RUNNER_TEMP/stage10-cli" --cert "$RUNNER_TEMP/stage10-cert/cert.pem" --key "$RUNNER_TEMP/stage10-cert/key.pem" --seconds 600 --parallel 3 --recovery-seconds 30 --out stage10-report/resources.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage10-optimization
+          path: stage10-report/
+          if-no-files-found: error
+          retention-days: 14

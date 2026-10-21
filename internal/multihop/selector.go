@@ -44,8 +44,14 @@ type State struct {
 // idempotent bond operations; stream payload is never replayed by this module.
 func Select(candidates []Candidate, state State, now time.Time) (int, State) {
 	state.Decisions++
-	ready := make([]int, 0, len(candidates))
-	pending := make([]int, 0, len(candidates))
+	// The protocol limits Bond to eight ingress nodes. Use stack storage for
+	// that hot path, retaining the general selector contract for larger inputs.
+	var readyLocal, pendingLocal, unknownLocal [8]int
+	ready, pending := readyLocal[:0], pendingLocal[:0]
+	if len(candidates) > len(readyLocal) {
+		ready = make([]int, 0, len(candidates))
+		pending = make([]int, 0, len(candidates))
+	}
 	for i, c := range candidates {
 		if c.Tried {
 			continue
@@ -68,7 +74,10 @@ func Select(candidates []Candidate, state State, now time.Time) (int, State) {
 		return best, state
 	}
 
-	unknown := make([]int, 0, len(ready))
+	unknown := unknownLocal[:0]
+	if len(ready) > len(unknownLocal) {
+		unknown = make([]int, 0, len(ready))
+	}
 	best := -1
 	var bestScore float64
 	held := -1
