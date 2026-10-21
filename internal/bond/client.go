@@ -304,6 +304,13 @@ func (c *Client) requestViaClass(ctx context.Context, transport http.RoundTrippe
 			}
 			resp.Body.Close()
 		}
+		// EOF belongs only to a download record. Control/upload ACKs never
+		// carry payload: accepting a different success shape can silently
+		// discard bytes or acknowledge an upload that was never delivered.
+		if err == nil && ((status == http.StatusCreated && (op != opRead || len(data) != 0)) ||
+			(status == http.StatusOK && (op == opWrite || op == opFin || op == opClose) && len(data) != 0)) {
+			err = errors.New("invalid bond success record")
+		}
 		if err == nil && op == opRead && status == 200 && len(data) == 0 {
 			err = io.ErrUnexpectedEOF
 		}
