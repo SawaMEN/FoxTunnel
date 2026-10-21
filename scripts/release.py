@@ -113,7 +113,7 @@ def build(a):
             env = mozilla_runtime.verify_loaded(executable, Path(tmp), runtime_info['libraries'], env)
         if native:
             info = json.loads(command([str(executable), 'version', '--json'], env))
-            for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], go_version=go_version, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', default_tls_backend='nss' if a.backend == 'nss' else 'go').items():
+            for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], sdk_schema=1, process_schema=1, go_version=go_version, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', default_tls_backend='nss' if a.backend == 'nss' else 'go').items():
                 if info[k] != v:
                     raise ValueError('native metadata mismatch: ' + k)
         if a.backend == 'nss' and info.get('nss_version') != runtime_info['nss_version']:
@@ -124,6 +124,8 @@ def build(a):
         p = dict(schema=1, version=a.version, commit=commit, build_date=date, target=target, goos=a.os, goarch=env['GOARCH'], variant=variant, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', experimental=True, native_smoke_tested=native)
         p['product'] = 'protocol-core'
         p['integration_schema'] = 1
+        p['sdk_schema'] = 1
+        p['process_schema'] = 1
         p['go_version'] = go_version
         p['tls_backends'] = ['go', 'nss'] if a.backend == 'nss' else ['go']
         p['default_tls_backend'] = 'nss' if a.backend == 'nss' else 'go'

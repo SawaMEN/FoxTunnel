@@ -38,6 +38,7 @@ jobs:
           python3 scripts/check_core_boundaries.py
           go mod tidy -diff
           go vet ./...
+          go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
           go test -race ./... -count=1 -timeout=120s
           cd integration/external && go test -race ./... -count=1 -timeout=60s
   nss:
@@ -62,6 +63,8 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.request.outputs.version }}
         run: python3 scripts/release.py build --version "$RELEASE_TAG" --os linux --arch '${{ matrix.arch }}' --backend nss --baseline ubuntu-24.04
+      - name: Check called Go vulnerabilities in the NSS build
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -tags=nss ./...
       - name: Test pinned Mozilla runtime and isolated NSS data transfer
         shell: bash
         run: |
@@ -96,6 +99,28 @@ jobs:
           assert info['nss_version'] and installed['build_flavor'] == 'nss'
           print('Verified native NSS archive installation and bundled runtime loading')
           PYLAB
+      - name: Independent repeat build and versioned upgrade candidate
+        env:
+          RELEASE_TAG: ${{ needs.request.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-repeat-tmp"
+          GOCACHE="$RUNNER_TEMP/release-repeat-cache" GOTMPDIR="$RUNNER_TEMP/release-repeat-tmp" python3 scripts/release.py build --version "$RELEASE_TAG" --os linux --arch '${{ matrix.arch }}' --backend nss --baseline ubuntu-24.04 --out "$RUNNER_TEMP/release-repeat"
+          python3 scripts/release.py build --version v0.0.0-stage9-update.1 --os linux --arch '${{ matrix.arch }}' --backend nss --baseline ubuntu-24.04 --out "$RUNNER_TEMP/release-upgrade"
+      - name: Real packaged install update rollback payload and published-archive interop
+        env:
+          RELEASE_TAG: ${{ needs.request.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/release_candidate.py --primary "$(find dist -name '*_nss.tar.gz')" --replica "$(find "$RUNNER_TEMP/release-repeat" -name '*_nss.tar.gz')" --upgrade "$(find "$RUNNER_TEMP/release-upgrade" -name '*_nss.tar.gz')" --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/native-release-candidate.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-release-candidate-${{ matrix.arch }}
+          path: ${{ runner.temp }}/native-release-candidate.json
+          if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: nss-${{ matrix.arch }}-archive
@@ -109,6 +134,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
+          pattern: nss-*-archive
           merge-multiple: true
       - name: Validate two Linux NSS release archives
         env:
@@ -179,8 +205,5 @@ jobs:
             fi
             tag_flags=(--target "$GITHUB_SHA")
           fi
-          notes=(--notes 'Experimental FoxTunnel protocol core for host integration. Verify the archived build.json against the trusted release tag/commit and inspect archive contents. Linux NSS assets bundle Mozilla libraries; keep lib/ beside the executable. No production or censorship-resistance claim.')
-          if [ -f "docs/releases/$RELEASE_TAG.md" ]; then
-            notes=(--notes-file "docs/releases/$RELEASE_TAG.md")
-          fi
-          gh release create "$RELEASE_TAG" dist/*.tar.gz "${tag_flags[@]}" --prerelease --title "FoxTunnel $RELEASE_TAG" "${notes[@]}"
+          python3 scripts/release_notes.py --input dist --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/verified-release-notes.md"
+          gh release create "$RELEASE_TAG" dist/*.tar.gz "${tag_flags[@]}" --prerelease --title "FoxTunnel $RELEASE_TAG" --notes-file "$RUNNER_TEMP/verified-release-notes.md"
