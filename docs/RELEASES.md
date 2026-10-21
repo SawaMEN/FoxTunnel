@@ -106,3 +106,39 @@ govulncheck, обеих native bundle jobs и complete archive-set verification.
 version request/tag gate, запрет замены существующего release/tag и prerelease
 статус. Подписанное публичное происхождение конкретного будущего релиза должно
 проверяться на его фактическом файле; лабораторный отчёт его не подменяет.
+
+## Подтверждённый кандидат
+
+[CI 39543757118](https://github.com/SawaMEN/FoxTunnel/actions/runs/39543757118)
+прошёл на runtime `f48da3bfc77410b3dc53f2d7fc0eea54e43b5819`; synthetic checkout
+`8f471a6cb4073f6f3c8968489f94341b35db814f` имеет проверенных родителей main
+`3292c9ac` и runtime `f48da3bf`. Все восемь PR workflows успешны. Publish job
+штатно пропущен: version request/tag не менялся. Новая публичная версия или
+attestation для этих CI archives не создавалась.
+
+| Native target | Whole-archive repeat | Install/update/rollback payload | Legacy test groups | Candidate bytes |
+|---|---|---:|---:|---:|
+| Linux amd64 | SHA-256 совпал | 6 / 6 | 2 / 2 | 6 788 305 |
+| Linux arm64 | SHA-256 совпал | 6 / 6 | 2 / 2 | 6 134 876 |
+
+Это по два H2/H3 случая после каждой из трёх активаций, не шесть различных
+транспортов. Legacy groups включают обе совместимые TCP/H2 стороны и строгие
+отказы; они используют настоящий опубликованный alpha.1 executable.
+Go — 1.26.10, bundled NSS — 3.130; фактические C compiler, linker и NSS header
+versions записаны в исходных отчётах отдельно от runtime NSS version.
+Private configuration bytes/mode сохранены на каждой фазе.
+
+Оригинальные [amd64](measurements/2026-10-21/releases/amd64.json) и
+[arm64](measurements/2026-10-21/releases/arm64.json) отчёты сохранены без изменения
+байтов. [Provenance](measurements/2026-10-21/releases/provenance.json) содержит
+run/job/artifact IDs, ZIP digests, source identity и hashes исходных отчётов.
+Скачаны также оба candidate archive artifacts: их ZIP digests, внутренние
+archive SHA-256, sizes, metadata и содержимое повторно проверены offline.
+[Идентичности кандидата](measurements/2026-10-21/releases/candidate-identities.md)
+получены реальным renderer release notes после этой проверки.
+
+CI candidate `v0.0.0-ci` относится к указанному synthetic PR commit.
+Публичный выпуск с другим version/source commit собирается заново, проходит
+весь gate и получает собственный hash/подписанный provenance. Текущие отчёты
+не являются подписью будущих файлов; runtime archives доступны в артефактах
+указанного CI run согласно сроку хранения GitHub.
