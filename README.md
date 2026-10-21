@@ -36,6 +36,7 @@ go build -o foxtunnel ./cmd/foxtunnel
 ./foxtunnel server --help
 ./foxtunnel client --help
 ./foxtunnel check-config --help
+./foxtunnel doctor --help
 ```
 
 Команда `client` — адаптер ядра к SOCKS5, `server` — серверная часть протокола.

@@ -126,7 +126,7 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 		timedOut := !timer.Stop()
 		if err == nil && !timedOut && attemptCtx.Err() == nil {
 			if (resp.ProtoMajor != 2 && resp.ProtoMajor != 3) || resp.StatusCode != http.StatusOK {
-				err = fmt.Errorf(i18n.Text("CONNECT rejected (HTTP/%d status %d)"), resp.ProtoMajor, resp.StatusCode)
+				err = &ConnectResponseError{HTTPMajor: resp.ProtoMajor, HTTPStatus: resp.StatusCode}
 			} else if protocolErr := c.verifyProtocol(resp, "tcp"); protocolErr != nil {
 				err = protocolErr
 			} else {
