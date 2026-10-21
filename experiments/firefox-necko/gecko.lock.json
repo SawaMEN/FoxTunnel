@@ -6,10 +6,10 @@
   "patches": [
     {
       "path": "experiments/firefox-necko/patches/h2-connect-cold-start.patch",
-      "sha256": "6f38d7e4a9f28e2af99c56390116065d53159f8801972c29f73ef71f382b1882",
+      "sha256": "9ea3f6605d2e9db3c9c8acf68f9f59291e42eecf7665262e6a0bc2cf72f8fbae",
       "source_path": "netwerk/protocol/http/nsHttpConnection.cpp",
       "before_sha256": "be841353d229da17da27914792d734bf06c1fa18fe669ceda5f242fb6910b160",
-      "after_sha256": "db3134e010156ca232e5be667ad020d65a4f9564fabced0f60a4c3d05865e66b"
+      "after_sha256": "5bcadcd19f6b0cf86f695c172acfbcd81b7ab9a13b8aec4ceaccb29f18a7f02a"
     },
     {
       "path": "experiments/firefox-necko/patches/h2-tunnel-xpcom-identity.patch",
