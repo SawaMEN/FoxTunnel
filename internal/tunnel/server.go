@@ -25,6 +25,10 @@ import (
 // Server terminates authenticated native H2 CONNECT, H2/H3 POST and WSS.
 // It has no Firefox fingerprint parity. Padding is an opt-in experiment.
 type Server struct {
+	// RequireProtocolNegotiation rejects authenticated legacy TCP/UDP requests.
+	// Outer WSS/XHTTP handshakes and cluster/bond extensions are separate.
+	RequireProtocolNegotiation bool
+
 	// Access is mutually exclusive with legacy credentials; set before serving.
 	Access *access.Controller
 
@@ -61,6 +65,9 @@ type Server struct {
 }
 
 func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
+	if protocolRequest(r) && s.authorized(r) && !s.acceptProtocol(w, r) {
+		return
+	}
 	settings, settingsErr := xhttp.Normalize(s.XHTTPSettings.Path, s.XHTTPSettings.Host)
 	if settingsErr == nil && xhttp.MatchesAt(r, settings) && r.ProtoMajor == 2 && s.authorized(r) {
 		s.serveXHTTP(w, r)
@@ -178,10 +185,17 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Flush small chunks immediately; otherwise an interactive tunnel can stall.
-	_, _ = fastCopyHTTPResponse(outgoing, upstream)
+	_, downloadErr := fastCopyHTTPResponse(outgoing, upstream)
 	_ = upstream.Close()
 	_ = r.Body.Close()
 	<-incomingDone
+	if downloadErr != nil {
+		// Headers may already be committed. Returning normally would emit a
+		// successful END_STREAM and disguise a truncated TCP response as EOF.
+		// net/http converts ErrAbortHandler to a stream reset without a log
+		// stack, after the destination and upload worker have been released.
+		panic(http.ErrAbortHandler)
+	}
 }
 
 func (s *Server) authorized(r *http.Request) bool {
@@ -222,6 +236,13 @@ func (s *Server) dialTarget(ctx context.Context, host, port string) (net.Conn, e
 	return access.Dial(ctx, func(ctx context.Context) (net.Conn, error) { return s.dialRawTarget(ctx, host, port) })
 }
 func (s *Server) dialRawTarget(ctx context.Context, host, port string) (net.Conn, error) {
+	dialer := &net.Dialer{Timeout: s.timeout(), KeepAlive: 30 * time.Second}
+	return s.dialResolvedTarget(ctx, host, port, dialer.DialContext)
+}
+
+// dialResolvedTarget owns resolution and passes only filtered numeric addresses
+// to the socket dialer. Keep DNS and dialing in this single policy boundary.
+func (s *Server) dialResolvedTarget(ctx context.Context, host, port string, dial contextDial) (net.Conn, error) {
 	resolver := s.Resolver
 	if resolver == nil {
 		resolver = net.DefaultResolver
@@ -248,22 +269,7 @@ func (s *Server) dialRawTarget(ctx context.Context, host, port string) (net.Conn
 	if len(permitted) == 0 {
 		return nil, errors.New(i18n.Text("no permitted destination addresses"))
 	}
-	dialer := &net.Dialer{Timeout: s.timeout(), KeepAlive: 30 * time.Second}
-	return dialFamilies(ctx, permitted, port, 250*time.Millisecond, dialer.DialContext)
-}
-
-func safePublicIP(ip netip.Addr) bool {
-	if !ip.IsValid() || !ip.IsGlobalUnicast() || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
-		return false
-	}
-	// Shared address space, documentation and benchmark ranges are not WAN destinations.
-	for _, prefix := range []string{"100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "2001:db8::/32", "fc00::/7"} {
-		p := netip.MustParsePrefix(prefix)
-		if p.Contains(ip) {
-			return false
-		}
-	}
-	return true
+	return dialFamilies(ctx, permitted, port, 250*time.Millisecond, dial)
 }
 
 type flushingWriter struct {

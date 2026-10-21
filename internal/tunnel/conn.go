@@ -52,11 +52,23 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 	}
 	go func() {
 		_, err := fastCopy(upload, upPeer)
-		_ = stream.writer.CloseWithError(err)
+		if err != nil {
+			conn.finished(err)
+			return
+		}
+		_ = stream.writer.Close()
 		_ = upPeer.Close()
-		conn.finished(err)
+		conn.finished(nil)
 	}()
-	go func() { _, err := fastCopy(downPeer, download); _ = downPeer.Close(); conn.finished(err) }()
+	go func() {
+		_, err := fastCopy(downPeer, download)
+		if err != nil {
+			conn.finished(err)
+			return
+		}
+		_ = downPeer.Close()
+		conn.finished(nil)
+	}()
 	return conn, nil
 }
 
@@ -72,10 +84,19 @@ type streamConn struct {
 	remote                     net.Addr
 	once                       sync.Once
 	pumps                      atomic.Int32
+
+	failureMu sync.Mutex
+	failure   error
 }
 
-func (c *streamConn) Read(b []byte) (int, error)         { return c.down.Read(b) }
-func (c *streamConn) Write(b []byte) (int, error)        { return c.up.Write(b) }
+func (c *streamConn) Read(b []byte) (int, error) {
+	n, err := c.down.Read(b)
+	return n, c.streamError(err)
+}
+func (c *streamConn) Write(b []byte) (int, error) {
+	n, err := c.up.Write(b)
+	return n, c.streamError(err)
+}
 func (c *streamConn) LocalAddr() net.Addr                { return virtualAddr("client") }
 func (c *streamConn) RemoteAddr() net.Addr               { return c.remote }
 func (c *streamConn) SetReadDeadline(t time.Time) error  { return c.down.SetReadDeadline(t) }
@@ -99,6 +120,13 @@ func (c *streamConn) Close() error {
 }
 func (c *streamConn) finished(err error) {
 	if err != nil {
+		// Publish the cause before closing either net.Pipe endpoint. Otherwise
+		// a pending application Read can observe EOF instead of stream reset.
+		c.failureMu.Lock()
+		if c.failure == nil {
+			c.failure = err
+		}
+		c.failureMu.Unlock()
 		_ = c.Close()
 		return
 	}
@@ -106,4 +134,21 @@ func (c *streamConn) finished(err error) {
 		c.cancel()
 		c.stream.close()
 	}
+}
+
+// Preserve application deadlines, but replace teardown-induced pipe errors
+// with the original transport/decoder failure. A clean EOF stays a clean EOF.
+func (c *streamConn) streamError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if timeout, ok := err.(net.Error); ok && timeout.Timeout() {
+		return err
+	}
+	c.failureMu.Lock()
+	defer c.failureMu.Unlock()
+	if c.failure != nil {
+		return c.failure
+	}
+	return err
 }

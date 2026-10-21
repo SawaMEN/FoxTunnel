@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "kind": "h3-quic-observation",
+  "capture_method": "endpoint",
+  "capture_scenario": "verified first connection; controlled loopback endpoint; QUIC v1",
+  "quic": {
+    "version": 1,
+    "tls_alpn": "h3",
+    "initial_datagram_size": 1252,
+    "transport_parameters": [
+      {
+        "id": 1,
+        "value": 30000
+      },
+      {
+        "id": 3,
+        "value": 4611686018427387903
+      },
+      {
+        "id": 4,
+        "value": 25165824
+      },
+      {
+        "id": 5,
+        "value": 12582912
+      },
+      {
+        "id": 6,
+        "value": 1048576
+      },
+      {
+        "id": 7,
+        "value": 1048576
+      },
+      {
+        "id": 8,
+        "value": 100
+      },
+      {
+        "id": 9,
+        "value": 100
+      },
+      {
+        "id": 10,
+        "value": 3
+      },
+      {
+        "id": 11,
+        "value": 20
+      },
+      {
+        "id": 12,
+        "value": false
+      },
+      {
+        "id": 14,
+        "value": 8
+      }
+    ],
+    "parameter_scope": "selected effective peer parameters, including RFC defaults; no raw presence/order/CID claim"
+  },
+  "h3": {
+    "settings": [
+      {
+        "id": 1,
+        "value": 65536
+      },
+      {
+        "id": 7,
+        "value": 20
+      },
+      {
+        "id": 8,
+        "value": true
+      },
+      {
+        "id": 51,
+        "value": true
+      },
+      {
+        "id": 16765559,
+        "value": 1
+      },
+      {
+        "id": 727725890,
+        "value": 0
+      }
+    ]
+  }
+}

@@ -27,14 +27,68 @@
       "subject": "foxtunnel",
       "scope": "native-loopback",
       "source_commit": "a3621705d7b1375df3457c7ce87483652e3c695e"
+    },
+    {
+      "id": "firefox-controlled-h2-20261021",
+      "path": "docs/measurements/2026-10-21/wire/firefox-h2.json",
+      "sha256": "8f6f814debefb2e8730bf4e631532fae035373fda0747f5e03f89a60af5dafc5",
+      "kind": "tls_h2",
+      "subject": "firefox",
+      "scope": "controlled-loopback",
+      "source_commit": null
+    },
+    {
+      "id": "firefox-controlled-h3-20261021",
+      "path": "docs/measurements/2026-10-21/wire/firefox-h3.json",
+      "sha256": "e33c37cc3cf3596243a125881dc4e6c1b54ab248a6ca9ee8c4382c66c787c513",
+      "kind": "quic_h3",
+      "subject": "firefox",
+      "scope": "controlled-loopback",
+      "source_commit": null
+    },
+    {
+      "id": "naive-controlled-h2-20261021",
+      "path": "docs/measurements/2026-10-21/wire/naive-h2.json",
+      "sha256": "7478d9f99a0df5e1ef09a6db6bb1cc6441e9e68b2b65ed05f205829ba8dc548e",
+      "kind": "tls_h2",
+      "subject": "naive",
+      "scope": "controlled-loopback",
+      "source_commit": "0539676ac91d9607caa00869b709e66643b91ac5"
+    },
+    {
+      "id": "naive-controlled-h3-20261021",
+      "path": "docs/measurements/2026-10-21/wire/naive-h3.json",
+      "sha256": "f3b591faca8cabe244d3c779f591e79ac9f96ec40d0abf9efda4bdd0340e6591",
+      "kind": "quic_h3",
+      "subject": "naive",
+      "scope": "controlled-loopback",
+      "source_commit": "0539676ac91d9607caa00869b709e66643b91ac5"
+    },
+    {
+      "id": "foxtunnel-controlled-h2-20261021",
+      "path": "docs/measurements/2026-10-21/wire/foxtunnel-h2.json",
+      "sha256": "f8dda06d2f90b2ee5b1f0e04b6d5bb7be29e6de7ca6b792abaaac66abc695700",
+      "kind": "tls_h2",
+      "subject": "foxtunnel",
+      "scope": "controlled-loopback",
+      "source_commit": "03e9c9eab0e84d66def2e38ff1df751bcb5a70fa"
+    },
+    {
+      "id": "foxtunnel-controlled-h3-20261021",
+      "path": "docs/measurements/2026-10-21/wire/foxtunnel-h3.json",
+      "sha256": "e64e99a8a187cb37c106e1ab2f522ac61eb02079e8f05f15aa06271128eae139",
+      "kind": "quic_h3",
+      "subject": "foxtunnel",
+      "scope": "controlled-loopback",
+      "source_commit": "03e9c9eab0e84d66def2e38ff1df751bcb5a70fa"
     }
   ],
   "comparison": {
-    "firefox_tls_h2": "firefox158-h2",
-    "firefox_quic_h3": null,
-    "foxtunnel_tls_h2": "foxtunnel-nss-h2",
-    "foxtunnel_quic_h3": null,
-    "naive_tls_h2": null,
-    "naive_quic_h3": null
+    "firefox_tls_h2": "firefox-controlled-h2-20261021",
+    "firefox_quic_h3": "firefox-controlled-h3-20261021",
+    "foxtunnel_tls_h2": "foxtunnel-controlled-h2-20261021",
+    "foxtunnel_quic_h3": "foxtunnel-controlled-h3-20261021",
+    "naive_tls_h2": "naive-controlled-h2-20261021",
+    "naive_quic_h3": "naive-controlled-h3-20261021"
   }
 }

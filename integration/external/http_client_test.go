@@ -23,10 +23,10 @@ import (
 )
 
 // Only exported FoxTunnel APIs are available in this independent module.
-func publicProxy(t *testing.T) (string, string, ft.Credentials, *atomic.Int64) {
+func publicProxy(t *testing.T, udp ...bool) (string, string, ft.Credentials, *atomic.Int64) {
 	t.Helper()
 	creds := ft.Credentials{Username: "external-sdk", Password: "laboratory-only-not-an-operator-secret"}
-	handler, err := ft.NewServer(ft.ServerConfig{Credentials: creds, AllowPrivateDestinations: true})
+	handler, err := ft.NewServer(ft.ServerConfig{Credentials: creds, AllowPrivateDestinations: true, EnableUDP: len(udp) > 0 && udp[0]})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -26,6 +26,13 @@ func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer s.activeTunnels.Add(-1)
 
+	// The budget includes body upload: an authenticated slow sender must not
+	// retain an admission slot indefinitely before resolution even starts.
+	ctx, cancel := context.WithTimeout(r.Context(), min(s.timeout(), 3*time.Second))
+	defer cancel()
+	stopBody := context.AfterFunc(ctx, func() { _ = r.Body.Close() })
+	defer stopBody()
+
 	data, err := io.ReadAll(io.LimitReader(r.Body, udpproto.MaxDatagram+1))
 	if err != nil {
 		http.Error(w, "invalid datagram", http.StatusBadRequest)
@@ -40,8 +47,6 @@ func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid datagram", http.StatusBadRequest)
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), min(s.timeout(), 3*time.Second))
-	defer cancel()
 	ip, err := s.resolveUDP(ctx, packet.Host)
 	if err != nil {
 		http.Error(w, "destination unavailable", http.StatusBadGateway)
@@ -60,6 +65,8 @@ func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
+	defer stop()
 	_ = conn.SetDeadline(time.Now().Add(min(s.timeout(), 3*time.Second)))
 	if _, err := conn.Write(packet.Data); err != nil {
 		http.Error(w, "datagram send failed", http.StatusBadGateway)
@@ -68,7 +75,8 @@ func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 	response := make([]byte, udpproto.MaxDatagram)
 	n, err := conn.Read(response)
 	if err != nil {
-		if ne, ok := err.(net.Error); ok && ne.Timeout() {
+		ne, timeout := err.(net.Error)
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) || (timeout && ne.Timeout()) {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}

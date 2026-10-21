@@ -2,7 +2,7 @@ name: Stage 6 UDP Association and Stream Security
 
 on:
   push:
-    branches: [up]
+    branches: [main]
     paths:
       - 'internal/tunnel/udp_client.go'
       - 'internal/tunnel/udp_stream_client.go'

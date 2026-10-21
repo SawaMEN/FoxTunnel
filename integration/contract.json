@@ -12,11 +12,21 @@
         "--json"
       ],
       "shutdown": "SIGTERM",
-      "reload": "SIGHUP (Unix: certificates and access policy)"
+      "reload": "SIGHUP (Unix: certificates and access policy)",
+      "event_schema": 1,
+      "events_flag": "--events-json",
+      "event_encoding": "JSON Lines on stdout; diagnostics on stderr",
+      "events": [
+        "ready",
+        "stopped"
+      ],
+      "portable_shutdown": "--shutdown-on-stdin-eof (host owns stdin pipe)",
+      "readiness": "local listeners bound; no remote trust/authentication claim"
     },
     "go": {
       "module": "github.com/SawaMEN/FoxTunnel",
-      "api": "experimental; pin a release or commit"
+      "api": "experimental; pin a release or commit",
+      "sdk_schema": 1
     }
   },
   "host_owns": [

@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "protocol": "foxtunnel-draft-0",
+  "authentication": [
+    {
+      "value": "Basic YWxpY2U6c2VjcmV0",
+      "valid": true,
+      "username": "alice",
+      "password": "secret"
+    },
+    {
+      "value": "Basic YTpiOmM=",
+      "valid": true,
+      "username": "a",
+      "password": "b:c"
+    },
+    {
+      "value": "Basic YWxpY2U6",
+      "valid": false
+    },
+    {
+      "value": "Basic YWxpY2U6c2VjcmV0\n",
+      "valid": false
+    },
+    {
+      "value": "Basic /zpw",
+      "valid": false
+    }
+  ],
+  "datagrams": [
+    {
+      "name": "ipv4-empty",
+      "hex": "000000017f0000010035",
+      "valid": true,
+      "host": "127.0.0.1",
+      "port": 53,
+      "payload_hex": ""
+    },
+    {
+      "name": "ipv4-dns",
+      "hex": "00000001080808080035abcd",
+      "valid": true,
+      "host": "8.8.8.8",
+      "port": 53,
+      "payload_hex": "abcd"
+    },
+    {
+      "name": "ipv6-empty",
+      "hex": "00000004000000000000000000000000000000010035",
+      "valid": true,
+      "host": "::1",
+      "port": 53,
+      "payload_hex": ""
+    },
+    {
+      "name": "domain-one-empty",
+      "hex": "0000000301610035",
+      "valid": true,
+      "host": "a",
+      "port": 53,
+      "payload_hex": ""
+    },
+    {
+      "name": "domain-two-empty",
+      "hex": "000000030261620035",
+      "valid": true,
+      "host": "ab",
+      "port": 53,
+      "payload_hex": ""
+    },
+    {
+      "name": "domain-payload",
+      "hex": "000000030361626301bbff",
+      "valid": true,
+      "host": "abc",
+      "port": 443,
+      "payload_hex": "ff"
+    },
+    {
+      "name": "fragment",
+      "hex": "000001017f0000010035",
+      "valid": false
+    },
+    {
+      "name": "reserved",
+      "hex": "010000017f0000010035",
+      "valid": false
+    },
+    {
+      "name": "zero-port",
+      "hex": "000000017f0000010000",
+      "valid": false
+    },
+    {
+      "name": "unknown-address",
+      "hex": "000000057f0000010035",
+      "valid": false
+    },
+    {
+      "name": "short-ipv4",
+      "hex": "000000017f00000100",
+      "valid": false
+    },
+    {
+      "name": "zero-domain",
+      "hex": "00000003000035",
+      "valid": false
+    },
+    {
+      "name": "control-domain",
+      "hex": "00000003036100620035",
+      "valid": false
+    }
+  ],
+  "frames": [
+    {
+      "name": "ipv4-frame",
+      "hex": "000a000000017f0000010035",
+      "valid": true,
+      "packet_hex": "000000017f0000010035"
+    },
+    {
+      "name": "short-domain-frame",
+      "hex": "00080000000301610035",
+      "valid": true,
+      "packet_hex": "0000000301610035"
+    },
+    {
+      "name": "zero-frame",
+      "hex": "0000",
+      "valid": false
+    },
+    {
+      "name": "oversize-frame",
+      "hex": "04d1",
+      "valid": false
+    },
+    {
+      "name": "short-header",
+      "hex": "00",
+      "valid": false
+    },
+    {
+      "name": "truncated-packet",
+      "hex": "000a000000017f00000100",
+      "valid": false
+    }
+  ],
+  "padding": [
+    {
+      "name": "abc-two-pad",
+      "hex": "0003026162630000",
+      "valid": true,
+      "payload_hex": "616263"
+    },
+    {
+      "name": "one-byte",
+      "hex": "00010061",
+      "valid": true,
+      "payload_hex": "61"
+    },
+    {
+      "name": "zero-payload",
+      "hex": "000000",
+      "valid": false
+    },
+    {
+      "name": "too-long",
+      "hex": "400100",
+      "valid": false
+    },
+    {
+      "name": "short-header",
+      "hex": "0003",
+      "valid": false
+    },
+    {
+      "name": "missing-padding",
+      "hex": "00030261626300",
+      "valid": false
+    }
+  ]
+}

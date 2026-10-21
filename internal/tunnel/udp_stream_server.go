@@ -2,6 +2,8 @@ package tunnel
 
 import (
 	"context"
+	"errors"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -45,11 +47,29 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), udpStreamLifetime)
 	defer cancel()
-	stop := context.AfterFunc(ctx, func() { _ = r.Body.Close() })
-	defer stop()
+	writerDone := make(chan struct{})
+	controller := http.NewResponseController(w)
+	abortDone := make(chan struct{})
+	stop := context.AfterFunc(ctx, func() {
+		defer close(abortDone)
+		// A peer that stops reading must not strand the response writer while
+		// teardown waits for it. Go H2 and quic-go H3 expose write deadlines.
+		_ = r.Body.Close()
+		select {
+		case <-writerDone:
+			// Preserve clean END_STREAM if the writer can exit normally.
+		case <-time.After(100 * time.Millisecond):
+			_ = controller.SetWriteDeadline(time.Now())
+		}
+	})
+	defer func() {
+		// A ResponseWriter cannot be used after the handler returns.
+		if !stop() {
+			<-abortDone
+		}
+	}()
 
 	out := make(chan []byte, udpStreamQueued)
-	writerDone := make(chan struct{})
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
@@ -70,13 +90,17 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 					cancel()
 					return
 				}
-				flusher.Flush()
+				if err := controller.Flush(); err != nil {
+					cancel()
+					return
+				}
 			}
 		}
 	}()
 
 	flows := make(map[string]*udpStreamFlow)
 	var readers sync.WaitGroup
+	var frameError error
 	defer func() {
 		cancel()
 		for _, f := range flows {
@@ -85,15 +109,23 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 		readers.Wait()
 		close(out)
 		<-writerDone
+		if frameError != nil && r.Context().Err() == nil {
+			// A malformed/truncated frame is not a clean association EOF.
+			panic(http.ErrAbortHandler)
+		}
 	}()
 
 	for {
 		raw, err := udpproto.ReadFrame(r.Body)
 		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				frameError = err
+			}
 			return
 		} // malformed frames terminate this association
 		packet, err := udpproto.Parse(raw)
 		if err != nil {
+			frameError = err
 			return
 		}
 		key := net.JoinHostPort(packet.Host, strconv.Itoa(int(packet.Port)))
@@ -158,7 +190,12 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 		}
 		f.last = now
 		_ = f.conn.SetReadDeadline(now.Add(udpFlowIdle))
-		if _, err := f.conn.Write(packet.Data); err != nil {
+		_ = f.conn.SetWriteDeadline(now.Add(min(s.timeout(), 3*time.Second)))
+		conn := f.conn
+		stopWrite := context.AfterFunc(ctx, func() { _ = conn.Close() })
+		_, writeError := conn.Write(packet.Data)
+		stopWrite()
+		if writeError != nil {
 			_ = f.conn.Close()
 			delete(flows, key)
 		}

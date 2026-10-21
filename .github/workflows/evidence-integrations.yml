@@ -2,10 +2,10 @@ name: Evidence and external SDK integrations
 
 on:
   pull_request:
-    paths: ['foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
+    paths: ['cmd/foxtunnel/**', 'processhost/**', 'foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
   push:
     branches: [main]
-    paths: ['foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
+    paths: ['cmd/foxtunnel/**', 'processhost/**', 'foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/AUDIT-READINESS.md', '.github/workflows/evidence-integrations.yml']
   workflow_dispatch:
 
 permissions:
@@ -52,18 +52,25 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26.9'
+          go-version: '1.26.10'
           cache-dependency-path: integration/external/go.sum
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Client and server process events and EOF shutdown on the native OS
+        run: go test -race ./cmd/foxtunnel -run '^TestProcess(EventsAndEOFShutdown|NeverReportsReadyAfterInvalidConfiguration)$' -count=1 -timeout=60s
+      - name: Build actual runtime for the external process host
+        shell: bash
+        run: |
+          go build -race -o "$RUNNER_TEMP/foxtunnel-sdk-runtime.exe" ./cmd/foxtunnel
+          echo "FOX_SDK_PROCESS_BINARY=$RUNNER_TEMP/foxtunnel-sdk-runtime.exe" >> "$GITHUB_ENV"
       - name: Run independent public SDK consumer with race detector
         working-directory: integration/external
         shell: bash
         run: |
           set -euo pipefail
           go test -race -json ./... -count=1 -timeout=90s | tee "$RUNNER_TEMP/foxtunnel-sdk-events.jsonl"
-      - name: Require actual execution of all 16 cases
+      - name: Require actual execution of all 22 cases
         shell: bash
         run: |
           set -euo pipefail

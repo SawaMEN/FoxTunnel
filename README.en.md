@@ -29,6 +29,7 @@ go build -o foxtunnel ./cmd/foxtunnel
 - [Manual core setup](docs/START.en.md).
 - [Transports and options](docs/FEATURES.en.md).
 - [Architecture and development](docs/DEVELOPMENT.en.md).
+- [Implementation plan: 10 stages and progress (Russian)](docs/IMPLEMENTATION-PLAN.md).
 
 The API and wire draft are experimental; pin a tested tag/commit. Loopback CI
 measurements do not prove DPI resistance or host VPN leak protection.

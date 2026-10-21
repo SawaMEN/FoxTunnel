@@ -21,7 +21,7 @@ SUBJECTS = ('firefox', 'foxtunnel', 'naive')
 PROTOCOLS = ('tls_h2', 'quic_h3')
 LOCKS = ('go.mod', 'go.sum', 'integration/external/go.mod', 'integration/external/go.sum',
          'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock',
-         'scripts/neqo.lock.json', 'scripts/mozilla-runtime.lock.json')
+         'scripts/neqo.lock.json', 'scripts/mozilla-runtime.lock.json', 'scripts/wire-capture.lock.json')
 
 
 def require(condition, reason):

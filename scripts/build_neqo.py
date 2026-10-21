@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shlex
 import shutil
 import subprocess
@@ -52,6 +53,32 @@ def validate_lock(lock):
         packages = [p for p in cargo['package'] if p['name'] == name]
         if len(packages) != 1 or packages[0]['version'] != lock[key + '_version'] or not packages[0].get('source', '').endswith('#' + lock[key + '_commit']):
             raise ValueError('Cargo.lock does not match pinned ' + name)
+    # Every Mozilla protocol crate must use the same source revision. Checking
+    # only neqo-http3 misses transport/qpack/common drift in a modified lockfile.
+    expected_source = ('git+https://github.com/mozilla/neqo?rev=' +
+                       lock['neqo_commit'] + '#' + lock['neqo_commit'])
+    for package in cargo['package']:
+        source = package.get('source', '')
+        if source.startswith('git+https://github.com/mozilla/neqo') and source != expected_source:
+            raise ValueError('Cargo.lock does not match pinned ' + package['name'])
+        if package['name'].startswith('neqo-'):
+            if package['version'] != lock['neqo_version'] or package.get('source') != expected_source:
+                raise ValueError('Cargo.lock does not match pinned ' + package['name'])
+        if package['name'] == 'nss-rs' and source != 'git+https://github.com/mozilla/nss-rs#' + lock['nss_rs_commit']:
+            raise ValueError('Cargo.lock does not match pinned nss-rs source')
+    toolchain = tomllib.loads((CRATE / 'rust-toolchain.toml').read_text())
+    if toolchain['toolchain']['channel'] != lock['rust_toolchain']:
+        raise ValueError('Rust toolchain pin differs')
+    manifest = tomllib.loads((CRATE / 'Cargo.toml').read_text())
+    for name in ('neqo-common', 'neqo-http3', 'neqo-transport'):
+        dependency = manifest['dependencies'][name]
+        if dependency.get('git') != 'https://github.com/mozilla/neqo' or dependency.get('rev') != lock['neqo_commit']:
+            raise ValueError('Cargo.toml does not match pinned ' + name)
+    api = (ROOT / 'internal/neqo/api.go').read_text()
+    for name, key in [('Version', 'neqo_version'), ('Revision', 'neqo_commit')]:
+        match = re.search(r'^const ' + name + r' = "([^"]+)"$', api, re.MULTILINE)
+        if match is None or match[1] != lock[key]:
+            raise ValueError('Go Neqo API ' + name + ' pin differs')
     if lock['nss_version'] != json.loads(mozilla_runtime.LOCK.read_text())['nss_version']:
         raise ValueError('Neqo and TCP NSS runtime pins differ')
 

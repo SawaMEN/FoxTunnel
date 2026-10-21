@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "kind": "external-sdk-process-matrix-provenance",
+  "run_id": 39540666188,
+  "run_url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39540666188",
+  "runtime_head": "034b4fc040d699a0824882058bec36b8ecabcad6",
+  "checkout_commit": "ce1d3d086821b1a9773c58670cc38ff1df2fa46c",
+  "verified_checkout_parents": [
+    "b124c16a30e19a48d8d7bab4270f18e00a134062",
+    "034b4fc040d699a0824882058bec36b8ecabcad6"
+  ],
+  "artifacts": [
+    {
+      "name": "external-sdk-ubuntu-24.04",
+      "id": 12319281862,
+      "digest": "sha256:be8b059a706f9e51e37d88422a35c619bc86f862f47d2ebb5d657f1f328ad867"
+    },
+    {
+      "name": "external-sdk-macos-15",
+      "id": 12319232844,
+      "digest": "sha256:70207822f94be73b57d4295daddd3d367a4e8c15c8437f7d4bfa8c54b2a9299d"
+    },
+    {
+      "name": "external-sdk-windows-latest",
+      "id": 12318928793,
+      "digest": "sha256:7c6b13f0caac7ebae082818e216019830220c04ca44991aab860df0efd506fc9"
+    }
+  ],
+  "artifact_zip_digests_verified": true,
+  "jobs": [
+    {
+      "id": 119027415290,
+      "name": "sdk (macos-15)",
+      "conclusion": "success"
+    },
+    {
+      "id": 119027415347,
+      "name": "evidence",
+      "conclusion": "success"
+    },
+    {
+      "id": 119027415503,
+      "name": "sdk (windows-latest)",
+      "conclusion": "success"
+    },
+    {
+      "id": 119027415593,
+      "name": "sdk (ubuntu-24.04)",
+      "conclusion": "success"
+    }
+  ],
+  "files": {
+    "external-sdk-windows-latest.json": "74ca67c4b5846c24f5ca7ba7548a26d4841b0af02f4670517bbeb471c592e17b",
+    "external-sdk-macos-15.json": "e9913191c92623cb6b6c3c352ffcd1f9f5ded23f953f0dbec1a452cf79258348",
+    "external-sdk-ubuntu-24.04.json": "a04cb72a576f51c5e5d7422e08102bd76ef741bc44f62bbc6ef6a1d1457d6bd1"
+  },
+  "required_cases_per_platform": 22,
+  "native_platforms": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "scope": "Loopback SDK and actual CLI process host on native runners. Real H2/H3 payload, lifecycle and cancellation; no third-party adoption, native Swift/JNI bridge, TUN/DNS, Internet or independent audit claim."
+}

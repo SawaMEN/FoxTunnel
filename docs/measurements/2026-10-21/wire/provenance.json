@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "kind": "controlled-wire-capture-provenance",
+  "run_url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39500678054",
+  "run_id": 39500678054,
+  "job_id": 118897071066,
+  "artifact_id": 12301755138,
+  "artifact_name": "native-wire-observations",
+  "artifact_zip_sha256": "6fa390f137ca04d636382cc5055bdff4b8a73eac4474f6cf870ba5400451aff7",
+  "artifact_digest_verified": true,
+  "runtime_head": "03e9c9eab0e84d66def2e38ff1df751bcb5a70fa",
+  "checkout_commit": "bb8914a42c3e29d36fc16916ed05e42fe01d283b",
+  "verified_checkout_parents": [
+    "8e37455e04e0baee52fd634e7370f57d534eef15",
+    "03e9c9eab0e84d66def2e38ff1df751bcb5a70fa"
+  ],
+  "files": {
+    "comparison.json": "c7c8eeb0ea1edc681d61c4a58414fd353b807b9f6c32e35f15d5181a3f50f29d",
+    "firefox-h2.json": "8f6f814debefb2e8730bf4e631532fae035373fda0747f5e03f89a60af5dafc5",
+    "firefox-h3.json": "e33c37cc3cf3596243a125881dc4e6c1b54ab248a6ca9ee8c4382c66c787c513",
+    "foxtunnel-h2.json": "f8dda06d2f90b2ee5b1f0e04b6d5bb7be29e6de7ca6b792abaaac66abc695700",
+    "foxtunnel-h3.json": "e64e99a8a187cb37c106e1ab2f522ac61eb02079e8f05f15aa06271128eae139",
+    "manifest.json": "e32122b81e00b56c87b7226ea5ff29b592b0501a421edd79e560d6dfbbd03b2d",
+    "naive-h2.json": "7478d9f99a0df5e1ef09a6db6bb1cc6441e9e68b2b65ed05f205829ba8dc548e",
+    "naive-h3.json": "f3b591faca8cabe244d3c779f591e79ac9f96ec40d0abf9efda4bdd0340e6591"
+  },
+  "native_pins": {
+    "schema": 1,
+    "rust_toolchain": "1.99.1",
+    "neqo_version": "0.33.0",
+    "neqo_commit": "1ec4c2a3ccd7ada264112d1b70b070381557d844",
+    "nss_rs_version": "0.16.1",
+    "nss_rs_commit": "ba8a3f6acffc7e25749054969ccbbb3ca615df7f",
+    "nss_headers_commit": "97045cee4390aa5c035f95e6db13f3cd7c940fc1",
+    "nss_version": "3.130",
+    "nspr_headers_url": "https://archive.ubuntu.com/ubuntu/pool/main/n/nspr/libnspr4-dev_4.39-1ubuntu1_amd64.deb",
+    "nspr_headers_sha256": "1a02eba12723edd29ccd905a352b54e4bf4a69c08ef14509786808badddd66f3",
+    "initial_target": "linux/amd64"
+  },
+  "naive_pin": {
+    "schema": 1,
+    "naive_version": "154.0.8037.49",
+    "naive_tag": "v154.0.8037.49-4",
+    "naive_commit": "0539676ac91d9607caa00869b709e66643b91ac5",
+    "naive_url": "https://github.com/klzgrad/naiveproxy/releases/download/v154.0.8037.49-4/naiveproxy-v154.0.8037.49-4-linux-x64.tar.xz",
+    "naive_sha256": "9d765620b90f7c60eb40c7c68b2f82537757cc52a8693dee7a00f8ba8b13dfd0"
+  },
+  "limitations": [
+    "Selected cold connection control metadata only; application methods differ.",
+    "Effective QUIC decoder values include defaults and an absent max_udp_payload_size sentinel; no raw parameter presence/order proof.",
+    "Firefox source commit is not inferred from executable or archive hashes.",
+    "No independent audit or DPI indistinguishability claim."
+  ]
+}

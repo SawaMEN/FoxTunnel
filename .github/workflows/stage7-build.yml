@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26.9'
+          go-version: '1.26.10'
       - name: Compile Go CLI and SDK packages (no test execution)
         run: |
           go build -mod=readonly ./cmd/foxtunnel
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26.9'
+          go-version: '1.26.10'
       - name: Install pinned build prerequisites
         run: |
           sudo apt-get update -qq

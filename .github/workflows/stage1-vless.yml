@@ -2,7 +2,7 @@ name: Stage 1 VLESS baseline harness (offline only)
 
 on:
   push:
-    branches: [up]
+    branches: [main]
     paths:
       - 'scripts/stage1_vless.py'
       - 'scripts/stage1_vless_gate.py'

@@ -203,11 +203,20 @@ func benchmarkNativeOptions(b *testing.B, backend string, padding bool, mode str
 		client.ServerURL = nodeURL(b, node.URL)
 	}
 	client.Padding = padding
-	if err := client.SetTLSBackend(backend); err != nil {
+	selected := backend
+	if backend == "neqo" {
+		selected = "auto"
+	}
+	if err := client.SetTLSBackend(selected); err != nil {
 		b.Fatal(err)
 	}
 	if err := client.SetTransport(mode); err != nil {
 		b.Fatal(err)
+	}
+	if backend == "neqo" {
+		if err := client.SetQUICBackend("neqo", false, 2*time.Second); err != nil {
+			b.Fatal(err)
+		}
 	}
 	if len(receiveProfile) > 0 {
 		if err := client.SetHTTP2ReceiveProfile(receiveProfile[0]); err != nil {

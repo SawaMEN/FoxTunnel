@@ -5,6 +5,7 @@ package udpproto
 import (
 	"encoding/binary"
 	"errors"
+	"net"
 	"net/netip"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ type Packet struct {
 }
 
 func Parse(b []byte) (Packet, error) {
-	if len(b) < 10 || len(b) > MaxDatagram || b[0] != 0 || b[1] != 0 || b[2] != 0 {
+	if len(b) < 8 || len(b) > MaxDatagram || b[0] != 0 || b[1] != 0 || b[2] != 0 {
 		return Packet{}, ErrPacket
 	}
 	var p Packet
@@ -74,7 +75,7 @@ func Parse(b []byte) (Packet, error) {
 }
 
 func Encode(p Packet) ([]byte, error) {
-	if p.Port == 0 || len(p.Data) > MaxDatagram-10 {
+	if p.Port == 0 || len(p.Data) > MaxDatagram {
 		return nil, ErrPacket
 	}
 	b := []byte{0, 0, 0}
@@ -101,5 +102,5 @@ func Encode(p Packet) ([]byte, error) {
 }
 
 func (p Packet) Target() string {
-	return strings.Join([]string{p.Host, strconv.Itoa(int(p.Port))}, ":")
+	return net.JoinHostPort(p.Host, strconv.Itoa(int(p.Port)))
 }

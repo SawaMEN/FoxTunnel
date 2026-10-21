@@ -24,7 +24,7 @@ func testNativeTransports(t *testing.T, backend string, clientProfiles ...string
 		}
 		t.Run(mode, func(t *testing.T) {
 			target := testDestination(t, func(c net.Conn) { data, _ := io.ReadAll(c); _, _ = c.Write(data) })
-			server := &Server{Username: "alice", Password: "secret", AllowPrivate: true, Padding: true}
+			server := &Server{RequireProtocolNegotiation: true, Username: "alice", Password: "secret", AllowPrivate: true, Padding: true}
 			client, addr := testClient(t, server)
 			if mode == "h3-post" {
 				node := setupEndpoint(t, client, server)
@@ -42,6 +42,7 @@ func testNativeTransports(t *testing.T, backend string, clientProfiles ...string
 					t.Fatal(err)
 				}
 			}
+			client.RequireProtocolNegotiation = true
 			client.Padding = true
 			client.ConnectTimeout = 200 * time.Millisecond
 			stream, setupErr := client.openTunnel(context.Background(), target)

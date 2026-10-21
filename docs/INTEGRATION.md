@@ -4,6 +4,7 @@ FoxTunnel is an independent HTTPS tunnel protocol core. It has no dependency
 on sing-box or Xray. A client-side implementation and a server-side implementation
 are required to speak the protocol; neither is a whole-device VPN application.
 The public API and wire draft remain experimental: pin the tested tag and commit.
+See [SDK lifecycle and process schema 1](SDK.md) for the executable host contract.
 
 ## Release contents
 
@@ -25,7 +26,7 @@ GitHub's automatically generated source downloads are independent of these asset
 actual compiled transport capabilities. `integration.json` is the versioned
 integration contract (schema 1), not a user configuration or a promise of native ABI.
 `foxtunnel version --json` reports `product: protocol-core` and
-`integration_schema: 1`, as well as the actual compiled backends.
+`integration_schema: 1`, `sdk_schema: 1` and `process_schema: 1`, as well as the actual compiled backends.
 Verify provenance against the expected tag/commit before starting an executable.
 Do not load NSS into an unrelated process that already links a different NSS version.
 
@@ -39,8 +40,16 @@ Close returned connections and call `Client.Close()` when stopping the profile.
 `Status()`, `NodeStatuses()` and `NotifyNetworkChange()` support diagnostics and
 confirmed route changes. See the repository's `examples/embed/main.go` and
 `integration/external` consumer tests. Direct public `DialContext` supports TCP;
-UDP is currently opt-in through SOCKS5 UDP ASSOCIATE with `EnableUDP` and,
-optionally, `UDPStreaming`. The matching server must enable UDP too.
+UDP is opt-in with `EnableUDP` on both ends. Direct datagram APIs are
+`ExchangeUDP(ctx, Datagram)` (v1 one-shot) and `OpenUDP(ctx)` (v2 association
+with Send/Receive/Close). The OpenUDP context owns the whole association lifetime;
+Receive cancellation only cancels its wait, while cancellation of an in-flight
+Send terminates the association to avoid partial-frame replay. Client.Close
+cancels pending setup and closes owned associations. UDP and TCP share the
+MaxConnections budget. Address is host:port (bracket IPv6); DNS resolves at the
+exit. MaxUDPDatagram includes the address header: 1232 bytes. The APIs are
+experimental; the repository guide is `docs/UDP-H3.md`.
+SOCKS5 UDP ASSOCIATE remains available, optionally with `UDPStreaming`.
 
 For a process host on supported Linux architectures:
 
@@ -50,8 +59,12 @@ For a process host on supported Linux architectures:
 ```
 
 The profile file is a secret (mode 0600 in a private directory). Avoid passing
-credentials in command-line arguments. The host owns the child process, waits for
-SOCKS readiness, and terminates/reaps it on profile switch. Use a host-reserved
+credentials in command-line arguments. The host owns the child process, waits for schema-1 `ready` JSON with
+`--events-json`, and terminates/reaps it on profile switch.
+Use `--shutdown-on-stdin-eof` with a host-owned stdin pipe for portable shutdown.
+`processhost.StartClient` implements this supervision; `examples/process-host`
+shows a host which does not link NSS/Neqo into its address space.
+Readiness confirms a local bound socket, not remote TLS/authentication. Use a host-reserved
 loopback port. SOCKS is unauthenticated by default; set independent
 `FOXTUNNEL_SOCKS_USER` and `FOXTUNNEL_SOCKS_PASSWORD` if supported by the host.
 

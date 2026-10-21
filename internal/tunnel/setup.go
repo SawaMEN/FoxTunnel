@@ -124,12 +124,15 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 		if c.Padding {
 			req.Header.Set(paddingHeader, paddingVersion)
 		}
+		c.requestProtocol(req, "tcp")
 		timer := time.AfterFunc(budget, func() { abort(context.DeadlineExceeded) })
 		resp, err := c.transport.RoundTrip(req)
 		timedOut := !timer.Stop()
 		if err == nil && !timedOut && attemptCtx.Err() == nil {
 			if (resp.ProtoMajor != 2 && resp.ProtoMajor != 3) || resp.StatusCode != http.StatusOK {
 				err = fmt.Errorf(i18n.Text("CONNECT rejected (HTTP/%d status %d)"), resp.ProtoMajor, resp.StatusCode)
+			} else if protocolErr := c.verifyProtocol(resp, "tcp"); protocolErr != nil {
+				err = protocolErr
 			} else {
 				negotiated, paddingErr := paddingRequested(resp.Header)
 				if paddingErr != nil || negotiated != c.Padding {
@@ -147,12 +150,14 @@ func (c *Client) openTunnel(ctx context.Context, target string) (*openStream, er
 		// Any response proves the peer answered. Do not reinterpret HTTP errors,
 		// negotiation failures or a response/deadline race as a network outage.
 		answered := resp != nil
+		// Unblock both upload and context-dependent response teardown first.
+		// Some duplex transports join their writer from Body.Close.
+		cancel()
+		reader.Close()
+		writer.Close()
 		if resp != nil {
 			resp.Body.Close()
 		}
-		reader.Close()
-		writer.Close()
-		cancel()
 		release()
 		if ctx.Err() != nil {
 			return nil, ctx.Err()

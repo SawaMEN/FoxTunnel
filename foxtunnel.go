@@ -29,6 +29,9 @@ const HTTP2ReceiveFirefox158 = h2profile.Firefox158
 // TLSClientFirefox158 opts into measured preferences on pinned NSS 3.130.
 const TLSClientFirefox158 = nsstls.Firefox158
 
+// ErrProtocolNegotiation identifies missing or incompatible wire confirmation.
+var ErrProtocolNegotiation = tunnel.ErrProtocolNegotiation
+
 var ErrCapacity = errors.New("foxtunnel client connection limit reached")
 
 // TransportStatus contains only local aggregate transport counters and fixed codes.
@@ -40,6 +43,10 @@ type NodeStatus = nodeperf.Snapshot
 
 type Credentials struct{ Username, Password string }
 type ClientConfig struct {
+	// RequireProtocolNegotiation opts into strict draft/capability confirmation.
+	// False preserves legacy interoperability. Configure both ends explicitly.
+	RequireProtocolNegotiation bool
+
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
@@ -54,16 +61,16 @@ type ClientConfig struct {
 	HTTP2ReceiveProfile  string
 	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
 	Padding              bool
-	EnableUDP            bool // Experimental SOCKS5 UDP ASSOCIATE; off by default.
+	EnableUDP            bool // Experimental datagram API and SOCKS5 UDP; off by default.
 	UDPStreaming         bool // Opt-in v2 persistent UDP stream; requires EnableUDP.
 	ConnectTimeout       time.Duration
-	MaxConnections       int // Combined active SOCKS/direct connections and pending direct dials; 0 uses 256.
+	MaxConnections       int // Combined TCP/UDP connections and pending operations; 0 uses 256.
 	FallbackServers      []string
 	Balance              string // Empty preserves failover; adaptive enables passive-metric route selection.
 }
 
 // Client is configured at construction and may be shared by concurrent callers.
-// Close cancels pending dials and closes its streams and owned SOCKS listeners.
+// Close cancels pending TCP/UDP setup and closes its streams and SOCKS listeners.
 type Client struct {
 	core           *tunnel.Client
 	ctx            context.Context
@@ -72,6 +79,7 @@ type Client struct {
 	closed         bool
 	pending, limit int
 	conns          map[*ownedConn]struct{}
+	udpConns       map[*UDPConn]struct{}
 	listeners      map[net.Listener]struct{}
 }
 
@@ -86,6 +94,8 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	core.RequireProtocolNegotiation = config.RequireProtocolNegotiation
+
 	success := false
 	defer func() {
 		if !success {
@@ -128,7 +138,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	core.UDPStreaming = config.UDPStreaming
 	ctx, cancel := context.WithCancel(context.Background())
 	success = true
-	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
+	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), udpConns: make(map[*UDPConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
 }
 
 // Status returns a concurrency-safe snapshot. No addresses or secrets.
@@ -162,7 +172,7 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 		c.mu.Unlock()
 		return nil, net.ErrClosed
 	}
-	if c.pending+len(c.conns) >= c.limit {
+	if c.pending+len(c.conns)+len(c.udpConns) >= c.limit {
 		c.mu.Unlock()
 		return nil, ErrCapacity
 	}
@@ -196,6 +206,10 @@ func (c *Client) ownLocked(raw net.Conn) *ownedConn {
 // ServeSOCKS takes ownership of listener and closes it on return or Client.Close.
 // SOCKS5 supports TCP and opt-in experimental UDP ASSOCIATE. No child process or panel is required.
 func (c *Client) ServeSOCKS(listener net.Listener) error {
+	return c.serveSOCKS(context.Background(), listener)
+}
+
+func (c *Client) serveSOCKS(ctx context.Context, listener net.Listener) error {
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
@@ -205,7 +219,10 @@ func (c *Client) ServeSOCKS(listener net.Listener) error {
 	c.listeners[listener] = struct{}{}
 	c.mu.Unlock()
 	defer func() { listener.Close(); c.mu.Lock(); delete(c.listeners, listener); c.mu.Unlock() }()
-	return c.core.ServeContext(c.ctx, &ownedListener{Listener: listener, owner: c})
+	service, cancel := context.WithCancel(ctx)
+	stop := context.AfterFunc(c.ctx, cancel)
+	defer func() { stop(); cancel() }()
+	return c.core.ServeContext(service, &ownedListener{Listener: listener, owner: c})
 }
 func (c *Client) Close() error {
 	c.mu.Lock()
@@ -219,6 +236,10 @@ func (c *Client) Close() error {
 	for conn := range c.conns {
 		conns = append(conns, conn)
 	}
+	udpConns := make([]*UDPConn, 0, len(c.udpConns))
+	for conn := range c.udpConns {
+		udpConns = append(udpConns, conn)
+	}
 	listeners := make([]net.Listener, 0, len(c.listeners))
 	for l := range c.listeners {
 		listeners = append(listeners, l)
@@ -228,6 +249,9 @@ func (c *Client) Close() error {
 		l.Close()
 	}
 	for _, conn := range conns {
+		conn.Close()
+	}
+	for _, conn := range udpConns {
 		conn.Close()
 	}
 	c.core.Close()
@@ -244,6 +268,14 @@ type ownedConn struct {
 func (c *ownedConn) Close() error {
 	c.once.Do(func() { c.err = c.Conn.Close(); c.owner.mu.Lock(); delete(c.owner.conns, c); c.owner.mu.Unlock() })
 	return c.err
+}
+
+// SetLinger preserves TCP reset signalling through the supervised SOCKS adapter.
+func (c *ownedConn) SetLinger(seconds int) error {
+	if tcp, ok := c.Conn.(interface{ SetLinger(int) error }); ok {
+		return tcp.SetLinger(seconds)
+	}
+	return errors.ErrUnsupported
 }
 func (c *ownedConn) CloseWrite() error {
 	if cw, ok := c.Conn.(interface{ CloseWrite() error }); ok {
@@ -269,7 +301,7 @@ func (l *ownedListener) Accept() (net.Conn, error) {
 			raw.Close()
 			return nil, net.ErrClosed
 		}
-		if l.owner.pending+len(l.owner.conns) >= l.owner.limit {
+		if l.owner.pending+len(l.owner.conns)+len(l.owner.udpConns) >= l.owner.limit {
 			l.owner.mu.Unlock()
 			raw.Close()
 			continue
@@ -293,6 +325,9 @@ func NewAccessController(policy AccessPolicy, stateFile string) (*AccessControll
 }
 
 type ServerConfig struct {
+	// RequireProtocolNegotiation rejects authenticated legacy TCP/UDP requests.
+	RequireProtocolNegotiation bool
+
 	Access                   *AccessController // Alternative to Credentials; shared by all server transports.
 	Credentials              Credentials
 	XHTTPPath, XHTTPHost     string
@@ -319,7 +354,7 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{core: &tunnel.Server{Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, EnableUDP: config.EnableUDP, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
+	return &Server{core: &tunnel.Server{RequireProtocolNegotiation: config.RequireProtocolNegotiation, Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, EnableUDP: config.EnableUDP, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || r.TLS.Version < tls.VersionTLS13 {

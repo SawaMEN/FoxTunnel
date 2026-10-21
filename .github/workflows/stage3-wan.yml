@@ -2,7 +2,7 @@ name: Stage 3 WAN Three-Way Harness
 
 on:
   push:
-    branches: [up]
+    branches: [main]
     paths:
       - 'scripts/stage3_wan.py'
       - 'scripts/stage3_wan_gate.py'

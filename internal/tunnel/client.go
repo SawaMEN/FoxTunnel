@@ -32,6 +32,10 @@ import (
 // Client exposes local SOCKS5 TCP over the selected native HTTPS transport.
 // NSS is the default in NSS-tagged Linux builds for TCP transports; HTTP/3 defaults to Go QUIC; explicit Neqo uses NSS.
 type Client struct {
+	// RequireProtocolNegotiation rejects peers without draft/capability confirmation.
+	// Set before concurrent use. False preserves explicitly chosen legacy behavior.
+	RequireProtocolNegotiation bool
+
 	ServerURL  *url.URL
 	Username   string
 	Password   string
@@ -341,7 +345,14 @@ func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 			cancel()
 		}
 	}()
-	_, _ = io.Copy(conn, download)
+	_, downloadErr := io.Copy(conn, download)
+	if downloadErr != nil {
+		// The SOCKS-facing TCP stream has no error frame after CONNECT.
+		// Reset on a failed carrier rather than report a graceful EOF.
+		if tcp, ok := conn.(interface{ SetLinger(int) error }); ok {
+			_ = tcp.SetLinger(0)
+		}
+	}
 	cancel()
 	_ = conn.Close()
 	_ = writer.Close()

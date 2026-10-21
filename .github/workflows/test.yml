@@ -2,22 +2,37 @@ name: Tests
 on:
   push:
   pull_request:
+permissions:
+  contents: read
+
 jobs:
   go:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26.9'
+          go-version: '1.26.10'
       - name: Check format
-        run: test -z "$(gofmt -l cmd internal examples foxtunnel*.go integration/external)"
+        run: |
+          gofmt -d cmd internal examples processhost foxtunnel*.go integration/external
+          test -z "$(gofmt -l cmd internal examples processhost foxtunnel*.go integration/external)"
       - name: Check documentation links
         run: python3 scripts/check_docs_links.py
+      - name: Enforce protocol-core boundaries
+        run: python3 scripts/check_core_boundaries.py
+      - name: Check module dependency hygiene
+        run: |
+          go mod tidy -diff
+          cd integration/external
+          go mod tidy -diff
       - name: Vet
         run: go vet ./...
       - name: Test with race detector
         run: go test -race ./... -count=1 -timeout=60s
+      - name: Fuzz protocol capability parsing
+        run: go test ./internal/tunnel -run '^$' -fuzz '^FuzzProtocolTokens$' -fuzztime=10000x -parallel=2 -timeout=60s
       - name: Fuzz padding decoder
         run: go test ./internal/tunnel -run '^$' -fuzz FuzzPaddingDecoder -fuzztime=100000x -parallel=2 -timeout=120s
       - name: Фаззинг ссылок vetroff
