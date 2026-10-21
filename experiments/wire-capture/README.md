@@ -15,7 +15,8 @@ are different request methods: comparable scope is cold connection startup,
 not page workloads, complete fingerprints or tunnel payload behavior.
 
 Selected QUIC values are effective decoded parameters, including protocol
-defaults; original parameter presence, order, unknown extensions and CID bytes
+decoder defaults/sentinels (an absent max_udp_payload_size becomes MaxByteCount,
+not an advertised datagram size); original parameter presence, order, unknown extensions and CID bytes
 are excluded. H3 SETTINGS are normalized by numeric ID; wire ordering is not
 preserved. GREASE/randomized values are retained when exposed by this decoder,
 so one observation is not a stable canonical fingerprint.

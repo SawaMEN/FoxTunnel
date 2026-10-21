@@ -1,0 +1,266 @@
+{
+  "schema": 1,
+  "source": "verified first connection; controlled loopback endpoint",
+  "hello": {
+    "record_version": 769,
+    "legacy_version": 771,
+    "cipher_suites": [
+      56026,
+      4865,
+      4866,
+      4867,
+      49195,
+      49199,
+      49196,
+      49200,
+      52393,
+      52392,
+      49171,
+      49172,
+      156,
+      157,
+      47,
+      53
+    ],
+    "extensions": [
+      56026,
+      17613,
+      16,
+      43,
+      10,
+      0,
+      5,
+      35,
+      51,
+      18,
+      11,
+      13,
+      51764,
+      65281,
+      65037,
+      23,
+      27,
+      45,
+      60138
+    ],
+    "supported_groups": [
+      2570,
+      4588,
+      29,
+      23,
+      24
+    ],
+    "ec_point_formats": [
+      0
+    ],
+    "supported_versions": [
+      39578,
+      772,
+      771
+    ],
+    "signature_algorithms": [
+      39578,
+      2308,
+      2309,
+      2310,
+      1027,
+      2052,
+      1025,
+      1283,
+      2053,
+      1281,
+      2054,
+      1537
+    ],
+    "key_share_groups": [
+      2570,
+      4588,
+      29
+    ],
+    "alpn": [
+      "h2",
+      "http/1.1"
+    ],
+    "sni_present": true,
+    "ja3": "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,17613-16-43-10-0-5-35-51-18-11-13-51764-65281-65037-23-27-45,4588-29-23-24,0",
+    "ja3_md5": "5b55bfec78b5db73e0b150e5551e33b1"
+  },
+  "negotiated_alpn": "h2",
+  "tls_records": [
+    {
+      "direction": "client",
+      "type": 22,
+      "length": 1976,
+      "microseconds": 197
+    },
+    {
+      "direction": "server",
+      "type": 22,
+      "length": 1210,
+      "microseconds": 720
+    },
+    {
+      "direction": "server",
+      "type": 20,
+      "length": 1,
+      "microseconds": 720
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 36,
+      "microseconds": 720
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 1519,
+      "microseconds": 720
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 97,
+      "microseconds": 720
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 53,
+      "microseconds": 720
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 139,
+      "microseconds": 720
+    },
+    {
+      "direction": "client",
+      "type": 20,
+      "length": 1,
+      "microseconds": 1175
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 53,
+      "microseconds": 1176
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 87,
+      "microseconds": 1364
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 473,
+      "microseconds": 1364
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 62,
+      "microseconds": 1396
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 39,
+      "microseconds": 1410
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 26,
+      "microseconds": 1501
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 86,
+      "microseconds": 1615
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 53,
+      "microseconds": 1640
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 125,
+      "microseconds": 1833
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 31,
+      "microseconds": 1918
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 66,
+      "microseconds": 1937
+    }
+  ],
+  "dropped_records": 0,
+  "client_h2_frames": [
+    {
+      "type": 4,
+      "flags": 0,
+      "length": 24,
+      "stream": 0
+    },
+    {
+      "type": 8,
+      "flags": 0,
+      "length": 4,
+      "stream": 0
+    },
+    {
+      "type": 1,
+      "flags": 37,
+      "length": 447,
+      "stream": 1
+    },
+    {
+      "type": 4,
+      "flags": 1,
+      "length": 0,
+      "stream": 0
+    },
+    {
+      "type": 1,
+      "flags": 36,
+      "length": 99,
+      "stream": 3
+    }
+  ],
+  "dropped_frames": 0,
+  "initial_h2_settings": [
+    {
+      "id": 1,
+      "value": 65536
+    },
+    {
+      "id": 2,
+      "value": 0
+    },
+    {
+      "id": 4,
+      "value": 67108864
+    },
+    {
+      "id": 6,
+      "value": 262144
+    }
+  ],
+  "initial_connection_window_updates": [
+    134152193
+  ]
+}

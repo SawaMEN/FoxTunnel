@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "kind": "controlled-wire-capture-set",
+  "checkout_commit": "bb8914a42c3e29d36fc16916ed05e42fe01d283b",
+  "worktree_dirty": false,
+  "versions": {
+    "firefox": "Mozilla Firefox 158.0",
+    "naive": "naive 154.0.8037.49"
+  },
+  "network_scope": "IPv4 loopback with localhost SNI; DNS family and failover are not measured",
+  "firefox_fixture_overrides": {
+    "allow_h3_with_fixture_CA": true,
+    "force_h3_test_mapping": true,
+    "content_sandbox_disabled": true
+  },
+  "archives": {
+    "firefox": "9549b054ec4cf85f50f6a19d8c6fb79580312e71ebc4ec2cb217ec9af09dc12a",
+    "naive": "9d765620b90f7c60eb40c7c68b2f82537757cc52a8693dee7a00f8ba8b13dfd0"
+  },
+  "executable_sha256": {
+    "firefox": "a19472941a7cd7252ab5e61b02eb616a50389a784323c21dc6873a23fd700789",
+    "naive": "9fba072aceb445d0401bb26273584726c479f5c4bc7f911aebf293c90136b044",
+    "endpoint": "562da5fbcf5b447566bc466923a9b0cd9aca9385c680bdbecf6c26a54722b431"
+  },
+  "observations": [
+    {
+      "subject": "firefox",
+      "protocol": "h2",
+      "path": "firefox-h2.json",
+      "sha256": "8f6f814debefb2e8730bf4e631532fae035373fda0747f5e03f89a60af5dafc5"
+    },
+    {
+      "subject": "firefox",
+      "protocol": "h3",
+      "path": "firefox-h3.json",
+      "sha256": "e33c37cc3cf3596243a125881dc4e6c1b54ab248a6ca9ee8c4382c66c787c513"
+    },
+    {
+      "subject": "naive",
+      "protocol": "h2",
+      "path": "naive-h2.json",
+      "sha256": "7478d9f99a0df5e1ef09a6db6bb1cc6441e9e68b2b65ed05f205829ba8dc548e"
+    },
+    {
+      "subject": "naive",
+      "protocol": "h3",
+      "path": "naive-h3.json",
+      "sha256": "f3b591faca8cabe244d3c779f591e79ac9f96ec40d0abf9efda4bdd0340e6591"
+    },
+    {
+      "subject": "foxtunnel",
+      "protocol": "h2",
+      "path": "foxtunnel-h2.json",
+      "sha256": "f8dda06d2f90b2ee5b1f0e04b6d5bb7be29e6de7ca6b792abaaac66abc695700"
+    },
+    {
+      "subject": "foxtunnel",
+      "protocol": "h3",
+      "path": "foxtunnel-h3.json",
+      "sha256": "e64e99a8a187cb37c106e1ab2f522ac61eb02079e8f05f15aa06271128eae139"
+    }
+  ],
+  "scope": "Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for FoxTunnel. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained."
+}

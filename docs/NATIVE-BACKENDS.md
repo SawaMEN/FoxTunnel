@@ -2,8 +2,9 @@
 
 Этап состоит из пяти задач: целостность pins; FFI lifecycle; CPU/RSS/скорость;
 сопоставимые TLS/H2 captures Firefox/NaiveProxy/FoxTunnel; endpoint-decoded H3
-captures тех же трёх реализаций. Последние два пункта требуют новых реальных
-измерений и остаются открытыми. Interop с quic-go не заменяет такие captures.
+captures тех же трёх реализаций. Все пять пунктов реализованы в PR #41/#42.
+Новые captures охватывают начало соединения в контролируемом стенде;
+полная эквивалентность приложений и независимый аудит этим не подтверждаются.
 
 ## Закреплённые входы
 
@@ -105,12 +106,52 @@ peak RSS — MiB. Колонки ns/op/MB/s и process CPU/RSS имеют раз
 преимущество NSS/Neqo над другими реализациями. Между тремя короткими повторами
 не измерен полноценный доверительный интервал, а общие runner могут испытывать шум.
 
-## Открытые измерения
+## Свежие TLS/H2 и endpoint-decoded QUIC/H3
 
-Нужны одинаковые сценарии, OS/network endpoint и идентифицируемые source/build
-versions для Firefox, NaiveProxy и FoxTunnel. TLS/H2 и endpoint-decoded H3 должны
-быть отдельными наблюдениями: формат TLS/H2 нельзя записать в H3 слот.
-Реестр [доказательств](AUDIT-READINESS.md) фиксирует имеющиеся пропуски; исторические
-результаты с `source_commit: null` не получают новую идентичность задним числом.
-NSS, Neqo и профиль Firefox не означают автоматического совпадения сетевого
-поведения с браузером. Независимый review этапа 5 остаётся отдельным пунктом.
+[CI run 39500678054](https://github.com/SawaMEN/FoxTunnel/actions/runs/39500678054)
+получил все шесть наблюдений на одном Linux amd64 runner. Runtime head
+`03e9c9eab0e84d66def2e38ff1df751bcb5a70fa`; synthetic checkout
+`bb8914a42c3e29d36fc16916ed05e42fe01d283b`, родители проверены.
+[Исходный manifest](measurements/2026-10-21/wire/manifest.json),
+[происхождение и хеши](measurements/2026-10-21/wire/provenance.json) и
+[полное сравнение](measurements/2026-10-21/wire/comparison.json) сохранены
+без изменения байтов из CI artifact. SHA-256 ZIP сверён с digest GitHub.
+Firefox 158.0 и NaiveProxy 154.0.8037.49 взяты из закреплённых архивов;
+проверены версии исполняемых файлов и их хеши. Firefox source commit неизвестен
+и не выводится из номера версии; archive/executable identity дана в manifest.
+
+| Субъект | TLS/H2 | QUIC/H3 |
+|---|---|---|
+| Firefox 158.0 | [JSON](measurements/2026-10-21/wire/firefox-h2.json) | [JSON](measurements/2026-10-21/wire/firefox-h3.json) |
+| NaiveProxy 154.0.8037.49 | [JSON](measurements/2026-10-21/wire/naive-h2.json) | [JSON](measurements/2026-10-21/wire/naive-h3.json) |
+| FoxTunnel NSS / Neqo | [JSON](measurements/2026-10-21/wire/foxtunnel-h2.json) | [JSON](measurements/2026-10-21/wire/foxtunnel-h3.json) |
+
+Одинаковая граница сравнения — холодное соединение с локальным endpoint,
+TLS 1.3 либо QUIC v1, IPv4 loopback и проверенный localhost SNI. Endpoint
+никогда не перенаправляет запрос к внешнему destination. Firefox делает GET,
+Naive — CONNECT, FoxTunnel — CONNECT/POST: `scenario_equivalence_verified: false`.
+Это сравнение начальных управляющих метаданных, не всей страницы или туннельной нагрузки.
+Firefox использует новый профиль, лабораторный CA, принудительное H3 test mapping,
+разрешение H3 с импортированным CA и отключённый content sandbox только в CI.
+Это условия стенда, не параметры обычного пользовательского браузера.
+Проверки цепочки CA и hostname включены. DNS family/failover не измерены.
+
+H3 декодируется на endpoint через типизированные события quic-go 0.64.0:
+выбираются remote transport parameters и первые SETTINGS. Сохраняются только
+выбранные эффективные значения, включая defaults декодера. В частности,
+`max_udp_payload_size = 4611686018427387903` — внутренний sentinel
+`protocol.MaxByteCount` при отсутствии параметра, а не объявленный размер UDP
+или RFC default на проводе. Наличие и порядок исходных QUIC параметров, CID,
+заголовки запросов, ключи, pcap и raw qlog не сохраняются. Размер первого
+QUIC Initial datagram измеряется отдельно на UDP socket.
+
+| Сравнение с Firefox | TLS: different / equal / not observed | H2: different / equal | H3: different / equal |
+|---|---:|---:|---:|
+| FoxTunnel | 8 / 4 / 1 | 5 / 2 | 2 / 3 |
+| NaiveProxy | 7 / 6 / 0 | 5 / 2 | 3 / 2 |
+
+У обеих реализаций `metadata_equal: false`. Даже совпадение выбранных полей
+не доказывает неразличимость, поведение в WAN или обход DPI/ТСПУ.
+[Реестр доказательств](AUDIT-READINESS.md) содержит все шесть новых captures;
+исторические результаты сохраняют прежнюю идентичность. Независимый review
+этапа 5 остаётся отдельным открытым пунктом.

@@ -173,14 +173,14 @@ CI и собственная ревизия не заменяют независ
 
 ## Этап 6 из 10 — NSS и Neqo
 
-**Выполнено 3 из 5 задач.** Изменения в [PR #41](https://github.com/SawaMEN/FoxTunnel/pull/41),
-построенном поверх PR #40; слияние в main ещё не выполнено.
+**Выполнено 5 из 5 задач.** Pins/FFI/ресурсы — [PR #41](https://github.com/SawaMEN/FoxTunnel/pull/41),
+свежие wire-измерения — [PR #42](https://github.com/SawaMEN/FoxTunnel/pull/42); слияние в main ещё не выполнено.
 
 - [x] Подтвердить согласованность compiler/Cargo/Go API/runtime pins и отказ при дрейфе.
 - [x] Проверить FFI lifecycle: повторные engine teardown, отмена, borrowed buffers и cgo pointers.
 - [x] Получить воспроизводимую CPU/RSS/скорость/alloc матрицу Go-H2/NSS-H2/Go-H3/Neqo-H3 на одном runner.
-- [ ] Получить сопоставимые свежие Firefox/NaiveProxy/FoxTunnel TLS/H2 захваты с версиями и происхождением.
-- [ ] Получить endpoint-decoded QUIC/H3 измерения трёх реализаций в одинаковом сценарии.
+- [x] Получить сопоставимые свежие Firefox/NaiveProxy/FoxTunnel TLS/H2 захваты начала соединения с версиями и происхождением.
+- [x] Получить endpoint-decoded QUIC/H3 измерения трёх реализаций в общем стенде начала соединения (методы приложений различаются).
 
 Подтверждение runtime-ревизии `b6d33368`:
 
@@ -193,11 +193,18 @@ CI и собственная ревизия не заменяют независ
   [происхождение и SHA-256](measurements/2026-10-21/native-backend-provenance.json).
 
 Замер выполнен на synthetic PR merge `6a81cec9`, родители `db426f26` и `b6d33368`;
-это не выпуск. Следующий коммит сохраняет только измерения и документацию.
+это не выпуск. Измерения сохранены отдельным коммитом с документацией.
 Локально прошли 146 Python-тестов (2 skipped), go vet и пробный Go benchmark runner.
 
 [Pins, FFI, результаты и методика измерений](NATIVE-BACKENDS.md).
-Исторические захваты с неполной идентичностью не закрывают пункты 4–5.
+Пункты 4–5 подтверждены [CI 39500678054](https://github.com/SawaMEN/FoxTunnel/actions/runs/39500678054):
+[шесть свежих наблюдений и версии](measurements/2026-10-21/wire/manifest.json),
+[SHA-256 и проверенное происхождение](measurements/2026-10-21/wire/provenance.json),
+[сравнение с различиями TLS/H2/H3](measurements/2026-10-21/wire/comparison.json).
+Это ограниченное сравнение startup metadata: полная эквивалентность сценариев
+не подтверждена; effective QUIC values включают defaults/sentinel декодера.
+Локально прошли 149 Python-тестов (2 skipped), проверка ссылок и целостности реестра.
+Независимый аудит этапа 5 по-прежнему не предоставлен.
 Зелёные interop-тесты не доказывают совпадение fingerprint или превосходство по скорости.
 
 ## Остальные этапы

@@ -1,0 +1,1009 @@
+{
+  "all_three_and_both_protocols_measured": true,
+  "comparisons_to_firefox": {
+    "foxtunnel": {
+      "http2": {
+        "checks": [
+          {
+            "candidate": [
+              {
+                "id": 2,
+                "value": 0
+              },
+              {
+                "id": 4,
+                "value": 4194304
+              },
+              {
+                "id": 5,
+                "value": 16384
+              },
+              {
+                "id": 6,
+                "value": 10485760
+              }
+            ],
+            "field": "initial_h2_settings",
+            "reference": [
+              {
+                "id": 1,
+                "value": 65536
+              },
+              {
+                "id": 2,
+                "value": 0
+              },
+              {
+                "id": 4,
+                "value": 131072
+              },
+              {
+                "id": 5,
+                "value": 16384
+              }
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              1073741824
+            ],
+            "field": "initial_connection_window_updates",
+            "reference": [
+              12517377
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": "absent",
+            "field": "h2.settings.header_table",
+            "reference": 65536,
+            "status": "different"
+          },
+          {
+            "candidate": 0,
+            "field": "h2.settings.enable_push",
+            "reference": 0,
+            "status": "equal"
+          },
+          {
+            "candidate": 4194304,
+            "field": "h2.settings.stream_window",
+            "reference": 131072,
+            "status": "different"
+          },
+          {
+            "candidate": 16384,
+            "field": "h2.settings.frame_size",
+            "reference": 16384,
+            "status": "equal"
+          },
+          {
+            "candidate": 10485760,
+            "field": "h2.settings.header_list_size",
+            "reference": "absent",
+            "status": "different"
+          }
+        ],
+        "counts": {
+          "different": 5,
+          "equal": 2,
+          "not_measured": 0,
+          "not_observed": 0
+        }
+      },
+      "metadata_equal": false,
+      "quic_http3": {
+        "checks": [
+          {
+            "candidate": 1,
+            "field": "quic.version",
+            "reference": 1,
+            "status": "equal"
+          },
+          {
+            "candidate": "h3",
+            "field": "quic.tls_alpn",
+            "reference": "h3",
+            "status": "equal"
+          },
+          {
+            "candidate": 1252,
+            "field": "quic.initial_datagram_size",
+            "reference": 1252,
+            "status": "equal"
+          },
+          {
+            "candidate": [
+              {
+                "id": 1,
+                "value": 90000
+              },
+              {
+                "id": 3,
+                "value": 4611686018427387903
+              },
+              {
+                "id": 4,
+                "value": 1048576
+              },
+              {
+                "id": 5,
+                "value": 131072
+              },
+              {
+                "id": 6,
+                "value": 1048576
+              },
+              {
+                "id": 7,
+                "value": 1048576
+              },
+              {
+                "id": 8,
+                "value": 0
+              },
+              {
+                "id": 9,
+                "value": 8
+              },
+              {
+                "id": 10,
+                "value": 3
+              },
+              {
+                "id": 11,
+                "value": 20
+              },
+              {
+                "id": 12,
+                "value": true
+              },
+              {
+                "id": 14,
+                "value": 8
+              }
+            ],
+            "field": "quic.transport_parameters",
+            "reference": [
+              {
+                "id": 1,
+                "value": 30000
+              },
+              {
+                "id": 3,
+                "value": 4611686018427387903
+              },
+              {
+                "id": 4,
+                "value": 25165824
+              },
+              {
+                "id": 5,
+                "value": 12582912
+              },
+              {
+                "id": 6,
+                "value": 1048576
+              },
+              {
+                "id": 7,
+                "value": 1048576
+              },
+              {
+                "id": 8,
+                "value": 100
+              },
+              {
+                "id": 9,
+                "value": 100
+              },
+              {
+                "id": 10,
+                "value": 3
+              },
+              {
+                "id": 11,
+                "value": 20
+              },
+              {
+                "id": 12,
+                "value": false
+              },
+              {
+                "id": 14,
+                "value": 8
+              }
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              {
+                "id": 1,
+                "value": 4096
+              },
+              {
+                "id": 7,
+                "value": 16
+              },
+              {
+                "id": 727725890,
+                "value": 0
+              }
+            ],
+            "field": "h3.settings",
+            "reference": [
+              {
+                "id": 1,
+                "value": 65536
+              },
+              {
+                "id": 7,
+                "value": 20
+              },
+              {
+                "id": 8,
+                "value": true
+              },
+              {
+                "id": 51,
+                "value": true
+              },
+              {
+                "id": 16765559,
+                "value": 1
+              },
+              {
+                "id": 727725890,
+                "value": 0
+              }
+            ],
+            "status": "different"
+          }
+        ],
+        "counts": {
+          "different": 2,
+          "equal": 3,
+          "not_measured": 0,
+          "not_observed": 0
+        }
+      },
+      "tls": {
+        "checks": [
+          {
+            "candidate": 769,
+            "field": "hello.record_version",
+            "reference": 769,
+            "status": "equal"
+          },
+          {
+            "candidate": 771,
+            "field": "hello.legacy_version",
+            "reference": 771,
+            "status": "equal"
+          },
+          {
+            "candidate": [
+              4865,
+              4867,
+              4866
+            ],
+            "field": "hello.cipher_suites",
+            "reference": [
+              4865,
+              4867,
+              4866,
+              49195,
+              49199,
+              52393,
+              52392,
+              49196,
+              49200,
+              49171,
+              49172,
+              156,
+              157,
+              47,
+              53
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              0,
+              23,
+              65281,
+              10,
+              16,
+              51,
+              43,
+              13,
+              28
+            ],
+            "field": "hello.extensions",
+            "reference": [
+              0,
+              23,
+              65281,
+              10,
+              11,
+              35,
+              16,
+              5,
+              34,
+              18,
+              51,
+              43,
+              13,
+              45,
+              28,
+              27,
+              65037
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              4588,
+              29,
+              23,
+              24,
+              25,
+              4587,
+              4589,
+              256,
+              257,
+              258,
+              259,
+              260
+            ],
+            "field": "hello.supported_groups",
+            "reference": [
+              4588,
+              29,
+              23,
+              24,
+              25
+            ],
+            "status": "different"
+          },
+          {
+            "candidate_observed": false,
+            "field": "hello.ec_point_formats",
+            "reference_observed": true,
+            "status": "not_observed"
+          },
+          {
+            "candidate": [
+              772
+            ],
+            "field": "hello.supported_versions",
+            "reference": [
+              772,
+              771
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              1027,
+              1283,
+              1539,
+              515,
+              2052,
+              2053,
+              2054,
+              2308,
+              2309,
+              2310,
+              1025,
+              1281,
+              1537,
+              513
+            ],
+            "field": "hello.signature_algorithms",
+            "reference": [
+              1027,
+              1283,
+              1539,
+              2052,
+              2053,
+              2054,
+              1025,
+              1281,
+              1537,
+              515,
+              513
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              4588
+            ],
+            "field": "hello.key_share_groups",
+            "reference": [
+              4588,
+              29,
+              23
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              "h2"
+            ],
+            "field": "hello.alpn",
+            "reference": [
+              "h2",
+              "http/1.1"
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": true,
+            "field": "hello.sni_present",
+            "reference": true,
+            "status": "equal"
+          },
+          {
+            "candidate": "771,4865-4867-4866,0-23-65281-10-16-51-43-13-28,4588-29-23-24-25-4587-4589-256-257-258-259-260,",
+            "field": "hello.ja3",
+            "reference": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037,4588-29-23-24-25,0",
+            "status": "different"
+          },
+          {
+            "candidate": "h2",
+            "field": "negotiated_alpn",
+            "reference": "h2",
+            "status": "equal"
+          }
+        ],
+        "counts": {
+          "different": 8,
+          "equal": 4,
+          "not_measured": 0,
+          "not_observed": 1
+        }
+      }
+    },
+    "naive": {
+      "http2": {
+        "checks": [
+          {
+            "candidate": [
+              {
+                "id": 1,
+                "value": 65536
+              },
+              {
+                "id": 2,
+                "value": 0
+              },
+              {
+                "id": 4,
+                "value": 67108864
+              },
+              {
+                "id": 6,
+                "value": 262144
+              }
+            ],
+            "field": "initial_h2_settings",
+            "reference": [
+              {
+                "id": 1,
+                "value": 65536
+              },
+              {
+                "id": 2,
+                "value": 0
+              },
+              {
+                "id": 4,
+                "value": 131072
+              },
+              {
+                "id": 5,
+                "value": 16384
+              }
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              134152193
+            ],
+            "field": "initial_connection_window_updates",
+            "reference": [
+              12517377
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": 65536,
+            "field": "h2.settings.header_table",
+            "reference": 65536,
+            "status": "equal"
+          },
+          {
+            "candidate": 0,
+            "field": "h2.settings.enable_push",
+            "reference": 0,
+            "status": "equal"
+          },
+          {
+            "candidate": 67108864,
+            "field": "h2.settings.stream_window",
+            "reference": 131072,
+            "status": "different"
+          },
+          {
+            "candidate": "absent",
+            "field": "h2.settings.frame_size",
+            "reference": 16384,
+            "status": "different"
+          },
+          {
+            "candidate": 262144,
+            "field": "h2.settings.header_list_size",
+            "reference": "absent",
+            "status": "different"
+          }
+        ],
+        "counts": {
+          "different": 5,
+          "equal": 2,
+          "not_measured": 0,
+          "not_observed": 0
+        }
+      },
+      "metadata_equal": false,
+      "quic_http3": {
+        "checks": [
+          {
+            "candidate": 1,
+            "field": "quic.version",
+            "reference": 1,
+            "status": "equal"
+          },
+          {
+            "candidate": "h3",
+            "field": "quic.tls_alpn",
+            "reference": "h3",
+            "status": "equal"
+          },
+          {
+            "candidate": 1250,
+            "field": "quic.initial_datagram_size",
+            "reference": 1252,
+            "status": "different"
+          },
+          {
+            "candidate": [
+              {
+                "id": 1,
+                "value": 30000
+              },
+              {
+                "id": 3,
+                "value": 1472
+              },
+              {
+                "id": 4,
+                "value": 15728640
+              },
+              {
+                "id": 5,
+                "value": 6291456
+              },
+              {
+                "id": 6,
+                "value": 6291456
+              },
+              {
+                "id": 7,
+                "value": 6291456
+              },
+              {
+                "id": 8,
+                "value": 100
+              },
+              {
+                "id": 9,
+                "value": 103
+              },
+              {
+                "id": 10,
+                "value": 3
+              },
+              {
+                "id": 11,
+                "value": 25
+              },
+              {
+                "id": 12,
+                "value": false
+              },
+              {
+                "id": 14,
+                "value": 2
+              }
+            ],
+            "field": "quic.transport_parameters",
+            "reference": [
+              {
+                "id": 1,
+                "value": 30000
+              },
+              {
+                "id": 3,
+                "value": 4611686018427387903
+              },
+              {
+                "id": 4,
+                "value": 25165824
+              },
+              {
+                "id": 5,
+                "value": 12582912
+              },
+              {
+                "id": 6,
+                "value": 1048576
+              },
+              {
+                "id": 7,
+                "value": 1048576
+              },
+              {
+                "id": 8,
+                "value": 100
+              },
+              {
+                "id": 9,
+                "value": 100
+              },
+              {
+                "id": 10,
+                "value": 3
+              },
+              {
+                "id": 11,
+                "value": 20
+              },
+              {
+                "id": 12,
+                "value": false
+              },
+              {
+                "id": 14,
+                "value": 8
+              }
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              {
+                "id": 1,
+                "value": 65536
+              },
+              {
+                "id": 6,
+                "value": 262144
+              },
+              {
+                "id": 7,
+                "value": 100
+              },
+              {
+                "id": 51,
+                "value": true
+              },
+              {
+                "id": 22946913343,
+                "value": 3638288934
+              }
+            ],
+            "field": "h3.settings",
+            "reference": [
+              {
+                "id": 1,
+                "value": 65536
+              },
+              {
+                "id": 7,
+                "value": 20
+              },
+              {
+                "id": 8,
+                "value": true
+              },
+              {
+                "id": 51,
+                "value": true
+              },
+              {
+                "id": 16765559,
+                "value": 1
+              },
+              {
+                "id": 727725890,
+                "value": 0
+              }
+            ],
+            "status": "different"
+          }
+        ],
+        "counts": {
+          "different": 3,
+          "equal": 2,
+          "not_measured": 0,
+          "not_observed": 0
+        }
+      },
+      "tls": {
+        "checks": [
+          {
+            "candidate": 769,
+            "field": "hello.record_version",
+            "reference": 769,
+            "status": "equal"
+          },
+          {
+            "candidate": 771,
+            "field": "hello.legacy_version",
+            "reference": 771,
+            "status": "equal"
+          },
+          {
+            "candidate": [
+              56026,
+              4865,
+              4866,
+              4867,
+              49195,
+              49199,
+              49196,
+              49200,
+              52393,
+              52392,
+              49171,
+              49172,
+              156,
+              157,
+              47,
+              53
+            ],
+            "field": "hello.cipher_suites",
+            "reference": [
+              4865,
+              4867,
+              4866,
+              49195,
+              49199,
+              52393,
+              52392,
+              49196,
+              49200,
+              49171,
+              49172,
+              156,
+              157,
+              47,
+              53
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              56026,
+              17613,
+              16,
+              43,
+              10,
+              0,
+              5,
+              35,
+              51,
+              18,
+              11,
+              13,
+              51764,
+              65281,
+              65037,
+              23,
+              27,
+              45,
+              60138
+            ],
+            "field": "hello.extensions",
+            "reference": [
+              0,
+              23,
+              65281,
+              10,
+              11,
+              35,
+              16,
+              5,
+              34,
+              18,
+              51,
+              43,
+              13,
+              45,
+              28,
+              27,
+              65037
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              2570,
+              4588,
+              29,
+              23,
+              24
+            ],
+            "field": "hello.supported_groups",
+            "reference": [
+              4588,
+              29,
+              23,
+              24,
+              25
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              0
+            ],
+            "field": "hello.ec_point_formats",
+            "reference": [
+              0
+            ],
+            "status": "equal"
+          },
+          {
+            "candidate": [
+              39578,
+              772,
+              771
+            ],
+            "field": "hello.supported_versions",
+            "reference": [
+              772,
+              771
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              39578,
+              2308,
+              2309,
+              2310,
+              1027,
+              2052,
+              1025,
+              1283,
+              2053,
+              1281,
+              2054,
+              1537
+            ],
+            "field": "hello.signature_algorithms",
+            "reference": [
+              1027,
+              1283,
+              1539,
+              2052,
+              2053,
+              2054,
+              1025,
+              1281,
+              1537,
+              515,
+              513
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              2570,
+              4588,
+              29
+            ],
+            "field": "hello.key_share_groups",
+            "reference": [
+              4588,
+              29,
+              23
+            ],
+            "status": "different"
+          },
+          {
+            "candidate": [
+              "h2",
+              "http/1.1"
+            ],
+            "field": "hello.alpn",
+            "reference": [
+              "h2",
+              "http/1.1"
+            ],
+            "status": "equal"
+          },
+          {
+            "candidate": true,
+            "field": "hello.sni_present",
+            "reference": true,
+            "status": "equal"
+          },
+          {
+            "candidate": "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,17613-16-43-10-0-5-35-51-18-11-13-51764-65281-65037-23-27-45,4588-29-23-24,0",
+            "field": "hello.ja3",
+            "reference": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037,4588-29-23-24-25,0",
+            "status": "different"
+          },
+          {
+            "candidate": "h2",
+            "field": "negotiated_alpn",
+            "reference": "h2",
+            "status": "equal"
+          }
+        ],
+        "counts": {
+          "different": 7,
+          "equal": 6,
+          "not_measured": 0,
+          "not_observed": 0
+        }
+      }
+    }
+  },
+  "created_at_utc": "2026-10-20T21:32:52.505523+00:00",
+  "kind": "fox-stage10-fingerprint-audit",
+  "limitations": [
+    "Source captures may differ in version, workload, time, route and server.",
+    "Absent NaiveProxy/QUIC captures are unmeasured, never inferred.",
+    "Matching any subset, JA3 or TLS record lengths does not establish indistinguishability.",
+    "QUIC parameters and H3 settings require endpoint-assisted decoding.",
+    "H2 SETTINGS are encrypted on-path.",
+    "This is not evidence of DPI or TSPU bypass.",
+    "No raw request data, hostnames, secrets or capture paths are serialized."
+  ],
+  "scenario_equivalence_verified": false,
+  "schema": 1,
+  "subjects": {
+    "firefox": {
+      "quic_h3_observed": true,
+      "sha256_of_capture": {
+        "quic_h3": "e33c37cc3cf3596243a125881dc4e6c1b54ab248a6ca9ee8c4382c66c787c513",
+        "tls_h2": "8f6f814debefb2e8730bf4e631532fae035373fda0747f5e03f89a60af5dafc5"
+      },
+      "tls_h2_observed": true
+    },
+    "foxtunnel": {
+      "quic_h3_observed": true,
+      "sha256_of_capture": {
+        "quic_h3": "e64e99a8a187cb37c106e1ab2f522ac61eb02079e8f05f15aa06271128eae139",
+        "tls_h2": "f8dda06d2f90b2ee5b1f0e04b6d5bb7be29e6de7ca6b792abaaac66abc695700"
+      },
+      "tls_h2_observed": true
+    },
+    "naive": {
+      "quic_h3_observed": true,
+      "sha256_of_capture": {
+        "quic_h3": "f3b591faca8cabe244d3c779f591e79ac9f96ec40d0abf9efda4bdd0340e6591",
+        "tls_h2": "7478d9f99a0df5e1ef09a6db6bb1cc6441e9e68b2b65ed05f205829ba8dc548e"
+      },
+      "tls_h2_observed": true
+    }
+  }
+}

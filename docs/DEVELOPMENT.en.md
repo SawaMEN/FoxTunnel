@@ -72,7 +72,7 @@ Files under `docs/releases/` are historical release notes, not the current user 
 
 ## Evidence and limitations
 
-Raw dated measurement data remain in `docs/measurements/`. Existing experiments established local NSS/H2 and Neqo/H3 functionality; some initial HTTP/2 settings matched a saved Firefox 158 observation, while TLS fields differed. Comparable complete NaiveProxy/Firefox/FoxTunnel QUIC/H3 traces are still missing.
+Raw dated measurement data remain in `docs/measurements/`. Existing experiments established local NSS/H2 and Neqo/H3 functionality; some initial HTTP/2 settings matched a saved Firefox 158 observation, while TLS fields differed. Fresh pinned Firefox/NaiveProxy/FoxTunnel TLS/H2 and endpoint-decoded QUIC/H3 startup observations are now retained; see [method and limitations](NATIVE-BACKENDS.md). They differ in selected fields and application methods; they do not establish full fingerprint or workload equivalence.
 
 `scripts/fingerprint_audit.py`, `scripts/field_h2_h3.py` and `scripts/soak_h2_h3.py` implement structured comparison and local lab testing. Do not present loopback throughput as real Internet performance or missing captures as fingerprint equivalence.
 

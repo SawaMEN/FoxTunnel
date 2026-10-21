@@ -66,7 +66,7 @@ func (c *capture) RecordEvent(e qlogwriter.Event) {
 			return
 		}
 		// These are effective peer values exposed by the endpoint decoder, including
-		// protocol defaults. No claim about raw parameter order, presence or CID bytes.
+		// decoder defaults and sentinels. No claim about raw parameter order, presence or CID bytes.
 		c.result.QUIC.Parameters = []value{
 			{1, e.MaxIdleTimeout.Milliseconds()}, {3, int64(e.MaxUDPPayloadSize)},
 			{4, int64(e.InitialMaxData)}, {5, int64(e.InitialMaxStreamDataBidiLocal)},
@@ -220,7 +220,7 @@ func run() error {
 	c.result.Kind = "h3-quic-observation"
 	c.result.Method = "endpoint"
 	c.result.Scenario = "verified first connection; controlled loopback endpoint; QUIC v1"
-	c.result.QUIC.Scope = "selected effective peer parameters, including RFC defaults; no raw presence/order/CID claim"
+	c.result.QUIC.Scope = "selected effective peer parameters, including decoder defaults/sentinels; no raw presence/order/CID claim"
 	socket, e := net.ListenPacket("udp4", "127.0.0.1:0")
 	if e != nil {
 		return e
