@@ -1,0 +1,62 @@
+# Firefox transport branch
+
+[Главная](../README.md) · [Настройки](FEATURES.md)
+
+Цель ветки `firefox` — передавать TCP через CONNECT в HTTP/2 и HTTP/3,
+используя сетевую реализацию Mozilla. Полный Necko ещё не готов к эксплуатации.
+Наличие NSS или Neqo само по себе не означает совпадение с Firefox.
+
+## Этапы: 1 из 4 реализован, нативная проверка Neqo — в CI
+
+1. **CONNECT для обоих транспортов.** Существующий `h2-connect` сохранён;
+   добавлен `h3-connect` в CLI, SDK, ссылки и генератор конфигурации. Go backend
+   отправляет классический H3 CONNECT. Neqo backend вызывает `Http3Client::connect`,
+   поскольку `fetch` отвергает этот метод. Адаптер POST не используется.
+   Локальные Go/race-тесты проверяют реальный H3-запрос, данные, half-close,
+   отмену и проверку доверия до авторизации. Нативные тесты запускает
+   существующий workflow `neqo-experiment.yml`; результат нужно проверять
+   для точного коммита этой ветки.
+2. **Полный Necko.** Проверить и исправить холодный запуск CONNECT и передачу
+   нативного потока. Собрать закреплённый runtime Gecko и провести сквозные
+   тесты H2/H3. Прототип находится в
+   [experiments/firefox-necko](../experiments/firefox-necko/README.md).
+3. **Сравнение с Firefox.** На одном runtime и одинаковых сценариях измерить
+   ClientHello, ALPN, H2 SETTINGS/HPACK, QUIC/H3, возобновление сессий,
+   закрытие потоков и повторное использование соединений. Сохранить исходники
+   измерений и различия. Проверка метаданных не доказывает обход DPI.
+4. **Эксплуатация.** Длительная нагрузка, смена сети, CPU/RSS, обновление
+   runtime, упаковка и совместимость версий. После этого решать вопрос о
+   включении Necko в основную поставку.
+
+## Использование CONNECT сейчас
+
+В обычной Go-сборке:
+
+```sh
+./foxtunnel setup --transport h3-connect \
+  --server https://vpn.example.com --cert /path/fullchain.pem \
+  --key /path/privkey.pem --out server-config
+./foxtunnel server --config server-config/server.json
+./foxtunnel client --link-file server-config/connection.txt
+```
+
+На сервере должны быть доступны TCP и UDP на указанном порту. Генератор
+включает H3-слушатель для `h3-connect`, как и для `h3-post`.
+
+В сборке `-tags nss,neqo` явно выбирайте Mozilla backend:
+
+```sh
+./foxtunnel client --server https://vpn.example.com \
+  --engine mozilla --transport h3-connect --h3-fallback none
+```
+
+Логин и пароль задаются через `FOXTUNNEL_USER` и `FOXTUNNEL_PASSWORD`.
+Этот режим использует Mozilla Neqo/NSS для H3. HTTP/2 в текущем ядре по-прежнему
+формирует Go. Выбор `--h3-fallback h2` разрешает существующий проверяемый H2
+fallback только до отправки запроса; это не полный Necko и не повтор
+прерванной передачи. Автоматический выбор транспорта пока сохраняет прежние
+настройки, поэтому `h3-connect` нужно указывать явно.
+
+Ссылка с `h3-connect` требует клиента из этой ветки: старый клиент отвергнет
+новое имя транспорта. Сервер уже обрабатывает классический H3 CONNECT теми же
+правилами авторизации, назначения, квот и ограничения ресурсов, что и H2.

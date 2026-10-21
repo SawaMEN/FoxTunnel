@@ -11,7 +11,7 @@ import (
 )
 
 func TestAuditSetupAdvertisedPort(t *testing.T) {
-	for _, transport := range []string{"h2-connect", "h3-post"} {
+	for _, transport := range []string{"h2-connect", "h3-post", "h3-connect"} {
 		t.Run(transport, func(t *testing.T) {
 			o := fixture(t, "main.example")
 			o.Server += ":8443"
@@ -23,7 +23,7 @@ func TestAuditSetupAdvertisedPort(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if c.Listen != ":8443" || (transport == "h3-post" && c.H3Listen != ":8443") {
+			if c.Listen != ":8443" || ((transport == "h3-post" || transport == "h3-connect") && c.H3Listen != ":8443") {
 				t.Fatalf("advertised 8443, listens TCP=%q H3=%q", c.Listen, c.H3Listen)
 			}
 		})

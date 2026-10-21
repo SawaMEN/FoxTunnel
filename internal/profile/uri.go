@@ -69,7 +69,7 @@ func (c *Config) normalize() error {
 	if c.Transport == "" {
 		c.Transport = "h2-connect"
 	}
-	if c.Transport != "h2-connect" && c.Transport != "h2-post" && c.Transport != "wss" && c.Transport != "h3-post" && c.Transport != "xhttp-stream-one" && c.Transport != "xhttp-stream-up" && c.Transport != "xhttp-packet-up" {
+	if c.Transport != "h2-connect" && c.Transport != "h2-post" && c.Transport != "wss" && c.Transport != "h3-post" && c.Transport != "h3-connect" && c.Transport != "xhttp-stream-one" && c.Transport != "xhttp-stream-up" && c.Transport != "xhttp-packet-up" {
 		return invalid()
 	}
 	if c.XHTTPPath != "" || c.XHTTPHost != "" {
@@ -93,7 +93,7 @@ func (c *Config) normalize() error {
 	if c.Encryption != "tls13" {
 		return invalid()
 	}
-	if c.Transport == "h3-post" && c.TLSBackend == "nss" {
+	if (c.Transport == "h3-post" || c.Transport == "h3-connect") && c.TLSBackend == "nss" {
 		return invalid()
 	}
 	if c.TLSBackend != "auto" && c.TLSBackend != "go" && c.TLSBackend != "nss" {

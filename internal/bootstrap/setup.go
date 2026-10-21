@@ -227,7 +227,7 @@ func Generate(o Options) error {
 		config.BondHub = true
 		config.ClusterFile = filepath.Join(out, "cluster.json")
 	}
-	if linkConfig.Transport == "h3-post" {
+	if linkConfig.Transport == "h3-post" || linkConfig.Transport == "h3-connect" {
 		config.H3Listen = listen
 	}
 	if o.JoinLinkFile == "" && xhttp.IsMode(linkConfig.Transport) && linkConfig.XHTTPPath == "" {

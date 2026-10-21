@@ -20,6 +20,8 @@ jobs:
           test -z "$(gofmt -l cmd internal examples processhost foxtunnel*.go integration/external)"
       - name: Check documentation links
         run: python3 scripts/check_docs_links.py
+      - name: Firefox prototype SOCKS parser (no native runtime claim)
+        run: node --test experiments/firefox-necko/client_test.cjs
       - name: Enforce protocol-core boundaries
         run: python3 scripts/check_core_boundaries.py
       - name: Check module dependency hygiene

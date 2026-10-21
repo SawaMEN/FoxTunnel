@@ -62,7 +62,7 @@ func resolveMozilla(cfg Config) (Plan, error) {
 		}
 	}
 
-	if cfg.Transport == "h3-post" {
+	if cfg.Transport == "h3-post" || cfg.Transport == "h3-connect" {
 		if !neqo.Available {
 			return Plan{}, fmt.Errorf("Mozilla HTTP/3 requires the experimental Neqo build (Linux amd64, -tags nss,neqo): %w", neqo.ErrUnavailable)
 		}

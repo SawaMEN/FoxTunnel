@@ -112,7 +112,7 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 			}
 		})
 		endpoint := setupEndpoint(t, client, node)
-		if mode == "h3-post" {
+		if isH3Transport(mode) {
 			startNativeH3(t, endpoint, node)
 		}
 		return endpoint
@@ -153,7 +153,7 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 			t.Fatal(err)
 		}
 		close(ready)
-		if mode == "h3-post" {
+		if isH3Transport(mode) {
 			startNativeH3(t, hubServer, exit)
 		}
 		if err := client.EnableBondDiscovery(context.Background()); err != nil {
@@ -161,7 +161,7 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 		}
 	} else {
 		close(ready)
-		if mode == "h3-post" {
+		if isH3Transport(mode) {
 			startNativeH3(t, hubServer, exit)
 		}
 		if err := client.EnableBond(); err != nil {

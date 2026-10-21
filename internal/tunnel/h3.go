@@ -22,7 +22,13 @@ func quicConfig() *quic.Config {
 	}
 }
 
+func isH3Transport(mode string) bool { return mode == "h3-post" || mode == "h3-connect" }
+
 func newH3Transport(config *tls.Config) tlsTransport {
+	return postTransport{tlsTransport: newH3ConnectTransport(config), host: config.ServerName}
+}
+
+func newH3ConnectTransport(config *tls.Config) tlsTransport {
 	cfg := config.Clone()
 	cfg.NextProtos = []string{http3.NextProtoH3}
 	recovery := &h3RecoveryTransport{newPool: func() h3Pool {
@@ -33,7 +39,7 @@ func newH3Transport(config *tls.Config) tlsTransport {
 		}
 		return t
 	}}
-	return postTransport{tlsTransport: recovery, host: config.ServerName}
+	return recovery
 }
 
 // ServeHTTP3 serves the same authorization, destination policy, discovery and

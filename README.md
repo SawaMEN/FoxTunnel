@@ -27,6 +27,7 @@ go build -o foxtunnel ./cmd/foxtunnel
 - [Интеграция](docs/INTEGRATION.md) — Go API и управление отдельным процессом.
 - [Разработка](docs/DEVELOPMENT.md) — сборка, тесты и измерения.
 - [Эксплуатация](docs/OPERATIONS.md) — доступ, сертификаты, обновления и релизы.
+- [Ветка Firefox](docs/FIREFOX.md) — CONNECT H2/H3 и состояние интеграции Necko.
 
 Основная поставка — Linux amd64/arm64 с NSS; Mozilla/Neqo для Linux amd64
 собирается отдельно. Папку `lib/` нужно сохранять рядом с программой.

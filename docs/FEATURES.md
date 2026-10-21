@@ -17,10 +17,11 @@
 | `h2-connect` | TCP через HTTP/2 CONNECT; по умолчанию |
 | `h2-post` | TCP через HTTP/2 POST |
 | `h3-post` | TCP через HTTP/3/QUIC; нужен открытый UDP-порт |
+| `h3-connect` | Классический TCP CONNECT через HTTP/3/QUIC; нужен открытый UDP-порт |
 | `wss` | HTTP/2 внутри WebSocket/TLS |
 | `xhttp-stream-one`, `xhttp-stream-up`, `xhttp-packet-up` | Варианты XHTTP |
 
-Задавайте транспорт при `setup --transport …`. Для `h3-post` генератор также
+Задавайте транспорт при `setup --transport …`. Для `h3-post` и `h3-connect` генератор также
 включает H3-слушатель сервера. При ручной настройке сервера нужен `--h3-listen`.
 Клиент с `--link-file` использует транспорт из профиля.
 `--xhttp-path` и `--xhttp-host` должны соответствовать серверу; Host не меняет TLS SNI.
@@ -106,3 +107,5 @@ Bonding, discovery и hub среди разрешённых входов. Явн
 
 API, UDP и дополнительные режимы остаются экспериментальными. Измерения
 на loopback не подтверждают ускорение в Интернете или обход DPI/ТСПУ.
+
+Работа над полным стеком Firefox ведётся отдельно: [этапы ветки firefox](FIREFOX.md).

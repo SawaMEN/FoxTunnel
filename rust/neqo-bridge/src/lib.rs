@@ -352,16 +352,24 @@ pub unsafe extern "C" fn ftn_fetch(p: *mut Engine, b: *const u8, n: usize, id: *
             };
             headers.push(Header::new(name, val));
         }
-        let stream = e
-            .client
-            .fetch(
+        let stream = if method == "CONNECT" {
+            if !scheme.is_empty() || !path.is_empty() {
+                return Err(());
+            }
+            // Use Neqo's classic CONNECT API. fetch() explicitly rejects this
+            // method; connect() omits :scheme/:path and preserves duplex DATA.
+            e.client
+                .connect(Instant::now(), authority, &headers, Priority::default())
+        } else {
+            e.client.fetch(
                 Instant::now(),
                 method,
                 (scheme, authority, path),
                 &headers,
                 Priority::default(),
             )
-            .map_err(|_| ())?;
+        }
+        .map_err(|_| ())?;
         unsafe { *id = stream.as_u64() };
         Ok(0)
     })

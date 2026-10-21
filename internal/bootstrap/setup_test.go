@@ -110,7 +110,7 @@ func TestSetupAndJoinProduceUsablePrivateProfiles(t *testing.T) {
 }
 
 func TestSetupNativeTransports(t *testing.T) {
-	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			o := fixture(t, "main.example")
 			o.Transport = mode
@@ -127,7 +127,7 @@ func TestSetupNativeTransports(t *testing.T) {
 			}
 			p, err := profile.Read(f)
 			f.Close()
-			if err != nil || p.Transport != mode || (config.H3Listen != "") != (mode == "h3-post") {
+			if err != nil || p.Transport != mode || (config.H3Listen != "") != (mode == "h3-post" || mode == "h3-connect") {
 				t.Fatal("inconsistent native profile", err)
 			}
 			join := fixture(t, "relay.example")
@@ -136,7 +136,7 @@ func TestSetupNativeTransports(t *testing.T) {
 				t.Fatal(err)
 			}
 			relay, err := ReadServer(filepath.Join(join.Output, "server.json"))
-			if err != nil || (relay.H3Listen != "") != (mode == "h3-post") {
+			if err != nil || (relay.H3Listen != "") != (mode == "h3-post" || mode == "h3-connect") {
 				t.Fatal("joined transport listener", err)
 			}
 		})

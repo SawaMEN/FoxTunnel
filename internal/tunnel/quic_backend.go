@@ -37,8 +37,8 @@ func (c *Client) SetQUICBackend(backend string, h2Fallback bool, timeout time.Du
 	if backend == "quic-go" && (h2Fallback || timeout != 0) {
 		return errors.New("QUIC fallback/timeout options require Neqo")
 	}
-	if backend == "neqo" && c.nativeTransport != "h3-post" {
-		return errors.New("Neqo requires h3-post")
+	if backend == "neqo" && !isH3Transport(c.nativeTransport) {
+		return errors.New("Neqo requires h3-post or h3-connect")
 	}
 	if backend == "neqo" && c.backend == "go" {
 		return errors.New("Neqo uses NSS; TLS backend go is incompatible")

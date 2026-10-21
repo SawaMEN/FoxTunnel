@@ -113,7 +113,7 @@ func FuzzLinkDecoder(f *testing.F) {
 }
 
 func TestNativeTransportProfiles(t *testing.T) {
-	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		c := Config{Version: 1, Servers: []string{"https://main.example"}, Username: "alice", Password: "secret", Transport: mode}
 		link, err := Encode(c)
 		if err != nil {
@@ -125,7 +125,7 @@ func TestNativeTransportProfiles(t *testing.T) {
 		}
 		c.TLSBackend = "nss"
 		_, err = Encode(c)
-		if (err != nil) != (mode == "h3-post") {
+		if (err != nil) != (mode == "h3-post" || mode == "h3-connect") {
 			t.Fatal("unsafe TLS backend combination", mode, err)
 		}
 	}
