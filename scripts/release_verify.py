@@ -92,6 +92,8 @@ def validate_metadata(p, version, commit):
                     tls_backends=['go', 'nss'] if flavor == 'nss' else ['go'])
     if 'product' in p and (p['product'] != 'protocol-core' or type(p.get('integration_schema')) is not int or p['integration_schema'] != 1):
         raise ValueError('invalid protocol core integration contract')
+    if p.get('product') == 'protocol-core' and any(type(p.get(k)) is not int or p[k] != 1 for k in ('sdk_schema', 'process_schema')):
+        raise ValueError('invalid SDK/process schema')
     if type(p.get('schema')) is not int or p['schema'] != 1:
         raise ValueError('unsupported artifact schema')
     if p.get('dirty') is not False or p.get('experimental') is not True:
@@ -99,7 +101,7 @@ def validate_metadata(p, version, commit):
     for key, value in expected.items():
         if p.get(key) != value:
             raise ValueError('artifact metadata mismatch: ' + key)
-    if type(p.get('native_smoke_tested')) is not bool:
+    if p.get('native_smoke_tested') is not True:
         raise ValueError('missing native smoke status')
     # Earlier schema-1 archives did not record the compiler in build.json.
     if 'go_version' in p and (not isinstance(p['go_version'], str) or not re.fullmatch(r'go\d+\.\d+\.\d+', p['go_version'])):

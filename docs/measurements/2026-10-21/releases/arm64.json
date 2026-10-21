@@ -1,0 +1,73 @@
+{
+  "configuration_preserved": true,
+  "deployment": [
+    {
+      "archive_sha256": "1cdb687d4858cb9d165a6e5c639137c9f32c48357c3ec43e62884d66e8b43d04",
+      "executed_required_cases": [
+        "TestReleaseProcessHost/h2-connect",
+        "TestReleaseProcessHost/h3-post"
+      ],
+      "passed": true,
+      "phase": "install",
+      "test_event_sha256": "22ebb7d83ce2dafb75768e5cbffe432920ed8defb1c739996aa1a825c769bbf6",
+      "version": "v0.0.0-ci"
+    },
+    {
+      "archive_sha256": "03a86811e235ccbf4fc7b8672b0f34538b0a63be41f202dec396d14bc35d1f46",
+      "executed_required_cases": [
+        "TestReleaseProcessHost/h2-connect",
+        "TestReleaseProcessHost/h3-post"
+      ],
+      "passed": true,
+      "phase": "update",
+      "test_event_sha256": "3ff5dc6d53bbb4d4a627af40e09325dae6597934d186554ab9d4d0850e992f65",
+      "version": "v0.0.0-stage9-update.1"
+    },
+    {
+      "archive_sha256": "1cdb687d4858cb9d165a6e5c639137c9f32c48357c3ec43e62884d66e8b43d04",
+      "executed_required_cases": [
+        "TestReleaseProcessHost/h2-connect",
+        "TestReleaseProcessHost/h3-post"
+      ],
+      "passed": true,
+      "phase": "rollback",
+      "test_event_sha256": "51cbb45ac9954776cb96c7b0ea05ef6738675c626f6656f7c357c4882f65bfd1",
+      "version": "v0.0.0-ci"
+    }
+  ],
+  "kind": "native-release-candidate",
+  "legacy": {
+    "archive_sha256": "67de33e329729b87e6aac087231a3029d1d6bc29076e97ec5753099d5263a57f",
+    "executed_required_cases": [
+      "TestWireLegacyBinaryCompatibility/legacy-compatible-server",
+      "TestWireLegacyBinaryCompatibility/strict-server"
+    ],
+    "passed": true,
+    "source_commit": "f491e0e9b93e981b7204878a0e4ae480b2eaffe5",
+    "test_event_sha256": "3a304424a06845fa6f4467b57a4feeb7ee68be2c194f0e58f77316c93fe5df1e",
+    "version": "v0.1.0-alpha.1"
+  },
+  "legacy_lock_sha256": "1ee7356ca171cd24ee4ce3ffd6c60c56f2b0c9b3d31b8a321eaf3166abb94cf9",
+  "native_arch": "arm64",
+  "native_platform": "linux",
+  "nss_runtime": "3.130",
+  "passed": true,
+  "primary": {
+    "filename": "foxtunnel_0.0.0-ci_linux_arm64_nss.tar.gz",
+    "go_version": "go1.26.10",
+    "sha256": "1cdb687d4858cb9d165a6e5c639137c9f32c48357c3ec43e62884d66e8b43d04",
+    "size": 6134876,
+    "version": "v0.0.0-ci"
+  },
+  "reproducible_archive_sha256": "1cdb687d4858cb9d165a6e5c639137c9f32c48357c3ec43e62884d66e8b43d04",
+  "schema": 1,
+  "scope": "Same-source/toolchain native Linux loopback. H2 uses installed bundled NSS, H3 quic-go. Published legacy Go archive tests TCP/H2 in both directions and strict refusal. No cross-host bit reproducibility, WAN, third-party integration or signed-release claim.",
+  "source_commit": "8f471a6cb4073f6f3c8968489f94341b35db814f",
+  "toolchain": {
+    "cc": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "go": "go version go1.26.10 linux/arm64",
+    "ld": "GNU ld (GNU Binutils for Ubuntu) 2.42",
+    "nss_headers": "3.98"
+  },
+  "worktree_dirty": false
+}

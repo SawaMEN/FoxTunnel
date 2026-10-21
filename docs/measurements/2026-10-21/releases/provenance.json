@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "kind": "native-release-candidate-provenance",
+  "run_id": 39543757118,
+  "run_url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39543757118",
+  "runtime_head": "f48da3bfc77410b3dc53f2d7fc0eea54e43b5819",
+  "checkout_commit": "8f471a6cb4073f6f3c8968489f94341b35db814f",
+  "verified_checkout_parents": [
+    "3292c9ac83c8ff5e756287ca805dafe035c431e4",
+    "f48da3bfc77410b3dc53f2d7fc0eea54e43b5819"
+  ],
+  "artifacts": [
+    {
+      "id": 12321310152,
+      "name": "native-release-candidate-amd64",
+      "digest": "sha256:33fd827b436a7fee39a26615c8337c1a3b096efd71d9f86646dc79c040eb70b3",
+      "size_in_bytes": 1350
+    },
+    {
+      "id": 12321210291,
+      "name": "native-release-candidate-arm64",
+      "digest": "sha256:b55a1e6abb984cf923a5346da79f55e35d18944e2baed01bf5083503a7dc401a",
+      "size_in_bytes": 1352
+    },
+    {
+      "id": 12321180398,
+      "name": "nss-arm64-archive",
+      "digest": "sha256:d127845452a6d70225bac33e1ca856f221732dfa4531de8a797bd666ff33c6e3",
+      "size_in_bytes": 6124897
+    },
+    {
+      "id": 12320099984,
+      "name": "nss-amd64-archive",
+      "digest": "sha256:d4c9e59463d4829dda214d360b5e2f9719a89f97ea9a7f7d6c86b1a6613a6391",
+      "size_in_bytes": 6775682
+    }
+  ],
+  "artifact_zip_digests_verified": true,
+  "inner_archive_hashes_and_contents_verified": true,
+  "jobs": [
+    {
+      "id": 119037172251,
+      "name": "request",
+      "conclusion": "success"
+    },
+    {
+      "id": 119037212254,
+      "name": "quality",
+      "conclusion": "success"
+    },
+    {
+      "id": 119037212312,
+      "name": "nss (ubuntu-24.04-arm, arm64)",
+      "conclusion": "success"
+    },
+    {
+      "id": 119037212415,
+      "name": "nss (ubuntu-24.04, amd64)",
+      "conclusion": "success"
+    },
+    {
+      "id": 119038301928,
+      "name": "index",
+      "conclusion": "success"
+    },
+    {
+      "id": 119038365631,
+      "name": "publish",
+      "conclusion": "skipped"
+    }
+  ],
+  "files": {
+    "amd64.json": "10921d12cdd1a9bc19bdfdebc0dceec55fb405894f6687868a918c244ae5473a",
+    "arm64.json": "df3db63562215a1f97bd5d4b5210224a7d0e72990fb4a83ed3c683c13c6f8a3d",
+    "candidate-identities.md": "d7f93b15dc0ae40d2e6a07ac493900e5e5b6d4b727b4a59ba85400c9c937f5b2"
+  },
+  "publication_performed": false,
+  "attestations_generated": false,
+  "scope": "Native Linux amd64/arm64 candidate gates. Same-runner cold-cache repeat equality; full NSS archive install/update/rollback with H2/H3 payload after each activation; pinned published alpha.1 TCP/H2 interop. CI archives identify a synthetic PR checkout and v0.0.0-ci, not future release bytes. No public or signed release, WAN or third-party host integration is certified."
+}

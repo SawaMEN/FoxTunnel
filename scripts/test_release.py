@@ -32,7 +32,7 @@ class ReleaseContract(unittest.TestCase):
                                   libraries={'libnss3.so': hashlib.sha256(b'library').hexdigest()})
                 runtime = dict(kind='bundled-nss', baseline='ubuntu-24.04', packages=['glibc', 'libgcc-s1'],
                                nss_version='3.130', mozilla=provenance)
-            p = dict(schema=1, product='protocol-core', integration_schema=1, version=self.args.version, commit='a' * 40, dirty=False,
+            p = dict(schema=1, product='protocol-core', integration_schema=1, sdk_schema=1, process_schema=1, version=self.args.version, commit='a' * 40, dirty=False,
                      experimental=True, build_date='2026-10-18T19:00:00Z', target=target,
                      goos=goos, goarch=arch,
                      variant='', build_flavor=flavor,
@@ -141,7 +141,7 @@ class ReleaseContract(unittest.TestCase):
     def test_bad_metadata_types_and_contract_rejected(self):
         original = json.loads(self.entries[0].read_text())
         for key, value in [('schema', True), ('dirty', 0), ('experimental', 1), ('size', True),
-                           ('native_smoke_tested', 1), ('sha256', 'no'), ('goarch', 'wrong'),
+                           ('sdk_schema', True), ('process_schema', 2), ('native_smoke_tested', False), ('native_smoke_tested', 1), ('sha256', 'no'), ('goarch', 'wrong'),
                            ('tls_backends', ['nss']), ('protocol_draft', 'future'),
                            ('commit', 'short'), ('build_date', '2026-02-30T00:00:00Z'),
                            ('default_tls_backend', 'go'), ('runtime', {'kind': 'system-nss'})]:

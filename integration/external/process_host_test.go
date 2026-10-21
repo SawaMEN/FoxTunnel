@@ -22,6 +22,18 @@ func TestSDKProcessHost(t *testing.T) {
 	if binary == "" {
 		t.Skip("requires a built process runtime; CI evidence rejects this skip")
 	}
+	testProcessHost(t, binary, false)
+}
+
+func TestReleaseProcessHost(t *testing.T) {
+	binary := os.Getenv("FOX_RELEASE_PROCESS_BINARY")
+	if binary == "" {
+		t.Skip("requires an installed complete NSS release bundle")
+	}
+	testProcessHost(t, binary, true)
+}
+
+func testProcessHost(t *testing.T, binary string, release bool) {
 	endpoint, ca, creds, _ := publicProxy(t)
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("external-process-payload")) }))
 	defer origin.Close()
@@ -29,7 +41,11 @@ func TestSDKProcessHost(t *testing.T) {
 		t.Run(carrier, func(t *testing.T) {
 			dir := t.TempDir()
 			link := filepath.Join(dir, "connection.txt")
-			data, _ := json.Marshal(map[string]any{"v": 1, "servers": []string{endpoint}, "username": creds.Username, "password": creds.Password, "tls": "go", "transport": carrier})
+			backend := "go"
+			if release && carrier == "h2-connect" {
+				backend = "nss"
+			}
+			data, _ := json.Marshal(map[string]any{"v": 1, "servers": []string{endpoint}, "username": creds.Username, "password": creds.Password, "tls": backend, "transport": carrier})
 			if err := os.WriteFile(link, []byte("vetroff://"+base64.RawURLEncoding.EncodeToString(data)), 0600); err != nil {
 				t.Fatal(err)
 			}

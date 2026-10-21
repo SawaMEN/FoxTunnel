@@ -6,6 +6,8 @@ are required to speak the protocol; neither is a whole-device VPN application.
 The public API and wire draft remain experimental: pin the tested tag and commit.
 See [SDK lifecycle and process schema 1](SDK.md) for the executable host contract.
 
+[Release candidate verification](RELEASES.md) describes the native archive gates.
+
 ## Release contents
 
 The standard release publishes only two integration bundles:
