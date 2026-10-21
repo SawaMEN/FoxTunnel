@@ -121,7 +121,9 @@ Unix SIGTERM остаётся штатным shutdown, SIGHUP — reload сер�
 Внешний модуль `integration/external` импортирует только публичные API. В CI
 обязательны 22 случая: прежние 16 HTTP/trust/auth, четыре SDK version/status/
 cancellation и два настоящих process-host H2/H3 payload/lifecycle сценария.
-CLI строится с race detector на Linux/macOS/Windows. Evidence reducer требует
+CLI строится с race detector на Linux/macOS/Windows. На каждой из этих ОС
+отдельно исполняются CLI subprocess tests для ready/stopped и EOF-остановки
+обеих ролей client/server, включая освобождение TCP listener и H3 UDP metadata. Evidence reducer требует
 run/pass каждого случая и успешный пакет; skip или отсутствие binary не проходят.
 Отдельные subprocess tests проверяют oversized/несовместимые события,
 не-loopback ready, неверную последовательность и kill зависшего child.

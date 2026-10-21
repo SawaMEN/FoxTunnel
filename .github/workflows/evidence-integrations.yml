@@ -57,6 +57,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Client and server process events and EOF shutdown on the native OS
+        run: go test -race ./cmd/foxtunnel -run '^TestProcess(EventsAndEOFShutdown|NeverReportsReadyAfterInvalidConfiguration)$' -count=1 -timeout=60s
       - name: Build actual runtime for the external process host
         shell: bash
         run: |
