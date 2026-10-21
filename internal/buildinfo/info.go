@@ -2,11 +2,15 @@
 package buildinfo
 
 import (
+	"github.com/SawaMEN/FoxTunnel/internal/contract"
 	"github.com/SawaMEN/FoxTunnel/internal/neqo"
 	"runtime"
 )
 
-const ProtocolDraft = "foxtunnel-draft-0"
+const SDKSchema = contract.SDKSchema
+const ProcessSchema = contract.ProcessSchema
+
+const ProtocolDraft = contract.ProtocolDraft
 
 var Version = "dev"
 var Commit = "unknown"
@@ -15,6 +19,8 @@ var Variant = ""
 var Dirty = "true"
 
 type Info struct {
+	SDKSchema         int      `json:"sdk_schema"`
+	ProcessSchema     int      `json:"process_schema"`
 	Product           string   `json:"product"`
 	IntegrationSchema int      `json:"integration_schema"`
 	TransportEngines  []string `json:"transport_engines"`
@@ -57,5 +63,5 @@ func Current() Info {
 		quicBackends = append(quicBackends, "neqo")
 		neqoVersion, neqoRevision = neqo.Version, neqo.Revision
 	}
-	return Info{Product: "protocol-core", IntegrationSchema: 1, TransportEngines: engines, QUICBackends: quicBackends, NeqoVersion: neqoVersion, NeqoRevision: neqoRevision, NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
+	return Info{SDKSchema: SDKSchema, ProcessSchema: ProcessSchema, Product: "protocol-core", IntegrationSchema: 1, TransportEngines: engines, QUICBackends: quicBackends, NeqoVersion: neqoVersion, NeqoRevision: neqoRevision, NSSVersion: linkedNSSVersion(), Schema: 1, Version: Version, Commit: Commit, BuildDate: BuildDate, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, Variant: Variant, GoVersion: runtime.Version(), BuildFlavor: Flavor, TLSBackends: backends, DefaultTLSBackend: defaultBackend, ProtocolDraft: ProtocolDraft, Experimental: true, Dirty: Dirty != "false"}
 }

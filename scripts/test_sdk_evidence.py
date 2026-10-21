@@ -16,10 +16,10 @@ class SDKExecutionEvidence(unittest.TestCase):
     def encode(self, rows):
         return ('\n'.join(json.dumps(r) for r in rows) + '\n').encode()
 
-    def test_requires_sixteen_actually_executed_cases(self):
+    def test_requires_all_twenty_two_actually_executed_cases(self):
         report = sdk.summarize(self.encode(self.events()), 'a' * 40, 'linux')
         self.assertTrue(report['passed'])
-        self.assertEqual(report['required_case_count'], 16)
+        self.assertEqual(report['required_case_count'], 22)
         self.assertEqual(set(report['executed_required_cases']), sdk.EXPECTED)
 
     def test_skipped_or_missing_case_never_passes(self):

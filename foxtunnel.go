@@ -206,6 +206,10 @@ func (c *Client) ownLocked(raw net.Conn) *ownedConn {
 // ServeSOCKS takes ownership of listener and closes it on return or Client.Close.
 // SOCKS5 supports TCP and opt-in experimental UDP ASSOCIATE. No child process or panel is required.
 func (c *Client) ServeSOCKS(listener net.Listener) error {
+	return c.serveSOCKS(context.Background(), listener)
+}
+
+func (c *Client) serveSOCKS(ctx context.Context, listener net.Listener) error {
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
@@ -215,7 +219,10 @@ func (c *Client) ServeSOCKS(listener net.Listener) error {
 	c.listeners[listener] = struct{}{}
 	c.mu.Unlock()
 	defer func() { listener.Close(); c.mu.Lock(); delete(c.listeners, listener); c.mu.Unlock() }()
-	return c.core.ServeContext(c.ctx, &ownedListener{Listener: listener, owner: c})
+	service, cancel := context.WithCancel(ctx)
+	stop := context.AfterFunc(c.ctx, cancel)
+	defer func() { stop(); cancel() }()
+	return c.core.ServeContext(service, &ownedListener{Listener: listener, owner: c})
 }
 func (c *Client) Close() error {
 	c.mu.Lock()

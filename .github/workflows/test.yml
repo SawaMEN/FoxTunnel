@@ -16,8 +16,8 @@ jobs:
           go-version: '1.26.10'
       - name: Check format
         run: |
-          gofmt -d cmd internal examples foxtunnel*.go integration/external
-          test -z "$(gofmt -l cmd internal examples foxtunnel*.go integration/external)"
+          gofmt -d cmd internal examples processhost foxtunnel*.go integration/external
+          test -z "$(gofmt -l cmd internal examples processhost foxtunnel*.go integration/external)"
       - name: Check documentation links
         run: python3 scripts/check_docs_links.py
       - name: Enforce protocol-core boundaries

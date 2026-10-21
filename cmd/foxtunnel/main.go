@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -89,6 +88,8 @@ func main() {
 		return
 	case "server":
 		fs := i18n.NewFlagSet("foxtunnel server")
+		eventsJSON := fs.Bool("events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
+		stdinEOF := fs.Bool("shutdown-on-stdin-eof", false, "gracefully stop when the host closes stdin")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		configFile := fs.String("config", "", i18n.Text("private server configuration JSON"))
@@ -114,7 +115,7 @@ func main() {
 		if *configFile != "" {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
-				if f.Name != "config" && f.Name != "lang" {
+				if f.Name != "config" && f.Name != "lang" && f.Name != "events-json" && f.Name != "shutdown-on-stdin-eof" {
 					conflict = true
 				}
 			})
@@ -219,6 +220,7 @@ func main() {
 		defer stopCertificates()
 		ctx, stopProcess := processContext()
 		defer stopProcess()
+		shutdownOnEOF(*stdinEOF, stopProcess)
 		server := &http.Server{
 			Addr:              *listen,
 			Handler:           handler,
@@ -240,13 +242,33 @@ func main() {
 				log.Fatal(err)
 			}
 		}
-		if err := serveListeners(ctx, server, handler, listener, udp, *maxConnections); err != nil {
-			log.Fatal(err)
+		ready := processEvent{Sequence: 1, Type: "ready", Role: "server", TCPListen: listener.Addr().String()}
+		if udp != nil {
+			ready.UDPListen = udp.LocalAddr().String()
+		}
+		if err := emitProcessEvent(*eventsJSON, ready); err != nil {
+			log.Fatal("process event output failed")
+		}
+		serveErr := serveListeners(ctx, server, handler, listener, udp, *maxConnections)
+		outcome := "shutdown"
+		if serveErr != nil {
+			outcome = "serve_failed"
+		}
+		if err := emitProcessEvent(*eventsJSON, processEvent{Sequence: 2, Type: "stopped", Role: "server", Outcome: outcome}); err != nil {
+			log.Fatal("process event output failed")
+		}
+		if serveErr != nil {
+			log.Fatal(serveErr)
 		}
 		return
 
 	case "client", "share":
 		fs := i18n.NewFlagSet("foxtunnel " + os.Args[1])
+		eventsJSON, stdinEOF := new(bool), new(bool)
+		if os.Args[1] == "client" {
+			fs.BoolVar(eventsJSON, "events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
+			fs.BoolVar(stdinEOF, "shutdown-on-stdin-eof", false, "gracefully stop when the host closes stdin")
+		}
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		link := fs.String("link", "", i18n.Text("vetroff connection link (prefer --link-file for secrets)"))
@@ -328,6 +350,9 @@ func main() {
 			fs.BoolVar(allowPublicSOCKS, "socks-allow-lan", false, i18n.Text("explicitly permit non-loopback SOCKS5; requires local SOCKS password and a secure network"))
 		}
 		i18n.Parse(fs, os.Args[2:])
+		if *stdinEOF && *linkFile == "-" {
+			log.Fatal("stdin shutdown requires a separate connection file")
+		}
 		if *link != "" || *linkFile != "" {
 			if *link != "" && *linkFile != "" {
 				log.Fatal(i18n.Text("choose either --link or --link-file"))
@@ -335,7 +360,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "node-pins-file", "socks-allow-lan", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
+				case "events-json", "shutdown-on-stdin-eof", "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "node-pins-file", "socks-allow-lan", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
 				default:
 					conflict = true
 				}
@@ -454,6 +479,9 @@ func main() {
 		if *discover && !*bonded {
 			log.Fatal(i18n.Text("cluster discovery requires --bond"))
 		}
+		ctx, stopProcess := processContext()
+		defer stopProcess()
+		shutdownOnEOF(*stdinEOF, stopProcess)
 		client, err := tunnel.NewClient(*server, user, password, *ca)
 		if err != nil {
 			log.Fatal(err)
@@ -533,7 +561,7 @@ func main() {
 		if *bonded {
 			var err error
 			if *discover {
-				err = client.EnableBondDiscovery(context.Background())
+				err = client.EnableBondDiscovery(ctx)
 			} else {
 				err = client.EnableBond()
 			}
@@ -596,8 +624,6 @@ func main() {
 				}
 			}()
 		}
-		ctx, stopProcess := processContext()
-		defer stopProcess()
 		listener, err := net.Listen("tcp", *listen)
 		if err != nil {
 			log.Fatal(err)
@@ -609,8 +635,20 @@ func main() {
 			}
 		}
 		log.Printf(i18n.Text("SOCKS5 listener: %s"), listener.Addr())
-		if err := client.ServeContext(ctx, listener); err != nil {
-			log.Fatal(err)
+		if err := emitProcessEvent(*eventsJSON, processEvent{Sequence: 1, Type: "ready", Role: "client", TCPListen: listener.Addr().String()}); err != nil {
+			log.Fatal("process event output failed")
+		}
+		serveErr := client.ServeContext(ctx, listener)
+		client.Close()
+		outcome := "shutdown"
+		if serveErr != nil {
+			outcome = "serve_failed"
+		}
+		if err := emitProcessEvent(*eventsJSON, processEvent{Sequence: 2, Type: "stopped", Role: "client", Outcome: outcome}); err != nil {
+			log.Fatal("process event output failed")
+		}
+		if serveErr != nil {
+			log.Fatal(serveErr)
 		}
 		return
 	default:
