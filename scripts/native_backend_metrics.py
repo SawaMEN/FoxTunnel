@@ -46,7 +46,7 @@ def parse_result(log, variant, scenario):
                 go_bytes_per_exchange=int(alloc_bytes), go_allocations_per_exchange=int(allocs))
 
 
-def measure(binary, variant, scenario):
+def measure(binary, variant, scenario, resource_runner=None):
     fn = VARIANTS[variant]
     label, _, iterations = SCENARIOS[scenario]
     args = [str(binary), '-test.run=^$', f'-test.bench=^{fn}$/{label}$',
@@ -56,18 +56,39 @@ def measure(binary, variant, scenario):
                    (os.POSIX_SPAWN_DUP2, output.fileno(), 1),
                    (os.POSIX_SPAWN_DUP2, output.fileno(), 2)]
         started = time.monotonic()
-        pid = os.posix_spawn(str(binary), args, os.environ.copy(), file_actions=actions)
-        _, status, usage = os.wait4(pid, 0)
+        if resource_runner is None:
+            pid = os.posix_spawn(str(binary), args, os.environ.copy(), file_actions=actions)
+            _, status, usage = os.wait4(pid, 0)
+            exit_code = os.waitstatus_to_exitcode(status)
+        else:
+            process = subprocess.run([str(resource_runner), *args], stdin=empty,
+                                     stdout=output, stderr=output, timeout=55)
+            exit_code = process.returncode
         elapsed = time.monotonic() - started
         output.seek(0)
         data = output.read((8 << 20) + 1)
-    if os.waitstatus_to_exitcode(status) != 0 or len(data) > 8 << 20:
+    if exit_code != 0 or len(data) > 8 << 20:
         raise ValueError('benchmark child failed or exceeded log bound')
     result = parse_result(data.decode(), variant, scenario)
-    result.update(process_user_seconds=usage.ru_utime, process_system_seconds=usage.ru_stime,
-                  process_peak_rss_kib=usage.ru_maxrss, process_wall_seconds=elapsed,
-                  log_sha256=hashlib.sha256(data).hexdigest())
+    if resource_runner is None:
+        resource_values = dict(process_user_seconds=usage.ru_utime, process_system_seconds=usage.ru_stime,
+                               process_peak_rss_kib=usage.ru_maxrss, process_wall_seconds=elapsed)
+    else:
+        resource_values = parse_resources(data.decode())
+    result.update(**resource_values, log_sha256=hashlib.sha256(data).hexdigest())
     return result
+
+
+def parse_resources(log):
+    records = re.findall(r'^FOXTUNNEL_RESOURCE (.+)$', log, re.MULTILINE)
+    if len(records) != 1:
+        raise ValueError('missing or duplicate resource record')
+    record = json.loads(records[0])
+    if set(record) != {'user', 'system', 'rss_kib', 'wall'} or any(
+            type(v) not in (int, float) or not math.isfinite(v) or v < 0 for v in record.values()):
+        raise ValueError('invalid resource record')
+    return dict(process_user_seconds=record['user'], process_system_seconds=record['system'],
+                           process_peak_rss_kib=record['rss_kib'], process_wall_seconds=record['wall'])
 
 
 def main():

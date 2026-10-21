@@ -71,10 +71,11 @@ def profile(binary, variant, scenario, directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('binary', 'versions', 'out'):
+    for name in ('binary', 'versions', 'out', 'resource-runner'):
         parser.add_argument('--' + name, required=True, type=Path)
     args = parser.parse_args()
     binary = args.binary.resolve(strict=True)
+    resource_runner = args.resource_runner.resolve(strict=True)
     if args.out.exists() or args.out.is_symlink():
         raise ValueError('output must be new')
     versions = json.loads(args.versions.read_text())
@@ -88,13 +89,13 @@ def main():
     # Compile before invoking this script. Warm up both engines separately.
     for variant in VARIANTS:
         for scenario in metrics.SCENARIOS:
-            metrics.measure(binary, variant, scenario)
+            metrics.measure(binary, variant, scenario, resource_runner)
     samples = []
     for repeat in range(REPEATS):
         for variant in VARIANTS if repeat % 2 == 0 else VARIANTS[::-1]:
             for scenario in metrics.SCENARIOS:
                 samples.append(dict(variant=variant, scenario=scenario, repeat=repeat,
-                                    **metrics.measure(binary, variant, scenario)))
+                                    **metrics.measure(binary, variant, scenario, resource_runner)))
     summaries = summarize(samples)
     with tempfile.TemporaryDirectory(prefix='foxtunnel-h3-profile-') as temp:
         profiles = [profile(binary, v, s, Path(temp)) for v in VARIANTS for s in metrics.SCENARIOS]
@@ -104,6 +105,8 @@ def main():
                   source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=metrics.ROOT, text=True).strip(),
                   binary_sha256=digest, versions=versions,
                   worktree_dirty=bool(subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=no'], cwd=metrics.ROOT)),
+                  resource_method='exec-small-C-launcher-then-wait4',
+                  resource_runner_sha256=hashlib.sha256(resource_runner.read_bytes()).hexdigest(),
                   collector_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   lock_sha256=hashlib.sha256((metrics.ROOT / 'scripts/neqo.lock.json').read_bytes()).hexdigest(),
                   cpu_model=next((line.split(':', 1)[1].strip() for line in Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('model name')), 'unknown'),
