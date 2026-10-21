@@ -118,6 +118,24 @@ class DeploymentContracts(unittest.TestCase):
         self.assertFalse((self.deployment.root / 'escape').exists())
 
 
+class LauncherLifecycle(unittest.TestCase):
+    def test_windows_launcher_waits_for_child_and_preserves_exit_status(self):
+        # A real child publishes its final marker shortly before exiting. The
+        # launcher must remain waitable until both events have happened.
+        with tempfile.TemporaryDirectory() as temp:
+            marker = Path(temp) / 'completed'
+            code = "import pathlib,sys,time;time.sleep(.1);pathlib.Path(sys.argv[1]).write_text('done');sys.exit(7)"
+            with patch.object(deploy.sys, 'platform', 'win32'):
+                status = deploy.launch(sys.executable, ['-c', code, str(marker)])
+            self.assertEqual(status, 7)
+            self.assertEqual(marker.read_text(), 'done')
+
+    def test_posix_launcher_retains_exec_argument_boundaries(self):
+        with patch.object(deploy.sys, 'platform', 'linux'), patch.object(deploy.os, 'execv') as execute:
+            deploy.launch('/reviewed/foxtunnel', ['version', 'argument with spaces'])
+        execute.assert_called_once_with('/reviewed/foxtunnel', ['/reviewed/foxtunnel', 'version', 'argument with spaces'])
+
+
 @unittest.skipUnless(os.environ.get('FOXTUNNEL_INSTALL_LAB_A') and os.environ.get('FOXTUNNEL_INSTALL_LAB_B'), 'native binaries supplied only by explicit installation lab')
 class NativeInstallationLab(unittest.TestCase):
     def test_install_update_failed_update_rollback_and_recovery(self):

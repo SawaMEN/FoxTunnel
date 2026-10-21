@@ -253,6 +253,17 @@ def private_dir_existing(path):
     private_dir(path)
 
 
+def launch(executable, forward):
+    command = [str(executable), *forward]
+    if sys.platform == 'win32':
+        # Windows execv uses CRT overlay semantics: it does not preserve the
+        # POSIX waitable process identity. Keep the launcher alive until its
+        # child has exited, including release of the executable image mapping.
+        return subprocess.call(command)
+    os.execv(command[0], command)
+    return 0  # Only reached by test doubles; successful POSIX exec never returns.
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', required=True, type=Path, help='private per-user deployment directory')
@@ -288,7 +299,7 @@ def main(argv=None):
             forward = args.args[1:] if args.args[:1] == ['--'] else args.args
             if not forward:
                 raise ValueError('provide FoxTunnel arguments after --')
-            os.execv(str(executable), [str(executable), *forward])
+            return launch(executable, forward)
         print(json.dumps({key: record[key] for key in ('identity', 'version', 'commit', 'goos', 'goarch', 'build_flavor')}, sort_keys=True))
         return 0
     except (OSError, ValueError, subprocess.SubprocessError, tarfile.TarError):
