@@ -49,7 +49,7 @@ func newEngine(settings []byte) (*engine, error) {
 	if p == nil {
 		return nil, errBridge
 	}
-	return &engine{p}, nil
+	return &engine{p: p}, nil
 }
 func (e *engine) shutdown() { C.ftn_shutdown(e.p) }
 func (e *engine) close()    { C.ftn_free(e.p); e.p = nil }
