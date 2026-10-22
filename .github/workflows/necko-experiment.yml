@@ -80,6 +80,12 @@ jobs:
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoTrustBeforeCredentials$' -v -count=1 -timeout=60s
+      - name: Concurrent streams, cancellation and H3-only failure policy
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^TestGecko(ConcurrentCONNECT|Cancellation|H3NoTCPFallback)$' -v -count=3 -timeout=120s
       - name: Archive the patched runtime for repeatable native diagnostics
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |

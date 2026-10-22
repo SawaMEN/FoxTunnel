@@ -48,6 +48,9 @@ do not attribute its results to the stock Taskcluster binary above.
 - A clean output EOF closes only the sending side of H2/H3; errors still abort
   the stream. Vendored Neqo receives the same classic CONNECT classification
   fix as the separate Neqo bridge, so its response survives upload FIN.
+  Its `.cargo-checksum.json` entry is updated by a separate pinned patch;
+  Cargo's integrity checks remain enabled. The regression check verifies that
+  all other checksum entries and the package checksum are unchanged.
 
 The stream-copy and EOF changes are candidates until a new source build passes
 the tests. The prototype remains excluded from the production CLI and SDK.
@@ -82,13 +85,45 @@ Using that exact compiled artifact, with the launcher/JS corrections:
   with a closed SOCKS socket; it must never report success.
 
 These observations do not close the full H2/H3 gate. In particular, reverse
-half-close, concurrent streams, cancellation under load, and protocol fallback
+half-close and the new H2 stream copier still need native verification.
+Concurrency, cancellation under load, and protocol fallback
 must be verified before promotion.
+
+## Additional lifecycle gates
+
+Source run `39731105034` stopped at Cargo's integrity check before the new
+libxul was built: the patched vendored Rust source still had its upstream
+checksum entry. The source lock now includes the matching checksum patch;
+this failure is not a native interop result.
+
+The additional native tests use a real TCP echo destination and an independent
+Go proxy. On the first compiled runtime, with the updated JS adapter, local
+`-race` runs confirmed:
+
+- Twelve simultaneously active H3 CONNECTs, each carrying a distinct 128 KiB
+  binary payload containing every byte value; repeated three times.
+- Cancellation joins the helper, closes the active local stream and removes
+  the SOCKS listener; repeated three times.
+- A TCP/H2-only proxy receives zero HTTP requests when H3 is explicitly
+  selected and its QUIC endpoint is unavailable.
+
+Cold parallel H3 setup previously caused failures and an H2 fallback. The H3
+adapter now queues CONNECT setup, while established streams keep independent
+concurrent pumps. The existing connection limit and per-session setup timeout
+bound that queue. This adds setup latency to a burst of new tunnels and must
+be included in stage 3 timing comparisons. The adapter also disables H3 error
+fallback preferences and delays the TCP backup beyond the setup deadline.
+The protocol check on handoff remains in place.
+
+The new source build runs these lifecycle gates for **both** H2 and H3, in
+addition to upload EOF and certificate checks. Success on the earlier H3
+artifact does not count as verification of the new C++/Rust patches.
 
 The [Necko source workflow](../../.github/workflows/necko-experiment.yml)
 bootstraps Mozilla's C++ build dependencies, builds libxul and xpcshell, then
-runs three mandatory native gates: cold handoff/binary transfer, upload
-half-close, and rejection of invalid certificates before credentials.
+runs four mandatory native gates: cold handoff/binary transfer, upload
+half-close, rejection of invalid certificates before credentials, and repeated
+concurrency/cancellation/H3-only policy checks.
 These are real native tests; none counts an H2 fallback as H3 success.
 The latter gates run if compilation succeeds even if handoff fails.
 Build provenance distinguishes source preparation from a compiled runtime;

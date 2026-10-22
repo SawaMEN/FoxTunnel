@@ -85,6 +85,13 @@ if (typeof Components !== "undefined") {
   Services.prefs.setBoolPref("network.http.http2.enabled", true);
   Services.prefs.setBoolPref("network.http.http2.websockets", true);
   Services.prefs.setBoolPref("network.http.http3.enable", cfg.transport === "h3-connect");
+  if (cfg.transport === "h3-connect") {
+    // An explicit H3 tunnel must fail rather than race/retry HTTP/2. Give
+    // our bounded setup timer priority over Gecko's TCP backup timer too.
+    Services.prefs.setBoolPref("network.http.http3.fallback_to_h2_on_error", false);
+    Services.prefs.setBoolPref("network.http.http3.fallback_to_h2_on_protocol_error", false);
+    Services.prefs.setIntPref("network.http.http3.backup_timer_delay", cfg.connect_timeout_ms + 1000);
+  }
   Services.prefs.setBoolPref("network.proxy.allow_hijacking_localhost", true);
   Services.prefs.setIntPref("network.http.speculative-parallel-limit", 0);
   Services.prefs.setBoolPref("network.captive-portal-service.enabled", false);
@@ -165,6 +172,20 @@ if (typeof Components !== "undefined") {
   }
 
   const sessions = new Set();
+  // The standalone H3 proxy handoff cannot reliably initialize several cold
+  // CONNECT channels at once. Queue setup only; established streams retain
+  // independent, concurrent pumps on the native multiplexed connection.
+  // The session limit and each session's setup timer also bound this queue.
+  let h3SetupTail = Promise.resolve();
+  function openTunnel(authority, session) {
+    if (cfg.transport !== "h3-connect") return connect(authority, session);
+    const pending = h3SetupTail.then(() => {
+      if (session.closed) throw new Error("Firefox setup cancelled");
+      return connect(authority, session);
+    });
+    h3SetupTail = pending.then(() => {}, () => {});
+    return pending;
+  }
   function connect(authority, session) {
     return new Promise((resolve, reject) => {
       session.cancelConnect = () => reject(new Error("Firefox setup cancelled"));
@@ -252,7 +273,7 @@ if (typeof Components !== "undefined") {
         const chunk = await local.read(); if (chunk === null) return;
         parser.push(chunk); request = parser.request();
       }
-      const remote = await connect(request.authority, session);
+      const remote = await openTunnel(request.authority, session);
       clearTimeout(timer);
       await local.write(socksReply(0)); established = true;
       if (request.early.length) await remote.write(request.early);

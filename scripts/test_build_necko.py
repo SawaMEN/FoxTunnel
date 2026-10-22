@@ -93,6 +93,18 @@ class NeckoSourceTests(unittest.TestCase):
     def test_repository_lock_and_patch_digests(self):
         build.load_lock()
 
+    def test_vendored_cargo_checksum_tracks_the_patched_source(self):
+        lock = build.load_lock()
+        patches = {p["source_path"]: p for p in lock["patches"]}
+        source = patches["third_party/rust/neqo-http3/src/connection.rs"]
+        manifest = patches["third_party/rust/neqo-http3/.cargo-checksum.json"]
+        lines = (build.ROOT / manifest["path"]).read_text().splitlines()
+        before = json.loads(next(line[1:] for line in lines if line.startswith('-{"files"')))
+        after = json.loads(next(line[1:] for line in lines if line.startswith('+{"files"')))
+        self.assertEqual(before["files"].pop("src/connection.rs"), source["before_sha256"])
+        self.assertEqual(after["files"].pop("src/connection.rs"), source["after_sha256"])
+        self.assertEqual(before, after, "all other Cargo integrity entries must be preserved")
+
 
 if __name__ == "__main__":
     unittest.main()

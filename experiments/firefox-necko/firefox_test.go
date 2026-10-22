@@ -198,14 +198,20 @@ func testGeckoCONNECT(t *testing.T, halfClose bool) {
 
 func startTestHelper(t *testing.T, runtime string, cfg Config) (string, *lockedBuffer) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	listen, stderr, _ := startTestHelperContext(t, context.Background(), runtime, cfg)
+	return listen, stderr
+}
+
+func startTestHelperContext(t *testing.T, parent context.Context, runtime string, cfg Config) (string, *lockedBuffer, <-chan struct{}) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 	read, write := io.Pipe()
 	stderr := new(lockedBuffer)
-	finished := make(chan error, 1)
+	finished := make(chan struct{})
 	go func() {
 		err := Run(ctx, runtime, cfg, write, stderr)
 		write.CloseWithError(err)
-		finished <- err
+		close(finished)
 	}()
 	t.Cleanup(func() { cancel(); read.Close(); <-finished })
 	var ready struct {
@@ -219,7 +225,7 @@ func startTestHelper(t *testing.T, runtime string, cfg Config) (string, *lockedB
 		t.Fatal("invalid readiness", ready)
 	}
 	go io.Copy(stderr, read)
-	return ready.Listen, stderr
+	return ready.Listen, stderr, finished
 }
 
 func TestGeckoTrustBeforeCredentials(t *testing.T) {
