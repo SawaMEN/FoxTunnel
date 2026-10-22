@@ -81,3 +81,6 @@ FoxTunnel is experimental, not a certified system VPN or leak-proof censorship b
 License: MIT.
 
 See [operations and platform gates](OPERATIONS.md) (Russian) for shutdown signals, live TLS renewal, and remaining installation/signing checks.
+
+Current native resumption changes and limits: [update fixes](UPDATE-FIXES.md).
+Historical plans and measurement navigation: [index](HISTORY.md).
