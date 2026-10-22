@@ -59,6 +59,20 @@
       "source_path": "third_party/rust/neqo-http3/.cargo-checksum.json",
       "before_sha256": "c65f2cf943eaf89f4e3fa53b80d472d0a55acb83ac935f3cc097318190108520",
       "after_sha256": "1606765d97a9365dd118c5d585a4ea7329a8d13c22aaf4eb90aad95ae4257173"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/socket-half-close-api.patch",
+      "sha256": "2368ece298fa28ad166068a766716a02e5b3aea4fef8752525e0ee30ee1eb559",
+      "source_path": "netwerk/base/nsISocketTransport.idl",
+      "before_sha256": "b06dfb1fb1150436c67d1a167798cd42c798bd2f4985f41843a601ce492e0dff",
+      "after_sha256": "a05da0599b3c6269cd5e0ce2b65438bcd2865d620ddde907e49a14be472239c0"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/socket-output-half-close.patch",
+      "sha256": "b3c5d6d3fa7617b742fb09c2461e07c997645aca4b243333d36a66ec6699a019",
+      "source_path": "netwerk/base/nsSocketTransport2.cpp",
+      "before_sha256": "430e9a9e430c1840e0d7bbbce15bd59978009a85f068b47cdd32d4abcd72287a",
+      "after_sha256": "bbc554529e9b7b1e478ac4fccb02a0248b475fa97e77dd04aa7452c6f3900030"
     }
   ]
 }

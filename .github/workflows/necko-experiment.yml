@@ -13,7 +13,7 @@ permissions:
   contents: read
 concurrency:
   group: necko-source-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   native:
     runs-on: ubuntu-24.04
@@ -80,6 +80,12 @@ jobs:
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoTrustBeforeCredentials$' -v -count=1 -timeout=60s
+      - name: Local TCP FIN and reverse H2/H3 half-close gates
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^Test(GeckoLocalHalfClose|GeckoReverseHalfClose|ReverseHalfClosePeers)$' -v -count=1 -timeout=80s
       - name: Concurrent streams, cancellation and H3-only failure policy
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: foxtunnel

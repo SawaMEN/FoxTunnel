@@ -51,6 +51,11 @@ do not attribute its results to the stock Taskcluster binary above.
   Its `.cargo-checksum.json` entry is updated by a separate pinned patch;
   Cargo's integrity checks remain enabled. The regression check verifies that
   all other checksum entries and the package checksum are unchanged.
+- Plain TCP gains an opt-in `ENABLE_TCP_HALF_CLOSE` connection flag. On clean
+  output closure it sends `PR_SHUTDOWN_SEND` after buffered output drains,
+  leaving input open. The SOCKS adapter sets it only on the accepted local
+  socket, before opening streams. Layered sockets and sockets without the flag
+  retain their existing close behavior; shutdown errors still abort normally.
 
 The stream-copy and EOF changes are candidates until a new source build passes
 the tests. The prototype remains excluded from the production CLI and SDK.
@@ -130,17 +135,26 @@ and cancel the request. Neither fixture dials the dummy CONNECT destination.
 both passed locally with the race detector.
 
 On the first compiled runtime (`47a2586`), both native modes timed out waiting
-for response EOF. This is a separate blocker, not a result for the newer source
-patches. The source build at `97bcf1d` is still pending; it predates this new
-test. The manual runtime workflow's `^TestGecko` selector includes the reverse
-gate when testing that artifact with this checkout. Both EOF directions must
-pass before promotion.
+for response EOF. An isolated native socket probe found another blocker:
+`nsSocketTransport` output closure does not send TCP FIN while input remains
+open. The probe received its response marker and could upload afterward, but
+the TCP peer timed out waiting for EOF. This occurs without HTTP or a proxy.
+`TestGeckoLocalHalfClose` now checks that contract independently: buffered data,
+response FIN, then a complete upload and upload FIN on the same socket.
+
+The opt-in socket patch is a candidate until the new source runtime passes.
+The adapter's feature guard preserves older runtimes for blocker diagnostics;
+it does not make those runtimes pass the half-close gates. The earlier source
+build at `97bcf1d` predates this patch and continues independently. New source
+runs preserve an already running build instead of cancelling it on a push.
+Both EOF directions must pass before promotion; fixing the local FIN does not
+establish correctness of native H2/H3 receive-side stream cleanup.
 
 The [Necko source workflow](../../.github/workflows/necko-experiment.yml)
 bootstraps Mozilla's C++ build dependencies, builds libxul and xpcshell, then
-runs four mandatory native gates: cold handoff/binary transfer, upload
-half-close, rejection of invalid certificates before credentials, and repeated
-concurrency/cancellation/H3-only policy checks.
+runs five mandatory native gates: cold handoff/binary transfer, upload
+half-close, rejection of invalid certificates before credentials, local TCP FIN
+and reverse half-close, and repeated concurrency/cancellation/H3-only checks.
 These are real native tests; none counts an H2 fallback as H3 success.
 The latter gates run if compilation succeeds even if handoff fails.
 Build provenance distinguishes source preparation from a compiled runtime;

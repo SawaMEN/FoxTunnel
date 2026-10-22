@@ -1,0 +1,23 @@
+--- a/netwerk/base/nsSocketTransport2.cpp
++++ b/netwerk/base/nsSocketTransport2.cpp
+@@ -1960,6 +1960,20 @@
+ 
+   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
+ 
++  // A tunnel may receive EOF before its local peer finishes uploading.
++  // Preserve the usual socket close policy unless plain-TCP half-close was
++  // explicitly requested. Buffered output reaches here only after draining.
++  if (!mOutputClosed &&
++      (NS_SUCCEEDED(reason) || reason == NS_BASE_STREAM_CLOSED) &&
++      (mConnectionFlags & nsISocketTransport::ENABLE_TCP_HALF_CLOSE) &&
++      mTypes.IsEmpty() && !mTLSSocketControl &&
++      mState == STATE_TRANSFERRING) {
++    PRFileDescAutoLock fd(this);
++    if (fd.IsInitialized() && PR_Shutdown(fd, PR_SHUTDOWN_SEND) == PR_FAILURE) {
++      reason = ErrorAccordingToNSPR(PR_GetError());
++    }
++  }
++
+   mOutputClosed = true;
+   // check if event should affect entire transport
+   if (NS_FAILED(reason) && (reason != NS_BASE_STREAM_CLOSED)) {

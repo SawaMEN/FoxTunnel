@@ -242,6 +242,12 @@ if (typeof Components !== "undefined") {
   }
   async function serve(transport) {
     if (sessions.size >= cfg.max_connections) { transport.close(Cr.NS_BINDING_ABORTED); return; }
+    // Closing an ordinary Gecko socket output does not send FIN while input
+    // remains open. Enable the pinned plain-TCP fix on the local SOCKS socket.
+    // The guard keeps older research runtimes usable for blocker diagnostics.
+    if (typeof Ci.nsISocketTransport.ENABLE_TCP_HALF_CLOSE === "number") {
+      transport.connectionFlags |= Ci.nsISocketTransport.ENABLE_TCP_HALF_CLOSE;
+    }
     const local = new AsyncIO(
       transport.openInputStream(0, 0, 0).QueryInterface(Ci.nsIAsyncInputStream),
       transport.openOutputStream(0, 0, 0).QueryInterface(Ci.nsIAsyncOutputStream));
