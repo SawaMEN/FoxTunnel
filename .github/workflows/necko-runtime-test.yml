@@ -27,7 +27,7 @@ jobs:
           github-token: ${{ github.token }}
           path: runtime-provenance
       - name: Install runtime libraries and diagnostic tools
-        run: sudo apt-get update -qq && sudo apt-get install -y libgtk-3-0t64 libdbus-glib-1-2 libasound2t64 libxt6 strace zstd
+        run: sudo apt-get update -qq && sudo apt-get install -y libgtk-3-0t64 libdbus-glib-1-2 libasound2t64 libxt6 strace gdb zstd
       - name: Extract and verify exact source and runtime hashes
         run: |
           mkdir runtime
@@ -57,6 +57,13 @@ jobs:
           if [ "$result" != 0 ]; then
             timeout -k 3 8 strace -f -tt -o runtime-startup.strace runtime/xpcshell -g "$PWD/runtime" -a "$PWD/runtime" -e 'print("xpcshell-ready")'
             tail -100 runtime-startup.strace
+            runtime/xpcshell -g "$PWD/runtime" -a "$PWD/runtime" -e 'print("xpcshell-ready")' &
+            runtime_pid=$!
+            sleep 3
+            sudo timeout -k 3 20 gdb -batch -ex 'set pagination off' -ex 'thread apply all bt' -p "$runtime_pid" > runtime-startup.stack 2>&1
+            cat runtime-startup.stack
+            kill "$runtime_pid"
+            wait "$runtime_pid"
           fi
           exit "$result"
       - uses: actions/setup-go@v5
@@ -73,5 +80,6 @@ jobs:
           path: |
             runtime-startup.log
             runtime-startup.strace
+            runtime-startup.stack
           if-no-files-found: ignore
           retention-days: 7
