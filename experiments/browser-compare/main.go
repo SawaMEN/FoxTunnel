@@ -285,7 +285,7 @@ func serve(ctx context.Context, protocol, cert, key, ready, out, backend string)
 		}
 		server := &http3.Server{TLSConfig: cfg, QUICConfig: &quic.Config{Versions: []quic.Version{quic.Version1}, MaxIncomingStreams: 32}, Handler: f}
 		server.ConnContext = func(ctx context.Context, c *quic.Conn) context.Context {
-			id, err := f.add(func() { c.CloseWithError(0, "fixture rotation") })
+			id, err := f.add(func() { c.CloseWithError(quic.ApplicationErrorCode(http3.ErrCodeNoError), "fixture rotation") })
 			if err != nil {
 				c.CloseWithError(1, "fixture capacity")
 				return ctx
@@ -307,26 +307,27 @@ func serve(ctx context.Context, protocol, cert, key, ready, out, backend string)
 	if backend != "" {
 		go func() { sampleErr <- nativeWorkload(ctx, origin, cert, backend, protocol) }()
 	}
+	var workloadErr error
 	select {
 	case <-f.done:
-	case err := <-sampleErr:
-		if err != nil {
-			return err
-		}
+	case workloadErr = <-sampleErr:
 	case <-ctx.Done():
-		return errors.New("fixture workload timeout")
+		workloadErr = errors.New("fixture workload timeout")
 	}
 	// Let the final response flush and join canceled request handlers before
 	// closing the transports. No unbounded observation log or body is retained.
-	if err = pause(ctx, 250*time.Millisecond); err != nil {
-		return err
+	if workloadErr == nil {
+		workloadErr = pause(ctx, 250*time.Millisecond)
 	}
 	for range 40 {
+		if workloadErr != nil {
+			break
+		}
 		if f.valid() {
 			break
 		}
-		if err = pause(ctx, 25*time.Millisecond); err != nil {
-			return err
+		if workloadErr = pause(ctx, 25*time.Millisecond); workloadErr != nil {
+			break
 		}
 	}
 	shutdown()
@@ -335,13 +336,16 @@ func serve(ctx context.Context, protocol, cert, key, ready, out, backend string)
 	f.report.Complete = false
 	sort.Slice(f.report.Connections, func(i, j int) bool { return f.report.Connections[i].ID < f.report.Connections[j].ID })
 	f.mu.Unlock()
-	valid := f.valid()
+	valid := workloadErr == nil && f.valid()
 	f.mu.Lock()
 	f.report.Complete = valid
 	err = writeJSON(out, f.report)
 	f.mu.Unlock()
 	if err != nil {
 		return err
+	}
+	if workloadErr != nil {
+		return workloadErr
 	}
 	if !valid {
 		return errors.New("incomplete controlled workload")

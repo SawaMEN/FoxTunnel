@@ -123,6 +123,11 @@ def capture_behavior(endpoint, firefox, cert, key, ca, work, subject, protocol, 
             server.wait(timeout=45)
             if server.returncode:
                 log.flush()
+                if out.exists():
+                    partial = json.loads(out.read_text())
+                    diagnostic = {'phases': partial['phases'], 'rotations': partial['rotations'],
+                                  'connections': [{k:v for k,v in c.items() if k!='h2_wire'} for c in partial['connections']]}
+                    print(json.dumps({'incomplete_behavior': diagnostic}, indent=2), flush=True)
                 raise ValueError(f'{subject}/{protocol}: controlled workload failed: ' +
                                  (work / (stem + '.log')).read_text(errors='replace')[-2000:])
         finally:
