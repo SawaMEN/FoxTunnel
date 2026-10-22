@@ -1,0 +1,3068 @@
+{
+  "schema": 1,
+  "kind": "controlled-browser-behavior",
+  "protocol": "h2",
+  "complete": true,
+  "rotations": 2,
+  "client_failed": false,
+  "connections": [
+    {
+      "id": 1,
+      "alpn": "h2",
+      "session_resumed": false,
+      "requests": {
+        "cancel": 4,
+        "cold": 1,
+        "parallel": 8,
+        "sequential": 3
+      },
+      "h2_wire": {
+        "schema": 1,
+        "source": "controlled same-GET workload",
+        "hello": {
+          "record_version": 769,
+          "legacy_version": 771,
+          "cipher_suites": [
+            4865,
+            4867,
+            4866,
+            49195,
+            49199,
+            52393,
+            52392,
+            49196,
+            49200,
+            49171,
+            49172,
+            156,
+            157,
+            47,
+            53
+          ],
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            11,
+            35,
+            16,
+            5,
+            34,
+            18,
+            51,
+            43,
+            13,
+            45,
+            28,
+            27,
+            65037
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25
+          ],
+          "ec_point_formats": [
+            0
+          ],
+          "supported_versions": [
+            772,
+            771
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            2052,
+            2053,
+            2054,
+            1025,
+            1281,
+            1537,
+            515,
+            513
+          ],
+          "key_share_groups": [
+            4588,
+            29,
+            23
+          ],
+          "alpn": [
+            "h2",
+            "http/1.1"
+          ],
+          "sni_present": true,
+          "ja3": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037,4588-29-23-24-25,0",
+          "ja3_md5": "9d42e90b0225e779f03141ddcd699df2"
+        },
+        "negotiated_alpn": "h2",
+        "session_resumed": false,
+        "tls_records": [
+          {
+            "direction": "client",
+            "type": 22,
+            "length": 1882,
+            "microseconds": 36
+          },
+          {
+            "direction": "server",
+            "type": 22,
+            "length": 1210,
+            "microseconds": 804
+          },
+          {
+            "direction": "server",
+            "type": 20,
+            "length": 1,
+            "microseconds": 805
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 36,
+            "microseconds": 805
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 1519,
+            "microseconds": 805
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 96,
+            "microseconds": 806
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 53,
+            "microseconds": 806
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 139,
+            "microseconds": 806
+          },
+          {
+            "direction": "client",
+            "type": 20,
+            "length": 1,
+            "microseconds": 3515
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 53,
+            "microseconds": 3517
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 62,
+            "microseconds": 3667
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 87,
+            "microseconds": 3906
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 30,
+            "microseconds": 3990
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 26,
+            "microseconds": 4022
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 4084
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 319,
+            "microseconds": 148602
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 87,
+            "microseconds": 148948
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 1115,
+            "microseconds": 148984
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 134,
+            "microseconds": 306853
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 53,
+            "microseconds": 307146
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 90,
+            "microseconds": 307306
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 307365
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 149,
+            "microseconds": 343400
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 32,
+            "microseconds": 344061
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 69,
+            "microseconds": 842525
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 842784
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 90,
+            "microseconds": 842860
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 842905
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 69,
+            "microseconds": 845061
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 845259
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 90,
+            "microseconds": 845287
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 845482
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 69,
+            "microseconds": 847500
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 847812
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 90,
+            "microseconds": 847858
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 847885
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 850939
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 37,
+            "microseconds": 851098
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 851149
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 851161
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 851379
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 851510
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 851746
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 851760
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 852040
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 852210
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 852250
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 852262
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 853532
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 853686
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 853722
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 853733
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 853987
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 854080
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 854119
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 854134
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 854147
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 854147
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 854244
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 854302
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 854330
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 854338
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 854373
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 854385
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 854511
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 854662
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 854703
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 854803
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 861778
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 861790
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 861893
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 861907
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 862902
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 862914
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 864655
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 864669
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 864706
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 864718
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 864746
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 864755
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 864786
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 864821
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 865826
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 865842
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 872127
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 872138
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 872208
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 872218
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 873990
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 874010
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 875177
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 875193
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 875302
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 875318
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 875412
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 875427
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 875464
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 875472
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 877669
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 877699
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 882917
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 882938
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 883005
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 883016
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 884409
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 884424
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 887083
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 887104
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 887149
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 887160
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 887193
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 887212
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 887258
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 887269
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 888202
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 888220
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 893063
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 893083
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 893150
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 893161
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 897872
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 897890
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 898020
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 898035
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 898073
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 898082
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 898115
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 898124
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 898195
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 898204
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 898425
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 898441
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 903431
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 903449
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 903577
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 903595
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 908207
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 908227
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 908270
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 908278
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 908416
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 908433
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 908478
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 908491
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 908544
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 908553
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 908581
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 908590
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 913895
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 913918
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 914056
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 914075
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 918886
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 918906
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 918958
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 918971
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 919133
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 919151
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 919194
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 919204
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 919244
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 919257
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 919296
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 919306
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 924887
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 924909
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 925492
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 925552
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 929904
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 929917
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 929963
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 929974
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 930011
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 930021
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 930058
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 930069
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 930276
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 930296
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 930338
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 930349
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 936074
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 936135
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 936261
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 936316
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 940204
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 940213
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 940248
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 940258
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 940298
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 940306
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 940500
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 940539
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 940599
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 940635
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 940752
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 940790
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 946728
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 946812
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 946916
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 947010
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 950992
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 951049
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 951218
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 951283
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 951390
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 951486
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 951586
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 951893
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 952014
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 952104
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 952213
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 952300
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 957217
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 957280
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 957432
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 957501
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 961333
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 961343
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 961684
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 961693
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 962990
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 963009
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 963055
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 963064
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 963095
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 963104
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 963388
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 963402
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 968336
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 968351
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 968474
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 968488
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 971578
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 971594
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 972685
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 972711
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 973745
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 973762
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 973826
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 973837
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 973891
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 973903
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 973932
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 973941
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 979096
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 979114
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 979170
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 979184
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 982478
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 982488
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 983529
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 983546
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 984707
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 984722
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 984768
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 984780
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 984840
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 984852
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 984913
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 984926
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 990252
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 990272
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 990791
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 990842
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 993195
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 993244
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 994362
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 994403
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 995457
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 995498
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 995581
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 995656
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 995762
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 995869
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 995937
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 995946
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1000966
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1000983
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1001038
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1001046
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1004289
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1004305
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1005444
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1005462
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1006657
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1006672
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1006710
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1006718
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1006748
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1006755
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1006960
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1007001
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1011863
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1011876
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1011942
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1011950
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1011975
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1012004
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1015139
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1015149
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1015177
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1016272
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1016281
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1016306
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1017382
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1017398
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1017436
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1017445
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1017478
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1017498
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1017726
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1017751
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1017834
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1017848
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1017896
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1017920
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 66,
+            "microseconds": 1068036
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 66,
+            "microseconds": 1068036
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 66,
+            "microseconds": 1068036
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 66,
+            "microseconds": 1068036
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 60,
+            "microseconds": 1068375
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1068418
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1068430
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 1068529
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1068566
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1068576
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 1069079
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1069206
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1069219
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 31,
+            "microseconds": 1069428
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1069533
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1070149
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1078840
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1078877
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1078925
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1078936
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1080095
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1080111
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 30,
+            "microseconds": 1080658
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 16401,
+            "microseconds": 1080731
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1080743
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 30,
+            "microseconds": 1080766
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 30,
+            "microseconds": 1080766
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 30,
+            "microseconds": 1080766
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 66,
+            "microseconds": 1086018
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 30,
+            "microseconds": 1086203
+          }
+        ],
+        "dropped_records": 0,
+        "client_h2_frames": [
+          {
+            "type": 4,
+            "flags": 0,
+            "length": 24,
+            "stream": 0
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 0
+          },
+          {
+            "type": 4,
+            "flags": 1,
+            "length": 0,
+            "stream": 0
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 280,
+            "stream": 3
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 3
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 95,
+            "stream": 5
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 5
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 110,
+            "stream": 7
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 7
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 30,
+            "stream": 9
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 9
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 30,
+            "stream": 11
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 11
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 30,
+            "stream": 13
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 13
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 15
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 15
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 17
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 17
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 19
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 19
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 21
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 21
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 23
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 23
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 25
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 25
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 27
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 27
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 29
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 29
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 27,
+            "stream": 31
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 31
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 27,
+            "stream": 33
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 33
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 27,
+            "stream": 35
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 35
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 27,
+            "stream": 37
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 37
+          },
+          {
+            "type": 3,
+            "flags": 0,
+            "length": 4,
+            "stream": 31
+          },
+          {
+            "type": 3,
+            "flags": 0,
+            "length": 4,
+            "stream": 33
+          },
+          {
+            "type": 3,
+            "flags": 0,
+            "length": 4,
+            "stream": 35
+          },
+          {
+            "type": 3,
+            "flags": 0,
+            "length": 4,
+            "stream": 37
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 27,
+            "stream": 39
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 39
+          }
+        ],
+        "dropped_frames": 0,
+        "initial_h2_settings": [
+          {
+            "id": 1,
+            "value": 65536
+          },
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 131072
+          },
+          {
+            "id": 5,
+            "value": 16384
+          }
+        ],
+        "initial_connection_window_updates": [
+          12517377
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "alpn": "h2",
+      "session_resumed": true,
+      "requests": {
+        "reconnect": 1
+      },
+      "h2_wire": {
+        "schema": 1,
+        "source": "controlled same-GET workload",
+        "hello": {
+          "record_version": 769,
+          "legacy_version": 771,
+          "cipher_suites": [
+            4865,
+            4867,
+            4866,
+            49195,
+            49199,
+            52393,
+            52392,
+            49196,
+            49200,
+            49171,
+            49172,
+            156,
+            157,
+            47,
+            53
+          ],
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            11,
+            16,
+            5,
+            34,
+            18,
+            51,
+            43,
+            13,
+            45,
+            28,
+            27,
+            65037,
+            41
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25
+          ],
+          "ec_point_formats": [
+            0
+          ],
+          "supported_versions": [
+            772,
+            771
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            2052,
+            2053,
+            2054,
+            1025,
+            1281,
+            1537,
+            515,
+            513
+          ],
+          "key_share_groups": [
+            4588,
+            29,
+            23
+          ],
+          "alpn": [
+            "h2",
+            "http/1.1"
+          ],
+          "sni_present": true,
+          "ja3": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,0-23-65281-10-11-16-5-34-18-51-43-13-45-28-27-65037-41,4588-29-23-24-25,0",
+          "ja3_md5": "a55f6cb044839f48d371a56323ed22ef"
+        },
+        "negotiated_alpn": "h2",
+        "session_resumed": true,
+        "tls_records": [
+          {
+            "direction": "client",
+            "type": 22,
+            "length": 2190,
+            "microseconds": 369
+          },
+          {
+            "direction": "server",
+            "type": 22,
+            "length": 1216,
+            "microseconds": 759
+          },
+          {
+            "direction": "server",
+            "type": 20,
+            "length": 1,
+            "microseconds": 759
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 32,
+            "microseconds": 759
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 53,
+            "microseconds": 759
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 139,
+            "microseconds": 760
+          },
+          {
+            "direction": "client",
+            "type": 20,
+            "length": 1,
+            "microseconds": 1102
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 53,
+            "microseconds": 1102
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 62,
+            "microseconds": 1194
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 87,
+            "microseconds": 1507
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 279,
+            "microseconds": 1507
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 30,
+            "microseconds": 1552
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1634
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1666
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 86,
+            "microseconds": 1774
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 90,
+            "microseconds": 1802
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 1828
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 69,
+            "microseconds": 2894
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 32,
+            "microseconds": 3023
+          }
+        ],
+        "dropped_records": 0,
+        "client_h2_frames": [
+          {
+            "type": 4,
+            "flags": 0,
+            "length": 24,
+            "stream": 0
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 0
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 240,
+            "stream": 3
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 3
+          },
+          {
+            "type": 4,
+            "flags": 1,
+            "length": 0,
+            "stream": 0
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 30,
+            "stream": 5
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 5
+          }
+        ],
+        "dropped_frames": 0,
+        "initial_h2_settings": [
+          {
+            "id": 1,
+            "value": 65536
+          },
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 131072
+          },
+          {
+            "id": 5,
+            "value": 16384
+          }
+        ],
+        "initial_connection_window_updates": [
+          12517377
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "alpn": "h2",
+      "session_resumed": true,
+      "requests": {
+        "reconnect": 1
+      },
+      "h2_wire": {
+        "schema": 1,
+        "source": "controlled same-GET workload",
+        "hello": {
+          "record_version": 769,
+          "legacy_version": 771,
+          "cipher_suites": [
+            4865,
+            4867,
+            4866,
+            49195,
+            49199,
+            52393,
+            52392,
+            49196,
+            49200,
+            49171,
+            49172,
+            156,
+            157,
+            47,
+            53
+          ],
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            11,
+            16,
+            5,
+            34,
+            18,
+            51,
+            43,
+            13,
+            45,
+            28,
+            27,
+            65037,
+            41
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25
+          ],
+          "ec_point_formats": [
+            0
+          ],
+          "supported_versions": [
+            772,
+            771
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            2052,
+            2053,
+            2054,
+            1025,
+            1281,
+            1537,
+            515,
+            513
+          ],
+          "key_share_groups": [
+            4588,
+            29,
+            23
+          ],
+          "alpn": [
+            "h2",
+            "http/1.1"
+          ],
+          "sni_present": true,
+          "ja3": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,0-23-65281-10-11-16-5-34-18-51-43-13-45-28-27-65037-41,4588-29-23-24-25,0",
+          "ja3_md5": "a55f6cb044839f48d371a56323ed22ef"
+        },
+        "negotiated_alpn": "h2",
+        "session_resumed": true,
+        "tls_records": [
+          {
+            "direction": "client",
+            "type": 22,
+            "length": 2190,
+            "microseconds": 484
+          },
+          {
+            "direction": "server",
+            "type": 22,
+            "length": 1216,
+            "microseconds": 988
+          },
+          {
+            "direction": "server",
+            "type": 20,
+            "length": 1,
+            "microseconds": 988
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 32,
+            "microseconds": 989
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 53,
+            "microseconds": 989
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 139,
+            "microseconds": 989
+          },
+          {
+            "direction": "client",
+            "type": 20,
+            "length": 1,
+            "microseconds": 1510
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 53,
+            "microseconds": 1511
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 62,
+            "microseconds": 1607
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 87,
+            "microseconds": 1912
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 279,
+            "microseconds": 1912
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 30,
+            "microseconds": 1957
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 26,
+            "microseconds": 2054
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 2089
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 86,
+            "microseconds": 2236
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 90,
+            "microseconds": 2267
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 26,
+            "microseconds": 2302
+          },
+          {
+            "direction": "client",
+            "type": 23,
+            "length": 68,
+            "microseconds": 3484
+          },
+          {
+            "direction": "server",
+            "type": 23,
+            "length": 32,
+            "microseconds": 3606
+          }
+        ],
+        "dropped_records": 0,
+        "client_h2_frames": [
+          {
+            "type": 4,
+            "flags": 0,
+            "length": 24,
+            "stream": 0
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 0
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 240,
+            "stream": 3
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 3
+          },
+          {
+            "type": 4,
+            "flags": 1,
+            "length": 0,
+            "stream": 0
+          },
+          {
+            "type": 1,
+            "flags": 37,
+            "length": 29,
+            "stream": 5
+          },
+          {
+            "type": 8,
+            "flags": 0,
+            "length": 4,
+            "stream": 5
+          }
+        ],
+        "dropped_frames": 0,
+        "initial_h2_settings": [
+          {
+            "id": 1,
+            "value": 65536
+          },
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 131072
+          },
+          {
+            "id": 5,
+            "value": 16384
+          }
+        ],
+        "initial_connection_window_updates": [
+          12517377
+        ]
+      }
+    }
+  ],
+  "phases": {
+    "cancel": {
+      "started": 4,
+      "finished": 0,
+      "canceled": 4,
+      "active": 0,
+      "max_active": 4
+    },
+    "cold": {
+      "started": 1,
+      "finished": 1,
+      "canceled": 0,
+      "active": 0,
+      "max_active": 1
+    },
+    "parallel": {
+      "started": 8,
+      "finished": 8,
+      "canceled": 0,
+      "active": 0,
+      "max_active": 8
+    },
+    "reconnect": {
+      "started": 2,
+      "finished": 2,
+      "canceled": 0,
+      "active": 0,
+      "max_active": 1
+    },
+    "sequential": {
+      "started": 3,
+      "finished": 3,
+      "canceled": 0,
+      "active": 0,
+      "max_active": 1
+    }
+  }
+}
