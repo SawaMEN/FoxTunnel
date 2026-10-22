@@ -1,0 +1,734 @@
+{
+  "schema": 1,
+  "kind": "update-h3-profile",
+  "repeats": 7,
+  "source_commit": "0a692304cbc79b9d5286ae9b667085bf5573a6c8",
+  "binary_sha256": "94fc005720a14a80ddf7dbd7f458e6dedceb34e9814043b086fbecb87a1cc054",
+  "versions": {
+    "sdk_schema": 1,
+    "process_schema": 1,
+    "product": "protocol-core",
+    "integration_schema": 1,
+    "transport_engines": [
+      "legacy",
+      "mozilla"
+    ],
+    "quic_backends": [
+      "quic-go",
+      "neqo"
+    ],
+    "neqo_version": "0.33.0",
+    "neqo_revision": "1ec4c2a3ccd7ada264112d1b70b070381557d844",
+    "nss_version": "3.130",
+    "schema": 1,
+    "version": "dev",
+    "commit": "unknown",
+    "build_date": "unknown",
+    "goos": "linux",
+    "goarch": "amd64",
+    "go_version": "go1.26.10",
+    "build_flavor": "nss",
+    "tls_backends": [
+      "go",
+      "nss"
+    ],
+    "default_tls_backend": "nss",
+    "protocol_draft": "foxtunnel-draft-0",
+    "experimental": true,
+    "dirty": true
+  },
+  "worktree_dirty": false,
+  "resource_method": "exec-small-C-launcher-then-wait4",
+  "resource_runner_sha256": "b2eadaf840ef554ef10482782f9562248a348319a323a4d94270c9f2840fbb16",
+  "collector_sha256": "7741aa96e95ea0d315d7c724e9919625ae5c7a484306b09e4a5511b452ccd5a3",
+  "lock_sha256": "a1ce49763fb99f821b0069009f576a4cca3b41105d288cb3990777907c51c75f",
+  "cpu_model": "AMD EPYC 7763 64-Core Processor",
+  "toolchain": "/tmp/native-backend.test: go1.26.10\n\tpath\tgithub.com/SawaMEN/FoxTunnel/internal/tunnel.test\n\tmod\tgithub.com/SawaMEN/FoxTunnel\t(devel)\t\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\t-tags=nss,neqo\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\"-L/home/runner/work/FoxTunnel/FoxTunnel/rust/neqo-bridge/target/foxtunnel-build/mozilla-runtime/lib \"\n\tbuild\tGOARCH=amd64\n\tbuild\tGOOS=linux\n\tbuild\tGOAMD64=v1\n",
+  "samples": [
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 0,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 181790.0,
+      "reported_mb_per_second": 0.35,
+      "go_bytes_per_exchange": 939,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.043587,
+      "process_system_seconds": 0.04244,
+      "process_peak_rss_kib": 24520,
+      "process_wall_seconds": 0.069742197,
+      "log_sha256": "8ae7c05bbce8f12f640515866cf3c88b73b0d9b464757303f043158bafec94d5"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 0,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 9186309.0,
+      "reported_mb_per_second": 114.15,
+      "go_bytes_per_exchange": 390142,
+      "go_allocations_per_exchange": 9068,
+      "process_user_seconds": 0.170824,
+      "process_system_seconds": 0.183099,
+      "process_peak_rss_kib": 29888,
+      "process_wall_seconds": 0.189639834,
+      "log_sha256": "ef72d5939668b24aab243aaa02ece175bfb8ae2b60698c9601d8115780cf864c"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 0,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 305254.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1260,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.07189,
+      "process_system_seconds": 0.067325,
+      "process_peak_rss_kib": 27496,
+      "process_wall_seconds": 0.102479808,
+      "log_sha256": "83cfcdccb7d9c5cb2f78dddc1690e0414153b39208a02fe0f04f9376ec9d43c1"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 0,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 29700416.0,
+      "reported_mb_per_second": 35.31,
+      "go_bytes_per_exchange": 1501253,
+      "go_allocations_per_exchange": 6626,
+      "process_user_seconds": 0.518955,
+      "process_system_seconds": 0.49981,
+      "process_peak_rss_kib": 34412,
+      "process_wall_seconds": 0.540581247,
+      "log_sha256": "858a64fb8fbd1a9015a7316c5ab564336f527d56cc93f07730c731cd1897c565"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 1,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 298264.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1145,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.067646,
+      "process_system_seconds": 0.0665,
+      "process_peak_rss_kib": 27684,
+      "process_wall_seconds": 0.100779376,
+      "log_sha256": "81f2112c83e9ac84779573d9a572276bfe46ce7ea696c70c44d47eed12d97f05"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 1,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 30404595.0,
+      "reported_mb_per_second": 34.49,
+      "go_bytes_per_exchange": 1479465,
+      "go_allocations_per_exchange": 6624,
+      "process_user_seconds": 0.515078,
+      "process_system_seconds": 0.498693,
+      "process_peak_rss_kib": 35796,
+      "process_wall_seconds": 0.537921397,
+      "log_sha256": "64a9a9ec15db2af52203364fc357afc293f29fe03889517e4888406017fe93cc"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 1,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 179903.0,
+      "reported_mb_per_second": 0.36,
+      "go_bytes_per_exchange": 1069,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.04235,
+      "process_system_seconds": 0.043526,
+      "process_peak_rss_kib": 25040,
+      "process_wall_seconds": 0.069927664,
+      "log_sha256": "a707d43da5e06f38743c2b7ba93f79034d03e7a5eaa537de757f2b6aeedefe36"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 1,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8195210.0,
+      "reported_mb_per_second": 127.95,
+      "go_bytes_per_exchange": 397909,
+      "go_allocations_per_exchange": 9093,
+      "process_user_seconds": 0.12131,
+      "process_system_seconds": 0.190053,
+      "process_peak_rss_kib": 30592,
+      "process_wall_seconds": 0.167773789,
+      "log_sha256": "be797eeb694f5986677f6489e3ae309fc71728b456b9435c9702782d9801adf6"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 2,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 194618.0,
+      "reported_mb_per_second": 0.33,
+      "go_bytes_per_exchange": 948,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.031796,
+      "process_system_seconds": 0.057914,
+      "process_peak_rss_kib": 24468,
+      "process_wall_seconds": 0.072733579,
+      "log_sha256": "b6c421cf026e0235ff3a3731ccaa990bbbd7ff278a6c27edaebb669383f6ebb0"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 2,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8183399.0,
+      "reported_mb_per_second": 128.13,
+      "go_bytes_per_exchange": 425518,
+      "go_allocations_per_exchange": 9143,
+      "process_user_seconds": 0.134396,
+      "process_system_seconds": 0.175517,
+      "process_peak_rss_kib": 30956,
+      "process_wall_seconds": 0.167081206,
+      "log_sha256": "6636e1405c4f87855f857cde36ed9f2d580e888db7f6f0d685b70d3e711a418c"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 2,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 299080.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1124,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.059429,
+      "process_system_seconds": 0.073413,
+      "process_peak_rss_kib": 26476,
+      "process_wall_seconds": 0.100189678,
+      "log_sha256": "632f01c19ab4a8ea68b9cdea77de33dd45929d96e173fb3ed8289a7f2b70f4b4"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 2,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 26601329.0,
+      "reported_mb_per_second": 39.42,
+      "go_bytes_per_exchange": 1482718,
+      "go_allocations_per_exchange": 6568,
+      "process_user_seconds": 0.429612,
+      "process_system_seconds": 0.490397,
+      "process_peak_rss_kib": 35184,
+      "process_wall_seconds": 0.490816294,
+      "log_sha256": "0bc8adf3080b11f53b8a819cd00c20ea32bb42c4e5552ff60cc5d5e2cbf5aac3"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 3,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 298939.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1129,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.070327,
+      "process_system_seconds": 0.061253,
+      "process_peak_rss_kib": 27156,
+      "process_wall_seconds": 0.099989314,
+      "log_sha256": "8d3feed444b439e0f64feb56c961398cc77f897054386dab68ac4edf24ee8778"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 3,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 28867260.0,
+      "reported_mb_per_second": 36.32,
+      "go_bytes_per_exchange": 1485927,
+      "go_allocations_per_exchange": 6624,
+      "process_user_seconds": 0.483551,
+      "process_system_seconds": 0.505019,
+      "process_peak_rss_kib": 34236,
+      "process_wall_seconds": 0.525692377,
+      "log_sha256": "3326db3c94a8f156c126d861be53bb0143065d639d4a187ba8ba579c5669ed13"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 3,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 189805.0,
+      "reported_mb_per_second": 0.34,
+      "go_bytes_per_exchange": 938,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.037138,
+      "process_system_seconds": 0.051338,
+      "process_peak_rss_kib": 24772,
+      "process_wall_seconds": 0.072099583,
+      "log_sha256": "d2788a35c4b399acc43cb55b5490960a8f4d285d52f7c863ecaf0011b5fce30c"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 3,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8333582.0,
+      "reported_mb_per_second": 125.83,
+      "go_bytes_per_exchange": 349401,
+      "go_allocations_per_exchange": 8974,
+      "process_user_seconds": 0.1355,
+      "process_system_seconds": 0.178659,
+      "process_peak_rss_kib": 29964,
+      "process_wall_seconds": 0.169015785,
+      "log_sha256": "9a9c53162da00b5924829517cb9036f1f83afd07e3b7d88a076f114e6ffe4e37"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 4,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 171153.0,
+      "reported_mb_per_second": 0.37,
+      "go_bytes_per_exchange": 947,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.039621,
+      "process_system_seconds": 0.043223,
+      "process_peak_rss_kib": 24524,
+      "process_wall_seconds": 0.06793184,
+      "log_sha256": "6ce8dd4e51abbc91936ee74d5c3e7049480288a09ebf273fc6b019b39c6a8bda"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 4,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8710239.0,
+      "reported_mb_per_second": 120.38,
+      "go_bytes_per_exchange": 383830,
+      "go_allocations_per_exchange": 9072,
+      "process_user_seconds": 0.126575,
+      "process_system_seconds": 0.199909,
+      "process_peak_rss_kib": 30500,
+      "process_wall_seconds": 0.174654647,
+      "log_sha256": "de29db3f71b786487fff4cf3e70038c9d64749e7b92ae3192801958a3e5eacb7"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 4,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 291310.0,
+      "reported_mb_per_second": 0.22,
+      "go_bytes_per_exchange": 1154,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.069853,
+      "process_system_seconds": 0.062092,
+      "process_peak_rss_kib": 27472,
+      "process_wall_seconds": 0.098815894,
+      "log_sha256": "fc32d0bc2d323def144a0923ea14d58191a17434255af607d56d1054c77f46a7"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 4,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 28892625.0,
+      "reported_mb_per_second": 36.29,
+      "go_bytes_per_exchange": 1482977,
+      "go_allocations_per_exchange": 6605,
+      "process_user_seconds": 0.491614,
+      "process_system_seconds": 0.498754,
+      "process_peak_rss_kib": 34748,
+      "process_wall_seconds": 0.525996414,
+      "log_sha256": "cf862f2dcc3c626f832cf69b983343e4fb03f14554d1e5ebf7f3bee45c875b51"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 5,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 292666.0,
+      "reported_mb_per_second": 0.22,
+      "go_bytes_per_exchange": 1258,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.048196,
+      "process_system_seconds": 0.083139,
+      "process_peak_rss_kib": 26504,
+      "process_wall_seconds": 0.0991298,
+      "log_sha256": "8718052524d7fe5d2371ed95b9d0ce000464ee80792428ae0a177d590d771d6a"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 5,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 29403178.0,
+      "reported_mb_per_second": 35.66,
+      "go_bytes_per_exchange": 1471368,
+      "go_allocations_per_exchange": 6623,
+      "process_user_seconds": 0.533765,
+      "process_system_seconds": 0.463746,
+      "process_peak_rss_kib": 35560,
+      "process_wall_seconds": 0.530254029,
+      "log_sha256": "bff3acc083313fdb776385ba08df2c06d638ac0718bd18b1d1f1c69a60affa65"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 5,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 199057.0,
+      "reported_mb_per_second": 0.32,
+      "go_bytes_per_exchange": 947,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.046328,
+      "process_system_seconds": 0.045225,
+      "process_peak_rss_kib": 24720,
+      "process_wall_seconds": 0.074271489,
+      "log_sha256": "742676957145b5f5418885c9830a4c3acaf858029187bf3d00671317ce9945fe"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 5,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 9359258.0,
+      "reported_mb_per_second": 112.04,
+      "go_bytes_per_exchange": 392933,
+      "go_allocations_per_exchange": 9062,
+      "process_user_seconds": 0.16174,
+      "process_system_seconds": 0.196326,
+      "process_peak_rss_kib": 30552,
+      "process_wall_seconds": 0.191035451,
+      "log_sha256": "df270cfe237b1685d3b1ed1edb769289437a3eca1409defcffd7b1be2704ad25"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 6,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 188399.0,
+      "reported_mb_per_second": 0.34,
+      "go_bytes_per_exchange": 941,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.032161,
+      "process_system_seconds": 0.055451,
+      "process_peak_rss_kib": 24960,
+      "process_wall_seconds": 0.071290056,
+      "log_sha256": "b996421810968d6044ea306af4ebd3b518440f9aff64034ca30477c95a6a49a5"
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 6,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8932357.0,
+      "reported_mb_per_second": 117.39,
+      "go_bytes_per_exchange": 424958,
+      "go_allocations_per_exchange": 9124,
+      "process_user_seconds": 0.155572,
+      "process_system_seconds": 0.177653,
+      "process_peak_rss_kib": 29860,
+      "process_wall_seconds": 0.178250566,
+      "log_sha256": "45b86a89153dbe144cb2fef67b6a90c3df748ec9337f49199248232fb1250afe"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 6,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 301714.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1138,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.068993,
+      "process_system_seconds": 0.067843,
+      "process_peak_rss_kib": 27088,
+      "process_wall_seconds": 0.100545581,
+      "log_sha256": "c36cd8396d4fd3d9cd2ab164b2093cb784e7d0f0d069e37959bc26e0ee3cde11"
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 6,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 28711479.0,
+      "reported_mb_per_second": 36.52,
+      "go_bytes_per_exchange": 1477879,
+      "go_allocations_per_exchange": 6604,
+      "process_user_seconds": 0.479114,
+      "process_system_seconds": 0.48117,
+      "process_peak_rss_kib": 34144,
+      "process_wall_seconds": 0.510972533,
+      "log_sha256": "108b8e3437ada76fe4ad9033f6b45a12874ecff87ed95fead5e39b3adcd151f8"
+    }
+  ],
+  "summaries": [
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "metrics": {
+        "ns_per_exchange": {
+          "median": 188399.0,
+          "minimum": 171153.0,
+          "maximum": 199057.0,
+          "relative_mad": 0.03507980403293011
+        },
+        "go_bytes_per_exchange": {
+          "median": 947,
+          "minimum": 938,
+          "maximum": 1069,
+          "relative_mad": 0.006335797254487857
+        },
+        "go_allocations_per_exchange": {
+          "median": 30,
+          "minimum": 30,
+          "maximum": 30,
+          "relative_mad": 0.0
+        },
+        "process_user_seconds": {
+          "median": 0.039621,
+          "minimum": 0.031796,
+          "maximum": 0.046328,
+          "relative_mad": 0.10009843264935255
+        },
+        "process_system_seconds": {
+          "median": 0.045225,
+          "minimum": 0.04244,
+          "maximum": 0.057914,
+          "relative_mad": 0.06158098396904373
+        },
+        "process_peak_rss_kib": {
+          "median": 24720,
+          "minimum": 24468,
+          "maximum": 25040,
+          "relative_mad": 0.008090614886731391
+        },
+        "process_wall_seconds": {
+          "median": 0.071290056,
+          "minimum": 0.06793184,
+          "maximum": 0.074271489,
+          "relative_mad": 0.020248588386576692
+        }
+      },
+      "stable": true
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "metrics": {
+        "ns_per_exchange": {
+          "median": 8710239.0,
+          "minimum": 8183399.0,
+          "maximum": 9359258.0,
+          "relative_mad": 0.05465636476794724
+        },
+        "go_bytes_per_exchange": {
+          "median": 392933,
+          "minimum": 349401,
+          "maximum": 425518,
+          "relative_mad": 0.023166799428910274
+        },
+        "go_allocations_per_exchange": {
+          "median": 9072,
+          "minimum": 8974,
+          "maximum": 9143,
+          "relative_mad": 0.0023148148148148147
+        },
+        "process_user_seconds": {
+          "median": 0.1355,
+          "minimum": 0.12131,
+          "maximum": 0.170824,
+          "relative_mad": 0.10472324723247238
+        },
+        "process_system_seconds": {
+          "median": 0.183099,
+          "minimum": 0.175517,
+          "maximum": 0.199909,
+          "relative_mad": 0.03797945373814159
+        },
+        "process_peak_rss_kib": {
+          "median": 30500,
+          "minimum": 29860,
+          "maximum": 30956,
+          "relative_mad": 0.014950819672131148
+        },
+        "process_wall_seconds": {
+          "median": 0.174654647,
+          "minimum": 0.167081206,
+          "maximum": 0.191035451,
+          "relative_mad": 0.039396936286499096
+        }
+      },
+      "stable": true
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "metrics": {
+        "ns_per_exchange": {
+          "median": 298939.0,
+          "minimum": 291310.0,
+          "maximum": 305254.0,
+          "relative_mad": 0.009282830276410907
+        },
+        "go_bytes_per_exchange": {
+          "median": 1145,
+          "minimum": 1124,
+          "maximum": 1260,
+          "relative_mad": 0.013973799126637555
+        },
+        "go_allocations_per_exchange": {
+          "median": 25,
+          "minimum": 25,
+          "maximum": 25,
+          "relative_mad": 0.0
+        },
+        "process_user_seconds": {
+          "median": 0.068993,
+          "minimum": 0.048196,
+          "maximum": 0.07189,
+          "relative_mad": 0.019523719797660648
+        },
+        "process_system_seconds": {
+          "median": 0.067325,
+          "minimum": 0.061253,
+          "maximum": 0.083139,
+          "relative_mad": 0.07772744151503891
+        },
+        "process_peak_rss_kib": {
+          "median": 27156,
+          "minimum": 26476,
+          "maximum": 27684,
+          "relative_mad": 0.012520253351008984
+        },
+        "process_wall_seconds": {
+          "median": 0.100189678,
+          "minimum": 0.098815894,
+          "maximum": 0.102479808,
+          "relative_mad": 0.005885815902113185
+        }
+      },
+      "stable": true
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "metrics": {
+        "ns_per_exchange": {
+          "median": 28892625.0,
+          "minimum": 26601329.0,
+          "maximum": 30404595.0,
+          "relative_mad": 0.017670703163869674
+        },
+        "go_bytes_per_exchange": {
+          "median": 1482718,
+          "minimum": 1471368,
+          "maximum": 1501253,
+          "relative_mad": 0.002193943824786642
+        },
+        "go_allocations_per_exchange": {
+          "median": 6623,
+          "minimum": 6568,
+          "maximum": 6626,
+          "relative_mad": 0.0004529669334138608
+        },
+        "process_user_seconds": {
+          "median": 0.491614,
+          "minimum": 0.429612,
+          "maximum": 0.533765,
+          "relative_mad": 0.047728502442973636
+        },
+        "process_system_seconds": {
+          "median": 0.498693,
+          "minimum": 0.463746,
+          "maximum": 0.505019,
+          "relative_mad": 0.012685159005640741
+        },
+        "process_peak_rss_kib": {
+          "median": 34748,
+          "minimum": 34144,
+          "maximum": 35796,
+          "relative_mad": 0.014734660987682745
+        },
+        "process_wall_seconds": {
+          "median": 0.525996414,
+          "minimum": 0.490816294,
+          "maximum": 0.540581247,
+          "relative_mad": 0.022671224903065595
+        }
+      },
+      "stable": true
+    }
+  ],
+  "profiles": [
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "top": {
+        "cpu": "      flat  flat%   sum%        cum   cum%\n     3.29s 48.45% 48.45%      3.29s 48.45%  internal/runtime/syscall/linux.Syscall6\n     0.90s 13.25% 61.71%      0.90s 13.25%  runtime.futex\n     0.05s  0.74% 62.44%      0.05s  0.74%  internal/sync.(*Mutex).Lock (inline)\n     0.05s  0.74% 63.18%      0.05s  0.74%  runtime.chanrecv\n     0.05s  0.74% 63.92%      0.34s  5.01%  runtime.selectgo\n     0.04s  0.59% 64.51%      0.05s  0.74%  github.com/quic-go/quic-go.(*framer).appendControlFrames\n     0.04s  0.59% 65.10%      0.41s  6.04%  github.com/quic-go/quic-go.(*packetPacker).appendPacket\n     0.04s  0.59% 65.68%      0.04s  0.59%  runtime.memclrNoHeapPointers\n     0.04s  0.59% 66.27%      0.04s  0.59%  runtime.nanotime (inline)\n     0.04s  0.59% 66.86%      0.58s  8.54%  runtime.netpoll\n     0.03s  0.44% 67.30%      0.42s  6.19%  github.com/quic-go/quic-go.(*Conn).handleFrames\n     0.03s  0.44% 67.75%      0.04s  0.59%  runtime.casgstatus\n     0.03s  0.44% 68.19%      1.27s 18.70%  runtime.findRunnable\n     0.02s  0.29% 68.48%      0.51s  7.51%  github.com/quic-go/quic-go.(*Conn).handleOnePacket\n     0.02s  0.29% 68.78%      0.48s  7.07%  github.com/quic-go/quic-go.(*Conn).handleShortHeaderPacket\n     0.02s  0.29% 69.07%      0.10s  1.47%  github.com/quic-go/quic-go.(*ReceiveStream).Read\n     0.02s  0.29% 69.37%      0.05s  0.74%  github.com/quic-go/quic-go.(*ReceiveStream).readImpl\n     0.02s  0.29% 69.66%      0.14s  2.06%  github.com/quic-go/quic-go.(*SendStream).WriteWithLimit\n     0.02s  0.29% 69.96%      0.08s  1.18%  github.com/quic-go/quic-go.(*packetPacker).encryptPacket\n     0.02s  0.29% 70.25%      0.13s  1.91%  github.com/quic-go/quic-go/http3.(*frameParser).ParseNext",
+        "alloc_space": "      flat  flat%   sum%        cum   cum%\n 7168.42kB 22.17% 22.17%  7168.42kB 22.17%  github.com/quic-go/quic-go/internal/wire.ParseStreamFrame\n 5120.45kB 15.84% 38.00%  5120.45kB 15.84%  github.com/SawaMEN/FoxTunnel/internal/tunnel.benchmarkNativeOptions.func2\n 3072.16kB  9.50% 47.51%  3072.16kB  9.50%  net.ipToSockaddr\n 2560.12kB  7.92% 55.42%  2560.12kB  7.92%  golang.org/x/net/internal/socket.parseInetAddr\n 1538.25kB  4.76% 60.18%  4098.46kB 12.67%  crypto/x509.parseCertificate\n 1538.19kB  4.76% 64.94%  1538.19kB  4.76%  encoding/pem.Decode\n 1184.27kB  3.66% 68.60%  1184.27kB  3.66%  runtime/pprof.StartCPUProfile\n    1027kB  3.18% 71.78%     1027kB  3.18%  os.readFileContents\n 1024.16kB  3.17% 74.94%  1024.16kB  3.17%  crypto/x509/pkix.(*Name).FillFromRDNSequence\n 1024.02kB  3.17% 78.11%  1024.02kB  3.17%  github.com/quic-go/quic-go.(*framer).Append\n  902.59kB  2.79% 80.90%   902.59kB  2.79%  compress/flate.NewWriter\n  528.17kB  1.63% 82.54%  1040.17kB  3.22%  io.copyBuffer\n  522.06kB  1.61% 84.15%   522.06kB  1.61%  github.com/quic-go/quic-go.init.0.func2\n  516.01kB  1.60% 85.75%   516.01kB  1.60%  runtime/pprof.(*profMap).lookup\n     513kB  1.59% 87.33%      513kB  1.59%  runtime.mallocgc\n  512.08kB  1.58% 88.92%   512.08kB  1.58%  compress/gzip.NewWriterLevel\n  512.06kB  1.58% 90.50%   512.06kB  1.58%  os.readlink\n  512.05kB  1.58% 92.08%   512.05kB  1.58%  runtime/pprof.(*profileBuilder).emitLocation\n  512.02kB  1.58% 93.67%  1536.05kB  4.75%  crypto/x509.parseName\n  512.02kB  1.58% 95.25%   512.02kB  1.58%  vendor/golang.org/x/crypto/cryptobyte.(*String).ReadASN1ObjectIdentifier",
+        "alloc_objects": "      flat  flat%   sum%        cum   cum%\n    126708 25.94% 25.94%     126708 25.94%  github.com/quic-go/quic-go/internal/wire.ParseStreamFrame\n     65539 13.42% 39.36%      65539 13.42%  net.ipToSockaddr\n     60859 12.46% 51.82%      60859 12.46%  github.com/SawaMEN/FoxTunnel/internal/tunnel.benchmarkNativeOptions.func2\n     54615 11.18% 63.00%      54615 11.18%  golang.org/x/net/internal/socket.parseInetAddr\n     43690  8.94% 71.94%      43690  8.94%  github.com/quic-go/quic-go.(*framer).Append\n     32768  6.71% 78.65%      32768  6.71%  github.com/quic-go/quic-go.(*ReceiveStream).handleStreamFrameImpl\n     32768  6.71% 85.36%      32768  6.71%  github.com/quic-go/quic-go/http3.(*frameParser).ParseNext\n     21845  4.47% 89.83%      21845  4.47%  crypto/x509.parseASN1String\n     16384  3.35% 93.19%      16384  3.35%  vendor/golang.org/x/crypto/cryptobyte.(*String).ReadASN1ObjectIdentifier\n     10923  2.24% 95.42%      49152 10.06%  crypto/x509.parseName\n      6554  1.34% 96.77%       6554  1.34%  crypto/x509/pkix.(*Name).FillFromRDNSequence\n      5461  1.12% 97.88%       5461  1.12%  runtime/pprof.(*profileBuilder).emitLocation\n      4096  0.84% 98.72%       4096  0.84%  os.readlink\n      3277  0.67% 99.39%       3277  0.67%  compress/gzip.NewWriterLevel\n      1025  0.21% 99.60%      56731 11.61%  crypto/x509.parseCertificate\n        16 0.0033% 99.61%      32784  6.71%  io.copyBuffer\n         0     0% 99.61%      57785 11.83%  crypto/x509.(*CertPool).AppendCertsFromPEM\n         0     0% 99.61%      56731 11.61%  crypto/x509.ParseCertificate\n         0     0% 99.61%      62399 12.77%  crypto/x509.SystemCertPool\n         0     0% 99.61%      62399 12.77%  crypto/x509.initSystemRoots"
+      }
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "top": {
+        "cpu": "      flat  flat%   sum%        cum   cum%\n     4.92s 55.53% 55.53%      4.92s 55.53%  internal/runtime/syscall/linux.Syscall6\n     0.30s  3.39% 58.92%      0.30s  3.39%  runtime.memmove\n     0.27s  3.05% 61.96%      0.27s  3.05%  crypto/internal/fips140/aes/gcm.gcmAesDec\n     0.25s  2.82% 64.79%      0.25s  2.82%  crypto/internal/fips140/aes/gcm.gcmAesEnc\n     0.09s  1.02% 65.80%      0.51s  5.76%  github.com/quic-go/quic-go.(*framer).Append\n     0.09s  1.02% 66.82%      0.09s  1.02%  runtime.nextFreeFast (inline)\n     0.06s  0.68% 67.49%      0.62s  7.00%  github.com/quic-go/quic-go.(*packetPacker).composeNextPacket\n     0.06s  0.68% 68.17%      0.16s  1.81%  runtime.selectgo\n     0.05s  0.56% 68.74%      0.05s  0.56%  crypto/internal/fips140/aes.encryptBlockAsm\n     0.05s  0.56% 69.30%      0.05s  0.56%  github.com/quic-go/quic-go/internal/wire.IsLongHeaderPacket\n     0.05s  0.56% 69.86%      0.18s  2.03%  github.com/quic-go/quic-go/internal/wire.ParseStreamFrame\n     0.05s  0.56% 70.43%      0.07s  0.79%  runtime.unlock2\n     0.04s  0.45% 70.88%      1.31s 14.79%  github.com/quic-go/quic-go.(*Conn).appendOneShortHeaderPacket\n     0.04s  0.45% 71.33%      0.08s   0.9%  github.com/quic-go/quic-go/internal/handshake.(*aesHeaderProtector).apply\n     0.04s  0.45% 71.78%      0.06s  0.68%  github.com/quic-go/quic-go/internal/wire.putStreamFrame (inline)\n     0.04s  0.45% 72.23%      0.06s  0.68%  internal/sync.(*Mutex).Unlock (inline)\n     0.03s  0.34% 72.57%      0.08s   0.9%  crypto/internal/fips140/aes.encryptBlock\n     0.03s  0.34% 72.91%      1.12s 12.64%  github.com/quic-go/quic-go.(*Conn).handleShortHeaderPacket\n     0.03s  0.34% 73.25%      1.37s 15.46%  github.com/quic-go/quic-go.(*oobConn).ReadPacket\n     0.03s  0.34% 73.59%      1.16s 13.09%  github.com/quic-go/quic-go.(*packetPacker).appendPacket",
+        "alloc_space": "      flat  flat%   sum%        cum   cum%\n   50.50MB 37.14% 37.14%    50.50MB 37.14%  golang.org/x/net/internal/socket.parseInetAddr\n      23MB 16.92% 54.06%       24MB 17.65%  github.com/quic-go/quic-go.(*framer).Append\n   13.02MB  9.57% 63.63%    13.02MB  9.57%  github.com/quic-go/quic-go/internal/ackhandler.(*sentPacketHistory).SentPacket\n      12MB  8.83% 72.46%       12MB  8.83%  github.com/quic-go/quic-go.(*ReceiveStream).handleStreamFrameImpl\n       8MB  5.88% 78.34%        8MB  5.88%  net.ipToSockaddr\n       4MB  2.94% 81.28%     5.50MB  4.05%  github.com/quic-go/quic-go/internal/wire.ParseStreamFrame\n    3.53MB  2.60% 83.88%     3.53MB  2.60%  sync.(*poolChain).pushHead\n    3.47MB  2.55% 86.43%     3.47MB  2.55%  internal/bytealg.MakeNoZero\n       3MB  2.21% 88.64%     3.50MB  2.57%  github.com/quic-go/quic-go/http3.(*frameParser).ParseNext\n    2.50MB  1.84% 90.48%     2.50MB  1.84%  github.com/quic-go/quic-go.init.0.func1\n    2.31MB  1.70% 92.18%     5.78MB  4.25%  github.com/SawaMEN/FoxTunnel/internal/tunnel.benchmarkNativeOptions.func2\n       2MB  1.47% 93.65%        2MB  1.47%  github.com/quic-go/quic-go/internal/wire.init.0.func1\n    1.50MB  1.10% 94.76%     1.50MB  1.10%  crypto/x509.parseCertificate\n    0.52MB  0.38% 95.14%     5.03MB  3.70%  io.copyBuffer\n         0     0% 95.14%     3.47MB  2.55%  bytes.Repeat\n         0     0% 95.14%        2MB  1.47%  crypto/x509.(*CertPool).AppendCertsFromPEM\n         0     0% 95.14%     1.50MB  1.10%  crypto/x509.ParseCertificate\n         0     0% 95.14%     2.50MB  1.84%  crypto/x509.SystemCertPool\n         0     0% 95.14%     2.50MB  1.84%  crypto/x509.initSystemRoots\n         0     0% 95.14%     2.50MB  1.84%  crypto/x509.loadSystemRoots",
+        "alloc_objects": "      flat  flat%   sum%        cum   cum%\n   1561991 40.52% 40.52%    1561991 40.52%  golang.org/x/net/internal/socket.parseInetAddr\n   1004907 26.07% 66.59%    1021632 26.50%  github.com/quic-go/quic-go.(*framer).Append\n    786443 20.40% 86.99%     786443 20.40%  github.com/quic-go/quic-go.(*ReceiveStream).handleStreamFrameImpl\n    163848  4.25% 91.24%     163848  4.25%  net.ipToSockaddr\n    152918  3.97% 95.20%     185686  4.82%  github.com/quic-go/quic-go/http3.(*frameParser).ParseNext\n     87384  2.27% 97.47%      88408  2.29%  github.com/quic-go/quic-go/internal/wire.ParseStreamFrame\n     32768  0.85% 98.32%      32768  0.85%  github.com/quic-go/quic-go/quicvarint.NewReader (inline)\n        16 0.00042% 98.32%     185838  4.82%  io.copyBuffer\n         0     0% 98.32%      76487  1.98%  github.com/SawaMEN/FoxTunnel/internal/tunnel.(*Client).ServeContext.func3\n         0     0% 98.32%      76487  1.98%  github.com/SawaMEN/FoxTunnel/internal/tunnel.(*Client).handleContext\n         0     0% 98.32%     109351  2.84%  github.com/SawaMEN/FoxTunnel/internal/tunnel.(*Server).serveHTTP.func2\n         0     0% 98.32%      76487  1.98%  github.com/SawaMEN/FoxTunnel/internal/tunnel.(*meteredBody).Read\n         0     0% 98.32%     109351  2.84%  github.com/SawaMEN/FoxTunnel/internal/tunnel.fastCopy\n         0     0% 98.32%    1033827 26.82%  github.com/quic-go/quic-go.(*Conn).appendOneShortHeaderPacket\n         0     0% 98.32%     885965 22.98%  github.com/quic-go/quic-go.(*Conn).handleFrames\n         0     0% 98.32%     886020 22.98%  github.com/quic-go/quic-go.(*Conn).handleOnePacket\n         0     0% 98.32%     886020 22.98%  github.com/quic-go/quic-go.(*Conn).handlePackets\n         0     0% 98.32%     885965 22.98%  github.com/quic-go/quic-go.(*Conn).handleShortHeaderPacket\n         0     0% 98.32%     885965 22.98%  github.com/quic-go/quic-go.(*Conn).handleUnpackedShortHeaderPacket\n         0     0% 98.32%    1930796 50.09%  github.com/quic-go/quic-go.(*Conn).run"
+      }
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "top": {
+        "cpu": "      flat  flat%   sum%        cum   cum%\n     3.04s 34.16% 34.16%      3.04s 34.16%  internal/runtime/syscall/linux.Syscall6\n     1.74s 19.55% 53.71%      1.74s 19.55%  runtime.futex\n     1.12s 12.58% 66.29%      1.14s 12.81%  runtime.cgocall\n     0.14s  1.57% 67.87%      0.52s  5.84%  runtime.selectgo\n     0.08s   0.9% 68.76%      1.03s 11.57%  runtime.findRunnable\n     0.06s  0.67% 69.44%      0.09s  1.01%  runtime.unlock2\n     0.05s  0.56% 70.00%      0.08s   0.9%  runtime.(*timer).modify\n     0.05s  0.56% 70.56%      0.06s  0.67%  runtime.lock2\n     0.05s  0.56% 71.12%      0.05s  0.56%  runtime.memmove\n     0.04s  0.45% 71.57%      0.07s  0.79%  crypto/internal/fips140/aes/gcm.open\n     0.04s  0.45% 72.02%      2.57s 28.88%  runtime.schedule\n     0.03s  0.34% 72.36%      2.06s 23.15%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run\n     0.03s  0.34% 72.70%      0.20s  2.25%  github.com/quic-go/quic-go.(*Conn).handleFrames\n     0.03s  0.34% 73.03%      1.03s 11.57%  github.com/quic-go/quic-go.(*Conn).run\n     0.03s  0.34% 73.37%      0.40s  4.49%  golang.org/x/net/internal/socket.(*Conn).recvMsgs\n     0.03s  0.34% 73.71%      1.67s 18.76%  internal/poll.(*FD).Write\n     0.03s  0.34% 74.04%      0.05s  0.56%  runtime.chanrecv\n     0.03s  0.34% 74.38%      0.76s  8.54%  runtime.futexsleep\n     0.03s  0.34% 74.72%      0.79s  8.88%  runtime.notesleep\n     0.03s  0.34% 75.06%      0.38s  4.27%  runtime.send",
+        "alloc_space": "      flat  flat%   sum%        cum   cum%\n 5120.43kB 18.43% 18.43%  5120.43kB 18.43%  github.com/SawaMEN/FoxTunnel/internal/tunnel.benchmarkNativeOptions.func2\n 3232.37kB 11.63% 30.06%  3232.37kB 11.63%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run\n 3072.33kB 11.06% 41.11%  3072.33kB 11.06%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).call\n 2560.27kB  9.21% 50.33%  2560.27kB  9.21%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run.func4\n 1184.27kB  4.26% 54.59%  1184.27kB  4.26%  runtime/pprof.StartCPUProfile\n 1122.50kB  4.04% 58.63%  1122.50kB  4.04%  os.readFileContents\n 1074.41kB  3.87% 62.50%  1725.03kB  6.21%  runtime/pprof.(*profileBuilder).emitLocation\n 1054.96kB  3.80% 66.29%  1054.96kB  3.80%  runtime/pprof.(*protobuf).string\n 1024.05kB  3.69% 69.98%  1024.05kB  3.69%  github.com/quic-go/quic-go/internal/wire.ParseStreamFrame\n 1024.05kB  3.69% 73.66%  1024.05kB  3.69%  golang.org/x/net/internal/socket.parseInetAddr\n 1024.02kB  3.69% 77.35%  1536.03kB  5.53%  github.com/quic-go/quic-go/http3.(*frameParser).ParseNext\n  650.62kB  2.34% 79.69%   650.62kB  2.34%  compress/flate.(*compressor).init\n  522.06kB  1.88% 81.57%   522.06kB  1.88%  github.com/quic-go/quic-go.init.0.func2\n     513kB  1.85% 83.41%      513kB  1.85%  runtime.mallocgc\n  512.75kB  1.85% 85.26%  2049.05kB  7.37%  crypto/x509.parseCertificate\n  512.28kB  1.84% 87.10%   512.28kB  1.84%  math/big.nat.make (inline)\n  512.08kB  1.84% 88.94%   512.08kB  1.84%  compress/gzip.NewWriterLevel\n  512.03kB  1.84% 90.79%   512.03kB  1.84%  os.newUnixDirent\n  512.02kB  1.84% 92.63%   512.02kB  1.84%  internal/bytealg.MakeNoZero\n  512.02kB  1.84% 94.47%   512.02kB  1.84%  net.ipToSockaddr",
+        "alloc_objects": "      flat  flat%   sum%        cum   cum%\n     85434 20.72% 20.72%      85434 20.72%  github.com/SawaMEN/FoxTunnel/internal/tunnel.benchmarkNativeOptions.func2\n     43693 10.59% 31.31%      43693 10.59%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run\n     43691 10.59% 41.90%      76459 18.54%  github.com/quic-go/quic-go/http3.(*frameParser).ParseNext\n     32768  7.95% 49.85%      32768  7.95%  github.com/quic-go/quic-go.(*ReceiveStream).handleStreamFrameImpl\n     32768  7.95% 57.80%      32768  7.95%  github.com/quic-go/quic-go/quicvarint.(*byteReader).ReadByte\n     32768  7.95% 65.74%      32768  7.95%  time.Time.Format\n     28088  6.81% 72.55%      28088  6.81%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).call\n     23408  5.68% 78.23%      23408  5.68%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run.func4\n     21846  5.30% 83.52%      21846  5.30%  github.com/quic-go/quic-go/internal/wire.ParseStreamFrame\n     21846  5.30% 88.82%      21846  5.30%  golang.org/x/net/internal/socket.parseInetAddr\n     16384  3.97% 92.79%      16384  3.97%  internal/bytealg.MakeNoZero\n     16384  3.97% 96.77%      16384  3.97%  net.ipToSockaddr\n      8192  1.99% 98.75%       8192  1.99%  os.newUnixDirent\n      3277  0.79% 99.55%       3277  0.79%  compress/gzip.NewWriterLevel\n       341 0.083% 99.63%      50403 12.22%  crypto/x509.parseCertificate\n         0     0% 99.63%      50403 12.22%  crypto/x509.(*CertPool).AppendCertsFromPEM\n         0     0% 99.63%      50403 12.22%  crypto/x509.ParseCertificate\n         0     0% 99.63%      58854 14.27%  crypto/x509.SystemCertPool\n         0     0% 99.63%      58854 14.27%  crypto/x509.initSystemRoots\n         0     0% 99.63%      58854 14.27%  crypto/x509.loadSystemRoots"
+      }
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "top": {
+        "cpu": "      flat  flat%   sum%        cum   cum%\n     5.70s 45.78% 45.78%      5.70s 45.78%  internal/runtime/syscall/linux.Syscall6\n     2.63s 21.12% 66.91%      2.71s 21.77%  runtime.cgocall\n     0.35s  2.81% 69.72%      0.35s  2.81%  runtime.futex\n     0.16s  1.29% 71.00%      0.16s  1.29%  crypto/internal/fips140/aes/gcm.gcmAesDec\n     0.13s  1.04% 72.05%      0.33s  2.65%  runtime.selectgo\n     0.12s  0.96% 73.01%      0.12s  0.96%  runtime.nanotime (inline)\n     0.07s  0.56% 73.57%      0.08s  0.64%  runtime.unlock2\n     0.05s   0.4% 73.98%      0.11s  0.88%  runtime.chansend\n     0.04s  0.32% 74.30%      0.12s  0.96%  github.com/quic-go/quic-go.(*framer).Append\n     0.04s  0.32% 74.62%      0.84s  6.75%  internal/poll.(*FD).Read\n     0.04s  0.32% 74.94%      0.24s  1.93%  runtime.netpoll\n     0.03s  0.24% 75.18%      5.26s 42.25%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run\n     0.03s  0.24% 75.42%      0.76s  6.10%  github.com/quic-go/quic-go.(*Conn).handlePackets\n     0.03s  0.24% 75.66%      0.68s  5.46%  github.com/quic-go/quic-go.(*Conn).handleShortHeaderPacket\n     0.03s  0.24% 75.90%      1.45s 11.65%  github.com/quic-go/quic-go.(*Conn).run\n     0.03s  0.24% 76.14%      0.07s  0.56%  github.com/quic-go/quic-go/internal/handshake.(*aesHeaderProtector).apply\n     0.03s  0.24% 76.39%      0.07s  0.56%  runtime.(*timer).modify\n     0.03s  0.24% 76.63%      0.08s  0.64%  runtime.reentersyscall\n     0.03s  0.24% 76.87%      4.47s 35.90%  syscall.Syscall\n     0.02s  0.16% 77.03%      0.19s  1.53%  crypto/internal/fips140/aes/gcm.open",
+        "alloc_space": "      flat  flat%   sum%        cum   cum%\n  270.42MB 76.25% 76.25%   270.42MB 76.25%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run.func4\n   25.54MB  7.20% 83.46%    25.54MB  7.20%  github.com/quic-go/quic-go.init.0.func1\n   13.50MB  3.81% 87.26%    13.50MB  3.81%  golang.org/x/net/internal/socket.parseInetAddr\n       6MB  1.69% 88.95%        6MB  1.69%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).call\n       6MB  1.69% 90.65%     6.50MB  1.83%  github.com/quic-go/quic-go.(*framer).Append\n    3.51MB  0.99% 91.64%     3.51MB  0.99%  github.com/quic-go/quic-go/internal/ackhandler.(*sentPacketHistory).SentPacket\n    3.50MB  0.99% 92.62%     3.50MB  0.99%  github.com/quic-go/quic-go.(*ReceiveStream).handleStreamFrameImpl\n    3.47MB  0.98% 93.60%     5.78MB  1.63%  github.com/SawaMEN/FoxTunnel/internal/tunnel.benchmarkNativeOptions.func2\n    3.16MB  0.89% 94.49%     3.16MB  0.89%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run\n    3.01MB  0.85% 95.34%     3.01MB  0.85%  sync.(*poolChain).pushHead\n    2.31MB  0.65% 96.00%     2.31MB  0.65%  internal/bytealg.MakeNoZero\n    1.03MB  0.29% 96.29%     8.03MB  2.26%  io.copyBuffer\n    0.50MB  0.14% 96.43%     2.50MB  0.71%  crypto/x509.(*CertPool).AppendCertsFromPEM\n         0     0% 96.43%     2.31MB  0.65%  bytes.Repeat\n         0     0% 96.43%        2MB  0.56%  crypto/x509.ParseCertificate\n         0     0% 96.43%        3MB  0.85%  crypto/x509.SystemCertPool\n         0     0% 96.43%        3MB  0.85%  crypto/x509.initSystemRoots\n         0     0% 96.43%        3MB  0.85%  crypto/x509.loadSystemRoots\n         0     0% 96.43%        2MB  0.56%  crypto/x509.parseCertificate\n         0     0% 96.43%        3MB  0.85%  crypto/x509.systemRootsPool",
+        "alloc_objects": "      flat  flat%   sum%        cum   cum%\n    382306 25.88% 25.88%     382306 25.88%  golang.org/x/net/internal/socket.parseInetAddr\n    262939 17.80% 43.67%     262939 17.80%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run.func4\n    262150 17.74% 61.42%     278534 18.85%  github.com/quic-go/quic-go.(*framer).Append\n    229379 15.53% 76.94%     229379 15.53%  github.com/quic-go/quic-go.(*ReceiveStream).handleStreamFrameImpl\n     91287  6.18% 83.12%      91287  6.18%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).call\n     65537  4.44% 87.55%      65537  4.44%  github.com/quic-go/quic-go/http3.(*frameParser).ParseNext\n     49153  3.33% 90.88%      49153  3.33%  net.ipToSockaddr\n     43693  2.96% 93.84%      43693  2.96%  github.com/SawaMEN/FoxTunnel/internal/neqo.(*connection).run\n     17433  1.18% 95.02%      17433  1.18%  github.com/quic-go/quic-go.init.0.func1\n     16384  1.11% 96.13%      16384  1.11%  crypto/x509.parseASN1String\n     16384  1.11% 97.24%      32768  2.22%  crypto/x509.parseName\n     16384  1.11% 98.35%      16384  1.11%  github.com/quic-go/quic-go.(*framer).appendControlFrames\n      2341  0.16% 98.50%      38386  2.60%  crypto/x509.(*CertPool).AppendCertsFromPEM\n        32 0.0022% 98.51%     152175 10.30%  io.copyBuffer\n         0     0% 98.51%      36045  2.44%  crypto/x509.ParseCertificate\n         0     0% 98.51%      38971  2.64%  crypto/x509.SystemCertPool\n         0     0% 98.51%      38971  2.64%  crypto/x509.initSystemRoots\n         0     0% 98.51%      38971  2.64%  crypto/x509.loadSystemRoots\n         0     0% 98.51%      36045  2.44%  crypto/x509.parseCertificate\n         0     0% 98.51%      38971  2.64%  crypto/x509.systemRootsPool"
+      }
+    }
+  ],
+  "scope": "Loopback client+proxy+echo, GOMAXPROCS=2; process CPU/RSS includes setup and native memory. Go allocation profiles exclude Rust/C allocations. CPU profiles attribute native calls to cgo, not Rust internals. Profile runs are separate from timing samples. No WAN or Firefox-equivalence claim."
+}

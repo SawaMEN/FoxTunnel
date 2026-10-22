@@ -1,0 +1,1443 @@
+{
+  "schema": 1,
+  "kind": "update-h3-before-after",
+  "base_commit": "191871b51a00627ce79b28d6c103168da77ab84f",
+  "head_commit": "0a692304cbc79b9d5286ae9b667085bf5573a6c8",
+  "binary_sha256": {
+    "base": "52a269d2970b01e8f408401610bec07d5aa60939735da1c352d0e79a56352c8a",
+    "head": "94fc005720a14a80ddf7dbd7f458e6dedceb34e9814043b086fbecb87a1cc054"
+  },
+  "samples": [
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 0,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 177356.0,
+      "reported_mb_per_second": 0.36,
+      "go_bytes_per_exchange": 944,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.038726,
+      "process_system_seconds": 0.045987,
+      "process_peak_rss_kib": 24316,
+      "process_wall_seconds": 0.068913644,
+      "log_sha256": "68b6b3456a32ee64099da67a26d2cef6e632b5362eea485d1652e941c46198d2"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 0,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 197502.0,
+      "reported_mb_per_second": 0.32,
+      "go_bytes_per_exchange": 943,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.039508,
+      "process_system_seconds": 0.052677,
+      "process_peak_rss_kib": 24788,
+      "process_wall_seconds": 0.074428012,
+      "log_sha256": "c69e18bd95309e7cb8524396796150cdf8648e45ebf516f09a02db6671dca7c0"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 0,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8785902.0,
+      "reported_mb_per_second": 119.35,
+      "go_bytes_per_exchange": 338030,
+      "go_allocations_per_exchange": 8984,
+      "process_user_seconds": 0.152278,
+      "process_system_seconds": 0.177658,
+      "process_peak_rss_kib": 29764,
+      "process_wall_seconds": 0.177128987,
+      "log_sha256": "d1229cf2dd31a4b62074cc67cf798494f343eb9a85ed1fc4ab76152a7c5206da"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 0,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8826971.0,
+      "reported_mb_per_second": 118.79,
+      "go_bytes_per_exchange": 396601,
+      "go_allocations_per_exchange": 9080,
+      "process_user_seconds": 0.159729,
+      "process_system_seconds": 0.171938,
+      "process_peak_rss_kib": 30448,
+      "process_wall_seconds": 0.178033009,
+      "log_sha256": "bf8a9aacbc01a1c2d02e5566c600300d8446283de831ec6ca8f0aa02eb9ecfc2"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 0,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 304423.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1298,
+      "go_allocations_per_exchange": 42,
+      "process_user_seconds": 0.063116,
+      "process_system_seconds": 0.072296,
+      "process_peak_rss_kib": 27156,
+      "process_wall_seconds": 0.102452614,
+      "log_sha256": "e6b26790416ca2abe1bbde2b27a285191a20f3b7d7e2ad8d71792ac2d434b484"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 0,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 298523.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1280,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.054662,
+      "process_system_seconds": 0.079508,
+      "process_peak_rss_kib": 27568,
+      "process_wall_seconds": 0.101285928,
+      "log_sha256": "fded8a0ac3cfc4e9dc1fecc886441bb5bea40b72a90b7173fbd6fcc10ef56549"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 0,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 28578218.0,
+      "reported_mb_per_second": 36.69,
+      "go_bytes_per_exchange": 1520557,
+      "go_allocations_per_exchange": 11861,
+      "process_user_seconds": 0.48619,
+      "process_system_seconds": 0.475976,
+      "process_peak_rss_kib": 36164,
+      "process_wall_seconds": 0.515347096,
+      "log_sha256": "9fa529475e26f5a459acc65fe1c359b23c8555b8238f43280a5ac77aba79b97d"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 0,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 31000179.0,
+      "reported_mb_per_second": 33.82,
+      "go_bytes_per_exchange": 1510748,
+      "go_allocations_per_exchange": 6620,
+      "process_user_seconds": 0.551368,
+      "process_system_seconds": 0.50041,
+      "process_peak_rss_kib": 34520,
+      "process_wall_seconds": 0.565206608,
+      "log_sha256": "4e5070fec727df1cb2e407c8c8daeb928d4ca34e50fbc6633e67f31d726d5e92"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 1,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 307988.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1256,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.071344,
+      "process_system_seconds": 0.068926,
+      "process_peak_rss_kib": 27272,
+      "process_wall_seconds": 0.103876621,
+      "log_sha256": "3f8dad4be3a65a77c6445a5dbeb919fdec1b3481ead311c32caa4092f3524619"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 1,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 297380.0,
+      "reported_mb_per_second": 0.22,
+      "go_bytes_per_exchange": 1447,
+      "go_allocations_per_exchange": 42,
+      "process_user_seconds": 0.074374,
+      "process_system_seconds": 0.060738,
+      "process_peak_rss_kib": 27708,
+      "process_wall_seconds": 0.102357147,
+      "log_sha256": "0dacba670c0be7aaeb56f70f3ca01ab7d171b8456826c30c1a9595d9db2da825"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 1,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 28263985.0,
+      "reported_mb_per_second": 37.1,
+      "go_bytes_per_exchange": 1493868,
+      "go_allocations_per_exchange": 6573,
+      "process_user_seconds": 0.476747,
+      "process_system_seconds": 0.464444,
+      "process_peak_rss_kib": 35468,
+      "process_wall_seconds": 0.504487894,
+      "log_sha256": "67ea10fbe96233e9fb1bbec14a57960bb90c1dfe5c59828ab5d4b2710ce9aa45"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 1,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 26764443.0,
+      "reported_mb_per_second": 39.18,
+      "go_bytes_per_exchange": 1535796,
+      "go_allocations_per_exchange": 11697,
+      "process_user_seconds": 0.432046,
+      "process_system_seconds": 0.468136,
+      "process_peak_rss_kib": 34468,
+      "process_wall_seconds": 0.481000459,
+      "log_sha256": "b0d1728761024be9edeae4e944b83a10f7671425ec57051fe9c9d63cb68b615b"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 1,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 197672.0,
+      "reported_mb_per_second": 0.32,
+      "go_bytes_per_exchange": 944,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.041063,
+      "process_system_seconds": 0.051079,
+      "process_peak_rss_kib": 24500,
+      "process_wall_seconds": 0.074121781,
+      "log_sha256": "6cf1bef5892d7234357e02d51464734a93e3ced9ec6ebe2a4f92f10c1f0a255f"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 1,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 181162.0,
+      "reported_mb_per_second": 0.35,
+      "go_bytes_per_exchange": 936,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.03924,
+      "process_system_seconds": 0.045781,
+      "process_peak_rss_kib": 24532,
+      "process_wall_seconds": 0.068948443,
+      "log_sha256": "ae00c439a5d37d9c4924dea9909de4c999ec48ff45f5823eeff8ab19a4f515ec"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 1,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 9182702.0,
+      "reported_mb_per_second": 114.19,
+      "go_bytes_per_exchange": 408920,
+      "go_allocations_per_exchange": 9085,
+      "process_user_seconds": 0.152916,
+      "process_system_seconds": 0.189134,
+      "process_peak_rss_kib": 30664,
+      "process_wall_seconds": 0.183104771,
+      "log_sha256": "bd81137264bda87fe1b5a40dc253c0a8c00ae98e5932574cfe739ecbfd4d989c"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 1,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8150370.0,
+      "reported_mb_per_second": 128.65,
+      "go_bytes_per_exchange": 405821,
+      "go_allocations_per_exchange": 9053,
+      "process_user_seconds": 0.12454,
+      "process_system_seconds": 0.183797,
+      "process_peak_rss_kib": 30188,
+      "process_wall_seconds": 0.165985783,
+      "log_sha256": "d086316274d5b0085d1e61bfefb2b2430d39513967112204ee6dd814aa3f6f72"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 2,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 189299.0,
+      "reported_mb_per_second": 0.34,
+      "go_bytes_per_exchange": 939,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.04665,
+      "process_system_seconds": 0.040512,
+      "process_peak_rss_kib": 24512,
+      "process_wall_seconds": 0.070896354,
+      "log_sha256": "a9612206e7701003d5ca70b62b783c132f20da5d6ca021d9f425bd0bc5a1d108"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 2,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 177513.0,
+      "reported_mb_per_second": 0.36,
+      "go_bytes_per_exchange": 940,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.034196,
+      "process_system_seconds": 0.048537,
+      "process_peak_rss_kib": 24840,
+      "process_wall_seconds": 0.067564406,
+      "log_sha256": "f2dbbe71dc28a3bd8a5af02cb1e5aaac7e2cc94e2eabe27a9f2d69b1db4a894e"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 2,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8444465.0,
+      "reported_mb_per_second": 124.17,
+      "go_bytes_per_exchange": 403284,
+      "go_allocations_per_exchange": 9060,
+      "process_user_seconds": 0.147474,
+      "process_system_seconds": 0.17136,
+      "process_peak_rss_kib": 30564,
+      "process_wall_seconds": 0.17167768,
+      "log_sha256": "41af0530fb96da32e417ccc324ac86184c713026f38f6be748712b9e819fc6f9"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 2,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 9349266.0,
+      "reported_mb_per_second": 112.16,
+      "go_bytes_per_exchange": 449238,
+      "go_allocations_per_exchange": 9182,
+      "process_user_seconds": 0.159976,
+      "process_system_seconds": 0.187142,
+      "process_peak_rss_kib": 30296,
+      "process_wall_seconds": 0.185361328,
+      "log_sha256": "0a6ee7f4549cb4a0d93775a273797e311f1b2d8172239cd7576e2be5021b96b4"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 2,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 295501.0,
+      "reported_mb_per_second": 0.22,
+      "go_bytes_per_exchange": 1434,
+      "go_allocations_per_exchange": 42,
+      "process_user_seconds": 0.06432,
+      "process_system_seconds": 0.068998,
+      "process_peak_rss_kib": 28024,
+      "process_wall_seconds": 0.100306691,
+      "log_sha256": "3d759a30700b88a8c7ad54c1906c551900e9a1d3cf5c4d93259a9c4ce888ea33"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 2,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 295018.0,
+      "reported_mb_per_second": 0.22,
+      "go_bytes_per_exchange": 1247,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.060259,
+      "process_system_seconds": 0.070688,
+      "process_peak_rss_kib": 26484,
+      "process_wall_seconds": 0.099202941,
+      "log_sha256": "7dd03c72a9e0590f1e1974bde716343e323f34b3915086ca21679fcabc950497"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 2,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 29665625.0,
+      "reported_mb_per_second": 35.35,
+      "go_bytes_per_exchange": 1544921,
+      "go_allocations_per_exchange": 11753,
+      "process_user_seconds": 0.500694,
+      "process_system_seconds": 0.509872,
+      "process_peak_rss_kib": 34472,
+      "process_wall_seconds": 0.538043512,
+      "log_sha256": "255fac43f49aefeb388c41d6ab770b67e54696840d8579f94ca6de3d8ca69c8d"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 2,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 29490468.0,
+      "reported_mb_per_second": 35.56,
+      "go_bytes_per_exchange": 1488675,
+      "go_allocations_per_exchange": 6637,
+      "process_user_seconds": 0.51054,
+      "process_system_seconds": 0.495193,
+      "process_peak_rss_kib": 34028,
+      "process_wall_seconds": 0.533934314,
+      "log_sha256": "b9e632a9a95d5b6e766c9e5972b46a42280e7f6e5b7336987618faed27e97997"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 3,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 301392.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1402,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.058736,
+      "process_system_seconds": 0.074859,
+      "process_peak_rss_kib": 27288,
+      "process_wall_seconds": 0.100960329,
+      "log_sha256": "d5f0c8393f8bc82ae3d3f9fc7ce686366c0be5e114e24b1c582ec6ee6daaf335"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 3,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 297834.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1298,
+      "go_allocations_per_exchange": 42,
+      "process_user_seconds": 0.053609,
+      "process_system_seconds": 0.080984,
+      "process_peak_rss_kib": 27680,
+      "process_wall_seconds": 0.100270493,
+      "log_sha256": "103bb07eda8a2a6409fb864e0eeac4faf3b13de6dd3c020d081ea9530d8f5a29"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 3,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 31386484.0,
+      "reported_mb_per_second": 33.41,
+      "go_bytes_per_exchange": 1489119,
+      "go_allocations_per_exchange": 6643,
+      "process_user_seconds": 0.527174,
+      "process_system_seconds": 0.545528,
+      "process_peak_rss_kib": 35372,
+      "process_wall_seconds": 0.567101443,
+      "log_sha256": "61d717913f9fca039937e16b40e61cfc11cdc225f4778db94b07a4ef350bcd22"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 3,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 27826752.0,
+      "reported_mb_per_second": 37.68,
+      "go_bytes_per_exchange": 1531930,
+      "go_allocations_per_exchange": 11670,
+      "process_user_seconds": 0.467393,
+      "process_system_seconds": 0.481649,
+      "process_peak_rss_kib": 34692,
+      "process_wall_seconds": 0.506364917,
+      "log_sha256": "3b277178b6647ac76f6fd5bb51f49312154222b9cca652ec4a671e8df6f531b3"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 3,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 192630.0,
+      "reported_mb_per_second": 0.33,
+      "go_bytes_per_exchange": 949,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.045413,
+      "process_system_seconds": 0.045413,
+      "process_peak_rss_kib": 24556,
+      "process_wall_seconds": 0.071795441,
+      "log_sha256": "3788ccfb80b728d87bdd7391bc15bce46a7f8f9b989cc62bda7870ca81e7b5d3"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 3,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 215265.0,
+      "reported_mb_per_second": 0.3,
+      "go_bytes_per_exchange": 956,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.034232,
+      "process_system_seconds": 0.060565,
+      "process_peak_rss_kib": 24924,
+      "process_wall_seconds": 0.077838257,
+      "log_sha256": "6fd665e9c834f291ac4552cf7ad2675a78dcfc8797cc77c499d44cd752d54820"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 3,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 9067292.0,
+      "reported_mb_per_second": 115.64,
+      "go_bytes_per_exchange": 449238,
+      "go_allocations_per_exchange": 9161,
+      "process_user_seconds": 0.148595,
+      "process_system_seconds": 0.189759,
+      "process_peak_rss_kib": 30628,
+      "process_wall_seconds": 0.181095746,
+      "log_sha256": "8f40534351412832cd887e4ddb5a092a3a14bab5cc400d2d6123f61dc75a8fd5"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 3,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8779156.0,
+      "reported_mb_per_second": 119.44,
+      "go_bytes_per_exchange": 391455,
+      "go_allocations_per_exchange": 9036,
+      "process_user_seconds": 0.161908,
+      "process_system_seconds": 0.177999,
+      "process_peak_rss_kib": 30004,
+      "process_wall_seconds": 0.181823037,
+      "log_sha256": "ba4c7633ea903035fe65f7707208edb457a5011369a6b9b93d4f7e7ef0bb141d"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 4,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 224631.0,
+      "reported_mb_per_second": 0.28,
+      "go_bytes_per_exchange": 957,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.046672,
+      "process_system_seconds": 0.057443,
+      "process_peak_rss_kib": 24720,
+      "process_wall_seconds": 0.0796259,
+      "log_sha256": "5a75f3de41e0a0f6afbb027ef8ee9befb957a1c96aaf581e273d7e60685dc6d6"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 4,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 181460.0,
+      "reported_mb_per_second": 0.35,
+      "go_bytes_per_exchange": 944,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.036248,
+      "process_system_seconds": 0.049842,
+      "process_peak_rss_kib": 24488,
+      "process_wall_seconds": 0.070302463,
+      "log_sha256": "6f48f60610822e23ec68fc3208ce58f027cfca496eb59a0cf346191985c228e3"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 4,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 9098653.0,
+      "reported_mb_per_second": 115.25,
+      "go_bytes_per_exchange": 379181,
+      "go_allocations_per_exchange": 9051,
+      "process_user_seconds": 0.135185,
+      "process_system_seconds": 0.202777,
+      "process_peak_rss_kib": 30260,
+      "process_wall_seconds": 0.181164624,
+      "log_sha256": "53a63b559090f74bf29eefd37d8dec6637773f5cf521094e79214087a2d01396"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 4,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 9354090.0,
+      "reported_mb_per_second": 112.1,
+      "go_bytes_per_exchange": 436999,
+      "go_allocations_per_exchange": 9130,
+      "process_user_seconds": 0.152554,
+      "process_system_seconds": 0.197718,
+      "process_peak_rss_kib": 30296,
+      "process_wall_seconds": 0.187363291,
+      "log_sha256": "c5b6896bd250b7be4f06d5b3cd046fec9311020666e639737d4201be374f711d"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 4,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 302241.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1316,
+      "go_allocations_per_exchange": 42,
+      "process_user_seconds": 0.060614,
+      "process_system_seconds": 0.074602,
+      "process_peak_rss_kib": 26656,
+      "process_wall_seconds": 0.100923828,
+      "log_sha256": "8151a9c5aa85966925777eac40bc07ed4a2db61254c9f8b6f63718f2cfb065eb"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 4,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 300637.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1131,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.064863,
+      "process_system_seconds": 0.068161,
+      "process_peak_rss_kib": 27528,
+      "process_wall_seconds": 0.100743342,
+      "log_sha256": "b954077ed8897e600ebd674a2f79a2f3468e40e0ed094b8781e9d7985c99de17"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 4,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 30662606.0,
+      "reported_mb_per_second": 34.2,
+      "go_bytes_per_exchange": 1539584,
+      "go_allocations_per_exchange": 11831,
+      "process_user_seconds": 0.518704,
+      "process_system_seconds": 0.514595,
+      "process_peak_rss_kib": 34116,
+      "process_wall_seconds": 0.548858245,
+      "log_sha256": "357cb611b6426dd6e8bdaa18d0f6dbd5488565856b89c3606c31695558ea268b"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 4,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 29105041.0,
+      "reported_mb_per_second": 36.03,
+      "go_bytes_per_exchange": 1496539,
+      "go_allocations_per_exchange": 6637,
+      "process_user_seconds": 0.50469,
+      "process_system_seconds": 0.490212,
+      "process_peak_rss_kib": 35420,
+      "process_wall_seconds": 0.529387285,
+      "log_sha256": "b7919a2f91bd711dd895bb197053b906c81700d06c5104e09c99bc4b4272cb78"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 5,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 298022.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1128,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.062698,
+      "process_system_seconds": 0.070074,
+      "process_peak_rss_kib": 27100,
+      "process_wall_seconds": 0.100172283,
+      "log_sha256": "af589dce30dbe53d94edbb9d1de8bf9ecf15278d39e11ce413599f7a8bad47a2"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 5,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 296739.0,
+      "reported_mb_per_second": 0.22,
+      "go_bytes_per_exchange": 1507,
+      "go_allocations_per_exchange": 42,
+      "process_user_seconds": 0.062427,
+      "process_system_seconds": 0.071676,
+      "process_peak_rss_kib": 27352,
+      "process_wall_seconds": 0.100435457,
+      "log_sha256": "8737793ad9ba91ebc2e40ae0e4c7f7a1daac4b10601ac41a8b1f32576c3114ab"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 5,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 30872863.0,
+      "reported_mb_per_second": 33.96,
+      "go_bytes_per_exchange": 1494480,
+      "go_allocations_per_exchange": 6658,
+      "process_user_seconds": 0.532545,
+      "process_system_seconds": 0.508013,
+      "process_peak_rss_kib": 34792,
+      "process_wall_seconds": 0.551148141,
+      "log_sha256": "e24e4721266932be22affcf5255beb6d870a065760cba346c00c44fd5fa323b2"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 5,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 30268572.0,
+      "reported_mb_per_second": 34.64,
+      "go_bytes_per_exchange": 1546186,
+      "go_allocations_per_exchange": 11798,
+      "process_user_seconds": 0.512328,
+      "process_system_seconds": 0.523622,
+      "process_peak_rss_kib": 34260,
+      "process_wall_seconds": 0.550157983,
+      "log_sha256": "1b8543e095ab3be9d1b7a5096cd0da45d27c08e1456d912da8abaa0491dd6167"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 5,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 170573.0,
+      "reported_mb_per_second": 0.38,
+      "go_bytes_per_exchange": 1070,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.040134,
+      "process_system_seconds": 0.044594,
+      "process_peak_rss_kib": 24676,
+      "process_wall_seconds": 0.068081674,
+      "log_sha256": "18662812317cd6844cf0eeed947db101168c447e6aefeabb19797231b1645a76"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 5,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 181256.0,
+      "reported_mb_per_second": 0.35,
+      "go_bytes_per_exchange": 939,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.036956,
+      "process_system_seconds": 0.049275,
+      "process_peak_rss_kib": 24816,
+      "process_wall_seconds": 0.069710488,
+      "log_sha256": "af15b4b3748861351cbc38765c97d8e6798e33dd4828d5af3059735cb4a5efc4"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 5,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8665011.0,
+      "reported_mb_per_second": 121.01,
+      "go_bytes_per_exchange": 446820,
+      "go_allocations_per_exchange": 9174,
+      "process_user_seconds": 0.1449,
+      "process_system_seconds": 0.191188,
+      "process_peak_rss_kib": 31376,
+      "process_wall_seconds": 0.180271639,
+      "log_sha256": "3d631675aaba72036b5e3c71801b21d1a466d546d953f429be8bb43b707fb2c0"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 5,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8236721.0,
+      "reported_mb_per_second": 127.31,
+      "go_bytes_per_exchange": 430249,
+      "go_allocations_per_exchange": 9120,
+      "process_user_seconds": 0.149863,
+      "process_system_seconds": 0.162014,
+      "process_peak_rss_kib": 30580,
+      "process_wall_seconds": 0.167705222,
+      "log_sha256": "fadaaec894f2c8028b8cca88550834fb034426c037d04a477cb864f2c5d60236"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 6,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 226477.0,
+      "reported_mb_per_second": 0.28,
+      "go_bytes_per_exchange": 946,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.045322,
+      "process_system_seconds": 0.061508,
+      "process_peak_rss_kib": 24676,
+      "process_wall_seconds": 0.082035836,
+      "log_sha256": "c7d28402ca98f36bfb32ff4fb7670dd64b2af7e0cb9f3f3b772ec10fd6a10c9b"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "small",
+      "repeat": 6,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 180840.0,
+      "reported_mb_per_second": 0.35,
+      "go_bytes_per_exchange": 1016,
+      "go_allocations_per_exchange": 30,
+      "process_user_seconds": 0.038366,
+      "process_system_seconds": 0.046265,
+      "process_peak_rss_kib": 24644,
+      "process_wall_seconds": 0.069468127,
+      "log_sha256": "d224b0faa69de832fbb6488de548b66c1d6ca1b3628f9cc1493df04131f9349f"
+    },
+    {
+      "build": "base",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 6,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 8875835.0,
+      "reported_mb_per_second": 118.14,
+      "go_bytes_per_exchange": 397411,
+      "go_allocations_per_exchange": 9075,
+      "process_user_seconds": 0.149769,
+      "process_system_seconds": 0.183164,
+      "process_peak_rss_kib": 30260,
+      "process_wall_seconds": 0.178421444,
+      "log_sha256": "42f95c368431b48c0389f0319f95e79b0d4aa7fe9dfb4255ea8366777b697716"
+    },
+    {
+      "build": "head",
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "repeat": 6,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 9294875.0,
+      "reported_mb_per_second": 112.81,
+      "go_bytes_per_exchange": 423022,
+      "go_allocations_per_exchange": 9089,
+      "process_user_seconds": 0.167406,
+      "process_system_seconds": 0.177614,
+      "process_peak_rss_kib": 30644,
+      "process_wall_seconds": 0.185498051,
+      "log_sha256": "733605fcfe3334ffc72c065faa6380bea141360e88a5cb635495060197b0ca89"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 6,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 304711.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1423,
+      "go_allocations_per_exchange": 42,
+      "process_user_seconds": 0.061693,
+      "process_system_seconds": 0.07291,
+      "process_peak_rss_kib": 26652,
+      "process_wall_seconds": 0.102842949,
+      "log_sha256": "1d00ec0ae75dcbb6c91961550f699a8cd363da4584d3ad457f6ce88aef01262f"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "repeat": 6,
+      "iterations": 250,
+      "bytes_per_exchange": 64,
+      "ns_per_exchange": 299213.0,
+      "reported_mb_per_second": 0.21,
+      "go_bytes_per_exchange": 1254,
+      "go_allocations_per_exchange": 25,
+      "process_user_seconds": 0.062758,
+      "process_system_seconds": 0.071886,
+      "process_peak_rss_kib": 26380,
+      "process_wall_seconds": 0.101031629,
+      "log_sha256": "7790c3fdb4e1f500ba4d0c60e194d9b6aecee501d8c0e06667e1b5189fde41bf"
+    },
+    {
+      "build": "base",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 6,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 30818055.0,
+      "reported_mb_per_second": 34.02,
+      "go_bytes_per_exchange": 1539004,
+      "go_allocations_per_exchange": 11787,
+      "process_user_seconds": 0.522298,
+      "process_system_seconds": 0.526394,
+      "process_peak_rss_kib": 34116,
+      "process_wall_seconds": 0.556928373,
+      "log_sha256": "34af5721cd2a2d1a77c0a374e92b5eb3a71fc2501b5c8adc605b143083d7b100"
+    },
+    {
+      "build": "head",
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "repeat": 6,
+      "iterations": 16,
+      "bytes_per_exchange": 1048576,
+      "ns_per_exchange": 27757045.0,
+      "reported_mb_per_second": 37.78,
+      "go_bytes_per_exchange": 1488441,
+      "go_allocations_per_exchange": 6577,
+      "process_user_seconds": 0.463967,
+      "process_system_seconds": 0.475258,
+      "process_peak_rss_kib": 34696,
+      "process_wall_seconds": 0.500180529,
+      "log_sha256": "e6905fe7f147d3ab6cbdb182b4f0a729fc2c4858434c631e79918e6dbbfb4759"
+    }
+  ],
+  "summaries": {
+    "base": [
+      {
+        "variant": "go-h3",
+        "scenario": "small",
+        "metrics": {
+          "ns_per_exchange": {
+            "median": 189299.0,
+            "minimum": 177356.0,
+            "maximum": 226477.0,
+            "relative_mad": 0.06309066608909714
+          },
+          "go_bytes_per_exchange": {
+            "median": 944,
+            "minimum": 936,
+            "maximum": 957,
+            "relative_mad": 0.005296610169491525
+          },
+          "go_allocations_per_exchange": {
+            "median": 30,
+            "minimum": 30,
+            "maximum": 30,
+            "relative_mad": 0.0
+          },
+          "process_user_seconds": {
+            "median": 0.03924,
+            "minimum": 0.034232,
+            "maximum": 0.046672,
+            "relative_mad": 0.127624872579001
+          },
+          "process_system_seconds": {
+            "median": 0.049275,
+            "minimum": 0.040512,
+            "maximum": 0.061508,
+            "relative_mad": 0.1657635717909691
+          },
+          "process_peak_rss_kib": {
+            "median": 24676,
+            "minimum": 24316,
+            "maximum": 24924,
+            "relative_mad": 0.005835629761711785
+          },
+          "process_wall_seconds": {
+            "median": 0.070896354,
+            "minimum": 0.068913644,
+            "maximum": 0.082035836,
+            "relative_mad": 0.02796631826793235
+          }
+        },
+        "stable": true
+      },
+      {
+        "variant": "go-h3",
+        "scenario": "bulk",
+        "metrics": {
+          "ns_per_exchange": {
+            "median": 8779156.0,
+            "minimum": 8150370.0,
+            "maximum": 9098653.0,
+            "relative_mad": 0.036392678293904336
+          },
+          "go_bytes_per_exchange": {
+            "median": 397411,
+            "minimum": 338030,
+            "maximum": 430249,
+            "relative_mad": 0.02116197085636784
+          },
+          "go_allocations_per_exchange": {
+            "median": 9053,
+            "minimum": 8984,
+            "maximum": 9120,
+            "relative_mad": 0.00187783055340771
+          },
+          "process_user_seconds": {
+            "median": 0.149769,
+            "minimum": 0.12454,
+            "maximum": 0.161908,
+            "relative_mad": 0.016752465463480314
+          },
+          "process_system_seconds": {
+            "median": 0.177999,
+            "minimum": 0.162014,
+            "maximum": 0.202777,
+            "relative_mad": 0.032573216703464615
+          },
+          "process_peak_rss_kib": {
+            "median": 30260,
+            "minimum": 29764,
+            "maximum": 30580,
+            "relative_mad": 0.008460013218770655
+          },
+          "process_wall_seconds": {
+            "median": 0.177128987,
+            "minimum": 0.165985783,
+            "maximum": 0.181823037,
+            "relative_mad": 0.026500744341749132
+          }
+        },
+        "stable": true
+      },
+      {
+        "variant": "neqo-h3",
+        "scenario": "small",
+        "metrics": {
+          "ns_per_exchange": {
+            "median": 297834.0,
+            "minimum": 295501.0,
+            "maximum": 304711.0,
+            "relative_mad": 0.007833222533357508
+          },
+          "go_bytes_per_exchange": {
+            "median": 1423,
+            "minimum": 1298,
+            "maximum": 1507,
+            "relative_mad": 0.059030217849613494
+          },
+          "go_allocations_per_exchange": {
+            "median": 42,
+            "minimum": 42,
+            "maximum": 42,
+            "relative_mad": 0.0
+          },
+          "process_user_seconds": {
+            "median": 0.062427,
+            "minimum": 0.053609,
+            "maximum": 0.074374,
+            "relative_mad": 0.029041920963685616
+          },
+          "process_system_seconds": {
+            "median": 0.072296,
+            "minimum": 0.060738,
+            "maximum": 0.080984,
+            "relative_mad": 0.03189664711740625
+          },
+          "process_peak_rss_kib": {
+            "median": 27352,
+            "minimum": 26652,
+            "maximum": 28024,
+            "relative_mad": 0.013015501608657502
+          },
+          "process_wall_seconds": {
+            "median": 0.100923828,
+            "minimum": 0.100270493,
+            "maximum": 0.102842949,
+            "relative_mad": 0.00647354557340008
+          }
+        },
+        "stable": true
+      },
+      {
+        "variant": "neqo-h3",
+        "scenario": "bulk",
+        "metrics": {
+          "ns_per_exchange": {
+            "median": 29665625.0,
+            "minimum": 26764443.0,
+            "maximum": 30818055.0,
+            "relative_mad": 0.03665545559886232
+          },
+          "go_bytes_per_exchange": {
+            "median": 1539004,
+            "minimum": 1520557,
+            "maximum": 1546186,
+            "relative_mad": 0.003844694360768393
+          },
+          "go_allocations_per_exchange": {
+            "median": 11787,
+            "minimum": 11670,
+            "maximum": 11861,
+            "relative_mad": 0.0037329261050309663
+          },
+          "process_user_seconds": {
+            "median": 0.500694,
+            "minimum": 0.432046,
+            "maximum": 0.522298,
+            "relative_mad": 0.03597007353792952
+          },
+          "process_system_seconds": {
+            "median": 0.509872,
+            "minimum": 0.468136,
+            "maximum": 0.526394,
+            "relative_mad": 0.03240421125302044
+          },
+          "process_peak_rss_kib": {
+            "median": 34468,
+            "minimum": 34116,
+            "maximum": 36164,
+            "relative_mad": 0.006498781478472786
+          },
+          "process_wall_seconds": {
+            "median": 0.538043512,
+            "minimum": 0.481000459,
+            "maximum": 0.556928373,
+            "relative_mad": 0.03509913339499571
+          }
+        },
+        "stable": true
+      }
+    ],
+    "head": [
+      {
+        "variant": "go-h3",
+        "scenario": "small",
+        "metrics": {
+          "ns_per_exchange": {
+            "median": 181460.0,
+            "minimum": 170573.0,
+            "maximum": 197672.0,
+            "relative_mad": 0.05999669348616775
+          },
+          "go_bytes_per_exchange": {
+            "median": 944,
+            "minimum": 940,
+            "maximum": 1070,
+            "relative_mad": 0.00423728813559322
+          },
+          "go_allocations_per_exchange": {
+            "median": 30,
+            "minimum": 30,
+            "maximum": 30,
+            "relative_mad": 0.0
+          },
+          "process_user_seconds": {
+            "median": 0.039508,
+            "minimum": 0.034196,
+            "maximum": 0.045413,
+            "relative_mad": 0.039359117140832255
+          },
+          "process_system_seconds": {
+            "median": 0.048537,
+            "minimum": 0.044594,
+            "maximum": 0.052677,
+            "relative_mad": 0.0523724169190515
+          },
+          "process_peak_rss_kib": {
+            "median": 24644,
+            "minimum": 24488,
+            "maximum": 24840,
+            "relative_mad": 0.005843207271546827
+          },
+          "process_wall_seconds": {
+            "median": 0.070302463,
+            "minimum": 0.067564406,
+            "maximum": 0.074428012,
+            "relative_mad": 0.03158906395640791
+          }
+        },
+        "stable": true
+      },
+      {
+        "variant": "go-h3",
+        "scenario": "bulk",
+        "metrics": {
+          "ns_per_exchange": {
+            "median": 9182702.0,
+            "minimum": 8665011.0,
+            "maximum": 9354090.0,
+            "relative_mad": 0.01813888766073428
+          },
+          "go_bytes_per_exchange": {
+            "median": 436999,
+            "minimum": 396601,
+            "maximum": 449238,
+            "relative_mad": 0.02800692907764091
+          },
+          "go_allocations_per_exchange": {
+            "median": 9130,
+            "minimum": 9080,
+            "maximum": 9182,
+            "relative_mad": 0.004819277108433735
+          },
+          "process_user_seconds": {
+            "median": 0.152916,
+            "minimum": 0.1449,
+            "maximum": 0.167406,
+            "relative_mad": 0.04455387271443154
+          },
+          "process_system_seconds": {
+            "median": 0.189134,
+            "minimum": 0.171938,
+            "maximum": 0.197718,
+            "relative_mad": 0.010860025167341674
+          },
+          "process_peak_rss_kib": {
+            "median": 30628,
+            "minimum": 30296,
+            "maximum": 31376,
+            "relative_mad": 0.00587697531670367
+          },
+          "process_wall_seconds": {
+            "median": 0.183104771,
+            "minimum": 0.178033009,
+            "maximum": 0.187363291,
+            "relative_mad": 0.013070549647229004
+          }
+        },
+        "stable": true
+      },
+      {
+        "variant": "neqo-h3",
+        "scenario": "small",
+        "metrics": {
+          "ns_per_exchange": {
+            "median": 299213.0,
+            "minimum": 295018.0,
+            "maximum": 307988.0,
+            "relative_mad": 0.0047591515074545555
+          },
+          "go_bytes_per_exchange": {
+            "median": 1254,
+            "minimum": 1128,
+            "maximum": 1402,
+            "relative_mad": 0.02073365231259968
+          },
+          "go_allocations_per_exchange": {
+            "median": 25,
+            "minimum": 25,
+            "maximum": 25,
+            "relative_mad": 0.0
+          },
+          "process_user_seconds": {
+            "median": 0.062698,
+            "minimum": 0.054662,
+            "maximum": 0.071344,
+            "relative_mad": 0.03890076238476512
+          },
+          "process_system_seconds": {
+            "median": 0.070688,
+            "minimum": 0.068161,
+            "maximum": 0.079508,
+            "relative_mad": 0.024926437301946578
+          },
+          "process_peak_rss_kib": {
+            "median": 27272,
+            "minimum": 26380,
+            "maximum": 27568,
+            "relative_mad": 0.009386916984452919
+          },
+          "process_wall_seconds": {
+            "median": 0.100960329,
+            "minimum": 0.099202941,
+            "maximum": 0.103876621,
+            "relative_mad": 0.003225019205315742
+          }
+        },
+        "stable": true
+      },
+      {
+        "variant": "neqo-h3",
+        "scenario": "bulk",
+        "metrics": {
+          "ns_per_exchange": {
+            "median": 29490468.0,
+            "minimum": 27757045.0,
+            "maximum": 31386484.0,
+            "relative_mad": 0.04687599396523649
+          },
+          "go_bytes_per_exchange": {
+            "median": 1493868,
+            "minimum": 1488441,
+            "maximum": 1510748,
+            "relative_mad": 0.003178995734562893
+          },
+          "go_allocations_per_exchange": {
+            "median": 6637,
+            "minimum": 6573,
+            "maximum": 6658,
+            "relative_mad": 0.002561398222088293
+          },
+          "process_user_seconds": {
+            "median": 0.51054,
+            "minimum": 0.463967,
+            "maximum": 0.551368,
+            "relative_mad": 0.04310142202373967
+          },
+          "process_system_seconds": {
+            "median": 0.495193,
+            "minimum": 0.464444,
+            "maximum": 0.545528,
+            "relative_mad": 0.025888895844650577
+          },
+          "process_peak_rss_kib": {
+            "median": 34792,
+            "minimum": 34028,
+            "maximum": 35468,
+            "relative_mad": 0.016670498965279376
+          },
+          "process_wall_seconds": {
+            "median": 0.533934314,
+            "minimum": 0.500180529,
+            "maximum": 0.567101443,
+            "relative_mad": 0.05514989246411305
+          }
+        },
+        "stable": true
+      }
+    ]
+  },
+  "comparisons": [
+    {
+      "variant": "go-h3",
+      "scenario": "small",
+      "stable": true,
+      "ratios": {
+        "ns_per_exchange": 0.9585893216551593,
+        "go_bytes_per_exchange": 1.0,
+        "go_allocations_per_exchange": 1.0,
+        "process_user_seconds": 1.006829765545362,
+        "process_system_seconds": 0.9850228310502283,
+        "process_peak_rss_kib": 0.9987031933862863,
+        "process_wall_seconds": 0.991623109419703
+      },
+      "paired_time_ratio_median": 0.9377387096603785,
+      "allocations_reduced": false,
+      "latency_regression": false,
+      "latency_improved": false
+    },
+    {
+      "variant": "go-h3",
+      "scenario": "bulk",
+      "stable": true,
+      "ratios": {
+        "ns_per_exchange": 1.0459663776335675,
+        "go_bytes_per_exchange": 1.0996147565115209,
+        "go_allocations_per_exchange": 1.008505467800729,
+        "process_user_seconds": 1.0210123590329105,
+        "process_system_seconds": 1.0625565312164675,
+        "process_peak_rss_kib": 1.0121612690019828,
+        "process_wall_seconds": 1.0337369060886687
+      },
+      "paired_time_ratio_median": 1.0472113327929147,
+      "allocations_reduced": false,
+      "latency_regression": false,
+      "latency_improved": false
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "small",
+      "stable": true,
+      "ratios": {
+        "ns_per_exchange": 1.0046300959594943,
+        "go_bytes_per_exchange": 0.8812368236120871,
+        "go_allocations_per_exchange": 0.5952380952380952,
+        "process_user_seconds": 1.0043410703701925,
+        "process_system_seconds": 0.9777581055660064,
+        "process_peak_rss_kib": 0.9970751681778298,
+        "process_wall_seconds": 1.000361668802337
+      },
+      "paired_time_ratio_median": 0.9983654877648468,
+      "allocations_reduced": true,
+      "latency_regression": false,
+      "latency_improved": false
+    },
+    {
+      "variant": "neqo-h3",
+      "scenario": "bulk",
+      "stable": true,
+      "ratios": {
+        "ns_per_exchange": 0.9940956241441062,
+        "go_bytes_per_exchange": 0.9706719410735775,
+        "go_allocations_per_exchange": 0.5630779672520574,
+        "process_user_seconds": 1.0196647053889203,
+        "process_system_seconds": 0.9712104214391063,
+        "process_peak_rss_kib": 1.0094000232099338,
+        "process_wall_seconds": 0.9923627031859833
+      },
+      "paired_time_ratio_median": 1.019964304890234,
+      "allocations_reduced": true,
+      "latency_regression": false,
+      "latency_improved": false
+    }
+  ],
+  "resource_method": "exec-small-C-launcher-then-wait4",
+  "resource_runner_sha256": "b2eadaf840ef554ef10482782f9562248a348319a323a4d94270c9f2840fbb16",
+  "binary_toolchains": {
+    "base": "/tmp/update-h3-base.test: go1.26.10\n\tpath\tgithub.com/SawaMEN/FoxTunnel/internal/tunnel.test\n\tmod\tgithub.com/SawaMEN/FoxTunnel\t(devel)\t\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\t-tags=nss,neqo\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\"-L/home/runner/work/FoxTunnel/FoxTunnel/rust/neqo-bridge/target/foxtunnel-build/mozilla-runtime/lib \"\n\tbuild\tGOARCH=amd64\n\tbuild\tGOOS=linux\n\tbuild\tGOAMD64=v1\n",
+    "head": "/tmp/native-backend.test: go1.26.10\n\tpath\tgithub.com/SawaMEN/FoxTunnel/internal/tunnel.test\n\tmod\tgithub.com/SawaMEN/FoxTunnel\t(devel)\t\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\t-tags=nss,neqo\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\"-L/home/runner/work/FoxTunnel/FoxTunnel/rust/neqo-bridge/target/foxtunnel-build/mozilla-runtime/lib \"\n\tbuild\tGOARCH=amd64\n\tbuild\tGOOS=linux\n\tbuild\tGOAMD64=v1\n"
+  },
+  "scope": "Same-runner loopback, GOMAXPROCS=2; Go-H3 is a control. CPU/RSS include whole client+proxy+echo processes and startup; Go allocation counts exclude Rust/C allocations. Unstable timings cannot establish a latency change."
+}
