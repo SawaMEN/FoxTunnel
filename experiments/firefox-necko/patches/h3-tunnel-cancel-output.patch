@@ -1,0 +1,30 @@
+--- a/netwerk/protocol/http/Http3Session.cpp
++++ b/netwerk/protocol/http/Http3Session.cpp
+@@ -2375,11 +2375,13 @@
+     return;
+   }
+ 
++  bool tunnelResetQueued = false;
+   RefPtr<Http3Stream> httpStream = aStream->GetHttp3Stream();
+   if (httpStream && !httpStream->RecvdFin() && !httpStream->RecvdReset() &&
+       httpStream->HasStreamId()) {
+     mHttp3Connection->CancelFetch(httpStream->StreamId(),
+                                   HTTP3_APP_ERROR_REQUEST_CANCELLED);
++    tunnelResetQueued = !!aStream->GetHttp3StreamTunnel();
+   }
+ 
+   if ((NS_SUCCEEDED(aResult) || NS_BASE_STREAM_CLOSED == aResult) &&
+@@ -2391,6 +2393,13 @@
+ 
+   aStream->Close(aResult);
+   CloseStreamInternal(aStream, aResult);
++
++  // Tunnel cleanup can bypass CloseTransaction(), which normally wakes the
++  // UDP connection after CancelFetch queues RESET_STREAM / STOP_SENDING.
++  // Flush that reset even when no other stream has data and the peer is idle.
++  if (tunnelResetQueued && mConnection) {
++    (void)mConnection->ResumeSend();
++  }
+ }
+ 
+ void Http3Session::CloseStreamInternal(Http3StreamBase* aStream,

@@ -72,25 +72,7 @@ func TestReverseHalfClosePeers(t *testing.T) {
 			payload := bytes.Repeat([]byte{0, 255, 13, 10, 42, 1}, 22000)
 			result := make(chan error, 1)
 			cfg := reverseProxy(t, mode, payload, result)
-			ca, err := os.ReadFile(cfg.CACert)
-			if err != nil {
-				t.Fatal(err)
-			}
-			roots := x509.NewCertPool()
-			if !roots.AppendCertsFromPEM(ca) {
-				t.Fatal("invalid fixture CA")
-			}
-			tlsConfig := &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13}
-			var client http.RoundTripper
-			if mode == "h2-connect" {
-				transport := &http2.Transport{TLSClientConfig: tlsConfig}
-				t.Cleanup(transport.CloseIdleConnections)
-				client = transport
-			} else {
-				transport := &http3.Transport{TLSClientConfig: tlsConfig}
-				t.Cleanup(func() { transport.Close() })
-				client = transport
-			}
+			client := independentPeerTransport(t, cfg, mode)
 			ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 			defer cancel()
 			reader, writer := io.Pipe()
@@ -129,6 +111,27 @@ func TestReverseHalfClosePeers(t *testing.T) {
 			}
 		})
 	}
+}
+
+func independentPeerTransport(t *testing.T, cfg Config, mode string) http.RoundTripper {
+	t.Helper()
+	ca, err := os.ReadFile(cfg.CACert)
+	if err != nil {
+		t.Fatal(err)
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM(ca) {
+		t.Fatal("invalid fixture CA")
+	}
+	tlsConfig := &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13}
+	if mode == "h2-connect" {
+		transport := &http2.Transport{TLSClientConfig: tlsConfig}
+		t.Cleanup(transport.CloseIdleConnections)
+		return transport
+	}
+	transport := &http3.Transport{TLSClientConfig: tlsConfig}
+	t.Cleanup(func() { transport.Close() })
+	return transport
 }
 
 func reverseProxy(t *testing.T, mode string, payload []byte, result chan<- error) Config {

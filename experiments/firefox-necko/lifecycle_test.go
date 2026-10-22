@@ -121,6 +121,132 @@ func TestGeckoConcurrentCONNECT(t *testing.T) {
 	}
 }
 
+// A timed-out handoff must release both the local connection slot and the
+// serialized H3 setup promise. Reuse one helper with a single allowed slot;
+// a new helper per attempt would hide both resource leaks.
+func testGeckoSetupTimeoutRecovery(t *testing.T, runtime, mode string) {
+	t.Helper()
+	echo := nativeEcho(t)
+	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true}
+	var requests atomic.Int32
+	var wrong atomic.Bool
+	cancelled := make(chan error, 2)
+	wantProtocol := 2
+	if mode == "h3-connect" {
+		wantProtocol = 3
+	}
+	cfg := nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "CONNECT" || r.ProtoMajor != wantProtocol || r.Host != echo || r.URL.Path != "" {
+			wrong.Store(true)
+		}
+		if requests.Add(1) <= 2 {
+			// Withhold response headers so the native handoff stays pending.
+			// Its setup deadline must cancel this request at the proxy too.
+			// Read the request half to observe stream reset directly. An H3
+			// request context alone need not wake a handler that never reads.
+			_, err := io.Copy(io.Discard, r.Body)
+			cancelled <- err
+			return
+		}
+		server.ServeHTTP(w, r)
+	}))
+	cfg.MaxConnections = 1
+	cfg.ConnectTimeoutMS = 2000
+	listen, stderr := startTestHelper(t, runtime, cfg)
+	for attempt := 1; attempt <= 2; attempt++ {
+		if conn, err := nativeSOCKS(listen, echo); err == nil {
+			conn.Close()
+			t.Fatal("setup succeeded without proxy response headers")
+		}
+		select {
+		case err := <-cancelled:
+			if err == nil {
+				t.Error("pending CONNECT ended cleanly instead of being cancelled")
+			}
+		case <-time.After(3 * time.Second):
+			t.Fatalf("setup timeout left request %d active at the proxy\n%s", attempt, stderr.text())
+		}
+		if requests.Load() != int32(attempt) || wrong.Load() {
+			t.Fatalf("setup attempt %d: requests=%d wrong protocol=%v\n%s", attempt, requests.Load(), wrong.Load(), stderr.text())
+		}
+	}
+	conn, err := nativeSOCKS(listen, echo)
+	if err != nil {
+		t.Fatalf("slot or setup queue did not recover: %v\n%s", err, stderr.text())
+	}
+	defer conn.Close()
+	payload := bytes.Repeat([]byte{0, 255, 13, 10, 42, 1}, 6000)
+	if _, err := conn.Write(payload); err != nil {
+		t.Fatal("recovered upload", err)
+	}
+	response := make([]byte, len(payload))
+	if _, err := io.ReadFull(conn, response); err != nil || !bytes.Equal(response, payload) {
+		t.Fatalf("recovered binary transfer: %v\n%s", err, stderr.text())
+	}
+	if requests.Load() != 3 || wrong.Load() {
+		t.Fatalf("recovered CONNECT: requests=%d wrong protocol=%v", requests.Load(), wrong.Load())
+	}
+}
+
+// Independently validate that the withheld-response fixture can observe a
+// client reset on each protocol, before blaming a native cancellation failure.
+func TestSetupCancellationPeers(t *testing.T) {
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) {
+			started := make(chan struct{}, 1)
+			reset := make(chan error, 1)
+			cfg := nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				started <- struct{}{}
+				_, err := io.Copy(io.Discard, r.Body)
+				reset <- err
+			}))
+			client := independentPeerTransport(t, cfg, mode)
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			reader, writer := io.Pipe()
+			result := make(chan error, 1)
+			finished := make(chan struct{})
+			t.Cleanup(func() { cancel(); reader.Close(); writer.Close(); <-finished })
+			req, err := http.NewRequestWithContext(ctx, "CONNECT", cfg.Server, reader)
+			if err != nil {
+				// Let cleanup join even when no request goroutine was started.
+				close(finished)
+				t.Fatal(err)
+			}
+			req.Host = "127.0.0.1:443"
+			go func() {
+				defer close(finished)
+				response, err := client.RoundTrip(req)
+				if response != nil {
+					response.Body.Close()
+				}
+				result <- err
+			}()
+			select {
+			case <-started:
+			case <-time.After(5 * time.Second):
+				t.Fatal("independent CONNECT did not reach proxy")
+			}
+			cancel()
+			select {
+			case err := <-result:
+				if err == nil {
+					t.Fatal("cancelled CONNECT unexpectedly succeeded")
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("independent client did not cancel")
+			}
+			select {
+			case err := <-reset:
+				if err == nil {
+					t.Fatal("proxy saw clean EOF instead of a reset")
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("proxy did not observe independent stream reset")
+			}
+		})
+	}
+}
+
 func TestGeckoCancellation(t *testing.T) {
 	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
 	if runtime == "" {
@@ -156,6 +282,9 @@ func TestGeckoCancellation(t *testing.T) {
 				conn.Close()
 				t.Fatal("cancel left the SOCKS listener open")
 			}
+		})
+		t.Run("setup-timeout-recovery/"+mode, func(t *testing.T) {
+			testGeckoSetupTimeoutRecovery(t, runtime, mode)
 		})
 	}
 }

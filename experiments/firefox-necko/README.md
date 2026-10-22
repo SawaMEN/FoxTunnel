@@ -56,6 +56,10 @@ do not attribute its results to the stock Taskcluster binary above.
   leaving input open. The SOCKS adapter sets it only on the accepted local
   socket, before opening streams. Layered sockets and sockets without the flag
   retain their existing close behavior; shutdown errors still abort normally.
+- H3 tunnel cancellation wakes UDP output after queuing a reset. Its cleanup
+  calls `CloseStream` directly, bypassing `CloseTransaction` and that method's
+  `ResumeSend`. The candidate wakes output only when tunnel cleanup actually
+  queued `CancelFetch`, so an idle connection can send the reset promptly.
 
 The stream-copy and EOF changes are candidates until a new source build passes
 the tests. The prototype remains excluded from the production CLI and SDK.
@@ -124,6 +128,29 @@ The new source build runs these lifecycle gates for **both** H2 and H3, in
 addition to upload EOF and certificate checks. Success on the earlier H3
 artifact does not count as verification of the new C++/Rust patches.
 
+### Pending setup cancellation and recovery
+
+`TestGeckoCancellation/setup-timeout-recovery` uses one helper with a single
+allowed connection. The proxy withholds response headers for two CONNECTs;
+each setup deadline must reset its request stream at the peer. A third CONNECT
+must then establish and deliver 36,000 binary bytes through the same helper.
+This exposes leaked slots and a stuck H3 setup queue. It is included in the
+source workflow's existing repeated cancellation selector.
+
+`TestSetupCancellationPeers` independently confirms that the H2/H3 fixture sees
+a reset from Go clients; three local `-race` repetitions passed. The handler
+reads the request body to observe reset directly instead of relying solely on
+an H3 request context notification.
+
+On runtime `47a2586`, H3 timed out waiting for that peer reset. Native logging
+showed channel cancellation and tunnel `CloseStreamInternal`, but no subsequent
+output processing. Source inspection identified the missing wake-up described
+above. The new patch is a candidate until a matching compiled runtime passes;
+the older runtime's result does not validate it.
+On the same runtime, H2 reset both pending requests and opened the third
+CONNECT, then stalled during binary transfer at the previously identified
+copier blocker. That is a failed end-to-end gate, not a recovery success.
+
 ## Reverse half-close gate
 
 `TestGeckoReverseHalfClose` checks the other EOF direction independently: the
@@ -168,6 +195,9 @@ The Linux x64 archive was downloaded and its SHA-256 matched the upstream
 release asset digest; the executable reports `naive 154.0.8037.49`.
 Historical captures retain their original pins and results. New captures must
 be regenerated with the new archive; this does not validate Necko's fingerprint.
+Run `39861472512` completed successfully with the updated pin, including fresh
+wire observations and comparison. Those results concern the separate NSS/Neqo
+adapter; the full Necko prototype remains blocked by its native gates.
 
 The [Necko source workflow](../../.github/workflows/necko-experiment.yml)
 bootstraps Mozilla's C++ build dependencies, builds libxul and xpcshell, then

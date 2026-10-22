@@ -73,6 +73,13 @@
       "source_path": "netwerk/base/nsSocketTransport2.cpp",
       "before_sha256": "430e9a9e430c1840e0d7bbbce15bd59978009a85f068b47cdd32d4abcd72287a",
       "after_sha256": "bbc554529e9b7b1e478ac4fccb02a0248b475fa97e77dd04aa7452c6f3900030"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h3-tunnel-cancel-output.patch",
+      "sha256": "4a0a76e715e878ad9b29a8624373a2ea7203155894bd4099986b8b1e05976866",
+      "source_path": "netwerk/protocol/http/Http3Session.cpp",
+      "before_sha256": "f2666130c3e3d9b25ce513fa8b246cc2badfcfa320028fbd6f387eb200c77781",
+      "after_sha256": "44e84fceeff5c2d9609c8d8df65fb7a72da9bfa6f30e56640de11cb0f278ee95"
     }
   ]
 }
