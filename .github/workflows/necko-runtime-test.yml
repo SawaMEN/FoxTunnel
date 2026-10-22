@@ -1,0 +1,77 @@
+name: Mozilla Necko runtime gates
+on:
+  push:
+    branches: [firefox]
+    paths:
+      - '.github/workflows/necko-runtime-test.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: necko-linux-amd64-runtime
+          run-id: 39685378279
+          github-token: ${{ github.token }}
+          path: runtime-archive
+      - uses: actions/download-artifact@v4
+        with:
+          name: necko-source-provenance
+          run-id: 39685378279
+          github-token: ${{ github.token }}
+          path: runtime-provenance
+      - name: Install runtime libraries and diagnostic tools
+        run: sudo apt-get update -qq && sudo apt-get install -y libgtk-3-0t64 libdbus-glib-1-2 libasound2t64 libxt6 strace zstd
+      - name: Extract and verify exact source and runtime hashes
+        run: |
+          mkdir runtime
+          tar --no-same-owner --zstd -xf runtime-archive/runtime.tar.zst -C runtime
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          files = list(Path('runtime-provenance').rglob('provenance.json'))
+          assert len(files) == 1, files
+          p = json.loads(files[0].read_text())
+          lock = json.loads(Path('experiments/firefox-necko/gecko.lock.json').read_text())
+          assert p['source'] == lock, 'Runtime was built from a different source lock'
+          assert p['status'] == 'built-not-interop-tested'
+          for name, digest in p['runtime'].items():
+              with (Path('runtime') / name).open('rb') as f:
+                  assert hashlib.file_digest(f, 'sha256').hexdigest() == digest, name
+          print('Pinned compiled runtime verified')
+          PY
+      - name: Basic xpcshell startup with bounded diagnostics
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/runtime
+        run: |
+          set +e
+          timeout -k 3 15 runtime/xpcshell -g "$PWD/runtime" -a "$PWD/runtime" -e 'print("xpcshell-ready")' > runtime-startup.log 2>&1
+          result=$?
+          cat runtime-startup.log
+          if [ "$result" != 0 ]; then
+            timeout -k 3 8 strace -f -tt -o runtime-startup.strace runtime/xpcshell -g "$PWD/runtime" -a "$PWD/runtime" -e 'print("xpcshell-ready")'
+            tail -100 runtime-startup.strace
+          fi
+          exit "$result"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+      - name: Native cold CONNECT and half-close gates
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECT' -v -count=1 -timeout=160s
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: necko-runtime-diagnostics
+          path: |
+            runtime-startup.log
+            runtime-startup.strace
+          if-no-files-found: ignore
+          retention-days: 7
