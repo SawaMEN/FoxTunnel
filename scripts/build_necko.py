@@ -107,6 +107,7 @@ ac_add_options --disable-warnings-as-errors
 ac_add_options --disable-lto
 ac_add_options --enable-optimize=-O1
 ac_add_options --enable-linker=lld
+ac_add_options --with-ccache=sccache
 """
 
 

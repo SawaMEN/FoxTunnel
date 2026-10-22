@@ -1,0 +1,11 @@
+--- a/netwerk/protocol/http/Http2StreamBase.cpp
++++ b/netwerk/protocol/http/Http2StreamBase.cpp
+@@ -165,7 +165,7 @@
+   nsresult rv = NS_ERROR_UNEXPECTED;
+   mRequestBlockedOnRead = 0;
+ 
+-  if (mRecvdFin || mRecvdReset) {
++  if ((mRecvdFin && !IsTunnel()) || mRecvdReset) {
+     // Don't transmit any request frames if the peer cannot respond
+     LOG3(
+         ("Http2StreamBase %p ReadSegments request stream aborted due to"

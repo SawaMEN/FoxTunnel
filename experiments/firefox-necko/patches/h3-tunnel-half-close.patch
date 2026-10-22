@@ -1,6 +1,17 @@
 --- a/netwerk/protocol/http/Http3StreamTunnel.cpp
 +++ b/netwerk/protocol/http/Http3StreamTunnel.cpp
-@@ -244,7 +244,11 @@
+@@ -97,6 +97,10 @@
+        "reason=%" PRIx32 "]\n",
+        this, static_cast<uint32_t>(reason)));
+   mCondition = reason;
++  if (NS_SUCCEEDED(reason) || reason == NS_BASE_STREAM_CLOSED) {
++    return NS_OK;
++  }
++
+ 
+   RefPtr<Http3StreamTunnel> tunnel = mTransport->GetStream();
+   if (!tunnel) {
+@@ -244,7 +248,11 @@
      return NS_OK;
    }
  
@@ -13,7 +24,18 @@
    return NS_OK;
  }
  
-@@ -592,6 +596,16 @@
+@@ -404,6 +412,10 @@
+     mCondition = aReason;
+   }
+   return NS_OK;
++}
++
++void Http3TransportLayer::OnInputClosed() {
++  (void)mInput.OnSocketReady(NS_BASE_STREAM_CLOSED);
+ }
+ 
+ void Http3TransportLayer::OnStreamClosed(nsresult aReason) {
+@@ -592,6 +604,19 @@
                                   mFlatHttpRequestHeaders, &mStreamId, this);
  }
  
@@ -25,8 +47,115 @@
 +  mSendState = SEND_DONE;
 +  mSession->CloseSendingSide(mStreamId);
 +  HasDataToWrite();
++  if (Done()) {
++    CleanupStream(NS_OK);
++  }
 +}
 +
  void Http3StreamTunnel::Close(nsresult aResult) {
    LOG(("Http3StreamTunnel::Close %p", this));
    if (mClosed) {
+@@ -617,16 +642,6 @@
+ nsresult Http3StreamTunnel::ReadSegments() {
+   LOG(("Http3StreamTunnel::ReadSegments %p mSendState=%d mRecvState=%d", this,
+        mSendState, mRecvState));
+-  if (mRecvState == RECV_DONE) {
+-    // Don't transmit any request frames if the peer cannot respond or respone
+-    // is already done.
+-    LOG3(
+-        ("Http3StreamTunnel %p ReadSegments request stream aborted due to"
+-         " response side closure\n",
+-         this));
+-    return NS_ERROR_ABORT;
+-  }
+-
+   if (mSendState == SEND_DONE) {
+     return NS_OK;
+   }
+@@ -663,7 +678,7 @@
+        countWritten, mFin));
+   if (countWritten == 0) {
+     if (mFin) {
+-      mRecvState = RECV_DONE;
++      mRecvState = RECEIVED_FIN;
+       rv = NS_BASE_STREAM_CLOSED;
+     } else {
+       rv = NS_BASE_STREAM_WOULD_BLOCK;
+@@ -701,19 +716,28 @@
+     mSocketInCondition = NS_OK;
+     rv = mTransport->CallToWriteData();
+     if (mRecvState == RECV_DONE) {
+-      return NS_ERROR_UNEXPECTED;
++      FinishReceivingSide();
++      return NS_OK;
+     }
+ 
+     // When CallToWriteData() returns NS_BASE_STREAM_WOULD_BLOCK, it means the
+     // consumer can't accept data at the moment. We need to read the data into a
+     // buffer so it won't block other streams.
+-    if (rv == NS_BASE_STREAM_WOULD_BLOCK) {
++    if (rv == NS_BASE_STREAM_WOULD_BLOCK && mRecvState != RECEIVED_FIN) {
+       rv = BufferInput();
+     }
+ 
++    if (mRecvState == RECV_DONE) {
++      FinishReceivingSide();
++      return NS_OK;
++    }
+     if (mRecvState == RECEIVED_FIN) {
+-      rv = NS_BASE_STREAM_CLOSED;
+-      mRecvState = RECV_DONE;
++      // FIN may accompany buffered bytes. Deliver all of them before EOF;
++      // the next consumer wait/read will finish the receive side.
++      if (!mSimpleBuffer.Available()) {
++        FinishReceivingSide();
++      }
++      return NS_OK;
+     }
+ 
+     if (NS_FAILED(rv)) {
+@@ -730,6 +754,18 @@
+   } while (again && gHttpHandler->Active());
+ 
+   return rv;
++}
++
++void Http3StreamTunnel::FinishReceivingSide() {
++  MOZ_ASSERT(OnSocketThread());
++  MOZ_ASSERT(!mSimpleBuffer.Available());
++  mRecvState = RECV_DONE;
++  if (mTransport) {
++    mTransport->OnInputClosed();
++  }
++  if (Done()) {
++    CleanupStream(NS_OK);
++  }
+ }
+ 
+ nsresult Http3StreamTunnel::OnWriteSegment(char* buf, uint32_t count,
+@@ -750,7 +786,15 @@
+     return NS_OK;
+   }
+ 
+-  return Http3Stream::OnWriteSegment(buf, count, countWritten);
++  if (mRecvState == RECV_DONE) {
++    *countWritten = 0;
++    return NS_BASE_STREAM_CLOSED;
++  }
++  nsresult rv = Http3Stream::OnWriteSegment(buf, count, countWritten);
++  if (rv == NS_BASE_STREAM_CLOSED && mRecvState == RECV_DONE) {
++    FinishReceivingSide();
++  }
++  return rv;
+ }
+ 
+ void Http3StreamTunnel::HasDataToWrite() {
+@@ -764,7 +808,7 @@
+   // data buffered, this is fine. The consumer can read data from the buffer.
+   // However, if no data is buffered, doing this would create a busy loop that
+   // continuously waits for data.
+-  if (mSimpleBuffer.Available()) {
++  if (mSimpleBuffer.Available() || mRecvState == RECEIVED_FIN) {
+     mSession->ConnectSlowConsumer(this);
+   }
+ }

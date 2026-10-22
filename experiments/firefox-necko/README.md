@@ -155,7 +155,9 @@ copier blocker. That is a failed end-to-end gate, not a recovery success.
 
 `TestGeckoReverseHalfClose` checks the other EOF direction independently: the
 proxy sends its response FIN first, then must receive all 132,000 binary upload
-bytes and the client's FIN. The H2 fixture uses a TLS/HPACK/frame peer; the H3
+bytes and the client's FIN. Each protocol runs both an empty response and an
+8 KiB binary response before FIN, so buffered tail data must survive EOF too.
+The H2 fixture uses a TLS/HPACK/frame peer; the H3
 fixture takes over the QUIC stream so sending FIN does not finish the handler
 and cancel the request. Neither fixture dials the dummy CONNECT destination.
 `TestReverseHalfClosePeers` validates both fixtures with independent Go clients;
@@ -176,6 +178,14 @@ build at `97bcf1d` predates this patch. New source runs preserve an already
 running build instead of cancelling it on a push.
 Both EOF directions must pass before promotion; fixing the local FIN does not
 establish correctness of native H2/H3 receive-side stream cleanup.
+
+The receive-side candidates now preserve an established H2 tunnel in the
+session tables until upload finishes, using the existing deferred-cleanup
+contract. A response FIN no longer blocks tunnel writes. Clean input closure
+does not reset the output half; errors still abort. H3 likewise waits for both
+directions before reporting the stream done, delivers buffered bytes before
+notifying input EOF, and keeps request writes valid after response FIN.
+These changes require a matching compiled runtime to validate.
 
 ## Source compilation blocker
 
@@ -227,6 +237,11 @@ The builder rejects revision drift, unrelated tracked changes, source drift,
 and patch digest mismatches. Applying the exact patches again is idempotent.
 `--prepare-only` validates/applies source changes without claiming compilation.
 This is a full C++ build; Mozilla artifact builds cannot apply these fixes.
+Mozilla bootstrap supplies the compiler cache used by `--with-ccache=sccache`.
+CI retains up to 2 GiB of compiled C/C++ entries, including after a failed
+build or native gate, so a later correction can reuse unchanged compilations.
+Cache reuse does not bypass source/patch hashes or native gates; cache statistics
+are printed by the build. The first build with an empty cache remains cold.
 
 ## Checks
 

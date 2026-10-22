@@ -13,31 +13,31 @@
     },
     {
       "path": "experiments/firefox-necko/patches/h2-tunnel-xpcom-identity.patch",
-      "sha256": "ab1b863dd5fa7eab37d1d923bc9002b244cccb23be605f129a9d728cce1980c1",
+      "sha256": "d427f78f3d81b4d7f435bbec0cd5cde606f35ba37c4ebf37e06063a6221cb408",
       "source_path": "netwerk/protocol/http/Http2StreamTunnel.cpp",
       "before_sha256": "6303f9f5518d78ac02fd203cc57779e8e009d010118a731efc4b853a818fe649",
-      "after_sha256": "d4a8ab0d1b3493d42e5eae22e9a7e59201b50332c39762c7abe8aef195f6bd82"
+      "after_sha256": "e086fe07a1b8b8b23eb2d000b2705098da67354f773b7e2791dde5c2b8738e91"
     },
     {
       "path": "experiments/firefox-necko/patches/h2-tunnel-half-close-api.patch",
-      "sha256": "c545bd10357403612393f89f17286d8bcd37a4a9a136cc50de2df226c90491fa",
+      "sha256": "33c0370bf1bfa56ea739743fa8506c2050dcb4f6103e5964f191643162bae629",
       "source_path": "netwerk/protocol/http/Http2StreamTunnel.h",
       "before_sha256": "43eb4b531c703c808895382b29aaf5f3e0fbd186aea1208f78da1e70e17fc460",
-      "after_sha256": "9bb2c6fe962ca84d3e352c2c9b5b940d7e25440f330f87aff3f050074799b6dc"
+      "after_sha256": "add81777629a7a4c62ec9613bc7bcacdc01314bc05e261bed075ced5bb4799a2"
     },
     {
       "path": "experiments/firefox-necko/patches/h3-tunnel-half-close.patch",
-      "sha256": "b8cf9653135fd6466da463a94dcedd632c15bf7e665152e453a7b474e5837320",
+      "sha256": "3da6ba55e731e39edd15b51c6d45d90dea8e3ee2021a3e1ab4d3bb52b4861167",
       "source_path": "netwerk/protocol/http/Http3StreamTunnel.cpp",
       "before_sha256": "0d5d5d683aa7513059c4f3fb257ad4a1a81c30d6139de6fc757246dae36b03b2",
-      "after_sha256": "144c87a8a2d49012aec8e08f4f75d05cb59c9899a0c72a5b3484a9c1cd6ad35f"
+      "after_sha256": "21db96ada75c7c6193d6b24a3a8745a2523784b45b818552905cc5b03768c32f"
     },
     {
       "path": "experiments/firefox-necko/patches/h3-tunnel-half-close-api.patch",
-      "sha256": "df76afa02dc454a227f54394817211e58266644224044b030538d20596134ed5",
+      "sha256": "90b7c81d73f5ec57f7b2091f903fbcd62c54ec56094e635189f8473ee8c5ddd1",
       "source_path": "netwerk/protocol/http/Http3StreamTunnel.h",
       "before_sha256": "7dadafeaa2dcaa87908c52ebcf7a51743702c6cfc08eaa564b135ac2ac9b0a30",
-      "after_sha256": "5634980cede10c6ff968ec9808f8f66a76b31f0ca531d0d4ed8ccce9126ae469"
+      "after_sha256": "fb0ef5ee31b9a3b13313d141e413a50e431f063d00307e8f930c102e5c7a54ca"
     },
     {
       "path": "experiments/firefox-necko/patches/h2-inline-tunnel-copier.patch",
@@ -80,6 +80,13 @@
       "source_path": "netwerk/protocol/http/Http3Session.cpp",
       "before_sha256": "f2666130c3e3d9b25ce513fa8b246cc2badfcfa320028fbd6f387eb200c77781",
       "after_sha256": "44e84fceeff5c2d9609c8d8df65fb7a72da9bfa6f30e56640de11cb0f278ee95"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-response-first-upload.patch",
+      "source_path": "netwerk/protocol/http/Http2StreamBase.cpp",
+      "sha256": "57d9827db549200a7c02d74f04eb9e972bcc1a5bca273fdad57986ef2b2d99fe",
+      "before_sha256": "49ac306d8687b3b37ef4f0a33dc90d48ee4daa48d98ebf22ed99230e3319c334",
+      "after_sha256": "e57080bd82e30de96168cebc1b5ca150ad91c143306c5cc77a693ed2d27f0571"
     }
   ]
 }

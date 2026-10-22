@@ -11,7 +11,18 @@
  
  Http2StreamTunnel::Http2StreamTunnel(Http2Session* session, int32_t priority,
                                       uint64_t bcId,
-@@ -289,6 +288,18 @@
+@@ -41,7 +40,9 @@
+ Http2StreamTunnel::~Http2StreamTunnel() { ClearTransactionsBlockedOnTunnel(); }
+ 
+ void Http2StreamTunnel::HandleResponseHeaders(nsACString& aHeadersOut,
+-                                              int32_t httpResponseCode) {}
++                                              int32_t httpResponseCode) {
++  mTunnelEstablished = httpResponseCode >= 200 && httpResponseCode < 300;
++}
+ 
+ // TODO We do not need this. Fix in bug 1772212.
+ void Http2StreamTunnel::ClearTransactionsBlockedOnTunnel() {
+@@ -289,6 +290,47 @@
    return conn.forget();
  }
  
@@ -27,10 +38,39 @@
 +  }
 +}
 +
++// Response EOF closes the receive side, not an established CONNECT upload.
++// Preserve the base's buffered-data deferral before notifying the consumer.
++bool Http2StreamTunnel::DeferCleanup(nsresult aStatus) {
++  if (Http2StreamBase::DeferCleanup(aStatus)) {
++    return true;
++  }
++  if (NS_SUCCEEDED(aStatus) && mTunnelEstablished && RecvdFin() &&
++      mUpstreamState != UPSTREAM_COMPLETE) {
++    (void)mInput->OnSocketReady(NS_BASE_STREAM_CLOSED);
++    return true;
++  }
++  return false;
++}
++
++nsresult Http2StreamTunnel::ReadSegments(nsAHttpSegmentReader* aReader,
++                                       uint32_t aCount, uint32_t* aCountRead) {
++  nsresult rv = Http2StreamBase::ReadSegments(aReader, aCount, aCountRead);
++  // The final request frame has reached the session output queue. Only now
++  // can a response-first tunnel leave the session's stream tables.
++  if (NS_SUCCEEDED(rv) && mUpstreamState == UPSTREAM_COMPLETE && RecvdFin() &&
++      !DataBuffered()) {
++    RefPtr<Http2Session> session = Session();
++    if (session) {
++      session->CleanupStream(this, NS_OK, Http2Session::CANCEL_ERROR);
++    }
++  }
++  return rv;
++}
++
  nsresult Http2StreamTunnel::CallToReadData(uint32_t count,
                                             uint32_t* countRead) {
    LOG(("Http2StreamTunnel::CallToReadData this=%p", this));
-@@ -411,10 +422,16 @@
+@@ -411,10 +453,16 @@
    mCondition = reason;
  
    RefPtr<Http2StreamTunnel> tunnel = mWeakStream.get();
@@ -48,3 +88,14 @@
    RefPtr<Http2Session> session = tunnel->Session();
    if (!session) {
      return NS_OK;
+@@ -541,6 +589,10 @@
+   LOG(("InputStreamTunnel::CloseWithStatus [this=%p reason=%" PRIx32 "]\n",
+        this, static_cast<uint32_t>(reason)));
+   mCondition = reason;
++  if (NS_SUCCEEDED(reason) || reason == NS_BASE_STREAM_CLOSED) {
++    return NS_OK;
++  }
++
+ 
+   RefPtr<Http2StreamTunnel> tunnel = mWeakStream.get();
+   mWeakStream = nullptr;

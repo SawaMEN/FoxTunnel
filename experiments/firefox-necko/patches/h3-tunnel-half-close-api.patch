@@ -1,10 +1,29 @@
 --- a/netwerk/protocol/http/Http3StreamTunnel.h
 +++ b/netwerk/protocol/http/Http3StreamTunnel.h
-@@ -106,6 +106,7 @@
+@@ -32,6 +32,7 @@
+   nsresult CallToReadData();
+   nsresult CallToWriteData();
+   void OnStreamClosed(nsresult aReason);
++  void OnInputClosed();
+ 
+  private:
+   class InputStreamTunnel : public nsIAsyncInputStream {
+@@ -106,6 +107,10 @@
        bool aIsExtendedCONNECT);
  
    void CleanupStream(nsresult aReason);
 +  void CloseSendingSide();
++  bool Done() const override {
++    return mRecvState == RECV_DONE && mSendState == SEND_DONE;
++  }
  
    void HasDataToWrite();
    void HasDataToRead();
+@@ -121,6 +126,7 @@
+  private:
+   virtual ~Http3StreamTunnel();
+   nsresult BufferInput();
++  void FinishReceivingSide();
+ 
+   RefPtr<Http3TransportLayer> mTransport;
+   SimpleBuffer mSimpleBuffer;

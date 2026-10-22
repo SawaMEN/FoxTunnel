@@ -21,6 +21,9 @@ jobs:
     env:
       MOZBUILD_STATE_PATH: ${{ github.workspace }}/mozbuild
       MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE: pip
+      SCCACHE_DIR: ${{ github.workspace }}/necko-compiler-cache
+      SCCACHE_CACHE_SIZE: 2G
+      SCCACHE_VERBOSE_STATS: '1'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,6 +55,14 @@ jobs:
         with:
           path: ${{ env.MOZBUILD_STATE_PATH }}
           key: necko-toolchains-ubuntu24-${{ steps.lock.outputs.revision }}
+      - name: Restore compiled C and C++ cache
+        id: compiler-cache
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: necko-compiler-ubuntu24-${{ steps.lock.outputs.revision }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: necko-compiler-ubuntu24-${{ steps.lock.outputs.revision }}-
       - name: Bootstrap Mozilla build dependencies (C++ build, no artifact substitution)
         working-directory: gecko
         run: python3 mach --no-interactive bootstrap --application-choice=browser --no-agentic-tools
@@ -116,3 +127,10 @@ jobs:
             necko-build/mozconfig
           if-no-files-found: error
           retention-days: 14
+      - name: Preserve compiled cache even when native compilation or gates fail
+        if: ${{ !cancelled() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure') }}
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ steps.compiler-cache.outputs.cache-primary-key }}
