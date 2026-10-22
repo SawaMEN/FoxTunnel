@@ -160,6 +160,15 @@ explicit `(void)` casts for discarded results and does not need that header.
 Its patch and resulting-source hashes have been updated. This corrects the
 reported build error; compilation and native gates still require a new run.
 
+The separate Neqo workflow at `39857861899` passed native interop but failed
+before wire capture because upstream removed the `v154.0.8037.49-4` binary
+assets (HTTP 404). The comparison input is now explicitly pinned to
+`v154.0.8037.49-5`, source `d04efe1ea4477c2db24a7d0e2f068b3bee931e45`.
+The Linux x64 archive was downloaded and its SHA-256 matched the upstream
+release asset digest; the executable reports `naive 154.0.8037.49`.
+Historical captures retain their original pins and results. New captures must
+be regenerated with the new archive; this does not validate Necko's fingerprint.
+
 The [Necko source workflow](../../.github/workflows/necko-experiment.yml)
 bootstraps Mozilla's C++ build dependencies, builds libxul and xpcshell, then
 runs five mandatory native gates: cold handoff/binary transfer, upload
