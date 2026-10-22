@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -46,7 +47,18 @@ type lockedBuffer struct {
 func (b *lockedBuffer) Write(p []byte) (int, error) {
 	b.Lock()
 	defer b.Unlock()
-	return b.buffer.Write(p)
+	// A failing native callback can emit logs at socket-loop frequency.
+	// Keep the diagnostic tail without letting a failed test exhaust RAM.
+	const limit = 64 << 10
+	n := len(p)
+	if len(p) >= limit {
+		b.buffer.Reset()
+		p = p[len(p)-limit:]
+	} else if excess := b.buffer.Len() + len(p) - limit; excess > 0 {
+		b.buffer.Next(excess)
+	}
+	_, err := b.buffer.Write(p)
+	return n, err
 }
 func (b *lockedBuffer) text() string { b.Lock(); defer b.Unlock(); return b.buffer.String() }
 
@@ -114,7 +126,7 @@ func testGeckoCONNECT(t *testing.T, halfClose bool) {
 			certificate, ca := testCertificate(t)
 			tcp.TLS = &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}}
 			tcp.StartTLS()
-			defer tcp.Close()
+			t.Cleanup(tcp.Close)
 			if mode == "h3-connect" {
 				udp, err := net.ListenPacket("udp", tcp.Listener.Addr().String())
 				if err != nil {
@@ -128,29 +140,9 @@ func testGeckoCONNECT(t *testing.T, halfClose bool) {
 			if err := os.WriteFile(caPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca}), 0600); err != nil {
 				t.Fatal(err)
 			}
-			read, write := io.Pipe()
-			defer read.Close()
-			var stderr lockedBuffer
-			finished := make(chan error, 1)
-			go func() {
-				err := Run(ctx, runtime, Config{Server: tcp.URL, Username: "u", Password: "p", Transport: mode, Listen: "127.0.0.1:0", CACert: caPath}, write, &stderr)
-				write.CloseWithError(err)
-				finished <- err
-			}()
-			defer func() { cancel(); read.Close(); <-finished }()
-			var ready struct {
-				Type   string `json:"type"`
-				Listen string `json:"listen"`
-			}
-			if err := json.NewDecoder(read).Decode(&ready); err != nil {
-				t.Fatalf("helper startup: %v\n%s", err, stderr.text())
-			}
-			if ready.Type != "ready" || !strings.HasPrefix(ready.Listen, "127.0.0.1:") {
-				t.Fatal("invalid readiness", ready)
-			}
-			go io.Copy(&stderr, read)
+			listen, stderr := startTestHelper(t, runtime, Config{Server: tcp.URL, Username: "u", Password: "p", Transport: mode, Listen: "127.0.0.1:0", CACert: caPath})
 			for round := 0; round < 2; round++ {
-				conn, err := net.DialTimeout("tcp", ready.Listen, time.Second)
+				conn, err := net.DialTimeout("tcp", listen, time.Second)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -182,11 +174,13 @@ func testGeckoCONNECT(t *testing.T, halfClose bool) {
 					data, err = io.ReadAll(conn)
 				} else {
 					data = make([]byte, len(payload))
-					_, err = io.ReadFull(conn, data)
+					var n int
+					n, err = io.ReadFull(conn, data)
+					data = data[:n]
 				}
 				conn.Close()
 				if err != nil || !bytes.Equal(data, payload) {
-					t.Fatal("half-close/binary payload", len(data), err)
+					t.Fatalf("binary payload (half-close=%v): received %d of %d: %v\n%s", halfClose, len(data), len(payload), err, stderr.text())
 				}
 			}
 			mu.Lock()
@@ -202,7 +196,104 @@ func testGeckoCONNECT(t *testing.T, halfClose bool) {
 	}
 }
 
-func testCertificate(t *testing.T) (tls.Certificate, []byte) {
+func startTestHelper(t *testing.T, runtime string, cfg Config) (string, *lockedBuffer) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	read, write := io.Pipe()
+	stderr := new(lockedBuffer)
+	finished := make(chan error, 1)
+	go func() {
+		err := Run(ctx, runtime, cfg, write, stderr)
+		write.CloseWithError(err)
+		finished <- err
+	}()
+	t.Cleanup(func() { cancel(); read.Close(); <-finished })
+	var ready struct {
+		Type   string `json:"type"`
+		Listen string `json:"listen"`
+	}
+	if err := json.NewDecoder(read).Decode(&ready); err != nil {
+		t.Fatalf("helper startup: %v\n%s", err, stderr.text())
+	}
+	if ready.Type != "ready" || !strings.HasPrefix(ready.Listen, "127.0.0.1:") {
+		t.Fatal("invalid readiness", ready)
+	}
+	go io.Copy(stderr, read)
+	return ready.Listen, stderr
+}
+
+func TestGeckoTrustBeforeCredentials(t *testing.T) {
+	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	if runtime == "" {
+		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+	}
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		for _, fault := range []string{"untrusted-root", "wrong-hostname"} {
+			t.Run(mode+"/"+fault, func(t *testing.T) {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				certificate, ca := testCertificate(t)
+				if fault == "wrong-hostname" {
+					certificate, ca = testCertificate(t, "other.invalid")
+				} else {
+					_, ca = testCertificate(t)
+				}
+				var requests atomic.Int32
+				handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					requests.Add(1)
+					http.Error(w, "trust check failed", http.StatusForbidden)
+				})
+				server := httptest.NewUnstartedServer(handler)
+				server.EnableHTTP2 = true
+				server.TLS = &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}}
+				server.StartTLS()
+				t.Cleanup(server.Close)
+				if mode == "h3-connect" {
+					udp, err := net.ListenPacket("udp", server.Listener.Addr().String())
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer udp.Close()
+					go func() { _ = serveTestH3(ctx, udp, server.TLS, handler) }()
+				}
+				caPath := filepath.Join(t.TempDir(), "ca.pem")
+				if err := os.WriteFile(caPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca}), 0600); err != nil {
+					t.Fatal(err)
+				}
+				listen, stderr := startTestHelper(t, runtime, Config{Server: server.URL, Username: "never-send", Password: "before-trust", Transport: mode, Listen: "127.0.0.1:0", CACert: caPath, ConnectTimeoutMS: 3000, MaxConnections: 1})
+				// A timed-out CONNECT must release its session slot. Repeat on
+				// the same helper with a one-session limit to detect leaked setup.
+				for round := 0; round < 2; round++ {
+					conn, err := net.DialTimeout("tcp", listen, time.Second)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer conn.Close()
+					conn.SetDeadline(time.Now().Add(5 * time.Second))
+					_, _ = conn.Write([]byte{5, 1, 0})
+					var greeting [2]byte
+					if _, err := io.ReadFull(conn, greeting[:]); err != nil || greeting != [2]byte{5, 0} {
+						t.Fatal("SOCKS greeting", greeting, err)
+					}
+					_, _ = conn.Write([]byte{5, 1, 0, 1, 127, 0, 0, 1, 1, 187})
+					var reply [10]byte
+					n, err := io.ReadFull(conn, reply[:])
+					// A setup timeout may close the socket without a SOCKS reply;
+					// it must never report success or send HTTP credentials first.
+					closed := n == 0 && err == io.EOF
+					if !closed && (err != nil || reply[0] != 5 || reply[1] == 0) {
+						t.Fatalf("trust failure must reject CONNECT: %v: %v\n%s", reply, err, stderr.text())
+					}
+					if requests.Load() != 0 {
+						t.Fatalf("sent %d HTTP requests before proxy trust succeeded", requests.Load())
+					}
+				}
+			})
+		}
+	}
+}
+
+func testCertificate(t *testing.T, dnsName ...string) (tls.Certificate, []byte) {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -214,6 +305,10 @@ func testCertificate(t *testing.T) (tls.Certificate, []byte) {
 		t.Fatal(err)
 	}
 	leaf := &x509.Certificate{SerialNumber: big.NewInt(2), Subject: pkix.Name{CommonName: "localhost"}, NotBefore: root.NotBefore, NotAfter: root.NotAfter, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1")}}
+	if len(dnsName) != 0 {
+		leaf.IPAddresses = nil
+		leaf.DNSNames = dnsName
+	}
 	der, err := x509.CreateCertificate(rand.Reader, leaf, root, &key.PublicKey, key)
 	if err != nil {
 		t.Fatal(err)

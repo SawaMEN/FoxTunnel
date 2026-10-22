@@ -40,20 +40,63 @@ do not attribute its results to the stock Taskcluster binary above.
 - `Http2StreamTunnel::QueryInterface` delegates unknown interfaces to its base,
   preserving the base's canonical `nsISupports` identity for XPConnect. The
   duplicate `nsITransport` map entry is removed.
+- The JS upgrade's H2 pipes use an inline copier on the socket thread. Native
+  H2 Read/Write require the native readiness callback to remain on the stack;
+  `NS_AsyncCopy` defers that operation and repeatedly gets WOULD_BLOCK. The new
+  copier retains at most 16 KiB per direction, handles partial writes, and
+  limits work per callback. It is selected only for the raw H2 tunnel.
+- A clean output EOF closes only the sending side of H2/H3; errors still abort
+  the stream. Vendored Neqo receives the same classic CONNECT classification
+  fix as the separate Neqo bridge, so its response survives upload FIN.
 
-These are candidate native fixes until the patched build passes the tests.
-Half-close also requires validation: the existing native output tunnel close
-paths tear down the stream, so a successful handoff alone is insufficient.
-The prototype remains excluded from the production CLI and SDK.
+The stream-copy and EOF changes are candidates until a new source build passes
+the tests. The prototype remains excluded from the production CLI and SDK.
+
+## Results on the first compiled runtime
+
+Source workflow run `39685378279`, commit
+`47a2586cee6a9244c90be53fc0f850b82729b5f1`, successfully compiled Gecko with
+the cold-start and identity fixes. Its first tests timed out before readiness.
+Native thread stacks from runtime gate run `39729125556` identified a startup
+deadlock: the profiler's download-directory lookup initialized HTTP and tried
+to launch the socket process before client JS could set its preferences.
+
+The launcher now sets `MOZ_DISABLE_SOCKET_PROCESS=1` before starting xpcshell,
+matching Mozilla's own standalone test harness. No profiler or certificate
+checks are disabled. The environment setting is needed before any script runs.
+
+Using that exact compiled artifact, with the launcher/JS corrections:
+
+- **H3 cold handoff and binary transfer passed locally with `-race`.** Two
+  authority-form CONNECTs delivered binary payloads through an independent
+  Go H3 server. An explicitly supplied CA also requires turning off Firefox's
+  automatic H3 fallback for third-party roots; NSS still validates the chain
+  and proxy hostname.
+- H2 native handoff succeeded, but payload stalled. The native trace identified
+  the deferred-copier mismatch described above. The inline copier needs a new
+  compiled runtime to validate it.
+- H3 upload half-close returned an empty response. The native EOF and vendored
+  Neqo fixes above need a new compiled runtime too.
+- Separate native trust tests reject both an untrusted root and a wrong proxy
+  hostname before any HTTP request reaches the proxy. A setup timeout may end
+  with a closed SOCKS socket; it must never report success.
+
+These observations do not close the full H2/H3 gate. In particular, reverse
+half-close, concurrent streams, cancellation under load, and protocol fallback
+must be verified before promotion.
 
 The [Necko source workflow](../../.github/workflows/necko-experiment.yml)
 bootstraps Mozilla's C++ build dependencies, builds libxul and xpcshell, then
-runs two mandatory native gates: cold handoff/binary transfer, followed by
-the full half-close contract. Neither gate is a mock or an H2 fallback claim.
-Both gates run if compilation succeeds, even if the handoff test fails.
+runs three mandatory native gates: cold handoff/binary transfer, upload
+half-close, and rejection of invalid certificates before credentials.
+These are real native tests; none counts an H2 fallback as H3 success.
+The latter gates run if compilation succeeds even if handoff fails.
 Build provenance distinguishes source preparation from a compiled runtime;
 interop results remain in the workflow logs. Runtime artifacts are retained
 for seven days so the same compiled build can be diagnosed without rebuilding.
+The manual [runtime gates workflow](../../.github/workflows/necko-runtime-test.yml)
+accepts a source workflow run ID and verifies its source lock and binary hashes
+before reusing the artifact. It refuses a runtime from a different patch set.
 
 To reproduce with a clean, shallow checkout of the locked Git revision:
 
@@ -83,7 +126,7 @@ FOXTUNNEL_XPCSHELL=/absolute/gecko-runtime/xpcshell \
 
 # Same gates with the patched source build:
 FOXTUNNEL_XPCSHELL=/path/to/necko-build/obj/dist/bin/xpcshell \
-  go test -race ./experiments/firefox-necko -run TestGeckoCONNECT -v -count=1 -timeout=160s
+  go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s
 ```
 
 Without `FOXTUNNEL_XPCSHELL`, the native test is skipped, not passed. Parser and

@@ -1,10 +1,11 @@
 name: Mozilla Necko runtime gates
 on:
-  push:
-    branches: [firefox]
-    paths:
-      - '.github/workflows/necko-runtime-test.yml'
   workflow_dispatch:
+    inputs:
+      source_run:
+        description: 'Necko source workflow run that compiled this exact source lock'
+        required: true
+        type: string
 permissions:
   contents: read
   actions: read
@@ -17,13 +18,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: necko-linux-amd64-runtime
-          run-id: 39685378279
+          run-id: ${{ inputs.source_run }}
           github-token: ${{ github.token }}
           path: runtime-archive
       - uses: actions/download-artifact@v4
         with:
           name: necko-source-provenance
-          run-id: 39685378279
+          run-id: ${{ inputs.source_run }}
           github-token: ${{ github.token }}
           path: runtime-provenance
       - name: Install runtime libraries and diagnostic tools
@@ -49,6 +50,7 @@ jobs:
       - name: Basic xpcshell startup with bounded diagnostics
         env:
           LD_LIBRARY_PATH: ${{ github.workspace }}/runtime
+          MOZ_DISABLE_SOCKET_PROCESS: '1'
         run: |
           set +e
           timeout -k 3 15 runtime/xpcshell -g "$PWD/runtime" -a "$PWD/runtime" -e 'print("xpcshell-ready")' > runtime-startup.log 2>&1
@@ -69,10 +71,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.10'
-      - name: Native cold CONNECT and half-close gates
+      - name: Native CONNECT, half-close and certificate trust gates
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
-        run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECT' -v -count=1 -timeout=160s
+        run: go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s
       - uses: actions/upload-artifact@v4
         if: always()
         with:

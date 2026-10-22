@@ -3,7 +3,8 @@ on:
   push:
     branches: [firefox]
     paths:
-      - 'experiments/firefox-necko/**'
+      - 'experiments/firefox-necko/patches/**'
+      - 'experiments/firefox-necko/gecko.lock.json'
       - 'scripts/build_necko.py'
       - 'scripts/test_build_necko.py'
       - '.github/workflows/necko-experiment.yml'
@@ -73,6 +74,12 @@ jobs:
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECT$' -v -count=1 -timeout=80s
+      - name: Reject invalid proxy certificates before credentials
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoTrustBeforeCredentials$' -v -count=1 -timeout=60s
       - name: Archive the patched runtime for repeatable native diagnostics
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |

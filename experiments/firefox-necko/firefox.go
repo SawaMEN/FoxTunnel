@@ -190,7 +190,11 @@ func Run(ctx context.Context, runtimePath string, config Config, stdout, stderr 
 	}
 	cmd := exec.CommandContext(ctx, runtimePath, "-g", filepath.Dir(runtimePath), "-a", filepath.Dir(runtimePath), "-f", script)
 	cmd.Env = append(os.Environ(), "FOXTUNNEL_FIREFOX_ROOT="+private,
-		"LD_LIBRARY_PATH="+filepath.Dir(runtimePath))
+		"LD_LIBRARY_PATH="+filepath.Dir(runtimePath),
+		// Gecko can initialize HTTP while loading its own chrome resources,
+		// before client.js sets prefs. Match Mozilla's standalone xpcshell
+		// harness: disable the unsupported socket process before XPCOM starts.
+		"MOZ_DISABLE_SOCKET_PROCESS=1")
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 	cmd.WaitDelay = 3 * time.Second
 	if err := cmd.Run(); err != nil {

@@ -11,3 +11,40 @@
  
  Http2StreamTunnel::Http2StreamTunnel(Http2Session* session, int32_t priority,
                                       uint64_t bcId,
+@@ -289,6 +288,18 @@
+   return conn.forget();
+ }
+ 
++void Http2StreamTunnel::CloseSendStream() {
++  MOZ_ASSERT(OnSocketThread());
++  if (mSendClosed || mClosed) {
++    return;
++  }
++  mSendClosed = true;
++  RefPtr<Http2Session> session = Session();
++  if (session) {
++    session->TransactionHasDataToWrite(this);
++  }
++}
++
+ nsresult Http2StreamTunnel::CallToReadData(uint32_t count,
+                                            uint32_t* countRead) {
+   LOG(("Http2StreamTunnel::CallToReadData this=%p", this));
+@@ -411,10 +422,16 @@
+   mCondition = reason;
+ 
+   RefPtr<Http2StreamTunnel> tunnel = mWeakStream.get();
+-  mWeakStream = nullptr;
+   if (!tunnel) {
+     return NS_OK;
+   }
++  if (NS_SUCCEEDED(reason) || reason == NS_BASE_STREAM_CLOSED) {
++    // A clean upload EOF is END_STREAM, not RST_STREAM. Keep receiving the
++    // peer's response after all bytes accepted by the copier have been sent.
++    tunnel->CloseSendStream();
++    return NS_OK;
++  }
++  mWeakStream = nullptr;
+   RefPtr<Http2Session> session = tunnel->Session();
+   if (!session) {
+     return NS_OK;

@@ -1,0 +1,32 @@
+--- a/netwerk/protocol/http/Http3StreamTunnel.cpp
++++ b/netwerk/protocol/http/Http3StreamTunnel.cpp
+@@ -244,7 +244,11 @@
+     return NS_OK;
+   }
+ 
+-  tunnel->CleanupStream(reason);
++  if (NS_SUCCEEDED(reason) || reason == NS_BASE_STREAM_CLOSED) {
++    tunnel->CloseSendingSide();
++  } else {
++    tunnel->CleanupStream(reason);
++  }
+   return NS_OK;
+ }
+ 
+@@ -592,6 +596,16 @@
+                                  mFlatHttpRequestHeaders, &mStreamId, this);
+ }
+ 
++void Http3StreamTunnel::CloseSendingSide() {
++  MOZ_ASSERT(OnSocketThread());
++  if (mClosed || !mSession || mSendState == SEND_DONE) {
++    return;
++  }
++  mSendState = SEND_DONE;
++  mSession->CloseSendingSide(mStreamId);
++  HasDataToWrite();
++}
++
+ void Http3StreamTunnel::Close(nsresult aResult) {
+   LOG(("Http3StreamTunnel::Close %p", this));
+   if (mClosed) {

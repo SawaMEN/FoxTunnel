@@ -96,6 +96,12 @@ if (typeof Components !== "undefined") {
     const certs = [...cfg.ca_pem.matchAll(/-----BEGIN CERTIFICATE-----([A-Za-z0-9+/=\s]+)-----END CERTIFICATE-----/g)];
     if (!certs.length) throw new Error("invalid additional CA file");
     for (const cert of certs) certdb.addCertFromBase64(cert[1].replace(/\s/g, ""), "CT,,");
+    // Firefox normally falls back from H3 when a non-builtin root is used.
+    // An explicitly configured CA must work with the explicitly selected H3
+    // transport too; certificate chain/hostname verification remains in NSS.
+    if (cfg.transport === "h3-connect") {
+      Services.prefs.setBoolPref("network.http.http3.disable_when_third_party_roots_found", false);
+    }
   }
 
   const pps = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService(Ci.nsIProtocolProxyService);
@@ -161,6 +167,7 @@ if (typeof Components !== "undefined") {
   const sessions = new Set();
   function connect(authority, session) {
     return new Promise((resolve, reject) => {
+      session.cancelConnect = () => reject(new Error("Firefox setup cancelled"));
       const channel = NetUtil.newChannel({
         uri: `http://${authority}/`, loadUsingSystemPrincipal: true,
         securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |
@@ -183,6 +190,7 @@ if (typeof Components !== "undefined") {
             reject(new Error("unexpected proxy protocol")); return;
           }
           handedOff = true;
+          session.cancelConnect = null;
           session.remoteTransport = transport;
           const io = new AsyncIO(incoming, outgoing);
           session.remote = io;
@@ -220,6 +228,7 @@ if (typeof Components !== "undefined") {
     session.close = () => {
       if (session.closed) return;
       session.closed = true;
+      if (session.cancelConnect) { session.cancelConnect(); session.cancelConnect = null; }
       if (session.channel) session.channel.cancel(Cr.NS_BINDING_ABORTED);
       local.close();
       if (session.remote) session.remote.close();

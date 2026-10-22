@@ -13,10 +13,45 @@
     },
     {
       "path": "experiments/firefox-necko/patches/h2-tunnel-xpcom-identity.patch",
-      "sha256": "b05ffbd698750739b2da6460f49482a216f4967d0cf156c2ad896389991ee0bb",
+      "sha256": "ab1b863dd5fa7eab37d1d923bc9002b244cccb23be605f129a9d728cce1980c1",
       "source_path": "netwerk/protocol/http/Http2StreamTunnel.cpp",
       "before_sha256": "6303f9f5518d78ac02fd203cc57779e8e009d010118a731efc4b853a818fe649",
-      "after_sha256": "5b5a7e1096d8cdac80ff25daaf8968b121cd61e03c30b7c7424054b276c0d77d"
+      "after_sha256": "d4a8ab0d1b3493d42e5eae22e9a7e59201b50332c39762c7abe8aef195f6bd82"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-tunnel-half-close-api.patch",
+      "sha256": "c545bd10357403612393f89f17286d8bcd37a4a9a136cc50de2df226c90491fa",
+      "source_path": "netwerk/protocol/http/Http2StreamTunnel.h",
+      "before_sha256": "43eb4b531c703c808895382b29aaf5f3e0fbd186aea1208f78da1e70e17fc460",
+      "after_sha256": "9bb2c6fe962ca84d3e352c2c9b5b940d7e25440f330f87aff3f050074799b6dc"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h3-tunnel-half-close.patch",
+      "sha256": "b8cf9653135fd6466da463a94dcedd632c15bf7e665152e453a7b474e5837320",
+      "source_path": "netwerk/protocol/http/Http3StreamTunnel.cpp",
+      "before_sha256": "0d5d5d683aa7513059c4f3fb257ad4a1a81c30d6139de6fc757246dae36b03b2",
+      "after_sha256": "144c87a8a2d49012aec8e08f4f75d05cb59c9899a0c72a5b3484a9c1cd6ad35f"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h3-tunnel-half-close-api.patch",
+      "sha256": "df76afa02dc454a227f54394817211e58266644224044b030538d20596134ed5",
+      "source_path": "netwerk/protocol/http/Http3StreamTunnel.h",
+      "before_sha256": "7dadafeaa2dcaa87908c52ebcf7a51743702c6cfc08eaa564b135ac2ac9b0a30",
+      "after_sha256": "5634980cede10c6ff968ec9808f8f66a76b31f0ca531d0d4ed8ccce9126ae469"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-inline-tunnel-copier.patch",
+      "sha256": "5d6b9b41f43fe55458936dc7d45db5b8f554257e199bc9489f6e883d83a93cb6",
+      "source_path": "netwerk/protocol/http/nsHttpConnectionMgr.cpp",
+      "before_sha256": "0154d4f96a8eb2f5e5d14dc8373c297c394ff310f54776937a04ae42cafd9ea8",
+      "after_sha256": "568d1d75d6baf58780cd1855aa0e7be1f1b3caa56f878ea9a2c451a830f95ae6"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/neqo-classic-connect-half-close.patch",
+      "sha256": "592af872f7ed93cd156088a35aea86ff34ba8a782a649b4cf72af583beced16b",
+      "source_path": "third_party/rust/neqo-http3/src/connection.rs",
+      "before_sha256": "17c54864ef79aa59d4d863ccc1e2e61ff3ed19023553a683ba8cb4cdb3b85437",
+      "after_sha256": "f9976203e6b5e7495a366fac31d3e565a103c682ac38de3f0e9478300c30a61f"
     }
   ]
 }

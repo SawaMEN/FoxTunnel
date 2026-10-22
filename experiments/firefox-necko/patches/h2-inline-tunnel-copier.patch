@@ -1,0 +1,181 @@
+--- a/netwerk/protocol/http/nsHttpConnectionMgr.cpp
++++ b/netwerk/protocol/http/nsHttpConnectionMgr.cpp
+@@ -12,11 +12,13 @@
+ #define LOG_ENABLED() LOG5_ENABLED()
+ 
+ #include <algorithm>
++#include <array>
+ #include <utility>
+ 
+ #include "ConnectionHandle.h"
+ #include "ETWTools.h"
+ #include "HttpConnectionUDP.h"
++#include "Http2StreamTunnel.h"
+ #include "NullHttpTransaction.h"
+ #include "SpeculativeTransaction.h"
+ #include "mozilla/Components.h"
+@@ -24,6 +26,7 @@
+ #include "mozilla/ProfilerMarkers.h"
+ #include "mozilla/SpinEventLoopUntil.h"
+ #include "mozilla/StaticPrefs_network.h"
++#include "mozilla/Unused.h"
+ #include "mozilla/glean/NetwerkMetrics.h"
+ #include "mozilla/glean/NetwerkProtocolHttpMetrics.h"
+ #include "mozilla/net/DNS.h"
+@@ -31,6 +34,8 @@
+ #include "nsCOMPtr.h"
+ #include "nsHttpConnectionMgr.h"
+ #include "nsHttpHandler.h"
++#include "nsIAsyncInputStream.h"
++#include "nsIAsyncOutputStream.h"
+ #include "nsIClassOfService.h"
+ #include "nsIDNSByTypeRecord.h"
+ #include "nsIDNSListener.h"
+@@ -2861,6 +2866,114 @@
+   OnMsgProcessPendingQ(0, ci);
+ }
+ 
++// H2 tunnel I/O is pull-driven: Read/Write are valid only while its native
++// readiness callback is on the stack. NS_AsyncCopy posts a continuation, so
++// it loses that context and repeatedly gets WOULD_BLOCK. Keep the JS-facing
++// pipes, but copy synchronously inside native readiness callbacks on STS.
++// One bounded buffer per direction retains bytes across partial writes.
++class InlineTunnelCopier final : public nsIInputStreamCallback,
++                                 public nsIOutputStreamCallback {
++ public:
++  NS_DECL_THREADSAFE_ISUPPORTS
++
++  InlineTunnelCopier(nsIAsyncInputStream* aSource,
++                    nsIAsyncOutputStream* aDestination)
++      : mSource(aSource), mDestination(aDestination) {}
++
++  nsresult Pump() {
++    MOZ_ASSERT(OnSocketThread());
++    if (mFinished) {
++      return NS_OK;
++    }
++    // Limit work per callback; do not starve other streams on the session.
++    for (uint32_t attempt = 0; attempt < 16; ++attempt) {
++      nsresult rv;
++      uint32_t count = 0;
++      if (mOffset != mLength) {
++        rv = mDestination->Write(mBuffer.data() + mOffset, mLength - mOffset,
++                                 &count);
++        if (rv == NS_BASE_STREAM_WOULD_BLOCK) {
++          rv = mDestination->AsyncWait(this, 0, 0, gSocketTransportService);
++          if (NS_FAILED(rv)) {
++            Finish(rv);
++          }
++          return rv;
++        }
++        if (NS_FAILED(rv) || !count) {
++          rv = NS_FAILED(rv) ? rv : NS_ERROR_UNEXPECTED;
++          Finish(rv);
++          return rv;
++        }
++        mOffset += count;
++      } else {
++        mOffset = mLength = 0;
++        rv = mSource->Read(mBuffer.data(), mBuffer.size(), &count);
++        if (rv == NS_BASE_STREAM_WOULD_BLOCK) {
++          rv = mSource->AsyncWait(this, 0, 0, gSocketTransportService);
++          if (NS_FAILED(rv)) {
++            Finish(rv);
++          }
++          return rv;
++        }
++        if (rv == NS_BASE_STREAM_CLOSED || (NS_SUCCEEDED(rv) && !count)) {
++          Finish(NS_OK);
++          return NS_OK;
++        }
++        if (NS_FAILED(rv)) {
++          Finish(rv);
++          return rv;
++        }
++        mLength = count;
++      }
++    }
++    RefPtr<InlineTunnelCopier> self(this);
++    nsresult rv = DispatchToCurrent(NS_NewRunnableFunction(
++        "InlineTunnelCopier::Continue", [self] { Unused << self->Pump(); }));
++    if (NS_FAILED(rv)) {
++      Finish(rv);
++    }
++    return rv;
++  }
++
++  NS_IMETHOD OnInputStreamReady(nsIAsyncInputStream*) override { return Pump(); }
++  NS_IMETHOD OnOutputStreamReady(nsIAsyncOutputStream*) override { return Pump(); }
++
++ private:
++  ~InlineTunnelCopier() = default;
++
++  void Finish(nsresult aReason) {
++    if (mFinished) {
++      return;
++    }
++    mFinished = true;
++    Unused << mSource->AsyncWait(nullptr, 0, 0, gSocketTransportService);
++    Unused << mDestination->AsyncWait(nullptr, 0, 0, gSocketTransportService);
++    nsresult reason = NS_SUCCEEDED(aReason) ? NS_BASE_STREAM_CLOSED : aReason;
++    Unused << mSource->CloseWithStatus(reason);
++    Unused << mDestination->CloseWithStatus(reason);
++    mSource = nullptr;
++    mDestination = nullptr;
++  }
++
++  nsCOMPtr<nsIAsyncInputStream> mSource;
++  nsCOMPtr<nsIAsyncOutputStream> mDestination;
++  std::array<char, 16384> mBuffer;
++  uint32_t mOffset{0};
++  uint32_t mLength{0};
++  bool mFinished{false};
++};
++
++NS_IMPL_ISUPPORTS(InlineTunnelCopier, nsIInputStreamCallback,
++                  nsIOutputStreamCallback)
++
++static nsresult CopyInlineTunnel(nsIAsyncInputStream* aSource,
++                                nsIAsyncOutputStream* aDestination) {
++  RefPtr<InlineTunnelCopier> copier =
++      new InlineTunnelCopier(aSource, aDestination);
++  return copier->Pump();
++}
++
++
+ void nsHttpConnectionMgr::OnMsgCompleteUpgrade(int32_t, ARefBase* param) {
+   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
+ 
+@@ -2901,6 +3014,7 @@
+   // PSM and NSS rely on those connections only being used on the socket
+   // thread.
+   if (data->mJsWrapped) {
++    RefPtr<Http2StreamTunnel> h2Tunnel = do_QueryObject(data->mSocketTransport);
+     nsCOMPtr<nsIAsyncInputStream> pipeIn;
+     uint32_t segsize = 0;
+     uint32_t segcount = 0;
+@@ -2908,16 +3022,20 @@
+     if (NS_SUCCEEDED(rv)) {
+       NS_NewPipe2(getter_AddRefs(pipeIn), getter_AddRefs(socketOut), true, true,
+                   segsize, segcount);
+-      rv = NS_AsyncCopy(pipeIn, data->mSocketOut, gSocketTransportService,
+-                        NS_ASYNCCOPY_VIA_READSEGMENTS, segsize);
++      rv = h2Tunnel
++               ? CopyInlineTunnel(pipeIn, data->mSocketOut)
++               : NS_AsyncCopy(pipeIn, data->mSocketOut, gSocketTransportService,
++                              NS_ASYNCCOPY_VIA_READSEGMENTS, segsize);
+     }
+ 
+     nsCOMPtr<nsIAsyncOutputStream> pipeOut;
+     if (NS_SUCCEEDED(rv)) {
+       NS_NewPipe2(getter_AddRefs(socketIn), getter_AddRefs(pipeOut), true, true,
+                   segsize, segcount);
+-      rv = NS_AsyncCopy(data->mSocketIn, pipeOut, gSocketTransportService,
+-                        NS_ASYNCCOPY_VIA_WRITESEGMENTS, segsize);
++      rv = h2Tunnel
++               ? CopyInlineTunnel(data->mSocketIn, pipeOut)
++               : NS_AsyncCopy(data->mSocketIn, pipeOut, gSocketTransportService,
++                              NS_ASYNCCOPY_VIA_WRITESEGMENTS, segsize);
+     }
+   } else {
+     socketIn = upgradeData->mSocketIn;
