@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/mozilla-firefox/firefox.git",
+  "revision": "0f76fed7aea1f77db85afbf5a895754d8ad971d7",
+  "platform": "linux-amd64",
+  "patches": [
+    {
+      "path": "experiments/firefox-necko/patches/h2-connect-cold-start.patch",
+      "sha256": "9ea3f6605d2e9db3c9c8acf68f9f59291e42eecf7665262e6a0bc2cf72f8fbae",
+      "source_path": "netwerk/protocol/http/nsHttpConnection.cpp",
+      "before_sha256": "be841353d229da17da27914792d734bf06c1fa18fe669ceda5f242fb6910b160",
+      "after_sha256": "5bcadcd19f6b0cf86f695c172acfbcd81b7ab9a13b8aec4ceaccb29f18a7f02a"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-tunnel-xpcom-identity.patch",
+      "sha256": "ab1b863dd5fa7eab37d1d923bc9002b244cccb23be605f129a9d728cce1980c1",
+      "source_path": "netwerk/protocol/http/Http2StreamTunnel.cpp",
+      "before_sha256": "6303f9f5518d78ac02fd203cc57779e8e009d010118a731efc4b853a818fe649",
+      "after_sha256": "d4a8ab0d1b3493d42e5eae22e9a7e59201b50332c39762c7abe8aef195f6bd82"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-tunnel-half-close-api.patch",
+      "sha256": "c545bd10357403612393f89f17286d8bcd37a4a9a136cc50de2df226c90491fa",
+      "source_path": "netwerk/protocol/http/Http2StreamTunnel.h",
+      "before_sha256": "43eb4b531c703c808895382b29aaf5f3e0fbd186aea1208f78da1e70e17fc460",
+      "after_sha256": "9bb2c6fe962ca84d3e352c2c9b5b940d7e25440f330f87aff3f050074799b6dc"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h3-tunnel-half-close.patch",
+      "sha256": "b8cf9653135fd6466da463a94dcedd632c15bf7e665152e453a7b474e5837320",
+      "source_path": "netwerk/protocol/http/Http3StreamTunnel.cpp",
+      "before_sha256": "0d5d5d683aa7513059c4f3fb257ad4a1a81c30d6139de6fc757246dae36b03b2",
+      "after_sha256": "144c87a8a2d49012aec8e08f4f75d05cb59c9899a0c72a5b3484a9c1cd6ad35f"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h3-tunnel-half-close-api.patch",
+      "sha256": "df76afa02dc454a227f54394817211e58266644224044b030538d20596134ed5",
+      "source_path": "netwerk/protocol/http/Http3StreamTunnel.h",
+      "before_sha256": "7dadafeaa2dcaa87908c52ebcf7a51743702c6cfc08eaa564b135ac2ac9b0a30",
+      "after_sha256": "5634980cede10c6ff968ec9808f8f66a76b31f0ca531d0d4ed8ccce9126ae469"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-inline-tunnel-copier.patch",
+      "sha256": "5d6b9b41f43fe55458936dc7d45db5b8f554257e199bc9489f6e883d83a93cb6",
+      "source_path": "netwerk/protocol/http/nsHttpConnectionMgr.cpp",
+      "before_sha256": "0154d4f96a8eb2f5e5d14dc8373c297c394ff310f54776937a04ae42cafd9ea8",
+      "after_sha256": "568d1d75d6baf58780cd1855aa0e7be1f1b3caa56f878ea9a2c451a830f95ae6"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/neqo-classic-connect-half-close.patch",
+      "sha256": "592af872f7ed93cd156088a35aea86ff34ba8a782a649b4cf72af583beced16b",
+      "source_path": "third_party/rust/neqo-http3/src/connection.rs",
+      "before_sha256": "17c54864ef79aa59d4d863ccc1e2e61ff3ed19023553a683ba8cb4cdb3b85437",
+      "after_sha256": "f9976203e6b5e7495a366fac31d3e565a103c682ac38de3f0e9478300c30a61f"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/neqo-vendor-checksum.patch",
+      "sha256": "0fb92c5468ad8dfb8add5c87597242657b3b7cb24ce34858875a5a5c13e220f2",
+      "source_path": "third_party/rust/neqo-http3/.cargo-checksum.json",
+      "before_sha256": "c65f2cf943eaf89f4e3fa53b80d472d0a55acb83ac935f3cc097318190108520",
+      "after_sha256": "1606765d97a9365dd118c5d585a4ea7329a8d13c22aaf4eb90aad95ae4257173"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/socket-half-close-api.patch",
+      "sha256": "2368ece298fa28ad166068a766716a02e5b3aea4fef8752525e0ee30ee1eb559",
+      "source_path": "netwerk/base/nsISocketTransport.idl",
+      "before_sha256": "b06dfb1fb1150436c67d1a167798cd42c798bd2f4985f41843a601ce492e0dff",
+      "after_sha256": "a05da0599b3c6269cd5e0ce2b65438bcd2865d620ddde907e49a14be472239c0"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/socket-output-half-close.patch",
+      "sha256": "b3c5d6d3fa7617b742fb09c2461e07c997645aca4b243333d36a66ec6699a019",
+      "source_path": "netwerk/base/nsSocketTransport2.cpp",
+      "before_sha256": "430e9a9e430c1840e0d7bbbce15bd59978009a85f068b47cdd32d4abcd72287a",
+      "after_sha256": "bbc554529e9b7b1e478ac4fccb02a0248b475fa97e77dd04aa7452c6f3900030"
+    }
+  ]
+}

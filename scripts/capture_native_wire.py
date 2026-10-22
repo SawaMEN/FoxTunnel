@@ -92,6 +92,24 @@ def trigger_socks(port):
             pass
 
 
+def prepare_firefox_profile(profile, trust, protocol, origin):
+    profile.mkdir(mode=0o700)
+    subprocess.run(['certutil', '-N', '--empty-password', '-d', 'sql:' + str(profile)], check=True)
+    subprocess.run(['certutil', '-A', '-n', 'fixture', '-t', 'CT,,', '-i', str(trust), '-d', 'sql:' + str(profile)], check=True)
+    prefs = {'browser.shell.checkDefaultBrowser': False, 'browser.startup.homepage_override.mstone': 'ignore',
+             'app.update.auto': False, 'app.update.enabled': False, 'datareporting.policy.dataSubmissionEnabled': False,
+             'toolkit.telemetry.enabled': False, 'network.captive-portal-service.enabled': False,
+             'network.connectivity-service.enabled': False, 'network.proxy.type': 0,
+             'network.dns.disableIPv6': True, 'network.http.http3.enable': protocol == 'h3',
+             'network.http.http3.disable_when_third_party_roots_found': False,
+             'browser.newtabpage.enabled': False, 'browser.startup.page': 0}
+    if protocol == 'h3':
+        port = origin.rsplit(':', 1)[1]
+        prefs['network.http.http3.alt-svc-mapping-for-testing'] = f'localhost;h3=:{port}'
+        prefs['network.http.http3.force-use-alt-svc-mapping-for-testing'] = True
+    (profile / 'user.js').write_text(''.join(f'user_pref({json.dumps(k)}, {json.dumps(v)});\n' for k,v in prefs.items()))
+
+
 def capture(endpoint, firefox, naive, cert, key, work, subject, protocol, env, ca=None):
     trust = ca or cert
     out, ready = work / f'{subject}-{protocol}.json', work / f'{subject}-{protocol}-ready.json'
@@ -107,21 +125,7 @@ def capture(endpoint, firefox, naive, cert, key, work, subject, protocol, env, c
             origin = json.loads(ready.read_text())['origin']
             if subject == 'firefox':
                 profile = work / f'firefox-{protocol}-profile'
-                profile.mkdir(mode=0o700)
-                subprocess.run(['certutil', '-N', '--empty-password', '-d', 'sql:' + str(profile)], check=True)
-                subprocess.run(['certutil', '-A', '-n', 'fixture', '-t', 'CT,,', '-i', str(trust), '-d', 'sql:' + str(profile)], check=True)
-                prefs = {'browser.shell.checkDefaultBrowser': False, 'browser.startup.homepage_override.mstone': 'ignore',
-                         'app.update.auto': False, 'app.update.enabled': False, 'datareporting.policy.dataSubmissionEnabled': False,
-                         'toolkit.telemetry.enabled': False, 'network.captive-portal-service.enabled': False,
-                         'network.connectivity-service.enabled': False, 'network.proxy.type': 0,
-                         'network.dns.disableIPv6': True, 'network.http.http3.enable': protocol == 'h3',
-                         'network.http.http3.disable_when_third_party_roots_found': False,
-                         'browser.newtabpage.enabled': False, 'browser.startup.page': 0}
-                if protocol == 'h3':
-                    port = origin.rsplit(':', 1)[1]
-                    prefs['network.http.http3.alt-svc-mapping-for-testing'] = f'localhost;h3=:{port}'
-                    prefs['network.http.http3.force-use-alt-svc-mapping-for-testing'] = True
-                (profile / 'user.js').write_text(''.join(f'user_pref({json.dumps(k)}, {json.dumps(v)});\n' for k,v in prefs.items()))
+                prepare_firefox_profile(profile, trust, protocol, origin)
                 client = subprocess.Popen([str(firefox), '--headless', '--no-remote', '--profile', str(profile), origin],
                                           env=env, stdout=log, stderr=log)
             elif subject == 'naive':
@@ -152,6 +156,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--endpoint', required=True, type=Path)
     parser.add_argument('--out', required=True, type=Path)
+    parser.add_argument('--behavior-endpoint', type=Path)
     args = parser.parse_args()
     if platform.system() != 'Linux' or platform.machine() != 'x86_64':
         raise ValueError('pinned native capture currently requires Linux amd64')
@@ -215,12 +220,48 @@ def main():
                 payloads[name] = raw
                 observations.append(dict(subject=subject, protocol=protocol, path=name,
                                          sha256=hashlib.sha256(raw).hexdigest()))
+        behavior_observations = []
+        if args.behavior_endpoint is not None:
+            import compare_browser_behavior
+            behavior_profiles = {}
+            for subject in ('firefox', 'foxtunnel'):
+                for protocol in ('h2', 'h3'):
+                    raw = compare_browser_behavior.capture_behavior(args.behavior_endpoint.resolve(), firefox,
+                        cert, key, ca, work, subject, protocol, env)
+                    name = f'{subject}-{protocol}-behavior.json'
+                    payloads[name] = raw
+                    behavior_profiles[(subject, protocol)] = json.loads(raw)
+                    behavior_observations.append(dict(subject=subject, protocol=protocol, path=name,
+                        sha256=hashlib.sha256(raw).hexdigest()))
+            comparison = compare_browser_behavior.compare(behavior_profiles,
+                    {(subject, protocol): json.loads(payloads[f'{subject}-{protocol}.json'])
+                     for subject in ('firefox', 'foxtunnel') for protocol in ('h2', 'h3')})
+            subject = 'foxtunnel-firefox-profile'
+            raw = compare_browser_behavior.capture_behavior(args.behavior_endpoint.resolve(), firefox,
+                cert, key, ca, work, subject, 'h2', env)
+            name = f'{subject}-h2-behavior.json'
+            payloads[name] = raw
+            configured = json.loads(raw)
+            compare_browser_behavior.validate(configured, 'h2')
+            first = lambda report: next(c['h2_wire'] for c in report['connections'] if c['requests'].get('cold'))
+            comparison['configured_h2_profile'] = dict(tls_profile='firefox-158', h2_profile='firefox-158',
+                behavior=compare_browser_behavior.summary(configured),
+                first_h2_comparison=compare_browser_behavior.ordered_vectors(
+                    first(behavior_profiles[('firefox', 'h2')]), first(configured)))
+            behavior_observations.append(dict(subject=subject, protocol='h2', path=name,
+                sha256=hashlib.sha256(raw).hexdigest()))
+            payloads['browser-behavior-comparison.json'] = (json.dumps(comparison, indent=2)+'\n').encode()
         manifest = dict(schema=1, kind='controlled-wire-capture-set',
                         checkout_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                         worktree_dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)),
                         versions=versions, network_scope='IPv4 loopback with localhost SNI; DNS family and failover are not measured', firefox_fixture_overrides={'allow_h3_with_fixture_CA':True, 'force_h3_test_mapping':True, 'content_sandbox_disabled':True}, archives={'firefox':mozilla['archives']['amd64']['sha256'], 'naive':lock['naive_sha256']},
                         executable_sha256={'firefox':mozilla_runtime.digest(firefox), 'naive':mozilla_runtime.digest(naive), 'endpoint':mozilla_runtime.digest(args.endpoint)},
                         observations=observations,
+                        behavior_observations=behavior_observations,
+                        native_versions={'nss': mozilla['nss_version'], 'neqo': json.loads((ROOT/'scripts/neqo.lock.json').read_text())['neqo_version']},
+                        lock_sha256={name: mozilla_runtime.digest(ROOT/'scripts'/name) for name in
+                                     ('wire-capture.lock.json', 'mozilla-runtime.lock.json', 'neqo.lock.json')},
+                        behavior_endpoint_sha256=mozilla_runtime.digest(args.behavior_endpoint) if args.behavior_endpoint else None,
                         scope='Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for FoxTunnel. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained.')
         args.out.mkdir(mode=0o700)
         for name, raw in payloads.items():

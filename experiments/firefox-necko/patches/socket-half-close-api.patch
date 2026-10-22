@@ -1,0 +1,16 @@
+--- a/netwerk/base/nsISocketTransport.idl
++++ b/netwerk/base/nsISocketTransport.idl
+@@ -295,6 +295,13 @@
+     const unsigned long IS_SPECULATIVE_CONNECTION = (1 << 16);
+ 
+     /**
++     * On clean output closure, send a TCP FIN while retaining the input half.
++     * Opt-in for plain TCP only; layered transports retain their close policy.
++     * Set before opening streams. Buffered output drains before the FIN.
++     */
++    const unsigned long ENABLE_TCP_HALF_CLOSE = (1 << 17);
++
++    /**
+      * An opaque flags for non-standard behavior of the TLS system.
+      * It is unlikely this will need to be set outside of telemetry studies
+      * relating to the TLS implementation.

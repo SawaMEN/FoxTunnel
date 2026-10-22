@@ -112,6 +112,9 @@ func TestPublicDeadlineResetAndClose(t *testing.T) {
 	if _, e = client.DialContext(context.Background(), "tcp", target); !errors.Is(e, ft.ErrCapacity) {
 		t.Fatal("missing capacity limit", e)
 	}
+	if got := client.Status().Operations.Rejections.SDKCapacity; got != 1 {
+		t.Fatal("SDK capacity rejection was not recorded", got)
+	}
 	c.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
 	var b [1]byte
 	if _, e = c.Read(b[:]); e == nil {
@@ -222,6 +225,9 @@ func testPublicCloseCancelsPendingDial(t *testing.T, backend string) {
 	}
 	if _, e := client.DialContext(context.Background(), "tcp", "example.org:443"); !errors.Is(e, ft.ErrCapacity) {
 		t.Fatal("pending dial did not reserve capacity", e)
+	}
+	if got := client.Snapshot().Transport.Operations.Rejections.SDKCapacity; got != 1 {
+		t.Fatal("pending SDK capacity rejection was not recorded", got)
 	}
 	client.Close()
 	select {

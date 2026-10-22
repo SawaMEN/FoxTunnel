@@ -9,6 +9,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.10'
@@ -44,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           source rust/neqo-bridge/target/foxtunnel-build/env.sh
-          GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/neqo -run '^TestStage6' -count=5 -timeout=120s
+          GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/neqo -run '^TestStage6|^TestUpdate' -count=5 -timeout=120s
           GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/nsstls -run '^TestConcurrentCloseUnblocksRead$|^TestHandshakeCancellation$|^TestStage3NSS' -count=8 -timeout=120s
       - name: Verify explicit backend reporting
         shell: bash
@@ -74,13 +76,33 @@ jobs:
           path: /tmp/native-backend-metrics.json
           if-no-files-found: error
           retention-days: 7
+      - name: Update stage 5 paired H3 baseline and Go-side profiles
+        if: github.ref == 'refs/heads/update'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          python3 -m unittest discover -s scripts -p 'test_update_h3_*.py' -v
+          cc -O2 -Wall -Wextra -Werror scripts/native_resource_runner.c -o /tmp/native-resource-runner
+          python3 scripts/update_h3_profile.py --binary /tmp/native-backend.test --versions /tmp/neqo-version.json --resource-runner /tmp/native-resource-runner --out /tmp/update-h3-profile.json
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/update'
+        with:
+          name: update-h3-profile
+          path: |
+            /tmp/update-h3-profile.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Fresh pinned Firefox NaiveProxy FoxTunnel TLS H2 and decoded H3
         shell: bash
         run: |
           set -euo pipefail
           source rust/neqo-bridge/target/foxtunnel-build/env.sh
           go build -tags nss,neqo -o /tmp/native-wire-capture ./experiments/wire-capture
-          python3 scripts/capture_native_wire.py --endpoint /tmp/native-wire-capture --out /tmp/native-wire-observations
+          go test -race -tags nss,neqo ./experiments/browser-compare -count=1 -timeout=60s
+          python3 -m unittest discover -s scripts -p test_compare_browser_behavior.py -v
+          go build -tags nss,neqo -o /tmp/browser-compare ./experiments/browser-compare
+          python3 scripts/capture_native_wire.py --endpoint /tmp/native-wire-capture --behavior-endpoint /tmp/browser-compare --out /tmp/native-wire-observations
           python3 scripts/fingerprint_audit.py --firefox /tmp/native-wire-observations/firefox-h2.json --foxtunnel /tmp/native-wire-observations/foxtunnel-h2.json --naive /tmp/native-wire-observations/naive-h2.json --firefox-quic /tmp/native-wire-observations/firefox-h3.json --foxtunnel-quic /tmp/native-wire-observations/foxtunnel-h3.json --naive-quic /tmp/native-wire-observations/naive-h3.json --out /tmp/native-wire-observations/comparison.json
       - uses: actions/upload-artifact@v4
         with:

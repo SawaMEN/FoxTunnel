@@ -49,4 +49,7 @@ func TestSOCKSLimitIncludesIncompleteHandshake(t *testing.T) {
 	if err := <-done; err != nil {
 		t.Fatal(err)
 	}
+	if got := c.TransportStatus().Operations.Rejections.SOCKSCapacity; got != 1 {
+		t.Fatal("SOCKS capacity rejection was not recorded", got)
+	}
 }

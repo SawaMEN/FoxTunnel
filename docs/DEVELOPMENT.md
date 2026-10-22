@@ -52,6 +52,9 @@ go test -race -tags nss,neqo ./... -count=1 -timeout=120s
 [`neqo.lock.json`](../scripts/neqo.lock.json),
 [`mozilla-runtime.lock.json`](../scripts/mozilla-runtime.lock.json),
 Cargo.lock и rust-toolchain.toml. Скрипты проверяют их согласованность.
+Исправление half-close для classic CONNECT закреплено в `neqo.lock.json`
+вместе с SHA-256 патча и обеих версий файла. Сборщик применяет его в приватном
+Cargo home; последующие Rust-команды должны использовать созданный `env.sh`.
 Для полного Mozilla-архива есть `python3 scripts/build_mozilla.py --version v0.0.0-ci`.
 Это отдельный build; команда сама не публикует релиз.
 
@@ -63,7 +66,11 @@ Release tag, SDK/process schemas и wire draft версионируются от
 Закрепляйте проверенные версии обоих концов.
 
 NSS выполняет TLS; Go x509 проверяет CA, имя и дополнительные pin до отправки
-HTTP-авторизации. Сессии/билеты NSS отключены; эквивалентность Firefox OCSP
+HTTP-авторизации. HTTP/2 NSS и Neqo используют ограниченные отдельные кэши одноразовых билетов.
+Возобновление повторно проверяет CA, имя, срок и VerifyConnection/pinning до
+HTTP-данных. NSS 0-RTT отключён; Neqo может передавать ранние H3 control streams,
+но HTTP-запросы ждут Connected и проверки. WSS отдельного session cache не имеет.
+[Контракт ABI 2 и границы](UPDATE-FIXES.md). Эквивалентность Firefox OCSP
 и закрытия TLS не заявляется. Neqo принадлежит одному Go actor на OS thread.
 Rust не хранит Go-указатели; буферы заимствуются синхронно на вызов ABI.
 Отмена должна вернуть владение и завершить операцию до освобождения памяти.
@@ -147,3 +154,17 @@ Wire endpoints и capability `records-v1` сохраняются. Новое н�
 дедупликации, TLS policy или cleanup требуют повторения матрицы. EOF в Bond
 допустим только для download, а malformed ACK/payload должен завершаться ошибкой.
 Стабильность реализации не заменяет отдельный security review или WAN-измерения.
+
+## Настройки протокола и наблюдение
+
+`ClientConfig.RequireProtocolNegotiation` и `ServerConfig.RequireProtocolNegotiation`
+включают strict; false сохраняет legacy. Strict требует согласования версии/capabilities до прикладных данных
+на обоих концах и несовместим с bond/discovery. Формат: [wire negotiation](reference/WIRE-NEGOTIATION.md).
+
+`Snapshot().Transport.Operations` и `Status().Operations` содержат ограниченные
+агрегаты TCP setup, UDP exchange/stream, admission и восстановления.
+`WatchStatus` использует те же поля; JSON schema 1 расширена совместимо.
+`Active` — незавершённые операции, а не открытые потоки; длительности в
+микросекундах. Адресов, credentials, raw errors и payload в этих агрегатах нет.
+
+Текущие [исправления native-адаптеров](UPDATE-FIXES.md) и [история планов](HISTORY.md).

@@ -2,7 +2,6 @@ package tunnel
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 )
 
@@ -43,7 +43,9 @@ func (c *Client) openUDPStream(parent context.Context) (*udpStream, error) {
 
 // openUDPStreamTo never retries an established flow on a different exit.
 // The caller supplies an explicitly trusted HTTPS origin.
-func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (*udpStream, error) {
+func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (stream *udpStream, err error) {
+	ticket := c.status.BeginOperation(enginestatus.UDPStreamSetup)
+	defer func() { c.status.FinishOperation(ticket, operationReason(err)) }()
 	if err := parent.Err(); err != nil {
 		return nil, err
 	}
@@ -88,7 +90,7 @@ func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (*ud
 		return nil, err
 	}
 	if (response.ProtoMajor != 2 && response.ProtoMajor != 3) || response.StatusCode != http.StatusOK {
-		return nil, errors.New("UDP streaming endpoint refused (no downgrade to one-shot)")
+		return nil, &UDPResponseError{HTTPStatus: response.StatusCode, Streaming: true}
 	}
 	if err := c.verifyProtocol(response, "udp-stream-v2"); err != nil {
 		return nil, err

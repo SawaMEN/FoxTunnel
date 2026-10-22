@@ -101,12 +101,25 @@ func (c *connection) run() {
 		fatal = err
 		return
 	}
-	packets := make(chan []byte, 8)
+	cached := c.takeSession()
+	if len(cached.token) > 0 {
+		if err := e.resume(cached.token); err != nil {
+			fatal = err
+			return
+		}
+	}
+	packets := make(chan *datagram, 8)
+	freePackets := datagramPool()
 	readErrors := make(chan error, 1)
 	reader.Go(func() {
-		buffer := make([]byte, 65535)
 		for {
-			n, err := socket.Read(buffer)
+			var packet *datagram
+			select {
+			case packet = <-freePackets:
+			case <-c.ctx.Done():
+				return
+			}
+			n, err := socket.Read(packet.data[:])
 			if err != nil {
 				select {
 				case readErrors <- err:
@@ -115,9 +128,10 @@ func (c *connection) run() {
 				return
 			}
 			if n == 0 {
+				freePackets <- packet
 				continue
 			}
-			packet := append([]byte(nil), buffer[:n]...)
+			packet.n = n
 			select {
 			case packets <- packet:
 			case <-c.ctx.Done():
@@ -221,6 +235,20 @@ func (c *connection) run() {
 					return
 				}
 			case 2:
+				if arg&(1<<16) != 0 {
+					if len(cached.token) == 0 {
+						fatal = errProtocol
+						return
+					}
+					if err := c.verifySession(cached.certificates, true); err != nil {
+						fatal = err
+						return
+					}
+					if err := e.reverified(); err != nil {
+						fatal = err
+						return
+					}
+				}
 				c.tlsState.CipherSuite = uint16(arg)
 				connected = true
 				handshake.Stop()
@@ -262,6 +290,8 @@ func (c *connection) run() {
 				// error. Existing streams finish; new ones use a
 				// separately authenticated QUIC connection.
 				c.owner.retire(c)
+			case 9:
+				c.saveSession(metadata[:n], arg)
 			}
 		}
 		// Authentication and request creation can generate output without another
@@ -287,7 +317,10 @@ func (c *connection) run() {
 			}
 			return
 		case packet := <-packets:
-			if err := e.input(packet); err != nil {
+			err := e.input(packet.data[:packet.n])
+			// ftn_input borrows synchronously and retains no Go pointers.
+			freePackets <- packet
+			if err != nil {
 				fatal = err
 				return
 			}

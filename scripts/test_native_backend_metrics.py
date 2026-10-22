@@ -25,6 +25,19 @@ class NativeBackendMetrics(unittest.TestCase):
             with self.assertRaises(ValueError):
                 metrics.parse_result(log, 'neqo-h3', 'bulk')
 
+    def test_resource_launcher_records_are_complete_and_finite(self):
+        import json
+        sample = {'user': .03, 'system': .02, 'rss_kib': 18336, 'wall': .1}
+        log = 'FOXTUNNEL_RESOURCE ' + json.dumps(sample) + '\n'
+        self.assertEqual(metrics.parse_resources(log)['process_peak_rss_kib'], 18336)
+        for bad in ('', log + log, 'FOXTUNNEL_RESOURCE {}\n'):
+            with self.assertRaises(ValueError):
+                metrics.parse_resources(bad)
+        for value in (-1, float('nan'), float('inf'), True):
+            invalid = dict(sample, user=value)
+            with self.assertRaises(ValueError):
+                metrics.parse_resources('FOXTUNNEL_RESOURCE ' + json.dumps(invalid))
+
 
 if __name__ == '__main__':
     unittest.main()

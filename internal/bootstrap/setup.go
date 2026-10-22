@@ -17,6 +17,7 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/contract"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/safejson"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
@@ -24,29 +25,31 @@ import (
 )
 
 type ServerConfig struct {
-	UsersFile      string `json:"users_file,omitempty"`
-	UsersState     string `json:"users_state,omitempty"`
-	XHTTPPath      string `json:"xhttp_path,omitempty"`
-	XHTTPHost      string `json:"xhttp_host,omitempty"`
-	Version        int    `json:"v"`
-	H3Listen       string `json:"h3_listen,omitempty"`
-	EnableUDP      bool   `json:"enable_udp,omitempty"`
-	Listen         string `json:"listen"`
-	Certificate    string `json:"cert"`
-	PrivateKey     string `json:"key"`
-	Username       string `json:"username"`
-	Password       string `json:"password"`
-	WebRoot        string `json:"web_root,omitempty"`
-	ClusterFile    string `json:"cluster_file,omitempty"`
-	BondHub        bool   `json:"bond_hub,omitempty"`
-	BondUpstream   string `json:"bond_upstream,omitempty"`
-	BondCA         string `json:"bond_ca,omitempty"`
-	BondSNI        string `json:"bond_sni,omitempty"`
-	BondPin        string `json:"bond_pin_sha256,omitempty"`
-	MaxTunnels     int    `json:"max_tunnels"`
-	MaxConnections int    `json:"max_connections"`
+	ProtocolPolicy contract.ProtocolPolicy `json:"protocol_policy,omitempty"`
+	UsersFile      string                  `json:"users_file,omitempty"`
+	UsersState     string                  `json:"users_state,omitempty"`
+	XHTTPPath      string                  `json:"xhttp_path,omitempty"`
+	XHTTPHost      string                  `json:"xhttp_host,omitempty"`
+	Version        int                     `json:"v"`
+	H3Listen       string                  `json:"h3_listen,omitempty"`
+	EnableUDP      bool                    `json:"enable_udp,omitempty"`
+	Listen         string                  `json:"listen"`
+	Certificate    string                  `json:"cert"`
+	PrivateKey     string                  `json:"key"`
+	Username       string                  `json:"username"`
+	Password       string                  `json:"password"`
+	WebRoot        string                  `json:"web_root,omitempty"`
+	ClusterFile    string                  `json:"cluster_file,omitempty"`
+	BondHub        bool                    `json:"bond_hub,omitempty"`
+	BondUpstream   string                  `json:"bond_upstream,omitempty"`
+	BondCA         string                  `json:"bond_ca,omitempty"`
+	BondSNI        string                  `json:"bond_sni,omitempty"`
+	BondPin        string                  `json:"bond_pin_sha256,omitempty"`
+	MaxTunnels     int                     `json:"max_tunnels"`
+	MaxConnections int                     `json:"max_connections"`
 }
 type Options struct {
+	ProtocolPolicy                                                                                  contract.ProtocolPolicy
 	Server, Certificate, PrivateKey, Output, SNI, CACertFile, JoinLinkFile, UpstreamCAFile, WebRoot string
 	TLSBackend, Transport, XHTTPPath, XHTTPHost                                                     string
 	EnableUDP                                                                                       bool
@@ -70,6 +73,9 @@ func ReadServer(path string) (ServerConfig, error) {
 	}
 	defer f.Close()
 	if safejson.Decode(f, 32<<10, &c) != nil || c.Version != 1 || c.Certificate == "" || c.PrivateKey == "" || !validCredentials(c) || c.MaxTunnels < 1 || c.MaxTunnels > 65536 || c.MaxConnections < 1 || c.MaxConnections > 65536 {
+		return ServerConfig{}, ErrConfig
+	}
+	if c.ProtocolPolicy.Validate() != nil || c.ProtocolPolicy == contract.ProtocolStrict && (c.BondHub || c.BondUpstream != "" || c.ClusterFile != "") {
 		return ServerConfig{}, ErrConfig
 	}
 	if c.XHTTPPath != "" || c.XHTTPHost != "" {
@@ -102,6 +108,12 @@ func ReadServer(path string) (ServerConfig, error) {
 }
 
 func Generate(o Options) error {
+	if o.ProtocolPolicy.Validate() != nil || o.ProtocolPolicy == contract.ProtocolStrict && o.JoinLinkFile != "" {
+		return ErrSetup
+	}
+	if o.ProtocolPolicy == contract.ProtocolLegacy {
+		o.ProtocolPolicy = "" // Preserve the old default JSON/profile format.
+	}
 	if o.JoinLinkFile != "" && (o.XHTTPPath != "" || o.XHTTPHost != "") {
 		return ErrSetup
 	}
@@ -172,12 +184,17 @@ func Generate(o Options) error {
 	}
 	listen := net.JoinHostPort("", port)
 	config := ServerConfig{EnableUDP: o.EnableUDP, Version: 1, Listen: listen, Certificate: certPath, PrivateKey: keyPath, Username: "vetroff", MaxTunnels: 256, MaxConnections: 512}
+	config.ProtocolPolicy = o.ProtocolPolicy
 	var secret [32]byte
 	if _, err := rand.Read(secret[:]); err != nil {
 		return ErrSetup
 	}
 	config.Password = base64.RawURLEncoding.EncodeToString(secret[:])
 	linkConfig := profile.Config{Version: 1, Servers: []string{u.String()}, Username: config.Username, Password: config.Password, SNI: policy.SNI, PinSHA256: policy.PinSHA256, Encryption: "tls13", TLSBackend: o.TLSBackend, Transport: o.Transport, XHTTPPath: o.XHTTPPath, XHTTPHost: o.XHTTPHost, Bond: true, Discover: true}
+	linkConfig.ProtocolPolicy = o.ProtocolPolicy
+	if o.ProtocolPolicy == contract.ProtocolStrict {
+		linkConfig.Bond, linkConfig.Discover = false, false
+	}
 	if o.WebRoot != "" {
 		config.WebRoot, err = filepath.Abs(o.WebRoot)
 		if err != nil {
@@ -223,11 +240,11 @@ func Generate(o Options) error {
 			}
 		}
 		linkConfig = joined
-	} else {
+	} else if o.ProtocolPolicy != contract.ProtocolStrict {
 		config.BondHub = true
 		config.ClusterFile = filepath.Join(out, "cluster.json")
 	}
-	if linkConfig.Transport == "h3-post" {
+	if linkConfig.Transport == "h3-post" || linkConfig.Transport == "h3-connect" {
 		config.H3Listen = listen
 	}
 	if o.JoinLinkFile == "" && xhttp.IsMode(linkConfig.Transport) && linkConfig.XHTTPPath == "" {

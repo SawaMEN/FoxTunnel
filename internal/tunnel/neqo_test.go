@@ -16,6 +16,12 @@ import (
 )
 
 func TestNeqoNativeSOCKSLargeHalfClose(t *testing.T) {
+	for _, mode := range []string{"h3-post", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) { testNeqoNativeSOCKSLargeHalfClose(t, mode) })
+	}
+}
+
+func testNeqoNativeSOCKSLargeHalfClose(t *testing.T, mode string) {
 	var dials atomic.Int64
 	target := testDestination(t, func(conn net.Conn) { dials.Add(1); data, _ := io.ReadAll(conn); _, _ = conn.Write(data) })
 	server := &Server{Username: "alice", Password: "secret", AllowPrivate: true}
@@ -26,7 +32,7 @@ func TestNeqoNativeSOCKSLargeHalfClose(t *testing.T) {
 	if err := client.SetServerIdentity("example.com", tlsidentity.Pin(node.Certificate())); err != nil {
 		t.Fatal(err)
 	}
-	if err := client.SetTransport("h3-post"); err != nil {
+	if err := client.SetTransport(mode); err != nil {
 		t.Fatal(err)
 	}
 	if err := client.SetQUICBackend("neqo", false, time.Second); err != nil {
@@ -64,11 +70,17 @@ func TestNeqoNativeSOCKSLargeHalfClose(t *testing.T) {
 	if err := client.SetTLSBackend("go"); err == nil {
 		t.Fatal("Neqo silently accepted Go TLS")
 	}
-	if err := client.SetTransport("h2-connect"); err == nil || client.nativeTransport != "h3-post" {
+	if err := client.SetTransport("h2-connect"); err == nil || client.nativeTransport != mode {
 		t.Fatal("incompatible transition did not roll back")
 	}
 }
 func TestNeqoBlockedUDPFallbackH2AndNoFallback(t *testing.T) {
+	for _, mode := range []string{"h3-post", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) { testNeqoBlockedUDPFallbackH2AndNoFallback(t, mode) })
+	}
+}
+
+func testNeqoBlockedUDPFallbackH2AndNoFallback(t *testing.T, mode string) {
 	for _, fallback := range []bool{false, true} {
 		name := "disabled"
 		if fallback {
@@ -91,7 +103,7 @@ func TestNeqoBlockedUDPFallbackH2AndNoFallback(t *testing.T) {
 					}
 				}
 			}()
-			if err := client.SetTransport("h3-post"); err != nil {
+			if err := client.SetTransport(mode); err != nil {
 				t.Fatal(err)
 			}
 			if err := client.SetQUICBackend("neqo", fallback, 150*time.Millisecond); err != nil {

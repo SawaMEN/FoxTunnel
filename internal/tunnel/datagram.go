@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
 	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 )
 
@@ -74,6 +75,7 @@ func (c *Client) ExchangeUDP(ctx context.Context, d Datagram) (Datagram, error) 
 // UDPConn is a bounded v2 association. It never reopens or replays a flow.
 // One Send and one Receive may progress concurrently; concurrent Sends serialize.
 type UDPConn struct {
+	status  *enginestatus.Recorder
 	stream  *udpStream
 	queue   chan Datagram
 	closed  chan struct{}
@@ -93,7 +95,7 @@ func (c *Client) OpenUDP(ctx context.Context) (*UDPConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	u := &UDPConn{stream: stream, queue: make(chan Datagram, udpStreamQueued), closed: make(chan struct{}), done: make(chan struct{}), sending: make(chan struct{}, 1)}
+	u := &UDPConn{status: c.status, stream: stream, queue: make(chan Datagram, udpStreamQueued), closed: make(chan struct{}), done: make(chan struct{}), sending: make(chan struct{}, 1)}
 	stop := context.AfterFunc(ctx, func() { u.fail(ctx.Err()) })
 	go func() {
 		defer close(u.done)
@@ -113,6 +115,7 @@ func (c *Client) OpenUDP(ctx context.Context) (*UDPConn, error) {
 			case <-u.closed:
 				return
 			default: // UDP loss is preferable to an unbounded application queue.
+				u.status.Reject(enginestatus.UDPReceiveQueue)
 			}
 		}
 	}()

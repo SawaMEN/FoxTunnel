@@ -1,0 +1,118 @@
+name: Mozilla Necko source experiment
+on:
+  push:
+    branches: [firefox]
+    paths:
+      - 'experiments/firefox-necko/patches/**'
+      - 'experiments/firefox-necko/gecko.lock.json'
+      - 'scripts/build_necko.py'
+      - 'scripts/test_build_necko.py'
+      - '.github/workflows/necko-experiment.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: necko-source-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      MOZBUILD_STATE_PATH: ${{ github.workspace }}/mozbuild
+      MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE: pip
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: foxtunnel
+      - name: Source preparation tests
+        working-directory: foxtunnel
+        run: python3 -m unittest discover -s scripts -p test_build_necko.py -v
+      - name: Read locked Gecko revision
+        id: lock
+        working-directory: foxtunnel
+        run: |
+          python3 - <<'PY'
+          import json, os
+          lock = json.load(open('experiments/firefox-necko/gecko.lock.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('revision=' + lock['revision'] + '\n')
+          PY
+      - name: Make room for a full C++ build on the disposable runner
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h .
+      - uses: actions/checkout@v4
+        with:
+          repository: mozilla-firefox/firefox
+          ref: ${{ steps.lock.outputs.revision }}
+          path: gecko
+          fetch-depth: 1
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.MOZBUILD_STATE_PATH }}
+          key: necko-toolchains-ubuntu24-${{ steps.lock.outputs.revision }}
+      - name: Bootstrap Mozilla build dependencies (C++ build, no artifact substitution)
+        working-directory: gecko
+        run: python3 mach --no-interactive bootstrap --application-choice=browser --no-agentic-tools
+      - name: Build pinned Gecko with reviewed source patches
+        id: build
+        working-directory: foxtunnel
+        run: python3 scripts/build_necko.py --source ../gecko --out ../necko-build --jobs 3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: foxtunnel/go.sum
+      - name: Native H2 and H3 cold handoff and binary transfer
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECTHandoff$' -v -count=1 -timeout=80s
+      - name: Native H2 and H3 half-close gate
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECT$' -v -count=1 -timeout=80s
+      - name: Reject invalid proxy certificates before credentials
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoTrustBeforeCredentials$' -v -count=1 -timeout=60s
+      - name: Local TCP FIN and reverse H2/H3 half-close gates
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^Test(GeckoLocalHalfClose|GeckoReverseHalfClose|ReverseHalfClosePeers)$' -v -count=1 -timeout=80s
+      - name: Concurrent streams, cancellation and H3-only failure policy
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+        run: go test -race ./experiments/firefox-necko -run '^TestGecko(ConcurrentCONNECT|Cancellation|H3NoTCPFallback)$' -v -count=3 -timeout=120s
+      - name: Archive the patched runtime for repeatable native diagnostics
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          tar -chf - -C necko-build/obj/dist/bin . | zstd -3 -T0 > necko-build/runtime.tar.zst
+      - name: Keep patched runtime
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: necko-linux-amd64-runtime
+          path: necko-build/runtime.tar.zst
+          if-no-files-found: error
+          retention-days: 7
+      - name: Keep source and runtime provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: necko-source-provenance
+          path: |
+            foxtunnel/experiments/firefox-necko/gecko.lock.json
+            foxtunnel/experiments/firefox-necko/patches/
+            necko-build/provenance.json
+            necko-build/mozconfig
+          if-no-files-found: error
+          retention-days: 14

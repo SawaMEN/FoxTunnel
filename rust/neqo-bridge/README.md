@@ -10,10 +10,16 @@ reported `env.sh` before Go builds/tests with `-tags nss,neqo`.
 Cargo.lock, rust-toolchain.toml and scripts/neqo.lock.json pin the inputs.
 The standard Linux NSS archives use quic-go for H3; Mozilla/Neqo bundles are separate.
 
-[bridge.h](../../internal/neqo/bridge.h) defines ABI 1 and ownership.
+[bridge.h](../../internal/neqo/bridge.h) defines ABI 2 and ownership.
 One Go actor owns the engine on its creating OS thread. Rust retains no Go pointers;
 buffers are borrowed synchronously. ABI panics become terminal errors.
 CA/hostname/SPKI validation must complete before HTTP credentials are sent.
 
 The builder exports dependency licenses/provenance and a generated archive-hash
 header for Go's build cache. Building the bridge does not publish a release.
+
+ABI 2 imports single-use, origin-bound resumption tokens from a bounded Go
+cache. Go revalidates the saved chain, hostname, expiry and trust/pin callback
+before the Rust fetch gate opens. Neqo may send its own H3 control streams
+with 0-RTT; HTTP requests and credentials wait for Connected and verification.
+See [changes and limits](../../docs/UPDATE-FIXES.md).

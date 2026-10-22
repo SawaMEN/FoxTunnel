@@ -41,6 +41,7 @@ type Profile struct {
 	Source           string            `json:"source"`
 	Hello            fingerprint.Hello `json:"hello"`
 	ALPN             string            `json:"negotiated_alpn"`
+	SessionResumed   bool              `json:"session_resumed"`
 	Records          []Record          `json:"tls_records"`
 	DroppedRecords   int               `json:"dropped_records"`
 	Frames           []Frame           `json:"client_h2_frames"`
@@ -236,6 +237,7 @@ func Capture(l net.Listener, config *tls.Config, handler http.Handler, source st
 	r.mu.Lock()
 	r.p.Hello = hello
 	r.p.ALPN = state.NegotiatedProtocol
+	r.p.SessionResumed = state.DidResume
 	r.mu.Unlock()
 	_ = raw.SetDeadline(time.Now().Add(duration))
 	// Close also unblocks a handler waiting on an application stream.

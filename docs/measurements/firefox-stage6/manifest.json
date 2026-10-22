@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "kind": "controlled-wire-capture-set",
+  "checkout_commit": "09b80a430ae893c6610cd650024cbf6f2efd9143",
+  "worktree_dirty": false,
+  "versions": {
+    "firefox": "Mozilla Firefox 158.0",
+    "naive": "naive 154.0.8037.49"
+  },
+  "network_scope": "IPv4 loopback with localhost SNI; DNS family and failover are not measured",
+  "firefox_fixture_overrides": {
+    "allow_h3_with_fixture_CA": true,
+    "force_h3_test_mapping": true,
+    "content_sandbox_disabled": true
+  },
+  "archives": {
+    "firefox": "9549b054ec4cf85f50f6a19d8c6fb79580312e71ebc4ec2cb217ec9af09dc12a",
+    "naive": "9d765620b90f7c60eb40c7c68b2f82537757cc52a8693dee7a00f8ba8b13dfd0"
+  },
+  "executable_sha256": {
+    "firefox": "a19472941a7cd7252ab5e61b02eb616a50389a784323c21dc6873a23fd700789",
+    "naive": "9fba072aceb445d0401bb26273584726c479f5c4bc7f911aebf293c90136b044",
+    "endpoint": "0d05aa3e59190351dcbb06293d2a4820140adf9d0793bdfbdddc9611a0c177b7"
+  },
+  "observations": [
+    {
+      "subject": "firefox",
+      "protocol": "h2",
+      "path": "firefox-h2.json",
+      "sha256": "53084d883b26fc5d5e3fd55246e54f0501379e8d936a75b31737168273e7c47b"
+    },
+    {
+      "subject": "firefox",
+      "protocol": "h3",
+      "path": "firefox-h3.json",
+      "sha256": "1cfdd8c280ad4daec43e3f20a727afb4519cd25ed309d71e55ec1594199301ec"
+    },
+    {
+      "subject": "naive",
+      "protocol": "h2",
+      "path": "naive-h2.json",
+      "sha256": "7b598ed45026d3df48930a6bf84d618bd3444aab9e6687f4eae13ef732e5e957"
+    },
+    {
+      "subject": "naive",
+      "protocol": "h3",
+      "path": "naive-h3.json",
+      "sha256": "1d6f8d07281ceea6411c20b3d87399c8b54c97e20588354f331181b4aacceead"
+    },
+    {
+      "subject": "foxtunnel",
+      "protocol": "h2",
+      "path": "foxtunnel-h2.json",
+      "sha256": "84da291f0b474e737da8ba3eb84d848e226fd17dd178fafffde1a163c76f95ea"
+    },
+    {
+      "subject": "foxtunnel",
+      "protocol": "h3",
+      "path": "foxtunnel-h3.json",
+      "sha256": "0336762a956fe1f1de376150336da362eddfae0b85dc38f54d7d92036bc6d56d"
+    }
+  ],
+  "behavior_observations": [
+    {
+      "subject": "firefox",
+      "protocol": "h2",
+      "path": "firefox-h2-behavior.json",
+      "sha256": "bc846b8fb754d8e39951d0f8f056336327d5678663bf393dba9c6f07f7bbaf7d"
+    },
+    {
+      "subject": "firefox",
+      "protocol": "h3",
+      "path": "firefox-h3-behavior.json",
+      "sha256": "714cb2c66d26f7f9f74575dd6d83af6d3f8dfe4a5740729abeaad03d80149161"
+    },
+    {
+      "subject": "foxtunnel",
+      "protocol": "h2",
+      "path": "foxtunnel-h2-behavior.json",
+      "sha256": "b0e455ba4cb21ff912f45686f168e0482fa77d56c11201e13a9b416a2980e391"
+    },
+    {
+      "subject": "foxtunnel",
+      "protocol": "h3",
+      "path": "foxtunnel-h3-behavior.json",
+      "sha256": "70af4b05c18e3cd30993f89c0f90daf8e71fec88ec2237c2713d99b69ba54913"
+    }
+  ],
+  "native_versions": {
+    "nss": "3.130",
+    "neqo": "0.33.0"
+  },
+  "lock_sha256": {
+    "wire-capture.lock.json": "000447fecee5d9912474410ed7073f1dac68234bb74dbb43a2dc6a4a781dee56",
+    "mozilla-runtime.lock.json": "602443656ee13ca028ae501c69b5911a081bb1a83bb2b452cc7a56a6306a1442",
+    "neqo.lock.json": "a1ce49763fb99f821b0069009f576a4cca3b41105d288cb3990777907c51c75f"
+  },
+  "behavior_endpoint_sha256": "6a5077743f8e5ecad3b814d50c66165da92a2fb831094b2443b0267da05969a2",
+  "scope": "Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for FoxTunnel. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained."
+}

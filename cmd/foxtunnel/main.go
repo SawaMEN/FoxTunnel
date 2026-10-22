@@ -16,6 +16,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/FoxTunnel/internal/contract"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
@@ -37,6 +38,18 @@ func main() {
 	password := os.Getenv("FOXTUNNEL_PASSWORD")
 
 	switch os.Args[1] {
+	case "doctor":
+		ctx, stop := processContext()
+		defer stop()
+		if err := doctorCommand(ctx, os.Args[2:], os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	case "check-config":
+		if err := checkConfigCommand(os.Args[2:], os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
 	case "access":
 		if err := accessCommand(os.Args[2:]); err != nil {
 			log.Fatal(err)
@@ -57,13 +70,14 @@ func main() {
 
 	case "setup":
 		fs := i18n.NewFlagSet("foxtunnel setup")
+		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict (strict generates a direct single-node profile)")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (setup generates a random route by default)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
 		cert := fs.String("cert", "", i18n.Text("TLS certificate PEM"))
 		key := fs.String("key", "", i18n.Text("TLS private key PEM"))
 		out := fs.String("out", "vetroff-config", i18n.Text("new private configuration directory (must not exist)"))
-		transport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up (no external proxy)"))
+		transport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, h3-connect, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up (no external proxy)"))
 		backend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
 		sni := fs.String("sni", "", i18n.Text("verified TLS server name (default: URL hostname)"))
 		ca := fs.String("ca-cert", "", i18n.Text("additional trusted certificate PEM"))
@@ -72,7 +86,11 @@ func main() {
 		web := fs.String("web-root", "", i18n.Text("public website directory for ordinary requests and rejected probes"))
 		enableUDP := fs.Bool("enable-udp", false, i18n.Text("experimental SOCKS5 UDP request/response relay on generated server"))
 		i18n.Parse(fs, os.Args[2:])
-		if err := bootstrap.Generate(bootstrap.Options{Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, EnableUDP: *enableUDP}); err != nil {
+		wirePolicy, err := contract.ParseProtocolPolicy(*protocolPolicy)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := bootstrap.Generate(bootstrap.Options{ProtocolPolicy: wirePolicy, Server: *server, Certificate: *cert, PrivateKey: *key, Output: *out, SNI: *sni, CACertFile: *ca, JoinLinkFile: *join, UpstreamCAFile: *upstreamCA, WebRoot: *web, TLSBackend: *backend, Transport: *transport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, EnableUDP: *enableUDP}); err != nil {
 			log.Fatal(i18n.Text(err.Error()))
 		}
 		fmt.Println(i18n.Text("configuration created: server.json, connection.txt and node.json (secrets not printed)"))
@@ -89,6 +107,7 @@ func main() {
 		return
 	case "server":
 		fs := i18n.NewFlagSet("foxtunnel server")
+		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict (TCP/UDP; incompatible with bond/discovery)")
 		eventsJSON := fs.Bool("events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
 		stdinEOF := fs.Bool("shutdown-on-stdin-eof", false, "gracefully stop when the host closes stdin")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
@@ -113,6 +132,10 @@ func main() {
 		allowPrivate := fs.Bool("allow-private", false, i18n.Text("permit private/loopback destination IPs (unsafe on public deployments)"))
 		enableUDP := fs.Bool("enable-udp", false, i18n.Text("enable experimental authenticated UDP relay (one request/response per HTTPS POST)"))
 		i18n.Parse(fs, os.Args[2:])
+		wirePolicy, err := contract.ParseProtocolPolicy(*protocolPolicy)
+		if err != nil {
+			log.Fatal(err)
+		}
 		if *configFile != "" {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
@@ -137,6 +160,10 @@ func main() {
 			*bondHub, *bondRelay, *bondCA = config.BondHub, config.BondUpstream, config.BondCA
 			*bondSNI, *bondPin = config.BondSNI, config.BondPin
 			*maxTunnels, *maxConnections = config.MaxTunnels, config.MaxConnections
+			wirePolicy = config.ProtocolPolicy
+		}
+		if wirePolicy == contract.ProtocolStrict && (*bondHub || *bondRelay != "" || *clusterFile != "") {
+			log.Fatal("strict protocol policy is not supported with bond/discovery")
 		}
 		var controller *access.Controller
 		if *usersFile != "" || *usersState != "" {
@@ -186,7 +213,7 @@ func main() {
 		if err != nil {
 			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
 		}
-		handler := &tunnel.Server{Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, EnableUDP: *enableUDP, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		handler := &tunnel.Server{RequireProtocolNegotiation: wirePolicy == contract.ProtocolStrict, Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, EnableUDP: *enableUDP, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()
@@ -265,6 +292,7 @@ func main() {
 
 	case "client", "share":
 		fs := i18n.NewFlagSet("foxtunnel " + os.Args[1])
+		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict; a connection profile owns this setting")
 		eventsJSON, stdinEOF := new(bool), new(bool)
 		if os.Args[1] == "client" {
 			fs.BoolVar(eventsJSON, "events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
@@ -314,7 +342,7 @@ func main() {
 		if os.Args[1] == "client" {
 			fs.StringVar(engine, "engine", "legacy", i18n.Text("local transport engine: legacy (default) or mozilla (NSS/Neqo build required)"))
 		}
-		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up, xhttp-packet-up, or auto with --engine mozilla"))
+		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, h3-connect, wss, xhttp-stream-one, xhttp-stream-up, xhttp-packet-up, or auto with --engine mozilla"))
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
 		quicBackend, h3Fallback := new(string), new(string)
 		quicTimeout := new(time.Duration)
@@ -329,7 +357,7 @@ func main() {
 		*quicBackend = "quic-go"
 		*h3Fallback = "none"
 		if os.Args[1] == "client" {
-			fs.StringVar(quicBackend, "quic-backend", "quic-go", i18n.Text("QUIC client: quic-go or experimental neqo (h3-post only)"))
+			fs.StringVar(quicBackend, "quic-backend", "quic-go", i18n.Text("QUIC client: quic-go or experimental neqo (h3-post or h3-connect only)"))
 			fs.StringVar(h3Fallback, "h3-fallback", "none", i18n.Text("Neqo handshake fallback: none or h2 (before sending a request)"))
 			fs.DurationVar(quicTimeout, "quic-handshake-timeout", 0, i18n.Text("Neqo handshake budget (default 2s; 100ms through 10s)"))
 		}
@@ -353,6 +381,10 @@ func main() {
 		i18n.Parse(fs, os.Args[2:])
 		if *stdinEOF && *linkFile == "-" {
 			log.Fatal("stdin shutdown requires a separate connection file")
+		}
+		wirePolicy, err := contract.ParseProtocolPolicy(*protocolPolicy)
+		if err != nil {
+			log.Fatal(err)
 		}
 		if *link != "" || *linkFile != "" {
 			if *link != "" && *linkFile != "" {
@@ -395,12 +427,16 @@ func main() {
 			*padding = imported.Padding
 			*connectTimeout, _ = time.ParseDuration(imported.ConnectTimeout)
 			*attemptTimeout, _ = time.ParseDuration(imported.AttemptTimeout)
+			wirePolicy = imported.ProtocolPolicy
+		}
+		if wirePolicy == contract.ProtocolStrict && (*bonded || *discover) {
+			log.Fatal("strict protocol policy is not supported with bond/discovery")
 		}
 		if os.Args[1] == "share" {
 			if user == "" || password == "" {
 				log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
 			}
-			exported, err := profile.Encode(profile.Config{Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Transport: *nativeTransport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
+			exported, err := profile.Encode(profile.Config{ProtocolPolicy: wirePolicy, Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Transport: *nativeTransport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -487,6 +523,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		client.RequireProtocolNegotiation = wirePolicy == contract.ProtocolStrict
 		intent := transportengine.Config{
 			Engine: *engine, Transport: *nativeTransport,
 			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,
@@ -658,7 +695,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access> [flags] (credentials: environment or vetroff link)"))
+	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access|check-config|doctor> [flags] (credentials: environment or vetroff link)"))
 	os.Exit(2)
 }
 

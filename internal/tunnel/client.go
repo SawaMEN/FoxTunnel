@@ -199,7 +199,7 @@ func (c *Client) SetTLSBackend(name string) error {
 	resolved := name
 	if name == "auto" {
 		resolved = "go"
-		if (buildinfo.NSSAvailable && c.nativeTransport != "h3-post") || c.quic.backend == "neqo" {
+		if (buildinfo.NSSAvailable && !isH3Transport(c.nativeTransport)) || c.quic.backend == "neqo" {
 			resolved = "nss"
 		}
 	}
@@ -289,6 +289,7 @@ func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error 
 			workers.Add(1)
 			go func() { defer workers.Done(); defer func() { <-slots }(); c.handleContext(ctx, conn) }()
 		default:
+			c.status.Reject(enginestatus.SOCKSCapacity)
 			_ = conn.Close()
 		}
 	}

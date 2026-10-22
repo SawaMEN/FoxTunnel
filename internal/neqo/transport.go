@@ -6,7 +6,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -28,16 +27,16 @@ const (
 	maxStreams  = 32
 	chunkSize   = 32 << 10
 	maxMetadata = 1 << 20
-	maxHeaders  = 64 << 10
-	idleRetire  = 75 * time.Second // below the pinned Neqo QUIC 90s idle timeout
+	idleRetire  = 25 * time.Second // below the pinned Neqo QUIC 30s idle timeout
 )
 
 type transport struct {
-	config  *tls.Config
-	timeout time.Duration
-	mu      sync.Mutex
-	origins map[string]*connection
-	live    map[*connection]struct{} // includes draining/evicted native engines
+	config   *tls.Config
+	timeout  time.Duration
+	mu       sync.Mutex
+	origins  map[string]*connection
+	live     map[*connection]struct{} // includes draining/evicted native engines
+	sessions map[string]session
 }
 type connection struct {
 	tlsState           tls.ConnectionState
@@ -51,6 +50,7 @@ type connection struct {
 	active             int
 	touched            time.Time
 	draining           atomic.Bool
+	peerDER            []byte
 }
 type command struct {
 	kind   byte
@@ -457,86 +457,10 @@ func (s *stream) Close() error {
 	})
 	return nil
 }
-func putFields(fields ...string) []byte {
-	var out []byte
-	for _, v := range fields {
-		out = binary.BigEndian.AppendUint32(out, uint32(len(v)))
-		out = append(out, v...)
-	}
-	return out
-}
-func takeFields(p []byte) ([][]byte, error) {
-	var fields [][]byte
-	for len(p) > 0 {
-		if len(p) < 4 {
-			return nil, errProtocol
-		}
-		n := int(binary.BigEndian.Uint32(p))
-		p = p[4:]
-		if n > len(p) {
-			return nil, errProtocol
-		}
-		fields = append(fields, p[:n])
-		p = p[n:]
-		if len(fields) > 256 {
-			return nil, errProtocol
-		}
-	}
-	return fields, nil
-}
-func requestMetadata(r *http.Request) ([]byte, error) {
-	if r == nil || r.URL == nil || r.URL.Scheme != "https" || !httpguts.ValidHeaderFieldValue(r.Host) || r.Method == "CONNECT" {
-		return nil, errors.New("invalid Neqo request")
-	}
-	method := r.Method
-	if method == "" {
-		method = "GET"
-	}
-	if !httpguts.ValidHeaderFieldName(method) {
-		return nil, errors.New("invalid method")
-	}
-	authority := r.Host
-	if authority == "" {
-		authority = r.URL.Host
-	}
-	path := r.URL.RequestURI()
-	if path == "" {
-		path = "/"
-	}
-	fields := []string{method, "https", authority, path}
-	count := 0
-	for name, values := range r.Header {
-		lower := strings.ToLower(name)
-		if lower == "content-length" {
-			continue
-		} // Request.ContentLength is authoritative.
-		if !httpguts.ValidHeaderFieldName(lower) || lower == "connection" || lower == "upgrade" || lower == "transfer-encoding" || lower == "keep-alive" || lower == "proxy-connection" || lower == "host" {
-			return nil, errors.New("unsupported Neqo header")
-		}
-		for _, v := range values {
-			if !httpguts.ValidHeaderFieldValue(v) {
-				return nil, errors.New("invalid Neqo header")
-			}
-			count++
-			if count > 128 {
-				return nil, errors.New("too many Neqo headers")
-			}
-			fields = append(fields, lower, v)
-		}
-	}
-	if r.ContentLength > 0 {
-		if count == 128 {
-			return nil, errors.New("too many Neqo headers")
-		}
-		fields = append(fields, "content-length", strconv.FormatInt(r.ContentLength, 10))
-	}
-	metadata := putFields(fields...)
-	if len(metadata) > maxHeaders {
-		return nil, errors.New("Neqo request headers too large")
-	}
-	return metadata, nil
-}
 func (c *connection) verify(data []byte) error {
+	return c.verifySession(data, false)
+}
+func (c *connection) verifySession(data []byte, resumed bool) error {
 	encoded, err := takeFields(data)
 	if err != nil || len(encoded) == 0 || len(encoded) > 16 {
 		return errProtocol
@@ -561,13 +485,14 @@ func (c *connection) verify(data []byte) error {
 	if err != nil {
 		return &tls.CertificateVerificationError{UnverifiedCertificates: certs, Err: err}
 	}
-	state := tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, NegotiatedProtocol: "h3", ServerName: c.name, PeerCertificates: certs, VerifiedChains: chains}
+	state := tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, DidResume: resumed, NegotiatedProtocol: "h3", ServerName: c.name, PeerCertificates: certs, VerifiedChains: chains}
 	if verify := c.owner.config.VerifyConnection; verify != nil {
 		if err := verify(state); err != nil {
 			return &tls.CertificateVerificationError{UnverifiedCertificates: certs, Err: err}
 		}
 	}
 	c.tlsState = state
+	c.peerDER = append(c.peerDER[:0], data...)
 	return nil
 }
 func (s *stream) response(data []byte, fin, interim bool) error {

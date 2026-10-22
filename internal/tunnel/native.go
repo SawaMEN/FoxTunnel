@@ -35,8 +35,8 @@ func (c *Client) SetTransport(mode string) error {
 	if mode == "" {
 		mode = "h2-connect"
 	}
-	if mode != "h2-connect" && mode != "h2-post" && mode != "wss" && mode != "h3-post" && mode != "xhttp-stream-one" && mode != "xhttp-stream-up" && mode != "xhttp-packet-up" {
-		return i18n.Error("unknown native transport (choose h2-connect, h2-post, h3-post, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up)")
+	if mode != "h2-connect" && mode != "h2-post" && mode != "wss" && !isH3Transport(mode) && mode != "xhttp-stream-one" && mode != "xhttp-stream-up" && mode != "xhttp-packet-up" {
+		return i18n.Error("unknown native transport (choose h2-connect, h2-post, h3-post, h3-connect, wss, xhttp-stream-one, xhttp-stream-up or xhttp-packet-up)")
 	}
 	if c.bondClient != nil || c.bondDiscovery != nil {
 		return i18n.Error("configure transport before enabling bond")
@@ -58,19 +58,19 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 		return nil, i18n.Error("TLS client profile requires NSS")
 	}
 
-	if quic.backend == "neqo" && mode != "h3-post" {
-		return nil, errors.New("Neqo requires h3-post")
+	if quic.backend == "neqo" && !isH3Transport(mode) {
+		return nil, errors.New("Neqo requires h3-post or h3-connect")
 	}
 	if mode == "xhttp-stream-one" || mode == "xhttp-stream-up" || mode == "xhttp-packet-up" {
 		return newXHTTPTransport(mode, backend, config, auth, settings, receiveProfile, clientProfile)
 	}
-	if receiveProfile != "" && (mode == "wss" || mode == "h3-post") {
+	if receiveProfile != "" && (mode == "wss" || isH3Transport(mode)) {
 		return nil, i18n.Error("HTTP/2 receive profile requires an H2 or XHTTP transport")
 	}
 	if settings != (xhttp.Settings{}) {
 		return nil, xhttp.ErrSettings
 	}
-	if mode == "h3-post" {
+	if isH3Transport(mode) {
 		if quic.backend == "neqo" {
 			if backend != "nss" || clientProfile != "" {
 				return nil, errors.New("Neqo requires NSS and cannot use the TCP Firefox TLS profile")
@@ -95,10 +95,16 @@ func makeNativeTransport(mode, backend string, config *tls.Config, auth string, 
 				}
 				selected = &neqoFallbackTransport{h3: transport, h2: h2, until: make(map[string]time.Time), status: quic.status}
 			}
+			if mode == "h3-connect" {
+				return selected, nil
+			}
 			return postTransport{tlsTransport: selected, host: config.ServerName}, nil
 		}
 		if backend != "go" {
 			return nil, i18n.Error("HTTP/3 requires Go QUIC TLS; NSS cannot be selected")
+		}
+		if mode == "h3-connect" {
+			return newH3ConnectTransport(config), nil
 		}
 		return newH3Transport(config), nil
 	}

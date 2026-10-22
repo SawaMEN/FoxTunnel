@@ -1,0 +1,1195 @@
+{
+  "schema": 1,
+  "kind": "firefox-foxtunnel-controlled-behavior-comparison",
+  "cases": [
+    {
+      "protocol": "h2",
+      "firefox": {
+        "connections_used": 3,
+        "connections_accepted": 3,
+        "resumed_connections": 2,
+        "reconnect_resumed": [
+          true,
+          true
+        ],
+        "phases": {
+          "cancel": {
+            "started": 4,
+            "finished": 0,
+            "canceled": 4,
+            "active": 0,
+            "max_active": 4
+          },
+          "cold": {
+            "started": 1,
+            "finished": 1,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          },
+          "parallel": {
+            "started": 8,
+            "finished": 8,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 8
+          },
+          "reconnect": {
+            "started": 2,
+            "finished": 2,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          },
+          "sequential": {
+            "started": 3,
+            "finished": 3,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          }
+        },
+        "phase_connections": {
+          "cold": [
+            1
+          ],
+          "sequential": [
+            1
+          ],
+          "parallel": [
+            1
+          ],
+          "cancel": [
+            1
+          ],
+          "reconnect": [
+            2,
+            3
+          ]
+        }
+      },
+      "foxtunnel": {
+        "connections_used": 3,
+        "connections_accepted": 3,
+        "resumed_connections": 0,
+        "reconnect_resumed": [
+          false,
+          false
+        ],
+        "phases": {
+          "cancel": {
+            "started": 4,
+            "finished": 0,
+            "canceled": 4,
+            "active": 0,
+            "max_active": 4
+          },
+          "cold": {
+            "started": 1,
+            "finished": 1,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          },
+          "parallel": {
+            "started": 8,
+            "finished": 8,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 8
+          },
+          "reconnect": {
+            "started": 2,
+            "finished": 2,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          },
+          "sequential": {
+            "started": 3,
+            "finished": 3,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          }
+        },
+        "phase_connections": {
+          "cold": [
+            1
+          ],
+          "sequential": [
+            1
+          ],
+          "parallel": [
+            1
+          ],
+          "cancel": [
+            1
+          ],
+          "reconnect": [
+            2,
+            3
+          ]
+        }
+      }
+    },
+    {
+      "protocol": "h3",
+      "firefox": {
+        "connections_used": 3,
+        "connections_accepted": 3,
+        "resumed_connections": 2,
+        "reconnect_resumed": [
+          true,
+          true
+        ],
+        "phases": {
+          "cancel": {
+            "started": 4,
+            "finished": 0,
+            "canceled": 4,
+            "active": 0,
+            "max_active": 4
+          },
+          "cold": {
+            "started": 1,
+            "finished": 1,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          },
+          "parallel": {
+            "started": 8,
+            "finished": 8,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 8
+          },
+          "reconnect": {
+            "started": 2,
+            "finished": 2,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          },
+          "sequential": {
+            "started": 3,
+            "finished": 3,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          }
+        },
+        "phase_connections": {
+          "cold": [
+            1
+          ],
+          "sequential": [
+            1
+          ],
+          "parallel": [
+            1
+          ],
+          "cancel": [
+            1
+          ],
+          "reconnect": [
+            2,
+            3
+          ]
+        }
+      },
+      "foxtunnel": {
+        "connections_used": 3,
+        "connections_accepted": 3,
+        "resumed_connections": 0,
+        "reconnect_resumed": [
+          false,
+          false
+        ],
+        "phases": {
+          "cancel": {
+            "started": 4,
+            "finished": 0,
+            "canceled": 4,
+            "active": 0,
+            "max_active": 4
+          },
+          "cold": {
+            "started": 1,
+            "finished": 1,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          },
+          "parallel": {
+            "started": 8,
+            "finished": 8,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 8
+          },
+          "reconnect": {
+            "started": 2,
+            "finished": 2,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          },
+          "sequential": {
+            "started": 3,
+            "finished": 3,
+            "canceled": 0,
+            "active": 0,
+            "max_active": 1
+          }
+        },
+        "phase_connections": {
+          "cold": [
+            1
+          ],
+          "sequential": [
+            1
+          ],
+          "parallel": [
+            1
+          ],
+          "cancel": [
+            1
+          ],
+          "reconnect": [
+            2,
+            3
+          ]
+        }
+      }
+    }
+  ],
+  "ordered_h2_connections": {
+    "firefox": [
+      {
+        "connection": 1,
+        "requests": {
+          "cancel": 4,
+          "cold": 1,
+          "parallel": 8,
+          "sequential": 3
+        },
+        "resumed": false,
+        "hello": {
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            11,
+            35,
+            16,
+            5,
+            34,
+            18,
+            51,
+            43,
+            13,
+            45,
+            28,
+            27,
+            65037
+          ],
+          "cipher_suites": [
+            4865,
+            4867,
+            4866,
+            49195,
+            49199,
+            52393,
+            52392,
+            49196,
+            49200,
+            49171,
+            49172,
+            156,
+            157,
+            47,
+            53
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25
+          ],
+          "supported_versions": [
+            772,
+            771
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            2052,
+            2053,
+            2054,
+            1025,
+            1281,
+            1537,
+            515,
+            513
+          ],
+          "key_share_groups": [
+            4588,
+            29,
+            23
+          ],
+          "alpn": [
+            "h2",
+            "http/1.1"
+          ]
+        },
+        "initial_h2_settings": [
+          {
+            "id": 1,
+            "value": 65536
+          },
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 131072
+          },
+          {
+            "id": 5,
+            "value": 16384
+          }
+        ]
+      },
+      {
+        "connection": 2,
+        "requests": {
+          "reconnect": 1
+        },
+        "resumed": true,
+        "hello": {
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            11,
+            16,
+            5,
+            34,
+            18,
+            51,
+            43,
+            13,
+            45,
+            28,
+            27,
+            65037,
+            41
+          ],
+          "cipher_suites": [
+            4865,
+            4867,
+            4866,
+            49195,
+            49199,
+            52393,
+            52392,
+            49196,
+            49200,
+            49171,
+            49172,
+            156,
+            157,
+            47,
+            53
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25
+          ],
+          "supported_versions": [
+            772,
+            771
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            2052,
+            2053,
+            2054,
+            1025,
+            1281,
+            1537,
+            515,
+            513
+          ],
+          "key_share_groups": [
+            4588,
+            29,
+            23
+          ],
+          "alpn": [
+            "h2",
+            "http/1.1"
+          ]
+        },
+        "initial_h2_settings": [
+          {
+            "id": 1,
+            "value": 65536
+          },
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 131072
+          },
+          {
+            "id": 5,
+            "value": 16384
+          }
+        ]
+      },
+      {
+        "connection": 3,
+        "requests": {
+          "reconnect": 1
+        },
+        "resumed": true,
+        "hello": {
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            11,
+            16,
+            5,
+            34,
+            18,
+            51,
+            43,
+            13,
+            45,
+            28,
+            27,
+            65037,
+            41
+          ],
+          "cipher_suites": [
+            4865,
+            4867,
+            4866,
+            49195,
+            49199,
+            52393,
+            52392,
+            49196,
+            49200,
+            49171,
+            49172,
+            156,
+            157,
+            47,
+            53
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25
+          ],
+          "supported_versions": [
+            772,
+            771
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            2052,
+            2053,
+            2054,
+            1025,
+            1281,
+            1537,
+            515,
+            513
+          ],
+          "key_share_groups": [
+            4588,
+            29,
+            23
+          ],
+          "alpn": [
+            "h2",
+            "http/1.1"
+          ]
+        },
+        "initial_h2_settings": [
+          {
+            "id": 1,
+            "value": 65536
+          },
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 131072
+          },
+          {
+            "id": 5,
+            "value": 16384
+          }
+        ]
+      }
+    ],
+    "foxtunnel": [
+      {
+        "connection": 1,
+        "requests": {
+          "cancel": 4,
+          "cold": 1,
+          "parallel": 8,
+          "sequential": 3
+        },
+        "resumed": false,
+        "hello": {
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            16,
+            51,
+            43,
+            13,
+            28
+          ],
+          "cipher_suites": [
+            4865,
+            4867,
+            4866
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25,
+            4587,
+            4589,
+            256,
+            257,
+            258,
+            259,
+            260
+          ],
+          "supported_versions": [
+            772
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            515,
+            2052,
+            2053,
+            2054,
+            2308,
+            2309,
+            2310,
+            1025,
+            1281,
+            1537,
+            513
+          ],
+          "key_share_groups": [
+            4588
+          ],
+          "alpn": [
+            "h2"
+          ]
+        },
+        "initial_h2_settings": [
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 4194304
+          },
+          {
+            "id": 5,
+            "value": 16384
+          },
+          {
+            "id": 6,
+            "value": 10485760
+          }
+        ]
+      },
+      {
+        "connection": 2,
+        "requests": {
+          "reconnect": 1
+        },
+        "resumed": false,
+        "hello": {
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            16,
+            51,
+            43,
+            13,
+            28
+          ],
+          "cipher_suites": [
+            4865,
+            4867,
+            4866
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25,
+            4587,
+            4589,
+            256,
+            257,
+            258,
+            259,
+            260
+          ],
+          "supported_versions": [
+            772
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            515,
+            2052,
+            2053,
+            2054,
+            2308,
+            2309,
+            2310,
+            1025,
+            1281,
+            1537,
+            513
+          ],
+          "key_share_groups": [
+            4588
+          ],
+          "alpn": [
+            "h2"
+          ]
+        },
+        "initial_h2_settings": [
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 4194304
+          },
+          {
+            "id": 5,
+            "value": 16384
+          },
+          {
+            "id": 6,
+            "value": 10485760
+          }
+        ]
+      },
+      {
+        "connection": 3,
+        "requests": {
+          "reconnect": 1
+        },
+        "resumed": false,
+        "hello": {
+          "extensions": [
+            0,
+            23,
+            65281,
+            10,
+            16,
+            51,
+            43,
+            13,
+            28
+          ],
+          "cipher_suites": [
+            4865,
+            4867,
+            4866
+          ],
+          "supported_groups": [
+            4588,
+            29,
+            23,
+            24,
+            25,
+            4587,
+            4589,
+            256,
+            257,
+            258,
+            259,
+            260
+          ],
+          "supported_versions": [
+            772
+          ],
+          "signature_algorithms": [
+            1027,
+            1283,
+            1539,
+            515,
+            2052,
+            2053,
+            2054,
+            2308,
+            2309,
+            2310,
+            1025,
+            1281,
+            1537,
+            513
+          ],
+          "key_share_groups": [
+            4588
+          ],
+          "alpn": [
+            "h2"
+          ]
+        },
+        "initial_h2_settings": [
+          {
+            "id": 2,
+            "value": 0
+          },
+          {
+            "id": 4,
+            "value": 4194304
+          },
+          {
+            "id": 5,
+            "value": 16384
+          },
+          {
+            "id": 6,
+            "value": 10485760
+          }
+        ]
+      }
+    ]
+  },
+  "first_h2_comparison": [
+    {
+      "field": "hello.extensions",
+      "reference": [
+        0,
+        23,
+        65281,
+        10,
+        11,
+        35,
+        16,
+        5,
+        34,
+        18,
+        51,
+        43,
+        13,
+        45,
+        28,
+        27,
+        65037
+      ],
+      "candidate": [
+        0,
+        23,
+        65281,
+        10,
+        16,
+        51,
+        43,
+        13,
+        28
+      ],
+      "status": "measured",
+      "same_presence": false,
+      "same_order": false
+    },
+    {
+      "field": "hello.cipher_suites",
+      "reference": [
+        4865,
+        4867,
+        4866,
+        49195,
+        49199,
+        52393,
+        52392,
+        49196,
+        49200,
+        49171,
+        49172,
+        156,
+        157,
+        47,
+        53
+      ],
+      "candidate": [
+        4865,
+        4867,
+        4866
+      ],
+      "status": "measured",
+      "same_presence": false,
+      "same_order": false
+    },
+    {
+      "field": "hello.supported_groups",
+      "reference": [
+        4588,
+        29,
+        23,
+        24,
+        25
+      ],
+      "candidate": [
+        4588,
+        29,
+        23,
+        24,
+        25,
+        4587,
+        4589,
+        256,
+        257,
+        258,
+        259,
+        260
+      ],
+      "status": "measured",
+      "same_presence": false,
+      "same_order": false
+    },
+    {
+      "field": "hello.supported_versions",
+      "reference": [
+        772,
+        771
+      ],
+      "candidate": [
+        772
+      ],
+      "status": "measured",
+      "same_presence": false,
+      "same_order": false
+    },
+    {
+      "field": "hello.signature_algorithms",
+      "reference": [
+        1027,
+        1283,
+        1539,
+        2052,
+        2053,
+        2054,
+        1025,
+        1281,
+        1537,
+        515,
+        513
+      ],
+      "candidate": [
+        1027,
+        1283,
+        1539,
+        515,
+        2052,
+        2053,
+        2054,
+        2308,
+        2309,
+        2310,
+        1025,
+        1281,
+        1537,
+        513
+      ],
+      "status": "measured",
+      "same_presence": false,
+      "same_order": false
+    },
+    {
+      "field": "hello.key_share_groups",
+      "reference": [
+        4588,
+        29,
+        23
+      ],
+      "candidate": [
+        4588
+      ],
+      "status": "measured",
+      "same_presence": false,
+      "same_order": false
+    },
+    {
+      "field": "hello.alpn",
+      "reference": [
+        "h2",
+        "http/1.1"
+      ],
+      "candidate": [
+        "h2"
+      ],
+      "status": "measured",
+      "same_presence": false,
+      "same_order": false
+    },
+    {
+      "field": "initial_h2_settings",
+      "reference": [
+        {
+          "id": 1,
+          "value": 65536
+        },
+        {
+          "id": 2,
+          "value": 0
+        },
+        {
+          "id": 4,
+          "value": 131072
+        },
+        {
+          "id": 5,
+          "value": 16384
+        }
+      ],
+      "candidate": [
+        {
+          "id": 2,
+          "value": 0
+        },
+        {
+          "id": 4,
+          "value": 4194304
+        },
+        {
+          "id": 5,
+          "value": 16384
+        },
+        {
+          "id": 6,
+          "value": 10485760
+        }
+      ],
+      "same_presence": false,
+      "same_order": false,
+      "same_values": false
+    }
+  ],
+  "cold_h3_effective_comparison": [
+    {
+      "field": "quic.version",
+      "status": "equal",
+      "reference": 1,
+      "candidate": 1
+    },
+    {
+      "field": "quic.tls_alpn",
+      "status": "equal",
+      "reference": "h3",
+      "candidate": "h3"
+    },
+    {
+      "field": "quic.initial_datagram_size",
+      "status": "equal",
+      "reference": 1252,
+      "candidate": 1252
+    },
+    {
+      "field": "quic.transport_parameters",
+      "status": "different",
+      "reference": [
+        {
+          "id": 1,
+          "value": 30000
+        },
+        {
+          "id": 3,
+          "value": 4611686018427387903
+        },
+        {
+          "id": 4,
+          "value": 25165824
+        },
+        {
+          "id": 5,
+          "value": 12582912
+        },
+        {
+          "id": 6,
+          "value": 1048576
+        },
+        {
+          "id": 7,
+          "value": 1048576
+        },
+        {
+          "id": 8,
+          "value": 100
+        },
+        {
+          "id": 9,
+          "value": 100
+        },
+        {
+          "id": 10,
+          "value": 3
+        },
+        {
+          "id": 11,
+          "value": 20
+        },
+        {
+          "id": 12,
+          "value": false
+        },
+        {
+          "id": 14,
+          "value": 8
+        }
+      ],
+      "candidate": [
+        {
+          "id": 1,
+          "value": 90000
+        },
+        {
+          "id": 3,
+          "value": 4611686018427387903
+        },
+        {
+          "id": 4,
+          "value": 1048576
+        },
+        {
+          "id": 5,
+          "value": 131072
+        },
+        {
+          "id": 6,
+          "value": 1048576
+        },
+        {
+          "id": 7,
+          "value": 1048576
+        },
+        {
+          "id": 8,
+          "value": 0
+        },
+        {
+          "id": 9,
+          "value": 8
+        },
+        {
+          "id": 10,
+          "value": 3
+        },
+        {
+          "id": 11,
+          "value": 20
+        },
+        {
+          "id": 12,
+          "value": true
+        },
+        {
+          "id": 14,
+          "value": 8
+        }
+      ]
+    },
+    {
+      "field": "h3.settings",
+      "status": "different",
+      "reference": [
+        {
+          "id": 1,
+          "value": 65536
+        },
+        {
+          "id": 7,
+          "value": 20
+        },
+        {
+          "id": 8,
+          "value": true
+        },
+        {
+          "id": 51,
+          "value": true
+        },
+        {
+          "id": 16765559,
+          "value": 1
+        },
+        {
+          "id": 727725890,
+          "value": 0
+        }
+      ],
+      "candidate": [
+        {
+          "id": 1,
+          "value": 4096
+        },
+        {
+          "id": 7,
+          "value": 16
+        },
+        {
+          "id": 727725890,
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "h3_raw_presence": "not_measured",
+  "h3_raw_order": "not_measured",
+  "scope": "Same local GET payloads and cancellation/forced-reconnect schedule. Firefox bootstrap page is excluded. Server-observed TLS resumption is not a client feature claim. TLS/H2 selected vector order is raw; H3 fields are selected effective decoder values including defaults, not raw presence/order. Timing, browser background traffic, full Firefox networking behavior, WAN and DPI indistinguishability are not measured."
+}

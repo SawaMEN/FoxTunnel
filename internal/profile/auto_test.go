@@ -3,7 +3,7 @@ package profile
 import "testing"
 
 func TestAutoTLSInConnectionLinks(t *testing.T) {
-	for _, mode := range []string{"h2-connect", "wss", "xhttp-stream-up", "h3-post"} {
+	for _, mode := range []string{"h2-connect", "wss", "xhttp-stream-up", "h3-post", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
 			config := Config{Version: 1, Servers: []string{"https://example.org"}, Username: "alice", Password: "secret", Transport: mode}
 			link, err := Encode(config)

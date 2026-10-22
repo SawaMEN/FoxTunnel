@@ -1,0 +1,33 @@
+--- a/netwerk/protocol/http/nsHttpConnection.cpp
++++ b/netwerk/protocol/http/nsHttpConnection.cpp
+@@ -1761,7 +1761,10 @@
+   const uint32_t maxWriteAttempts = 128;
+   uint32_t writeAttempts = 0;
+ 
+-  if (mTransactionCaps & NS_HTTP_CONNECT_ONLY) {
++  // CONNECT_ONLY belongs to the inner tunnel, not the multiplexed proxy
++  // session. Closing the latter would abort the first CONNECT on a cold H2
++  // connection before the transaction can restart on its tunnel stream.
++  if ((mTransactionCaps & NS_HTTP_CONNECT_ONLY) && !mSpdySession) {
+     if (!mConnInfo->UsingConnect()) {
+       // A CONNECT has been requested for this connection but will never
+       // be performed. This should never happen.
+@@ -1771,7 +1774,7 @@
+     }
+ 
+     if (mState == HttpConnectionState::REQUEST &&
+-        mTlsHandshaker->EnsureNPNComplete()) {
++        mTlsHandshaker->EnsureNPNComplete() && !mSpdySession) {
+       // Don't need to check this each write attempt since it is only
+       // updated after OnSocketWritable completes.
+       // We've already done primary tls (if needed) and sent our CONNECT.
+@@ -1938,7 +1941,8 @@
+   // Reset mResponseTimeoutEnabled to stop response timeout checks.
+   mResponseTimeoutEnabled = false;
+ 
+-  if ((mTransactionCaps & NS_HTTP_CONNECT_ONLY) && !mConnInfo->UsingConnect()) {
++  if ((mTransactionCaps & NS_HTTP_CONNECT_ONLY) && !mSpdySession &&
++      !mConnInfo->UsingConnect()) {
+     // A CONNECT has been requested for this connection but will never
+     // be performed. This should never happen.
+     MOZ_ASSERT(false, "proxy connect will never happen");

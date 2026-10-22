@@ -21,6 +21,7 @@ go build -o foxtunnel ./cmd/foxtunnel
 - [Setup](docs/START.md) — server, client and troubleshooting (Russian).
 - [Options](docs/FEATURES.md) — transports, UDP, nodes and Bonding (Russian).
 - [Integration](docs/INTEGRATION.md) — Go API and process contract (English).
+- [Configuration and diagnostics](docs/CONFIGURATION.md) — check-config and doctor (Russian).
 - [Development](docs/DEVELOPMENT.md) — builds, tests and measurements (Russian).
 - [Operations](docs/OPERATIONS.md) — access, certificates and releases (Russian).
 

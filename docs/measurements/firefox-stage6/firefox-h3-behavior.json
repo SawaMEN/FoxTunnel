@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "kind": "controlled-browser-behavior",
+  "protocol": "h3",
+  "complete": true,
+  "rotations": 2,
+  "client_failed": false,
+  "connections": [
+    {
+      "id": 1,
+      "alpn": "h3",
+      "session_resumed": false,
+      "requests": {
+        "cancel": 4,
+        "cold": 1,
+        "parallel": 8,
+        "sequential": 3
+      }
+    },
+    {
+      "id": 2,
+      "alpn": "h3",
+      "session_resumed": true,
+      "requests": {
+        "reconnect": 1
+      }
+    },
+    {
+      "id": 3,
+      "alpn": "h3",
+      "session_resumed": true,
+      "requests": {
+        "reconnect": 1
+      }
+    }
+  ],
+  "phases": {
+    "cancel": {
+      "started": 4,
+      "finished": 0,
+      "canceled": 4,
+      "active": 0,
+      "max_active": 4
+    },
+    "cold": {
+      "started": 1,
+      "finished": 1,
+      "canceled": 0,
+      "active": 0,
+      "max_active": 1
+    },
+    "parallel": {
+      "started": 8,
+      "finished": 8,
+      "canceled": 0,
+      "active": 0,
+      "max_active": 8
+    },
+    "reconnect": {
+      "started": 2,
+      "finished": 2,
+      "canceled": 0,
+      "active": 0,
+      "max_active": 1
+    },
+    "sequential": {
+      "started": 3,
+      "finished": 3,
+      "canceled": 0,
+      "active": 0,
+      "max_active": 1
+    }
+  }
+}

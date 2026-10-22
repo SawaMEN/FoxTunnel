@@ -1,0 +1,10 @@
+--- a/netwerk/protocol/http/Http3StreamTunnel.h
++++ b/netwerk/protocol/http/Http3StreamTunnel.h
+@@ -106,6 +106,7 @@
+       bool aIsExtendedCONNECT);
+ 
+   void CleanupStream(nsresult aReason);
++  void CloseSendingSide();
+ 
+   void HasDataToWrite();
+   void HasDataToRead();

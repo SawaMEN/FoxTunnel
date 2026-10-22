@@ -110,6 +110,42 @@ func TestSDKWatchCancellation(t *testing.T) {
 	}
 }
 
+func TestSDKOperationMetricsInWatchEvents(t *testing.T) {
+	c := sdkClient(t)
+	origin := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer origin.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	events, err := c.WatchStatus(ctx, 100*time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range 2 {
+		if i == 1 {
+			if err := c.NotifyNetworkChange(); err != nil {
+				t.Fatal(err)
+			}
+		}
+		conn, err := c.DialContext(ctx, "tcp", origin.Listener.Addr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		conn.Close()
+	}
+	for event := range events {
+		op := event.Snapshot.Transport.Operations
+		if op.TCP.Succeeded != 2 || op.Recovery.AfterNetworkChange != 1 {
+			continue
+		}
+		data, err := json.Marshal(event)
+		if err != nil || strings.Contains(string(data), origin.Listener.Addr().String()) || strings.Contains(string(data), "external-sdk") {
+			t.Fatal("operation metrics leaked identity in a watch event", err)
+		}
+		return
+	}
+	t.Fatal("operation metrics did not reach the external SDK subscriber")
+}
+
 func TestSDKSOCKSCancellationIsolation(t *testing.T) {
 	c := sdkClient(t)
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("still-open")) }))

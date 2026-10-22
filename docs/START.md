@@ -29,6 +29,7 @@ go build -o foxtunnel ./cmd/foxtunnel
   --key /etc/ssl/foxtunnel/privkey.pem \
   --out server-config
 
+./foxtunnel check-config --config server-config/server.json
 ./foxtunnel server --config server-config/server.json
 ```
 
@@ -52,6 +53,7 @@ go build -o foxtunnel ./cmd/foxtunnel
 к файлу его владельцем.
 
 ```sh
+./foxtunnel check-config --link-file connection.txt
 ./foxtunnel client --link-file connection.txt
 ```
 
@@ -79,3 +81,5 @@ curl --socks5-hostname 127.0.0.1:1080 https://example.com/
 Транспорт и параметры профиля задаются при `setup`. Допустимые дополнительные
 флаги проверяйте через `client --help`: не все настройки можно совмещать
 с `--link-file`. Для частного CA используйте `--ca-cert`, сохраняя проверку имени.
+
+Проверка без сети и точная диагностика через свой echo-сервис: [справочник](CONFIGURATION.md).

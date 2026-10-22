@@ -135,8 +135,8 @@ func TestClientProfileReuseAndFreshHandshake(t *testing.T) {
 	requireFirefoxRuntime(t)
 	peers := make(chan string, 3)
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.TLS.DidResume || r.TLS.Version != tls.VersionTLS13 {
-			t.Error("unexpected resumption/version")
+		if r.TLS.Version != tls.VersionTLS13 {
+			t.Error("unexpected TLS version")
 		}
 		peers <- r.RemoteAddr
 		w.Write([]byte("verified page"))

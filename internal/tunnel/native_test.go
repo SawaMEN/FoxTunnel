@@ -18,15 +18,15 @@ import (
 
 func TestNativeTransports(t *testing.T) { testNativeTransports(t, "go") }
 func testNativeTransports(t *testing.T, backend string, clientProfiles ...string) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
-		if backend == "nss" && mode == "h3-post" {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+		if backend == "nss" && isH3Transport(mode) {
 			continue
 		}
 		t.Run(mode, func(t *testing.T) {
 			target := testDestination(t, func(c net.Conn) { data, _ := io.ReadAll(c); _, _ = c.Write(data) })
 			server := &Server{RequireProtocolNegotiation: true, Username: "alice", Password: "secret", AllowPrivate: true, Padding: true}
 			client, addr := testClient(t, server)
-			if mode == "h3-post" {
+			if isH3Transport(mode) {
 				node := setupEndpoint(t, client, server)
 				startNativeH3(t, node, server)
 				usePrimary(t, client, node.URL)
@@ -72,7 +72,7 @@ func testNativeTransports(t *testing.T, backend string, clientProfiles ...string
 }
 
 func TestNativeDiscoveredBond(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) { testBondedSOCKSNative(t, "go", 8, true, mode) })
 	}
 }
@@ -81,11 +81,11 @@ func TestNativeVerificationBeforeCredentials(t *testing.T) {
 	testNativeVerificationBeforeCredentials(t, "go")
 }
 func testNativeVerificationBeforeCredentials(t *testing.T, backend string, receiveProfile ...string) {
-	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
-		if len(receiveProfile) > 0 && receiveProfile[0] != "" && (mode == "wss" || mode == "h3-post") {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+		if len(receiveProfile) > 0 && receiveProfile[0] != "" && (mode == "wss" || isH3Transport(mode)) {
 			continue
 		}
-		if backend == "nss" && mode == "h3-post" {
+		if backend == "nss" && isH3Transport(mode) {
 			continue
 		}
 		for _, failure := range []string{"ca", "pin", "sni"} {
@@ -93,7 +93,7 @@ func testNativeVerificationBeforeCredentials(t *testing.T, backend string, recei
 				var called atomic.Bool
 				handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called.Store(true); w.WriteHeader(404) })
 				c, _ := testClient(t, handler)
-				if mode == "h3-post" {
+				if isH3Transport(mode) {
 					server := &Server{Username: "alice", Password: "secret", Cover: handler}
 					node := setupEndpoint(t, c, server)
 					startNativeH3(t, node, server)
@@ -147,13 +147,13 @@ func testNativeVerificationBeforeCredentials(t *testing.T, backend string, recei
 }
 
 func TestNativePolicyAndCancellation(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			s := &Server{Username: "alice", Password: "secret", AllowPrivate: true}
 			c, _ := testClient(t, s)
 			// A separate origin gets a fresh verified SNI/pin transport, including WSS.
 			node := setupEndpoint(t, c, s)
-			if mode == "h3-post" {
+			if isH3Transport(mode) {
 				startNativeH3(t, node, s)
 				usePrimary(t, c, node.URL)
 			}
@@ -209,18 +209,18 @@ func startNativeH3(t testing.TB, endpoint *httptest.Server, server *Server) {
 }
 
 func BenchmarkNativeTransports(b *testing.B) {
-	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+	for _, mode := range []string{"h2-connect", "h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		b.Run(mode, func(b *testing.B) { benchmarkNativeOptions(b, "go", false, mode) })
 	}
 }
 
 func TestNativeSetupTimeout(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			done := make(chan struct{}, 1)
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done(); done <- struct{}{} })
 			c, _ := testClient(t, handler)
-			if mode == "h3-post" {
+			if isH3Transport(mode) {
 				s := &Server{Username: "alice", Password: "secret", Cover: handler}
 				node := setupEndpoint(t, c, s)
 				startNativeH3(t, node, s)
@@ -318,7 +318,7 @@ func TestXHTTPIdleClosePreservesActiveStream(t *testing.T) {
 }
 
 func TestNativeBondedLanesGo(t *testing.T) {
-	for _, mode := range []string{"h2-post", "wss", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+	for _, mode := range []string{"h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) { testBondedSOCKSNativeLanes(t, "go", 8, true, mode, true) })
 	}
 }

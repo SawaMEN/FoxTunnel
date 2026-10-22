@@ -1,0 +1,10 @@
+--- a/netwerk/protocol/http/Http2StreamTunnel.h
++++ b/netwerk/protocol/http/Http2StreamTunnel.h
+@@ -37,6 +37,7 @@
+ 
+   nsresult Condition() override { return mCondition; }
+   void CloseStream(nsresult reason) override;
++  void CloseSendStream();
+   void DisableSpdy() override {
+     if (mTransaction) {
+       mTransaction->DisableHttp2ForProxy();

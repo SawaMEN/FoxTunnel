@@ -3,8 +3,11 @@
 #include "bridge.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <inttypes.h>
 #include <nss.h>
 #include <ssl.h>
+#include <sslexp.h>
 #include <sslproto.h>
 #include <cert.h>
 #include <prerror.h>
@@ -17,6 +20,7 @@ extern int ft_go_read(uintptr_t handle, void *buffer, int length);
 extern int ft_go_write(uintptr_t handle, void *buffer, int length);
 extern int ft_go_cert(uintptr_t handle, void *buffer, int length);
 extern int ft_go_verify(uintptr_t handle);
+extern void ft_go_ticket(uintptr_t handle, void *buffer, int length, int64_t expires);
 
 typedef struct { uintptr_t handle; PRNetAddr local,remote; } Layer;
 static PRIOMethods methods;
@@ -131,6 +135,32 @@ int ft_handshake(PRFileDesc *fd,const char *protocol,int *error){
  if(SSL_GetNextProto(fd,&state,proto,&length,sizeof(proto))!=SECSuccess ||
     state!=SSL_NEXT_PROTO_SELECTED || length!=strlen(protocol) || memcmp(proto,protocol,length)!=0){*error=PR_PROTOCOL_NOT_SUPPORTED_ERROR;return -1;}
  return 0;
+}
+static SECStatus ticket(PRFileDesc *fd,const PRUint8 *data,unsigned int length,void *arg){
+ (void)fd;
+ if(length==0 || length>(64U<<10))return SECSuccess;
+ SSLResumptionTokenInfo info={0};
+ if(SSL_GetResumptionTokenInfo(data,length,&info,sizeof(info))!=SECSuccess)return SECSuccess;
+ ft_go_ticket((uintptr_t)arg,(void *)data,(int)length,info.expirationTime);
+ SSL_DestroyResumptionTokenInfo(&info);
+ return SECSuccess;
+}
+int ft_sessions(PRFileDesc *fd,uintptr_t handle,const void *token,unsigned int length){
+ /* External callback replaces NSS's process-wide client cache. Never use 0-RTT. */
+ char peer[64];
+ snprintf(peer,sizeof(peer),"foxtunnel-external-%" PRIuPTR,handle);
+ if(SSL_SetSockPeerID(fd,peer)!=SECSuccess ||
+    SSL_SetResumptionTokenCallback(fd,ticket,(void *)handle)!=SECSuccess ||
+    SSL_OptionSet(fd,SSL_ENABLE_0RTT_DATA,PR_FALSE)!=SECSuccess ||
+    SSL_OptionSet(fd,SSL_ENABLE_SESSION_TICKETS,PR_TRUE)!=SECSuccess ||
+    SSL_OptionSet(fd,SSL_NO_CACHE,PR_FALSE)!=SECSuccess)return -1;
+ if(length && SSL_SetResumptionToken(fd,token,length)!=SECSuccess)return 1;
+ return 0;
+}
+int ft_resumed(PRFileDesc *fd){
+ SSLChannelInfo info={0};
+ if(SSL_GetChannelInfo(fd,&info,sizeof(info))!=SECSuccess || info.earlyDataAccepted)return -1;
+ return info.resumed ? 1 : 0;
 }
 int ft_read(PRFileDesc *fd,void *buffer,int length,int *error){int n=PR_Read(fd,buffer,length);if(n<0)*error=PR_GetError();return n;}
 int ft_write(PRFileDesc *fd,const void *buffer,int length,int *error){int n=PR_Write(fd,buffer,length);if(n<0)*error=PR_GetError();return n;}

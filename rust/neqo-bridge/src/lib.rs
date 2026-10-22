@@ -1,4 +1,4 @@
-//! Minimal synchronous ABI 1. The Go actor pins an OS thread and owns UDP,
+//! Minimal synchronous ABI 2. The Go actor pins an OS thread and owns UDP,
 //! deadlines, trust verification, bounded queues and the lifetime of this engine.
 use neqo_common::{Datagram, Header, event::Provider};
 use neqo_http3::{Http3Client, Http3ClientEvent, Http3Parameters, Http3State, Priority};
@@ -35,6 +35,7 @@ pub struct Engine {
     pending: Option<Event>,
     verified: bool,
     connected: bool,
+    resumption: bool,
 }
 fn guarded(f: impl FnOnce() -> Result<i32, ()>) -> i32 {
     catch_unwind(AssertUnwindSafe(f))
@@ -84,7 +85,7 @@ fn put(out: &mut Vec<u8>, data: &[u8]) -> Result<(), ()> {
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn ftn_abi() -> u32 {
-    1
+    2
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn ftn_init() -> i32 {
@@ -113,7 +114,7 @@ pub unsafe extern "C" fn ftn_new(p: *const u8, n: usize) -> *mut Engine {
         let params = ConnectionParameters::default()
             .disable_migration(true)
             .datagram_size(0)
-            .idle_timeout(Duration::from_secs(90))
+            .idle_timeout(Duration::from_secs(30))
             .max_data(1 << 20)
             .max_streams(StreamType::BiDi, 0)
             .max_streams(StreamType::UniDi, 8)
@@ -126,9 +127,9 @@ pub unsafe extern "C" fn ftn_new(p: *const u8, n: usize) -> *mut Engine {
             Http3Parameters::default()
                 .http3_datagram(false)
                 .connection_parameters(params)
-                .max_table_size_decoder(4096)
-                .max_table_size_encoder(4096)
-                .max_blocked_streams(16),
+                .max_table_size_decoder(65536)
+                .max_table_size_encoder(65536)
+                .max_blocked_streams(20),
             Instant::now(),
         )
         .map_err(|_| ())?;
@@ -139,6 +140,7 @@ pub unsafe extern "C" fn ftn_new(p: *const u8, n: usize) -> *mut Engine {
             pending: None,
             verified: false,
             connected: false,
+            resumption: false,
         })))
     }))
     .ok()
@@ -245,16 +247,16 @@ pub unsafe extern "C" fn ftn_event(
                 }
                 Http3ClientEvent::StateChange(Http3State::Connected) => {
                     let info = e.client.tls_info().ok_or(())?;
-                    if !e.verified
+                    if !(e.verified || e.resumption && info.resumed())
                         || info.version() != 0x0304
                         || info.alpn() != Some("h3")
-                        || info.resumed()
-                        || info.early_data_accepted()
+                        || (info.resumed() && !e.resumption)
+                        || (info.early_data_accepted() && !info.resumed())
                     {
                         return Err(());
                     };
                     e.connected = true;
-                    out.arg = u64::from(info.cipher_suite());
+                    out.arg = u64::from(info.cipher_suite()) | (u64::from(info.resumed()) << 16);
                     out.kind = 2
                 }
                 Http3ClientEvent::StateChange(Http3State::Closing(_) | Http3State::Closed(_)) => {
@@ -291,6 +293,22 @@ pub unsafe extern "C" fn ftn_event(
                     out.stream = stream_id.as_u64()
                 }
                 Http3ClientEvent::GoawayReceived => out.kind = 8,
+                Http3ClientEvent::ResumptionToken(token) => {
+                    if !e.verified || !e.connected || token.as_ref().len() > 64 << 10 {
+                        continue;
+                    }
+                    out.kind = 9;
+                    out.arg = token
+                        .expiration_time()
+                        .saturating_duration_since(Instant::now())
+                        .as_secs()
+                        .min(24 * 60 * 60);
+                    out.data.extend_from_slice(token.as_ref());
+                }
+                // No HTTP request is created before Connected + Go verification.
+                // Neqo may send its own H3 control streams early; rejection
+                // therefore never requires replaying a FoxTunnel request.
+                Http3ClientEvent::ZeroRttRejected if e.resumption => continue,
                 Http3ClientEvent::EchFallbackAuthenticationNeeded { .. }
                 | Http3ClientEvent::ZeroRttRejected => return Err(()),
                 _ => continue,
@@ -329,6 +347,35 @@ pub unsafe extern "C" fn ftn_auth(p: *mut Engine) -> i32 {
     })
 }
 /// # Safety
+/// The caller borrows the token only for this call on the engine's owner thread.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ftn_resume(p: *mut Engine, b: *const u8, n: usize) -> i32 {
+    guarded(|| {
+        let e = unsafe { engine(p)? };
+        if e.connected || e.verified || e.resumption || n == 0 {
+            return Err(());
+        }
+        e.client
+            .enable_resumption(Instant::now(), unsafe { bytes(b, n, 64 << 10)? })
+            .map_err(|_| ())?;
+        e.resumption = true;
+        Ok(0)
+    })
+}
+/// # Safety
+/// Called only after Go has reverified the cached certificate on the owner thread.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ftn_reverified(p: *mut Engine) -> i32 {
+    guarded(|| {
+        let e = unsafe { engine(p)? };
+        if !e.connected || !e.resumption || !e.client.tls_info().ok_or(())?.resumed() {
+            return Err(());
+        }
+        e.verified = true;
+        Ok(0)
+    })
+}
+/// # Safety
 /// The caller owns all valid buffers and uses a live engine exclusively on its
 /// creating OS thread. Buffers may not alias mutable engine state.
 #[unsafe(no_mangle)]
@@ -352,16 +399,24 @@ pub unsafe extern "C" fn ftn_fetch(p: *mut Engine, b: *const u8, n: usize, id: *
             };
             headers.push(Header::new(name, val));
         }
-        let stream = e
-            .client
-            .fetch(
+        let stream = if method == "CONNECT" {
+            if !scheme.is_empty() || !path.is_empty() {
+                return Err(());
+            }
+            // Use Neqo's classic CONNECT API. fetch() explicitly rejects this
+            // method; connect() omits :scheme/:path and preserves duplex DATA.
+            e.client
+                .connect(Instant::now(), authority, &headers, Priority::default())
+        } else {
+            e.client.fetch(
                 Instant::now(),
                 method,
                 (scheme, authority, path),
                 &headers,
                 Priority::default(),
             )
-            .map_err(|_| ())?;
+        }
+        .map_err(|_| ())?;
         unsafe { *id = stream.as_u64() };
         Ok(0)
     })

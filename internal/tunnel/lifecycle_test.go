@@ -215,7 +215,7 @@ func benchmarkNativeOptions(b *testing.B, backend string, padding bool, mode str
 	target := testDestination(b, func(c net.Conn) { _, _ = io.Copy(c, c) })
 	server := &Server{Username: "alice", Password: "secret", AllowPrivate: true, Padding: padding}
 	client, addr := testClient(b, server)
-	if mode == "h3-post" {
+	if isH3Transport(mode) {
 		node := setupEndpoint(b, client, server)
 		startNativeH3(b, node, server)
 		client.ServerURL = nodeURL(b, node.URL)

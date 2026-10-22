@@ -1,0 +1,14 @@
+--- a/neqo-http3/src/connection.rs
++++ b/neqo-http3/src/connection.rs
+@@ -940,7 +940,10 @@
+     {
+         let final_headers = Self::create_request_headers(request)?;
+ 
+-        let stream_type = if request.connect_type.is_some() {
++        // Classic CONNECT remains an ordinary bidirectional HTTP stream.
++        // Extended-session teardown removes both directions; using it for a
++        // classic tunnel discards the response when its upload is half-closed.
++        let stream_type = if matches!(request.connect_type, Some(ConnectType::Extended(_))) {
+             Http3StreamType::ExtendedConnect
+         } else {
+             Http3StreamType::Http
