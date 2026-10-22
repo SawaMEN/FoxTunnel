@@ -14,15 +14,7 @@
  #include "NullHttpTransaction.h"
  #include "SpeculativeTransaction.h"
  #include "mozilla/Components.h"
-@@ -24,6 +26,7 @@
- #include "mozilla/ProfilerMarkers.h"
- #include "mozilla/SpinEventLoopUntil.h"
- #include "mozilla/StaticPrefs_network.h"
-+#include "mozilla/Unused.h"
- #include "mozilla/glean/NetwerkMetrics.h"
- #include "mozilla/glean/NetwerkProtocolHttpMetrics.h"
- #include "mozilla/net/DNS.h"
-@@ -31,6 +34,8 @@
+@@ -31,6 +33,8 @@
  #include "nsCOMPtr.h"
  #include "nsHttpConnectionMgr.h"
  #include "nsHttpHandler.h"
@@ -31,7 +23,7 @@
  #include "nsIClassOfService.h"
  #include "nsIDNSByTypeRecord.h"
  #include "nsIDNSListener.h"
-@@ -2861,6 +2866,114 @@
+@@ -2861,6 +2865,114 @@
    OnMsgProcessPendingQ(0, ci);
  }
  
@@ -97,7 +89,7 @@
 +    }
 +    RefPtr<InlineTunnelCopier> self(this);
 +    nsresult rv = DispatchToCurrent(NS_NewRunnableFunction(
-+        "InlineTunnelCopier::Continue", [self] { Unused << self->Pump(); }));
++        "InlineTunnelCopier::Continue", [self] { (void)self->Pump(); }));
 +    if (NS_FAILED(rv)) {
 +      Finish(rv);
 +    }
@@ -115,11 +107,11 @@
 +      return;
 +    }
 +    mFinished = true;
-+    Unused << mSource->AsyncWait(nullptr, 0, 0, gSocketTransportService);
-+    Unused << mDestination->AsyncWait(nullptr, 0, 0, gSocketTransportService);
++    (void)mSource->AsyncWait(nullptr, 0, 0, gSocketTransportService);
++    (void)mDestination->AsyncWait(nullptr, 0, 0, gSocketTransportService);
 +    nsresult reason = NS_SUCCEEDED(aReason) ? NS_BASE_STREAM_CLOSED : aReason;
-+    Unused << mSource->CloseWithStatus(reason);
-+    Unused << mDestination->CloseWithStatus(reason);
++    (void)mSource->CloseWithStatus(reason);
++    (void)mDestination->CloseWithStatus(reason);
 +    mSource = nullptr;
 +    mDestination = nullptr;
 +  }
@@ -146,7 +138,7 @@
  void nsHttpConnectionMgr::OnMsgCompleteUpgrade(int32_t, ARefBase* param) {
    MOZ_ASSERT(OnSocketThread(), "not on socket thread");
  
-@@ -2901,6 +3014,7 @@
+@@ -2901,6 +3013,7 @@
    // PSM and NSS rely on those connections only being used on the socket
    // thread.
    if (data->mJsWrapped) {
@@ -154,7 +146,7 @@
      nsCOMPtr<nsIAsyncInputStream> pipeIn;
      uint32_t segsize = 0;
      uint32_t segcount = 0;
-@@ -2908,16 +3022,20 @@
+@@ -2908,16 +3021,20 @@
      if (NS_SUCCEEDED(rv)) {
        NS_NewPipe2(getter_AddRefs(pipeIn), getter_AddRefs(socketOut), true, true,
                    segsize, segcount);
