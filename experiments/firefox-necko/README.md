@@ -4,10 +4,11 @@
 
 The prototype runs actual Gecko networking through `xpcshell` and a fresh private
 profile. It does not synthesize HTTP/2 in Go. The SOCKS adapter, bounded stream
-copies and process launcher are present, but the native CONNECT handoff has
-not passed the end-to-end gate. Do not use it as a working Firefox transport.
+copies and process launcher are present. Native H2/H3 handoff and binary
+transfer have passed, but response truncation and half-close regressions still
+block the complete gate. Do not use it as a production Firefox transport.
 
-## What was tested
+## Initial stock-runtime diagnostics
 
 Linux amd64 Mozilla CI runtime:
 
@@ -241,6 +242,10 @@ and patch digest mismatches. Applying the exact patches again is idempotent.
 `--prepare-only` validates/applies source changes without claiming compilation.
 This is a full C++ build; Mozilla artifact builds cannot apply these fixes.
 Mozilla bootstrap supplies the compiler cache used by `--with-ccache=sccache`.
+Hosts without a compiler-cache daemon can use `--compiler-cache none`.
+After bootstrapping the pinned tools, `--no-bootstrap-update` reuses them
+without another download. Both options are recorded in the mozconfig hash;
+they do not enable artifact substitution or relax source validation.
 CI retains up to 2 GiB of compiled C/C++ entries, including after a failed
 build or native gate, so a later correction can reuse unchanged compilations.
 Cache reuse does not bypass source/patch hashes or native gates; cache statistics
