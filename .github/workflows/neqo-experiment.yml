@@ -85,25 +85,12 @@ jobs:
           python3 -m unittest discover -s scripts -p 'test_update_h3_*.py' -v
           cc -O2 -Wall -Wextra -Werror scripts/native_resource_runner.c -o /tmp/native-resource-runner
           python3 scripts/update_h3_profile.py --binary /tmp/native-backend.test --versions /tmp/neqo-version.json --resource-runner /tmp/native-resource-runner --out /tmp/update-h3-profile.json
-      - name: Update stage 5 immutable before-after H3 comparison
-        if: github.ref == 'refs/heads/update'
-        shell: bash
-        run: |
-          set -euo pipefail
-          source rust/neqo-bridge/target/foxtunnel-build/env.sh
-          base=191871b51a00627ce79b28d6c103168da77ab84f
-          git worktree add --detach "$RUNNER_TEMP/update-h3-base" "$base"
-          ln -s "$GITHUB_WORKSPACE/rust/neqo-bridge/target" "$RUNNER_TEMP/update-h3-base/rust/neqo-bridge/target"
-          cp internal/neqo/build_stamp.h "$RUNNER_TEMP/update-h3-base/internal/neqo/build_stamp.h"
-          (cd "$RUNNER_TEMP/update-h3-base" && go test -c -tags nss,neqo -o /tmp/update-h3-base.test ./internal/tunnel)
-          python3 scripts/update_h3_compare.py --base /tmp/update-h3-base.test --head /tmp/native-backend.test --base-commit "$base" --head-commit "$(git rev-parse HEAD)" --resource-runner /tmp/native-resource-runner --out /tmp/update-h3-comparison.json
       - uses: actions/upload-artifact@v4
         if: github.ref == 'refs/heads/update'
         with:
           name: update-h3-profile
           path: |
             /tmp/update-h3-profile.json
-            /tmp/update-h3-comparison.json
           if-no-files-found: error
           retention-days: 14
       - name: Fresh pinned Firefox NaiveProxy FoxTunnel TLS H2 and decoded H3

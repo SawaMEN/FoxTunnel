@@ -109,6 +109,8 @@ def capture_behavior(endpoint, firefox, cert, key, ca, work, subject, protocol, 
             '--ready', str(ready), '--out', str(out)]
     if subject == 'foxtunnel':
         args += ['--sample', 'nss' if protocol == 'h2' else 'neqo']
+    elif subject == 'foxtunnel-firefox-profile' and protocol == 'h2':
+        args += ['--sample', 'nss-firefox']
     with (work / (stem + '.log')).open('wb') as log:
         server = subprocess.Popen(args, env=env, stdout=log, stderr=log)
         client = None

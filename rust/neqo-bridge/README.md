@@ -1,8 +1,8 @@
-# FoxTunnel Neqo ABI 1
+# FoxTunnel Neqo ABI 2
 
 [Documentation](../../docs/DEVELOPMENT.en.md) · [Neqo HTTP/3](../../docs/DEVELOPMENT.en.md)
 
-> **Opt-in Neqo HTTP/3 client (ABI 1).** Linux amd64 only, separate pinned Rust/NSS toolchain, CA/SNI/SPKI validation before HTTP credentials. Not in public archives.
+> **Opt-in Neqo HTTP/3 client (ABI 2).** Linux amd64 only, separate pinned Rust/NSS toolchain, CA/SNI/SPKI validation before HTTP credentials. Not in public archives.
 
 Build with `python3 scripts/build_neqo.py` from the repository root. Source the
 reported env.sh before Go `-tags nss,neqo` builds/tests. Linux amd64 is the initial
@@ -18,6 +18,12 @@ CA/hostname/pin verification. There is no accepted HTTP request before that gate
 The C declarations and ownership contract are in
 [bridge.h](../../internal/neqo/bridge.h). [Full design, trust, queue limits and
 fallback rules](../../docs/DEVELOPMENT.en.md).
+
+ABI 2 imports single-use, origin-bound resumption tokens from a bounded Go
+cache. Go revalidates the saved chain, hostname, expiry and trust/pin callback
+before the Rust fetch gate opens. Neqo may send its own H3 control streams
+with 0-RTT; FoxTunnel never sends HTTP requests or credentials before Connected
+and verification. See [changes and limits](../../docs/UPDATE-FIXES.md).
 
 `Cargo.lock` pins all dependencies. `rust-toolchain.toml` and
 `scripts/neqo.lock.json` pin compiler and Mozilla revisions. The build exports

@@ -29,9 +29,13 @@ Context cancellation closes TCP to unblock C/Go I/O callbacks. Read/write
 operations are serialized independently; Close first interrupts the raw socket,
 then waits for operations to unwind before destroying NSS state and deleting
 the handle. NSS initializes once for process lifetime. Close currently interrupts the raw socket before destroying NSS state and does not guarantee an orderly TLS close_notify; browser-like teardown remains a measurement task. No 0-RTT is used. NSS
-session caching/tickets are disabled for this first adapter so authentication
-hooks cannot be skipped on resumed sessions; Go-backend session resumption
-remains supported. Peer chains are bounded to 16 certificates of at most 1 MiB
+HTTP/2 session tickets use an external, transport-owned cache of at most eight
+single-use entries, bound to address/SNI/ALPN/profile. Resumed connections
+reverify the cached chain and call VerifyConnection before exposing the socket;
+NSS skipping its native authentication hook cannot bypass Go verification.
+SessionTicketsDisabled disables this cache. Standalone WSS dials remain uncached.
+Cached tokens are at most 64 KiB and cached chains at most 1 MiB in total.
+Peer chains are bounded to 16 certificates of at most 1 MiB
 each. There is no Firefox OCSP/revocation or Necko behavior parity claim.
 
 Tests include full SOCKS/H2 payload transfer on concurrent streams, hostname

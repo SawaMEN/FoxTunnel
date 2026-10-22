@@ -29,15 +29,16 @@ const (
 	chunkSize   = 32 << 10
 	maxMetadata = 1 << 20
 	maxHeaders  = 64 << 10
-	idleRetire  = 75 * time.Second // below the pinned Neqo QUIC 90s idle timeout
+	idleRetire  = 25 * time.Second // below the pinned Neqo QUIC 30s idle timeout
 )
 
 type transport struct {
-	config  *tls.Config
-	timeout time.Duration
-	mu      sync.Mutex
-	origins map[string]*connection
-	live    map[*connection]struct{} // includes draining/evicted native engines
+	config   *tls.Config
+	timeout  time.Duration
+	mu       sync.Mutex
+	origins  map[string]*connection
+	live     map[*connection]struct{} // includes draining/evicted native engines
+	sessions map[string]session
 }
 type connection struct {
 	tlsState           tls.ConnectionState
@@ -51,6 +52,7 @@ type connection struct {
 	active             int
 	touched            time.Time
 	draining           atomic.Bool
+	peerDER            []byte
 }
 type command struct {
 	kind   byte
@@ -537,6 +539,9 @@ func requestMetadata(r *http.Request) ([]byte, error) {
 	return metadata, nil
 }
 func (c *connection) verify(data []byte) error {
+	return c.verifySession(data, false)
+}
+func (c *connection) verifySession(data []byte, resumed bool) error {
 	encoded, err := takeFields(data)
 	if err != nil || len(encoded) == 0 || len(encoded) > 16 {
 		return errProtocol
@@ -561,13 +566,14 @@ func (c *connection) verify(data []byte) error {
 	if err != nil {
 		return &tls.CertificateVerificationError{UnverifiedCertificates: certs, Err: err}
 	}
-	state := tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, NegotiatedProtocol: "h3", ServerName: c.name, PeerCertificates: certs, VerifiedChains: chains}
+	state := tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, DidResume: resumed, NegotiatedProtocol: "h3", ServerName: c.name, PeerCertificates: certs, VerifiedChains: chains}
 	if verify := c.owner.config.VerifyConnection; verify != nil {
 		if err := verify(state); err != nil {
 			return &tls.CertificateVerificationError{UnverifiedCertificates: certs, Err: err}
 		}
 	}
 	c.tlsState = state
+	c.peerDER = append(c.peerDER[:0], data...)
 	return nil
 }
 func (s *stream) response(data []byte, fin, interim bool) error {

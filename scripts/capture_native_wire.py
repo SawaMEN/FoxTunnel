@@ -233,10 +233,24 @@ def main():
                     behavior_profiles[(subject, protocol)] = json.loads(raw)
                     behavior_observations.append(dict(subject=subject, protocol=protocol, path=name,
                         sha256=hashlib.sha256(raw).hexdigest()))
-            payloads['browser-behavior-comparison.json'] = (json.dumps(
-                compare_browser_behavior.compare(behavior_profiles,
+            comparison = compare_browser_behavior.compare(behavior_profiles,
                     {(subject, protocol): json.loads(payloads[f'{subject}-{protocol}.json'])
-                     for subject in ('firefox', 'foxtunnel') for protocol in ('h2', 'h3')}), indent=2)+'\n').encode()
+                     for subject in ('firefox', 'foxtunnel') for protocol in ('h2', 'h3')})
+            subject = 'foxtunnel-firefox-profile'
+            raw = compare_browser_behavior.capture_behavior(args.behavior_endpoint.resolve(), firefox,
+                cert, key, ca, work, subject, 'h2', env)
+            name = f'{subject}-h2-behavior.json'
+            payloads[name] = raw
+            configured = json.loads(raw)
+            compare_browser_behavior.validate(configured, 'h2')
+            first = lambda report: next(c['h2_wire'] for c in report['connections'] if c['requests'].get('cold'))
+            comparison['configured_h2_profile'] = dict(tls_profile='firefox-158', h2_profile='firefox-158',
+                behavior=compare_browser_behavior.summary(configured),
+                first_h2_comparison=compare_browser_behavior.ordered_vectors(
+                    first(behavior_profiles[('firefox', 'h2')]), first(configured)))
+            behavior_observations.append(dict(subject=subject, protocol='h2', path=name,
+                sha256=hashlib.sha256(raw).hexdigest()))
+            payloads['browser-behavior-comparison.json'] = (json.dumps(comparison, indent=2)+'\n').encode()
         manifest = dict(schema=1, kind='controlled-wire-capture-set',
                         checkout_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                         worktree_dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)),

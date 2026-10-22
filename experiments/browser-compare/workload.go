@@ -68,13 +68,15 @@ func nativeWorkload(ctx context.Context, origin, cert, backend, protocol string)
 	}
 	cfg := &tls.Config{RootCAs: roots, ServerName: "localhost", MinVersion: tls.VersionTLS13}
 	if backend == "go" {
-		// Positive control for server-side resumption observation, not a change
-		// to NSS/Neqo's intentionally disabled session caching policy.
+		// Positive control for server-side resumption observation. NSS and
+		// Neqo own separate bounded native-token caches.
 		cfg.ClientSessionCache = tls.NewLRUClientSessionCache(8)
 	}
 	var transport roundTripper
 	if backend == "nss" {
 		transport, err = nsstls.NewTransport(cfg)
+	} else if backend == "nss-firefox" {
+		transport, err = nsstls.NewTransportWithProfiles(cfg, "firefox-158", nsstls.Firefox158)
 	} else if backend == "neqo" {
 		transport, err = neqo.NewTransport(neqo.Config{TLS: cfg, HandshakeTimeout: 2 * time.Second})
 	} else if backend == "go" && protocol == "h2" {

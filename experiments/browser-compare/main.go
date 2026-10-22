@@ -358,7 +358,7 @@ func main() {
 	key := flag.String("key", "", "fixture key")
 	ready := flag.String("ready", "", "new ready JSON")
 	out := flag.String("out", "", "new result JSON")
-	backend := flag.String("sample", "", "optional go/nss/neqo sample")
+	backend := flag.String("sample", "", "optional go/nss/nss-firefox/neqo sample")
 	flag.Parse()
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()

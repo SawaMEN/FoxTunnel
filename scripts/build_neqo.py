@@ -202,7 +202,7 @@ def main():
     selected = {key: env[key] for key in ['PKG_CONFIG_PATH', 'LD_LIBRARY_PATH', 'CGO_LDFLAGS']}
     (out / 'env.sh').write_text(''.join('export ' + key + '=' + shlex.quote(value) + '\n' for key, value in selected.items()))
     (out / 'provenance.json').write_text(json.dumps(dict(schema=1, **{k: v for k, v in lock.items() if k != 'schema'}), indent=2) + '\n')
-    print('Built experimental Neqo ABI 1; source ' + str(out / 'env.sh') + ' before Go -tags nss,neqo builds/tests. No release published.')
+    print('Built experimental Neqo ABI 2; source ' + str(out / 'env.sh') + ' before Go -tags nss,neqo builds/tests. No release published.')
 
 
 if __name__ == '__main__':

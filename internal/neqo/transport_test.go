@@ -25,6 +25,9 @@ import (
 )
 
 func testServer(t *testing.T, handler http.Handler) (string, *tls.Config) {
+	return testServerQUIC(t, handler, nil)
+}
+func testServerQUIC(t *testing.T, handler http.Handler, config *quic.Config) (string, *tls.Config) {
 	t.Helper()
 	tcp := httptest.NewUnstartedServer(handler)
 	tcp.EnableHTTP2 = true
@@ -35,7 +38,7 @@ func testServer(t *testing.T, handler http.Handler) (string, *tls.Config) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := &http3.Server{Handler: handler, TLSConfig: &tls.Config{Certificates: tcp.TLS.Certificates, MinVersion: tls.VersionTLS13, MaxVersion: tls.VersionTLS13}, QUICConfig: nil}
+	server := &http3.Server{Handler: handler, TLSConfig: &tls.Config{Certificates: tcp.TLS.Certificates, MinVersion: tls.VersionTLS13, MaxVersion: tls.VersionTLS13}, QUICConfig: config}
 	done := make(chan struct{})
 	go func() { defer close(done); _ = server.Serve(socket) }()
 	t.Cleanup(func() { server.Close(); socket.Close(); <-done })
@@ -58,7 +61,7 @@ func TestIndependentH3EchoReuseAndColdHandshake(t *testing.T) {
 	peers := make(map[string]bool)
 	var calls atomic.Int64
 	raw, cfg := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor != 3 || r.TLS == nil || r.TLS.Version != tls.VersionTLS13 || r.TLS.DidResume || r.Header.Get("Proxy-Authorization") != "Basic test-only" {
+		if r.ProtoMajor != 3 || r.TLS == nil || r.TLS.Version != tls.VersionTLS13 || r.Header.Get("Proxy-Authorization") != "Basic test-only" {
 			t.Error("incorrect verified H3 request")
 		}
 		calls.Add(1)

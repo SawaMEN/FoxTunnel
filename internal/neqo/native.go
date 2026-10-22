@@ -36,13 +36,13 @@ func ptr(p []byte) *C.uint8_t {
 	return (*C.uint8_t)(unsafe.Pointer(&p[0]))
 }
 func checkABI() error {
-	if C.ftn_abi() != 1 || C.ftn_init() != 0 {
+	if C.ftn_abi() != 2 || C.ftn_init() != 0 {
 		return errors.New("Neqo ABI or pinned NSS 3.130 runtime mismatch")
 	}
 	return nil
 }
 func newEngine(settings []byte) (*engine, error) {
-	if C.ftn_abi() != 1 || C.ftn_init() != 0 {
+	if C.ftn_abi() != 2 || C.ftn_init() != 0 {
 		return nil, errors.New("Neqo ABI or pinned NSS 3.130 runtime mismatch")
 	}
 	p := C.ftn_new(ptr(settings), C.size_t(len(settings)))
@@ -77,6 +77,18 @@ func (e *engine) event(buf []byte) (uint32, uint64, uint64, int, error) {
 }
 func (e *engine) authenticate() error {
 	if C.ftn_auth(e.p) < 0 {
+		return errProtocol
+	}
+	return nil
+}
+func (e *engine) resume(token []byte) error {
+	if C.ftn_resume(e.p, ptr(token), C.size_t(len(token))) < 0 {
+		return errProtocol
+	}
+	return nil
+}
+func (e *engine) reverified() error {
+	if C.ftn_reverified(e.p) < 0 {
 		return errProtocol
 	}
 	return nil

@@ -58,7 +58,7 @@ func TestPinCannotReuseAnotherOriginsSessionTicket(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Close()
-	// Session resumption is currently a Go TLS feature; NSS disables tickets.
+	// This test exercises Go TLS; native NSS has separate resumption tests.
 	if err := c.SetTLSBackend("go"); err != nil {
 		t.Fatal(err)
 	}

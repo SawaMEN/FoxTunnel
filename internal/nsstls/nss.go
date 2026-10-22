@@ -81,6 +81,10 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 		return nil, initError
 	}
 	config = config.Clone()
+	var sessions *sessionCache
+	if !config.SessionTicketsDisabled {
+		sessions = &sessionCache{}
+	}
 	h1 := &http.Transport{TLSClientConfig: config.Clone(), DisableCompression: true, IdleConnTimeout: 90 * time.Second}
 	if err := h2profile.Configure(h1, profile); err != nil {
 		return nil, err
@@ -107,7 +111,7 @@ func NewTransportWithProfiles(config *tls.Config, profile, clientProfile string)
 		if config.ServerName != "" {
 			host = config.ServerName
 		}
-		secure, err := wrapConfigWithProfile(setup, raw, host, config, clientProfile)
+		secure, err := wrapSession(setup, raw, host, config, clientProfile, sessions, addr)
 		if err != nil {
 			return nil, err
 		}
@@ -138,6 +142,10 @@ type conn struct {
 	verifiedChains        [][]*x509.Certificate
 	verifyConnection      func(tls.ConnectionState) error
 	currentTime           func() time.Time
+	sessions              *sessionCache
+	sessionKey            string
+	didResume             bool
+	verified              bool
 }
 
 func wrap(ctx context.Context, raw net.Conn, name string, roots *x509.CertPool) (*conn, error) {
@@ -147,6 +155,10 @@ func wrapConfig(ctx context.Context, raw net.Conn, name string, config *tls.Conf
 	return wrapConfigWithProfile(ctx, raw, name, config, "")
 }
 func wrapConfigWithProfile(ctx context.Context, raw net.Conn, name string, config *tls.Config, profile string) (*conn, error) {
+	return wrapSession(ctx, raw, name, config, profile, nil, "")
+}
+
+func wrapSession(ctx context.Context, raw net.Conn, name string, config *tls.Config, profile string, sessions *sessionCache, addr string) (*conn, error) {
 	if err := checkClientProfile(profile); err != nil {
 		raw.Close()
 		return nil, err
@@ -166,6 +178,7 @@ func wrapConfigWithProfile(ctx context.Context, raw net.Conn, name string, confi
 	cprotocol := C.CString(protocol)
 	defer C.free(unsafe.Pointer(cprotocol))
 	c := &conn{raw: raw, serverName: name, protocol: protocol, roots: config.RootCAs, verifyConnection: config.VerifyConnection, currentTime: config.Time}
+	c.sessions, c.sessionKey = sessions, addr+"\x00"+name+"\x00"+protocol+"\x00"+profile
 	c.handle = cgo.NewHandle(c)
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -182,6 +195,22 @@ func wrapConfigWithProfile(ctx context.Context, raw net.Conn, name string, confi
 		raw.Close()
 		return nil, fmt.Errorf(i18n.Text("NSS connection settings: %d"), code)
 	}
+	var cached session
+	if sessions != nil {
+		cached = sessions.take(c.sessionKey)
+		var token unsafe.Pointer
+		if len(cached.token) > 0 {
+			token = unsafe.Pointer(&cached.token[0])
+		}
+		result := C.ft_sessions(c.fd, C.uintptr_t(c.handle), token, C.uint(len(cached.token)))
+		if result < 0 {
+			c.Close()
+			return nil, errors.New("NSS external session cache setup failed")
+		}
+		if result > 0 {
+			cached = session{}
+		}
+	}
 	// Cancellation closes Go's socket, which unblocks any NSS I/O callback.
 	stop := context.AfterFunc(ctx, func() { _ = raw.Close() })
 	result := C.ft_handshake(c.fd, cprotocol, &code)
@@ -195,6 +224,25 @@ func wrapConfigWithProfile(ctx context.Context, raw net.Conn, name string, confi
 			return nil, c.verifyErr
 		}
 		return nil, fmt.Errorf(i18n.Text("NSS handshake/ALPN failed: %d"), code)
+	}
+	resumed := C.ft_resumed(c.fd)
+	if resumed < 0 {
+		c.Close()
+		return nil, errors.New("NSS invalid handshake state or unexpected early data")
+	}
+	c.didResume = resumed == 1
+	if c.didResume {
+		c.certificates = cached.certificates
+		// NSS skips its authentication hook on resumption. Recheck the saved
+		// chain and the caller's trust/pin callback before exposing the socket.
+		if ft_go_verify(C.uintptr_t(c.handle)) == 0 {
+			c.Close()
+			return nil, c.verifyErr
+		}
+	}
+	if !c.verified {
+		c.Close()
+		return nil, errors.New("NSS handshake completed without certificate verification")
 	}
 	_ = raw.SetDeadline(time.Time{})
 	return c, nil
@@ -271,7 +319,7 @@ func (c *conn) SetDeadline(t time.Time) error      { return c.raw.SetDeadline(t)
 func (c *conn) SetReadDeadline(t time.Time) error  { return c.raw.SetReadDeadline(t) }
 func (c *conn) SetWriteDeadline(t time.Time) error { return c.raw.SetWriteDeadline(t) }
 func (c *conn) ConnectionState() tls.ConnectionState {
-	return tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, NegotiatedProtocol: c.protocol, ServerName: c.serverName, PeerCertificates: c.certificates, VerifiedChains: c.verifiedChains}
+	return tls.ConnectionState{Version: tls.VersionTLS13, HandshakeComplete: true, DidResume: c.didResume, NegotiatedProtocol: c.protocol, ServerName: c.serverName, PeerCertificates: c.certificates, VerifiedChains: c.verifiedChains}
 }
 
 //export ft_go_read
@@ -355,7 +403,17 @@ func ft_go_verify(handle C.uintptr_t) C.int {
 			return 0
 		}
 	}
+	c.verified = true
 	return 1
+}
+
+//export ft_go_ticket
+func ft_go_ticket(handle C.uintptr_t, buffer unsafe.Pointer, length C.int, expires C.int64_t) {
+	c := cgo.Handle(handle).Value().(*conn)
+	if c.sessions == nil || !c.verified || length <= 0 || length > 64<<10 {
+		return
+	}
+	c.sessions.put(c.sessionKey, session{token: C.GoBytes(buffer, length), certificates: c.certificates, expires: time.UnixMicro(int64(expires))})
 }
 
 // Version identifies the linked NSS library for measurement provenance.
