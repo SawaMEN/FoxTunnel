@@ -119,6 +119,23 @@ The new source build runs these lifecycle gates for **both** H2 and H3, in
 addition to upload EOF and certificate checks. Success on the earlier H3
 artifact does not count as verification of the new C++/Rust patches.
 
+## Reverse half-close gate
+
+`TestGeckoReverseHalfClose` checks the other EOF direction independently: the
+proxy sends its response FIN first, then must receive all 132,000 binary upload
+bytes and the client's FIN. The H2 fixture uses a TLS/HPACK/frame peer; the H3
+fixture takes over the QUIC stream so sending FIN does not finish the handler
+and cancel the request. Neither fixture dials the dummy CONNECT destination.
+`TestReverseHalfClosePeers` validates both fixtures with independent Go clients;
+both passed locally with the race detector.
+
+On the first compiled runtime (`47a2586`), both native modes timed out waiting
+for response EOF. This is a separate blocker, not a result for the newer source
+patches. The source build at `97bcf1d` is still pending; it predates this new
+test. The manual runtime workflow's `^TestGecko` selector includes the reverse
+gate when testing that artifact with this checkout. Both EOF directions must
+pass before promotion.
+
 The [Necko source workflow](../../.github/workflows/necko-experiment.yml)
 bootstraps Mozilla's C++ build dependencies, builds libxul and xpcshell, then
 runs four mandatory native gates: cold handoff/binary transfer, upload
