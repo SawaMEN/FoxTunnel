@@ -1,0 +1,15 @@
+--- a/netwerk/protocol/http/Http2Session.cpp
++++ b/netwerk/protocol/http/Http2Session.cpp
+@@ -854,7 +854,11 @@
+     mInputFrameFinal = false;
+     LOG3(("  SetRecvdFin id=0x%x\n", mInputFrameDataStream->StreamID()));
+     mInputFrameDataStream->SetRecvdFin(true);
+-    MaybeDecrementConcurrent(mInputFrameDataStream);
++    // A successful raw CONNECT can keep uploading after response FIN.
++    // CloseStream releases its concurrency slot after both halves finish.
++    if (!mInputFrameDataStream->KeepSendingAfterResponseFin()) {
++      MaybeDecrementConcurrent(mInputFrameDataStream);
++    }
+   }
+   mInputFrameFinal = false;
+   mInputFrameBufferUsed = 0;

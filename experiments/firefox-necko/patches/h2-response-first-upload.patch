@@ -5,7 +5,7 @@
    mRequestBlockedOnRead = 0;
  
 -  if (mRecvdFin || mRecvdReset) {
-+  if ((mRecvdFin && !IsTunnel()) || mRecvdReset) {
++  if ((mRecvdFin && !KeepSendingAfterResponseFin()) || mRecvdReset) {
      // Don't transmit any request frames if the peer cannot respond
      LOG3(
          ("Http2StreamBase %p ReadSegments request stream aborted due to"

@@ -116,13 +116,16 @@ Go proxy. On the first compiled runtime, with the updated JS adapter, local
 - A TCP/H2-only proxy receives zero HTTP requests when H3 is explicitly
   selected and its QUIC endpoint is unavailable.
 
-Cold parallel H3 setup previously caused failures and an H2 fallback. The H3
-adapter now queues CONNECT setup, while established streams keep independent
+Cold parallel H2/H3 setup previously caused handoff failures. The
+adapter now queues CONNECT setup for both transports, while established streams keep independent
 concurrent pumps. The existing connection limit and per-session setup timeout
 bound that queue. This adds setup latency to a burst of new tunnels and must
 be included in stage 3 timing comparisons. The adapter also disables H3 error
 fallback preferences and delays the TCP backup beyond the setup deadline.
-The protocol check on handoff remains in place.
+The protocol check on handoff remains in place. For H2, the destination pool
+limit follows `max_connections`, capped at Necko's native per-host maximum of
+255. The helper still enforces its own total session limit. This changes
+burst scheduling and must be included in fingerprint comparisons.
 
 The new source build runs these lifecycle gates for **both** H2 and H3, in
 addition to upload EOF and certificate checks. Success on the earlier H3
@@ -266,3 +269,16 @@ traffic or credentials; native logs can include destinations and headers.
 The future integration must keep certificate verification in Gecko, reject
 unsupported trust settings, bound setup and queues, preserve half-close,
 prevent direct/fallback leaks, and join the native process on cancellation.
+
+## Native validation update (5c7e200 runtime)
+
+Source run `39857862006` completed its full Gecko build. Native gates passed
+H2/H3 cold handoff and binary transfer, H2 upload EOF, certificate rejection,
+and local TCP FIN. They exposed H3 response truncation and loss of uploads
+after reverse EOF in both protocols. The current source patches address those
+failures; the stage remains open until the rebuilt runtime passes them.
+
+With the current JS setup queue and H2 pool limit, the same compiled runtime
+passes twelve simultaneous CONNECTs with distinct binary payloads for H2
+and H3, three repetitions under Go's race detector. This validates the JS
+setup correction, but does not validate the additional native EOF patches.

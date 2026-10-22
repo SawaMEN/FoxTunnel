@@ -20,10 +20,10 @@
     },
     {
       "path": "experiments/firefox-necko/patches/h2-tunnel-half-close-api.patch",
-      "sha256": "33c0370bf1bfa56ea739743fa8506c2050dcb4f6103e5964f191643162bae629",
+      "sha256": "2675344dc7d6d35fed5f687f8a8a451529493d22b233790324316bd7fa31b052",
       "source_path": "netwerk/protocol/http/Http2StreamTunnel.h",
       "before_sha256": "43eb4b531c703c808895382b29aaf5f3e0fbd186aea1208f78da1e70e17fc460",
-      "after_sha256": "add81777629a7a4c62ec9613bc7bcacdc01314bc05e261bed075ced5bb4799a2"
+      "after_sha256": "a54cc59cec38cb787161540fdbce890ab8ea981ba0de8d3187ba642f8177eb12"
     },
     {
       "path": "experiments/firefox-necko/patches/h3-tunnel-half-close.patch",
@@ -84,9 +84,23 @@
     {
       "path": "experiments/firefox-necko/patches/h2-response-first-upload.patch",
       "source_path": "netwerk/protocol/http/Http2StreamBase.cpp",
-      "sha256": "57d9827db549200a7c02d74f04eb9e972bcc1a5bca273fdad57986ef2b2d99fe",
+      "sha256": "dee77cd5da9398426dcca5479050cb9f0e737fa1d2c9690db9a44ac263b0ad2a",
       "before_sha256": "49ac306d8687b3b37ef4f0a33dc90d48ee4daa48d98ebf22ed99230e3319c334",
-      "after_sha256": "e57080bd82e30de96168cebc1b5ca150ad91c143306c5cc77a693ed2d27f0571"
+      "after_sha256": "47340829e7ac892b13906369ed7478893616ad2306fb722ded25ac22bf636f4b"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-half-closed-concurrency.patch",
+      "source_path": "netwerk/protocol/http/Http2Session.cpp",
+      "sha256": "6d92e7b86968b5d6c1d7bab2acc95f8ecb04f33c8e6b65aeb20bc04bdec960d0",
+      "before_sha256": "436b7c7259bc3f971753d5796964570027f6b9b2a63a066d29b0429e5ad60788",
+      "after_sha256": "319a052a69ccfd2dcc4f27f7194b334ea76c2f4895f5ce324122a2d4b7c8858a"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/h2-response-first-upload-api.patch",
+      "source_path": "netwerk/protocol/http/Http2StreamBase.h",
+      "sha256": "23a02cd924d18cfb556a57bb8ec12fa2859b41f62b37552982aaf5bc52bf2550",
+      "before_sha256": "cd03189d336df8d8e71a5b1464c7fe0bd8491a325335eee757927d149371bb55",
+      "after_sha256": "99e48b3ca006eb0f70345b18687db658347e8b8a4c99db7ca9548f2e0bff69fb"
     }
   ]
 }

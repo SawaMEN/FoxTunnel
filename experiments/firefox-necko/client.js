@@ -82,6 +82,10 @@ if (typeof Components !== "undefined") {
   // Keep native HTTP/TLS in the dedicated helper, not in the main Go process.
   Services.prefs.setBoolPref("network.process.enabled", false);
   Services.prefs.setBoolPref("network.http.network_access_on_socket_process.enabled", false);
+  // A CONNECT handoff occupies a destination pool slot for its full lifetime.
+  // Match Necko's uint8 per-host cap to this helper's bounded session limit.
+  Services.prefs.setIntPref("network.http.max-persistent-connections-per-server",
+    Math.min(cfg.max_connections, 255));
   Services.prefs.setBoolPref("network.http.http2.enabled", true);
   Services.prefs.setBoolPref("network.http.http2.websockets", true);
   Services.prefs.setBoolPref("network.http.http3.enable", cfg.transport === "h3-connect");
@@ -172,18 +176,17 @@ if (typeof Components !== "undefined") {
   }
 
   const sessions = new Set();
-  // The standalone H3 proxy handoff cannot reliably initialize several cold
-  // CONNECT channels at once. Queue setup only; established streams retain
+  // Standalone proxy handoff cannot reliably initialize several cold CONNECT
+  // channels at once (both H2 and H3). Queue setup only; established streams retain
   // independent, concurrent pumps on the native multiplexed connection.
   // The session limit and each session's setup timer also bound this queue.
-  let h3SetupTail = Promise.resolve();
+  let setupTail = Promise.resolve();
   function openTunnel(authority, session) {
-    if (cfg.transport !== "h3-connect") return connect(authority, session);
-    const pending = h3SetupTail.then(() => {
+    const pending = setupTail.then(() => {
       if (session.closed) throw new Error("Firefox setup cancelled");
       return connect(authority, session);
     });
-    h3SetupTail = pending.then(() => {}, () => {});
+    setupTail = pending.then(() => {}, () => {});
     return pending;
   }
   function connect(authority, session) {

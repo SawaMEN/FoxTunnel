@@ -1,18 +1,21 @@
 --- a/netwerk/protocol/http/Http2StreamTunnel.h
 +++ b/netwerk/protocol/http/Http2StreamTunnel.h
-@@ -37,6 +37,11 @@
+@@ -37,6 +37,14 @@
  
    nsresult Condition() override { return mCondition; }
    void CloseStream(nsresult reason) override;
 +  void CloseSendStream();
 +  bool DeferCleanup(nsresult aStatus) override;
++  bool KeepSendingAfterResponseFin() const override {
++    return mTunnelEstablished;
++  }
 +  [[nodiscard]] nsresult ReadSegments(nsAHttpSegmentReader* aReader,
 +                                     uint32_t aCount,
 +                                     uint32_t* aCountRead) override;
    void DisableSpdy() override {
      if (mTransaction) {
        mTransaction->DisableHttp2ForProxy();
-@@ -68,6 +73,7 @@
+@@ -68,6 +76,7 @@
    RefPtr<InputStreamTunnel> mInput;
    RefPtr<nsHttpConnectionInfo> mConnectionInfo;
    bool mSendClosed{false};

@@ -42,7 +42,7 @@ func TestGeckoReverseHalfClose(t *testing.T) {
 						t.Fatalf("CONNECT: %v\n%s", err, stderr.text())
 					}
 					defer conn.Close()
-					received, err := io.ReadAll(conn)
+					received, err := io.ReadAll(io.LimitReader(conn, int64(len(scenario.body)+1)))
 					if err != nil || !bytes.Equal(received, scenario.body) {
 						t.Fatalf("response bytes + FIN: received %d of %d: %v\n%s", len(received), len(scenario.body), err, stderr.text())
 					}
@@ -97,7 +97,7 @@ func TestReverseHalfClosePeers(t *testing.T) {
 					if response.StatusCode != 200 {
 						t.Fatal(response.Status)
 					}
-					received, err := io.ReadAll(response.Body)
+					received, err := io.ReadAll(io.LimitReader(response.Body, int64(len(scenario.body)+1)))
 					if err != nil || !bytes.Equal(received, scenario.body) {
 						t.Fatal("peer response bytes + FIN", len(received), err)
 					}

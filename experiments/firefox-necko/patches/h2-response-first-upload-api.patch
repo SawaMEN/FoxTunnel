@@ -1,0 +1,10 @@
+--- a/netwerk/protocol/http/Http2StreamBase.h
++++ b/netwerk/protocol/http/Http2StreamBase.h
+@@ -172,6 +172,7 @@
+   virtual void UpdatePriority(Http2Session* session);
+ 
+   virtual bool IsTunnel() { return false; }
++  virtual bool KeepSendingAfterResponseFin() const { return false; }
+ 
+   virtual uint32_t GetWireStreamId() { return mStreamID; }
+   virtual Http2Stream* GetHttp2Stream() { return nullptr; }
