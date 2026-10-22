@@ -145,10 +145,20 @@ response FIN, then a complete upload and upload FIN on the same socket.
 The opt-in socket patch is a candidate until the new source runtime passes.
 The adapter's feature guard preserves older runtimes for blocker diagnostics;
 it does not make those runtimes pass the half-close gates. The earlier source
-build at `97bcf1d` predates this patch and continues independently. New source
-runs preserve an already running build instead of cancelling it on a push.
+build at `97bcf1d` predates this patch. New source runs preserve an already
+running build instead of cancelling it on a push.
 Both EOF directions must pass before promotion; fixing the local FIN does not
 establish correctness of native H2/H3 receive-side stream cleanup.
+
+## Source compilation blocker
+
+Source runs `39733228026` (`97bcf1d`) and `39736309532` (`fa254f7`) both
+stopped compiling `nsHttpConnectionMgr.cpp`: the copier patch included
+`mozilla/Unused.h`, which is absent at the pinned Gecko revision. Neither run
+produced the new runtime or executed native interop gates. The copier now uses
+explicit `(void)` casts for discarded results and does not need that header.
+Its patch and resulting-source hashes have been updated. This corrects the
+reported build error; compilation and native gates still require a new run.
 
 The [Necko source workflow](../../.github/workflows/necko-experiment.yml)
 bootstraps Mozilla's C++ build dependencies, builds libxul and xpcshell, then
