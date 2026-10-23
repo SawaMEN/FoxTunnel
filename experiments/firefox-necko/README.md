@@ -2,8 +2,22 @@
 
 Stage 2 native acceptance has passed on Linux amd64. The prototype uses real
 Gecko networking for classic CONNECT over HTTP/2 and HTTP/3. It remains outside
-the production CLI and SDK runtime graph. Fingerprint comparison and production
-hardening are stages 3 and 4 in [the branch plan](../../docs/FIREFOX.md).
+the production CLI and SDK runtime graph. Stage 3 controlled full-Firefox CONNECT comparison has also passed; production
+hardening is stage 4 in [the branch plan](../../docs/FIREFOX.md).
+
+## Full Firefox comparison
+
+A fresh full Firefox process and the xpcshell helper load the same pinned
+libxul/NSS and execute identical raw binary CONNECT workloads. Both protocols
+passed three repetitions covering cold startup, reuse, controlled reconnect,
+TLS resumption and directional EOF. The measured xpcshell User-Agent discrepancy
+was fixed. H2 retained fields, SETTINGS and HPACK then matched; H3 retained
+fields matched except randomized extension order/JA3. H3 resumed for both clients;
+H2 did not resume for either in this fixture.
+
+[Method, observations and limitations](validation/stage3/README.md) distinguish
+this raw native API reference from ordinary page navigation and stock Firefox.
+The result does not establish packet-shape parity or DPI indistinguishability.
 
 ## Native acceptance
 
@@ -124,7 +138,7 @@ include destinations and headers, so the diagnostic runs use isolated fixtures.
 
 The experimental configuration deliberately excludes SPKI pins, SNI overrides,
 UDP forwarding, bonding and FoxTunnel padding. Full Necko wire comparison on
-the same runtime and workload is stage 3. Sustained load, unfinished drains,
+the same runtime and workload is recorded in stage 3. Sustained load, unfinished drains,
 network changes, CPU/RSS, packaging and runtime upgrades are stage 4.
 
 Earlier source run [39869936393](https://github.com/SawaMEN/FoxTunnel/actions/runs/39869936393)

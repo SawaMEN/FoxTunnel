@@ -1,0 +1,237 @@
+=== RUN   TestFingerprintRFC9001Initial
+--- PASS: TestFingerprintRFC9001Initial (0.00s)
+=== RUN   TestFingerprintHPACKFragmentationAndReuse
+--- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+=== RUN   TestGeckoBrowserFingerprint
+=== RUN   TestGeckoBrowserFingerprint/h2-connect
+    fingerprint_test.go:230: saved /workspace/scratch/2f13433f4960/stage3-verified/h2-connect-1792754502554393799.json
+    fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+=== RUN   TestGeckoBrowserFingerprint/h3-connect
+2026/10/23 13:21:42 connection doesn't allow setting of receive buffer size. Not a *net.UDPConn?. See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+    fingerprint_test.go:230: saved /workspace/scratch/2f13433f4960/stage3-verified/h3-connect-1792754507080244567.json
+    fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+--- PASS: TestGeckoBrowserFingerprint (9.42s)
+    --- PASS: TestGeckoBrowserFingerprint/h2-connect (4.61s)
+    --- PASS: TestGeckoBrowserFingerprint/h3-connect (4.53s)
+=== RUN   TestGeckoCONNECT
+=== RUN   TestGeckoCONNECT/h2-connect
+=== RUN   TestGeckoCONNECT/h3-connect
+--- PASS: TestGeckoCONNECT (0.22s)
+    --- PASS: TestGeckoCONNECT/h2-connect (0.10s)
+    --- PASS: TestGeckoCONNECT/h3-connect (0.12s)
+=== RUN   TestGeckoCONNECTHandoff
+=== RUN   TestGeckoCONNECTHandoff/h2-connect
+=== RUN   TestGeckoCONNECTHandoff/h3-connect
+--- PASS: TestGeckoCONNECTHandoff (0.21s)
+    --- PASS: TestGeckoCONNECTHandoff/h2-connect (0.11s)
+    --- PASS: TestGeckoCONNECTHandoff/h3-connect (0.11s)
+=== RUN   TestGeckoTrustBeforeCredentials
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root
+2026/10/23 13:21:47 http: TLS handshake error from 127.0.0.1:38298: remote error: tls: bad certificate
+2026/10/23 13:21:47 http: TLS handshake error from 127.0.0.1:38304: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname
+2026/10/23 13:21:47 http: TLS handshake error from 127.0.0.1:52746: remote error: tls: bad certificate
+2026/10/23 13:21:47 http: TLS handshake error from 127.0.0.1:52756: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname
+--- PASS: TestGeckoTrustBeforeCredentials (12.24s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root (0.07s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname (0.07s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root (6.05s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname (6.05s)
+=== RUN   TestGeckoConcurrentCONNECT
+=== RUN   TestGeckoConcurrentCONNECT/h2-connect
+=== RUN   TestGeckoConcurrentCONNECT/h3-connect
+--- PASS: TestGeckoConcurrentCONNECT (0.69s)
+    --- PASS: TestGeckoConcurrentCONNECT/h2-connect (0.36s)
+    --- PASS: TestGeckoConcurrentCONNECT/h3-connect (0.33s)
+=== RUN   TestGeckoCancellation
+=== RUN   TestGeckoCancellation/h2-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h2-connect
+=== RUN   TestGeckoCancellation/h3-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h3-connect
+--- PASS: TestGeckoCancellation (8.36s)
+    --- PASS: TestGeckoCancellation/h2-connect (0.06s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h2-connect (4.07s)
+    --- PASS: TestGeckoCancellation/h3-connect (0.08s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h3-connect (4.15s)
+=== RUN   TestGeckoH3NoTCPFallback
+--- PASS: TestGeckoH3NoTCPFallback (1.11s)
+=== RUN   TestGeckoLocalHalfClose
+--- PASS: TestGeckoLocalHalfClose (0.05s)
+=== RUN   TestGeckoReverseHalfClose
+=== RUN   TestGeckoReverseHalfClose/h2-connect
+=== RUN   TestGeckoReverseHalfClose/h2-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h2-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h2-connect/flow-control
+=== RUN   TestGeckoReverseHalfClose/h3-connect
+=== RUN   TestGeckoReverseHalfClose/h3-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h3-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h3-connect/flow-control
+--- PASS: TestGeckoReverseHalfClose (0.55s)
+    --- PASS: TestGeckoReverseHalfClose/h2-connect (0.27s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/empty (0.11s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/buffered (0.09s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/flow-control (0.08s)
+    --- PASS: TestGeckoReverseHalfClose/h3-connect (0.28s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/empty (0.08s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/buffered (0.10s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/flow-control (0.09s)
+=== RUN   TestFingerprintRFC9001Initial
+--- PASS: TestFingerprintRFC9001Initial (0.00s)
+=== RUN   TestFingerprintHPACKFragmentationAndReuse
+--- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+=== RUN   TestGeckoBrowserFingerprint
+=== RUN   TestGeckoBrowserFingerprint/h2-connect
+    fingerprint_test.go:230: saved /workspace/scratch/2f13433f4960/stage3-verified/h2-connect-1792754535494338226.json
+    fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+=== RUN   TestGeckoBrowserFingerprint/h3-connect
+    fingerprint_test.go:230: saved /workspace/scratch/2f13433f4960/stage3-verified/h3-connect-1792754540215460652.json
+    fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+--- PASS: TestGeckoBrowserFingerprint (9.69s)
+    --- PASS: TestGeckoBrowserFingerprint/h2-connect (4.67s)
+    --- PASS: TestGeckoBrowserFingerprint/h3-connect (4.72s)
+=== RUN   TestGeckoCONNECT
+=== RUN   TestGeckoCONNECT/h2-connect
+=== RUN   TestGeckoCONNECT/h3-connect
+--- PASS: TestGeckoCONNECT (0.27s)
+    --- PASS: TestGeckoCONNECT/h2-connect (0.12s)
+    --- PASS: TestGeckoCONNECT/h3-connect (0.15s)
+=== RUN   TestGeckoCONNECTHandoff
+=== RUN   TestGeckoCONNECTHandoff/h2-connect
+=== RUN   TestGeckoCONNECTHandoff/h3-connect
+--- PASS: TestGeckoCONNECTHandoff (0.38s)
+    --- PASS: TestGeckoCONNECTHandoff/h2-connect (0.12s)
+    --- PASS: TestGeckoCONNECTHandoff/h3-connect (0.26s)
+=== RUN   TestGeckoTrustBeforeCredentials
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root
+2026/10/23 13:22:20 http: TLS handshake error from 127.0.0.1:34248: remote error: tls: bad certificate
+2026/10/23 13:22:20 http: TLS handshake error from 127.0.0.1:34260: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname
+2026/10/23 13:22:21 http: TLS handshake error from 127.0.0.1:54364: remote error: tls: bad certificate
+2026/10/23 13:22:21 http: TLS handshake error from 127.0.0.1:54380: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname
+--- PASS: TestGeckoTrustBeforeCredentials (12.28s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root (0.07s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname (0.08s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root (6.06s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname (6.07s)
+=== RUN   TestGeckoConcurrentCONNECT
+=== RUN   TestGeckoConcurrentCONNECT/h2-connect
+=== RUN   TestGeckoConcurrentCONNECT/h3-connect
+--- PASS: TestGeckoConcurrentCONNECT (1.11s)
+    --- PASS: TestGeckoConcurrentCONNECT/h2-connect (0.57s)
+    --- PASS: TestGeckoConcurrentCONNECT/h3-connect (0.55s)
+=== RUN   TestGeckoCancellation
+=== RUN   TestGeckoCancellation/h2-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h2-connect
+=== RUN   TestGeckoCancellation/h3-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h3-connect
+--- PASS: TestGeckoCancellation (8.43s)
+    --- PASS: TestGeckoCancellation/h2-connect (0.07s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h2-connect (4.12s)
+    --- PASS: TestGeckoCancellation/h3-connect (0.11s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h3-connect (4.14s)
+=== RUN   TestGeckoH3NoTCPFallback
+--- PASS: TestGeckoH3NoTCPFallback (1.05s)
+=== RUN   TestGeckoLocalHalfClose
+--- PASS: TestGeckoLocalHalfClose (0.04s)
+=== RUN   TestGeckoReverseHalfClose
+=== RUN   TestGeckoReverseHalfClose/h2-connect
+=== RUN   TestGeckoReverseHalfClose/h2-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h2-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h2-connect/flow-control
+=== RUN   TestGeckoReverseHalfClose/h3-connect
+=== RUN   TestGeckoReverseHalfClose/h3-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h3-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h3-connect/flow-control
+--- PASS: TestGeckoReverseHalfClose (0.51s)
+    --- PASS: TestGeckoReverseHalfClose/h2-connect (0.26s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/empty (0.09s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/buffered (0.09s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/flow-control (0.09s)
+    --- PASS: TestGeckoReverseHalfClose/h3-connect (0.25s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/empty (0.08s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/buffered (0.08s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/flow-control (0.08s)
+=== RUN   TestFingerprintRFC9001Initial
+--- PASS: TestFingerprintRFC9001Initial (0.00s)
+=== RUN   TestFingerprintHPACKFragmentationAndReuse
+--- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+=== RUN   TestGeckoBrowserFingerprint
+=== RUN   TestGeckoBrowserFingerprint/h2-connect
+    fingerprint_test.go:230: saved /workspace/scratch/2f13433f4960/stage3-verified/h2-connect-1792754569404918878.json
+    fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+=== RUN   TestGeckoBrowserFingerprint/h3-connect
+    fingerprint_test.go:230: saved /workspace/scratch/2f13433f4960/stage3-verified/h3-connect-1792754574050167185.json
+    fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+--- PASS: TestGeckoBrowserFingerprint (9.75s)
+    --- PASS: TestGeckoBrowserFingerprint/h2-connect (4.81s)
+    --- PASS: TestGeckoBrowserFingerprint/h3-connect (4.64s)
+=== RUN   TestGeckoCONNECT
+=== RUN   TestGeckoCONNECT/h2-connect
+=== RUN   TestGeckoCONNECT/h3-connect
+--- PASS: TestGeckoCONNECT (0.22s)
+    --- PASS: TestGeckoCONNECT/h2-connect (0.11s)
+    --- PASS: TestGeckoCONNECT/h3-connect (0.11s)
+=== RUN   TestGeckoCONNECTHandoff
+=== RUN   TestGeckoCONNECTHandoff/h2-connect
+=== RUN   TestGeckoCONNECTHandoff/h3-connect
+--- PASS: TestGeckoCONNECTHandoff (0.22s)
+    --- PASS: TestGeckoCONNECTHandoff/h2-connect (0.11s)
+    --- PASS: TestGeckoCONNECTHandoff/h3-connect (0.11s)
+=== RUN   TestGeckoTrustBeforeCredentials
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root
+2026/10/23 13:22:54 http: TLS handshake error from 127.0.0.1:33038: remote error: tls: bad certificate
+2026/10/23 13:22:54 http: TLS handshake error from 127.0.0.1:33042: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname
+2026/10/23 13:22:54 http: TLS handshake error from 127.0.0.1:34152: remote error: tls: bad certificate
+2026/10/23 13:22:54 http: TLS handshake error from 127.0.0.1:34168: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname
+--- PASS: TestGeckoTrustBeforeCredentials (12.27s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root (0.07s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname (0.07s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root (6.06s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname (6.06s)
+=== RUN   TestGeckoConcurrentCONNECT
+=== RUN   TestGeckoConcurrentCONNECT/h2-connect
+=== RUN   TestGeckoConcurrentCONNECT/h3-connect
+--- PASS: TestGeckoConcurrentCONNECT (0.71s)
+    --- PASS: TestGeckoConcurrentCONNECT/h2-connect (0.34s)
+    --- PASS: TestGeckoConcurrentCONNECT/h3-connect (0.38s)
+=== RUN   TestGeckoCancellation
+=== RUN   TestGeckoCancellation/h2-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h2-connect
+=== RUN   TestGeckoCancellation/h3-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h3-connect
+--- PASS: TestGeckoCancellation (8.27s)
+    --- PASS: TestGeckoCancellation/h2-connect (0.07s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h2-connect (4.07s)
+    --- PASS: TestGeckoCancellation/h3-connect (0.07s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h3-connect (4.07s)
+=== RUN   TestGeckoH3NoTCPFallback
+--- PASS: TestGeckoH3NoTCPFallback (1.06s)
+=== RUN   TestGeckoLocalHalfClose
+--- PASS: TestGeckoLocalHalfClose (0.04s)
+=== RUN   TestGeckoReverseHalfClose
+=== RUN   TestGeckoReverseHalfClose/h2-connect
+=== RUN   TestGeckoReverseHalfClose/h2-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h2-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h2-connect/flow-control
+=== RUN   TestGeckoReverseHalfClose/h3-connect
+=== RUN   TestGeckoReverseHalfClose/h3-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h3-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h3-connect/flow-control
+--- PASS: TestGeckoReverseHalfClose (0.49s)
+    --- PASS: TestGeckoReverseHalfClose/h2-connect (0.24s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/empty (0.08s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/buffered (0.08s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/flow-control (0.08s)
+    --- PASS: TestGeckoReverseHalfClose/h3-connect (0.25s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/empty (0.08s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/buffered (0.08s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/flow-control (0.09s)
+PASS
+ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	100.688s

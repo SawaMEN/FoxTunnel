@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "code_commit": "ce221aa89c7461dd3cb6f8f6cf5e4361e1f21211",
+  "compiled_runtime": {
+    "commit": "0fc71924c05ffe65b9e4ed2ba1c04febb98ab16b",
+    "workflow_run": 39912988779,
+    "artifact_id": 12484725066,
+    "binary_sha256": {
+      "xpcshell": "8279dcbc1310fca215330fb5d9347bc79cbaf38355d29970a1af3916f3ddc718",
+      "libxul.so": "2c6c11138ec9ac0afe4c455baa99820c97ed1289d18805519a932cbac245b1d9",
+      "libnss3.so": "abef8f52c52f186ff1004fe56f53a05dba4bbbc43a8ce4232a590a0debceb8d8",
+      "platform.ini": "b7d191147f2a67fc7dd976e06523efdc78a6d4b1ec64a18a51315a05618fdd2e"
+    }
+  },
+  "runtime_source_lock_verified": true,
+  "local_native_checks": {
+    "command": "FOXTUNNEL_XPCSHELL=$RUNTIME/xpcshell FOXTUNNEL_FINGERPRINT_OUT=$OUT go test -race ./experiments/firefox-necko -run '^Test(Gecko|Fingerprint)' -v -count=3 -timeout=240s",
+    "result": "passed",
+    "duration_seconds": 100.688,
+    "top_level_passes": {
+      "TestFingerprintRFC9001Initial": 3,
+      "TestFingerprintHPACKFragmentationAndReuse": 3,
+      "TestGeckoBrowserFingerprint": 3,
+      "TestGeckoCONNECT": 3,
+      "TestGeckoCONNECTHandoff": 3,
+      "TestGeckoTrustBeforeCredentials": 3,
+      "TestGeckoConcurrentCONNECT": 3,
+      "TestGeckoCancellation": 3,
+      "TestGeckoH3NoTCPFallback": 3,
+      "TestGeckoLocalHalfClose": 3,
+      "TestGeckoReverseHalfClose": 3
+    }
+  },
+  "other_checks": [
+    "go test ./...",
+    "go vet ./experiments/firefox-necko",
+    "Node parser and UA regression tests: 5 passed",
+    "Python source builder and comparison tests: 13 passed",
+    "RFC 9001 Initial AEAD vector and HPACK continuation/dynamic-table tests passed"
+  ],
+  "comparison_script_sha256": "ee0c1750d66d79c4ab8bdfb32f469b083299f22425eb0115fe84941894795adf",
+  "ci_verification": {
+    "workflow_run": 39945692782,
+    "commit": "ce221aa89c7461dd3cb6f8f6cf5e4361e1f21211",
+    "status": "in_progress"
+  }
+}
