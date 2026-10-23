@@ -2,8 +2,12 @@
 
 Stage 2 native acceptance has passed on Linux amd64. The prototype uses real
 Gecko networking for classic CONNECT over HTTP/2 and HTTP/3. It remains outside
-the production CLI and SDK runtime graph. Stage 3 controlled full-Firefox CONNECT comparison has also passed; production
-hardening is stage 4 in [the branch plan](../../docs/FIREFOX.md).
+the production CLI and SDK runtime graph. Stage 3 controlled full-Firefox CONNECT
+comparison and stage 4 operational qualification have passed within their stated
+scope. A separate opt-in Linux amd64 bundle is available through the runtime CI.
+See [operations and updates](OPERATIONS.md),
+[stage 4 results and limits](validation/stage4/README.md) and
+[the completed branch plan](../../docs/FIREFOX.md).
 
 ## Full Firefox comparison
 
@@ -78,9 +82,11 @@ Native patches are combined per source file and pinned in
 - H3 cancellation wakes UDP output after queuing a reset on an idle connection.
 
 The two JS pumps close their destination writer on clean EOF. Completion leaves
-native copiers owning the remaining queued bytes and transports until draining
-finishes. Force-closing at that point used to drop the upload tail under network
-backpressure. Error and setup-timeout paths retain their abort cleanup.
+native copiers owning the remaining queued bytes. The helper retains their
+transports within a configured budget and drain deadline, then aborts any work
+still remaining. Force-closing at JS completion used to drop the upload tail
+under network backpressure. Error and setup-timeout paths retain abort cleanup;
+retired references and JS/XPCOM cycles are reclaimed by bounded maintenance.
 
 CONNECT setup is serialized for both protocols; established pumps remain
 concurrent. The session limit and setup deadline bound that queue. H2's per-host
@@ -147,8 +153,11 @@ include destinations and headers, so the diagnostic runs use isolated fixtures.
 
 The experimental configuration deliberately excludes SPKI pins, SNI overrides,
 UDP forwarding, bonding and FoxTunnel padding. Full Necko wire comparison on
-the same runtime and workload is recorded in stage 3. Sustained load, unfinished drains,
-network changes, CPU/RSS, packaging and runtime upgrades are stage 4.
+the same runtime and workload is recorded in stage 3 and repeated in stage 4.
+Controlled load, bounded drains, path outage/NAT rebinding, CPU/RSS/FDs, packaging
+and runtime compatibility are qualified in [stage 4](validation/stage4/README.md).
+Proxy-IP changes, IPv4/IPv6 switching, mobile handoff and multi-day reliability
+remain deployment-specific pilot work. The distribution stays opt-in.
 
 Earlier source run [39869936393](https://github.com/SawaMEN/FoxTunnel/actions/runs/39869936393)
 compiled but exposed the 65,535-byte H2 and intermittent H3 stalls. Run

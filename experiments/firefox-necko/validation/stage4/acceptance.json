@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "pending-after-memory-regression",
+  "status": "passed",
   "scope": "controlled Linux amd64 qualification; separate opt-in launcher",
   "branch": "firefox",
   "qualified_code_commit": "eb92e13637a49a38013d97098209acfe59de99f5",
@@ -12,7 +12,7 @@
   "prior_runtime_run": 39952847618,
   "prior_runtime_result": "success",
   "final_runtime_run": 39991403260,
-  "final_runtime_result": "pending",
+  "final_runtime_result": "success",
   "soak_seconds_per_protocol": 300,
   "soak_method": {
     "parallel_streams": 8,
@@ -36,5 +36,93 @@
     "not integrated into ordinary CLI or SDK"
   ],
   "regression_runtime_run": 39988655835,
-  "regression_runtime_result": "failure: RSS growth"
+  "regression_runtime_result": "failure: RSS growth",
+  "local_300s": {
+    "result": "success",
+    "kernel": "Linux 6.18.55 x86_64",
+    "go_version": "go1.26.10",
+    "code_commit": "eb92e13637a49a38013d97098209acfe59de99f5",
+    "command": "FOXTUNNEL_XPCSHELL=<verified-runtime>/xpcshell FOXTUNNEL_SOAK_SECONDS=300 FOXTUNNEL_OPERATIONS_OUT=<observations> go test -race ./experiments/firefox-necko -run ^TestGeckoSoak$ -v -count=1 -timeout=720s",
+    "measurements": {
+      "h2-connect": {
+        "rounds": 11896,
+        "rss_start_kib": 116284,
+        "rss_end_kib": 223548,
+        "rss_sample_peak_kib": 330736,
+        "fds_start": 40,
+        "fds_end": 40,
+        "cpu_seconds": 165.07,
+        "average_cpu_percent": 54.79247437463487,
+        "gc_collections": 57,
+        "gc_ms": 966,
+        "sample_count": 1489
+      },
+      "h3-connect": {
+        "rounds": 11280,
+        "rss_start_kib": 120612,
+        "rss_end_kib": 137012,
+        "rss_sample_peak_kib": 307872,
+        "fds_start": 40,
+        "fds_end": 40,
+        "cpu_seconds": 298.35,
+        "average_cpu_percent": 98.93487906301192,
+        "gc_collections": 58,
+        "gc_ms": 1283,
+        "sample_count": 1412
+      }
+    }
+  },
+  "ci_300s_measurements": {
+    "h2-connect": {
+      "rounds": 14384,
+      "rss_start_kib": 121544,
+      "rss_end_kib": 200088,
+      "rss_sample_peak_kib": 356172,
+      "fds_start": 45,
+      "fds_end": 45,
+      "cpu_seconds": 136.62,
+      "average_cpu_percent": 45.37242451213518,
+      "gc_collections": 58,
+      "gc_ms": 1014,
+      "sample_count": 1800
+    },
+    "h3-connect": {
+      "rounds": 13456,
+      "rss_start_kib": 131040,
+      "rss_end_kib": 279276,
+      "rss_sample_peak_kib": 361492,
+      "fds_start": 45,
+      "fds_end": 45,
+      "cpu_seconds": 244.67,
+      "average_cpu_percent": 81.15710319526863,
+      "gc_collections": 56,
+      "gc_ms": 830,
+      "sample_count": 1684
+    }
+  },
+  "bundle": {
+    "artifact_id": 12519391254,
+    "artifact_zip_sha256": "sha256:da221145ebad4892f7d66e544f0dca6f2b6c64d6d607bf6f005cb57ccce25f6e",
+    "archive_sha256": "808a968d76758fc595da5ff758617e12aba2f84398855071f0434bf92a85e024",
+    "expires_at": "2026-11-06T17:19:01Z",
+    "url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39991403260/artifacts/12519391254"
+  },
+  "local_packaged_launcher": {
+    "result": "success",
+    "build_commit": "bb3ea4c3b429f72dfe9c6510ae4ec7b36d90e2d2",
+    "same_helper_as_qualified_code": true,
+    "bundle_verification": "success",
+    "h2_binary_transfer_and_SIGTERM": "success",
+    "h3_binary_transfer_and_SIGTERM": "success",
+    "profile_and_listener_cleanup": "success",
+    "test_seconds": 1.42
+  },
+  "wire_comparison": {
+    "h2_repetitions": 3,
+    "h3_repetitions": 3,
+    "h2_raw_hpack_and_frame_order_differences": 2,
+    "h2_decoded_header_differences": 0,
+    "h3_extension_order_differences": 3,
+    "claim": "Measured agreement and differences; not exact wire equality or DPI indistinguishability"
+  }
 }

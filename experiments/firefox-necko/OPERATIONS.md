@@ -6,6 +6,9 @@ The four-stage branch plan does not promise indistinguishability or deployment
 qualification on every network. Native acceptance for the current source lock
 must pass before distributing a bundle built from it.
 
+The [stage 4 qualification record](validation/stage4/README.md) includes the
+current verified CI bundle, exact hashes, resource measurements and limitations.
+
 ## Session ownership and limits
 
 The helper bounds setup, established idle time and retained native drains.

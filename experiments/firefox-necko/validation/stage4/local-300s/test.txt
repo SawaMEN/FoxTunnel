@@ -1,0 +1,10 @@
+=== RUN   TestGeckoSoak
+=== RUN   TestGeckoSoak/h2-connect
+    operations_test.go:321: h2-connect: 11896 verified tunnels, RSS 116284 -> 223548 KiB, FDs 40 -> 40, CPU +16507 ticks
+=== RUN   TestGeckoSoak/h3-connect
+    operations_test.go:321: h3-connect: 11280 verified tunnels, RSS 120612 -> 137012 KiB, FDs 40 -> 40, CPU +29835 ticks
+--- PASS: TestGeckoSoak (606.38s)
+    --- PASS: TestGeckoSoak/h2-connect (303.03s)
+    --- PASS: TestGeckoSoak/h3-connect (303.35s)
+PASS
+ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	607.398s

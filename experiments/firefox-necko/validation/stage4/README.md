@@ -9,7 +9,7 @@ network or merge Necko into the ordinary FoxTunnel CLI/SDK.
 The native source build [39952039057](https://github.com/SawaMEN/FoxTunnel/actions/runs/39952039057)
 passed on `cb5c2f08d99005377efd2fcdedd4f4a2faaaa777`. Its runtime artifact is
 `12501945687`. [runtime-provenance.json](runtime-provenance.json) records the
-exact source lock and four binary SHA-256 hashes. Both consumer workflows compare
+exact source lock and four binary SHA-256 hashes. Each consuming CI run compares
 that lock and those hashes before running tests. The build provenance status
 `built-not-interop-tested` describes compilation; acceptance is established by
 the separate test results, not that build status.
@@ -80,8 +80,52 @@ Both retained 40 FDs. Twelve collections took 178 ms in H2 and 231 ms in H3
 in total; process CPU was 33.26 and 59.12 seconds, respectively. Full measurements
 are retained in `local-60s/`. This is evidence of the fix, not a throughput ranking.
 
-The final repeated qualification is pending in
-[39991403260](https://github.com/SawaMEN/FoxTunnel/actions/runs/39991403260).
+The final repeated qualification passed in
+[39991403260](https://github.com/SawaMEN/FoxTunnel/actions/runs/39991403260)
+on helper `eb92e13637a49a38013d97098209acfe59de99f5`, including native gates,
+network recovery and the actual packaged launcher after the load.
+
+| Transport | Verified rounds | RSS, KiB | FDs | Helper CPU, seconds |
+| --- | ---: | ---: | ---: | ---: |
+| h2-connect | 14384 | 121544 → 200088 | 45 → 45 | 136.62 |
+| h3-connect | 13456 | 131040 → 279276 | 45 → 45 | 244.67 |
+
+All samples, the complete workflow log and CI step/artifact metadata are retained
+under `ci-300s/`. [acceptance.json](acceptance.json) binds the code, native build,
+source/helper/binary hashes, artifacts and results.
+
+The independent local clean-bundle verification and actual packaged H2/H3,
+SIGTERM, listener and profile cleanup tests also passed. An earlier local copy
+was correctly rejected for extra temporary files next to libxul; the accepted
+local package was assembled from a fresh source archive in a separate directory.
+
+Download the [qualified Linux amd64 bundle](https://github.com/SawaMEN/FoxTunnel/actions/runs/39991403260/artifacts/12519391254).
+Its `.tar.gz` SHA-256 is:
+
+```text
+808a968d76758fc595da5ff758617e12aba2f84398855071f0434bf92a85e024
+```
+
+The outer GitHub artifact ZIP has a separate digest in `acceptance.json`.
+The artifact expires on 2026-11-06; retain your verified archive for rollback.
+
+## Independent local five-minute run
+
+The same compiled runtime hashes and helper `eb92e13` passed a second,
+independent 300-second run per protocol on Linux 6.18.55 x86_64 with Go 1.26.10
+and the race detector. The [test log](local-300s/test.txt) and complete sampled
+measurements are retained under `local-300s/`.
+
+| Transport | Verified rounds | RSS, KiB | FDs | Helper CPU, seconds |
+| --- | ---: | ---: | ---: | ---: |
+| h2-connect | 11896 | 116284 → 223548 | 40 → 40 | 165.07 |
+| h3-connect | 11280 | 120612 → 137012 | 40 → 40 | 298.35 |
+
+GC/CC/GC ran 57 times for H2 (966 ms total) and 58 times for H3 (1283 ms total).
+The maximum *sampled* RSS was 330736 KiB and 307872 KiB, respectively. These
+are batch samples, not a continuous peak-memory trace. The acceptance RSS gate
+uses the drained end, not the sampled maximum. Counters matched every transferred
+byte and no sessions, retained drains, refusals or idle expirations remained.
 
 ## Repeated Firefox comparison
 
