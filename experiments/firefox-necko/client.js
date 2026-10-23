@@ -211,7 +211,15 @@ if (typeof Components !== "undefined") {
   pps.registerFilter(filter, 0);
 
   class AsyncIO {
-    constructor(input, output) { this.input = input; this.output = output; }
+    constructor(input, output) {
+      this.input = input;
+      this.output = output;
+      // An nsIBinaryInputStream wrapper owns the same underlying async stream
+      // throughout the session. Reuse it instead of allocating an XPCOM wrapper
+      // for every callback on the payload hot path.
+      this.binary = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream);
+      this.binary.setInputStream(input);
+    }
     read(scratch = null) {
       return new Promise((resolve, reject) => {
         const callback = {
@@ -219,12 +227,10 @@ if (typeof Components !== "undefined") {
             try {
               const n = Math.min(stream.available(), scratch ? scratch.byteLength : 32768);
               if (!n) { resolve(null); return; }
-              const binary = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream);
-              binary.setInputStream(stream);
               // During an established pump, reuse its own bounded ArrayBuffer.
               // No second read starts before the previous write completes.
               const bytes = scratch || new Uint8Array(n);
-              const count = binary.readArrayBuffer(n, bytes.buffer);
+              const count = this.binary.readArrayBuffer(n, bytes.buffer);
               if (!count) { resolve(null); return; }
               resolve(bytes.subarray(0, count));
             } catch (e) {

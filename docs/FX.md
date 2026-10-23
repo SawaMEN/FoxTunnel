@@ -85,3 +85,15 @@ python3 scripts/report_fx_operations.py --current necko-operations \
   --reference experiments/firefox-necko/validation/stage4/ci-300s \
   --out necko-operations/fx-resource-report.json
 ```
+
+
+## Третий коммит: исправление CI и кэша XPCOM
+
+Исправлено повреждение YAML, из-за которого полный runtime workflow не
+стартовал после второго коммита. Рабочий файл восстановлен от `main`,
+и FX-проверки добавлены без изменения остальных gate. Исправлен сценарий
+тестового Firefox-vs-Firefox контроля: два прогона без различий, один
+с вариативным порядком расширений. Нативный `nsIBinaryInputStream`
+создаётся один раз на каждый `AsyncIO`, а не на каждый read callback;
+это оптимизация количества XPCOM wrapper allocations. Нативный CI должен
+подтвердить корректность при H2 и H3; результат ещё не измеряет выигрыш.

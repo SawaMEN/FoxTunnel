@@ -22,8 +22,8 @@ def reports():
             c = [row("connection_1.settings", [1], [1]),
                  row("connection_1.hello.extensions", [10, 16], [10, 16])]
             f = [row("connection_1.settings", [1], [1]),
-                 row("connection_1.hello.extensions", [10, 16] if i < 2 else [16, 10],
-                     [16, 10] if i < 2 else [10, 16])]
+                 row("connection_1.hello.extensions", [10, 16],
+                     [10, 16] if i < 2 else [16, 10])]
             candidate["observations"].append({"transport": mode, "checks": c})
             control["observations"].append({"transport": mode, "checks": f})
     return candidate, control
