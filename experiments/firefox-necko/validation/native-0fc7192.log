@@ -1,0 +1,194 @@
+=== RUN   TestGeckoCONNECT
+=== RUN   TestGeckoCONNECT/h2-connect
+=== RUN   TestGeckoCONNECT/h3-connect
+--- PASS: TestGeckoCONNECT (0.32s)
+    --- PASS: TestGeckoCONNECT/h2-connect (0.16s)
+    --- PASS: TestGeckoCONNECT/h3-connect (0.16s)
+=== RUN   TestGeckoCONNECTHandoff
+=== RUN   TestGeckoCONNECTHandoff/h2-connect
+=== RUN   TestGeckoCONNECTHandoff/h3-connect
+--- PASS: TestGeckoCONNECTHandoff (0.30s)
+    --- PASS: TestGeckoCONNECTHandoff/h2-connect (0.14s)
+    --- PASS: TestGeckoCONNECTHandoff/h3-connect (0.15s)
+=== RUN   TestGeckoTrustBeforeCredentials
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root
+2026/10/23 08:40:28 http: TLS handshake error from 127.0.0.1:35574: remote error: tls: bad certificate
+2026/10/23 08:40:28 http: TLS handshake error from 127.0.0.1:35582: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname
+2026/10/23 08:40:28 http: TLS handshake error from 127.0.0.1:51410: remote error: tls: bad certificate
+2026/10/23 08:40:28 http: TLS handshake error from 127.0.0.1:51426: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname
+--- PASS: TestGeckoTrustBeforeCredentials (12.31s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root (0.08s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname (0.09s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root (6.06s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname (6.07s)
+=== RUN   TestGeckoConcurrentCONNECT
+=== RUN   TestGeckoConcurrentCONNECT/h2-connect
+=== RUN   TestGeckoConcurrentCONNECT/h3-connect
+--- PASS: TestGeckoConcurrentCONNECT (0.81s)
+    --- PASS: TestGeckoConcurrentCONNECT/h2-connect (0.42s)
+    --- PASS: TestGeckoConcurrentCONNECT/h3-connect (0.40s)
+=== RUN   TestGeckoCancellation
+=== RUN   TestGeckoCancellation/h2-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h2-connect
+=== RUN   TestGeckoCancellation/h3-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h3-connect
+--- PASS: TestGeckoCancellation (8.37s)
+    --- PASS: TestGeckoCancellation/h2-connect (0.08s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h2-connect (4.10s)
+    --- PASS: TestGeckoCancellation/h3-connect (0.09s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h3-connect (4.10s)
+=== RUN   TestGeckoH3NoTCPFallback
+--- PASS: TestGeckoH3NoTCPFallback (1.07s)
+=== RUN   TestGeckoLocalHalfClose
+--- PASS: TestGeckoLocalHalfClose (0.05s)
+=== RUN   TestGeckoReverseHalfClose
+=== RUN   TestGeckoReverseHalfClose/h2-connect
+=== RUN   TestGeckoReverseHalfClose/h2-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h2-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h2-connect/flow-control
+=== RUN   TestGeckoReverseHalfClose/h3-connect
+=== RUN   TestGeckoReverseHalfClose/h3-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h3-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h3-connect/flow-control
+--- PASS: TestGeckoReverseHalfClose (0.68s)
+    --- PASS: TestGeckoReverseHalfClose/h2-connect (0.33s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/empty (0.13s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/buffered (0.11s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/flow-control (0.10s)
+    --- PASS: TestGeckoReverseHalfClose/h3-connect (0.34s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/empty (0.12s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/buffered (0.12s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/flow-control (0.10s)
+=== RUN   TestGeckoCONNECT
+=== RUN   TestGeckoCONNECT/h2-connect
+=== RUN   TestGeckoCONNECT/h3-connect
+--- PASS: TestGeckoCONNECT (0.30s)
+    --- PASS: TestGeckoCONNECT/h2-connect (0.15s)
+    --- PASS: TestGeckoCONNECT/h3-connect (0.15s)
+=== RUN   TestGeckoCONNECTHandoff
+=== RUN   TestGeckoCONNECTHandoff/h2-connect
+=== RUN   TestGeckoCONNECTHandoff/h3-connect
+--- PASS: TestGeckoCONNECTHandoff (0.34s)
+    --- PASS: TestGeckoCONNECTHandoff/h2-connect (0.12s)
+    --- PASS: TestGeckoCONNECTHandoff/h3-connect (0.22s)
+=== RUN   TestGeckoTrustBeforeCredentials
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root
+2026/10/23 08:40:52 http: TLS handshake error from 127.0.0.1:49442: remote error: tls: bad certificate
+2026/10/23 08:40:52 http: TLS handshake error from 127.0.0.1:49456: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname
+2026/10/23 08:40:52 http: TLS handshake error from 127.0.0.1:34632: remote error: tls: bad certificate
+2026/10/23 08:40:52 http: TLS handshake error from 127.0.0.1:34638: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname
+--- PASS: TestGeckoTrustBeforeCredentials (12.35s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root (0.10s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname (0.11s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root (6.08s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname (6.06s)
+=== RUN   TestGeckoConcurrentCONNECT
+=== RUN   TestGeckoConcurrentCONNECT/h2-connect
+=== RUN   TestGeckoConcurrentCONNECT/h3-connect
+--- PASS: TestGeckoConcurrentCONNECT (0.80s)
+    --- PASS: TestGeckoConcurrentCONNECT/h2-connect (0.39s)
+    --- PASS: TestGeckoConcurrentCONNECT/h3-connect (0.42s)
+=== RUN   TestGeckoCancellation
+=== RUN   TestGeckoCancellation/h2-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h2-connect
+=== RUN   TestGeckoCancellation/h3-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h3-connect
+--- PASS: TestGeckoCancellation (8.34s)
+    --- PASS: TestGeckoCancellation/h2-connect (0.07s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h2-connect (4.09s)
+    --- PASS: TestGeckoCancellation/h3-connect (0.09s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h3-connect (4.09s)
+=== RUN   TestGeckoH3NoTCPFallback
+--- PASS: TestGeckoH3NoTCPFallback (1.08s)
+=== RUN   TestGeckoLocalHalfClose
+--- PASS: TestGeckoLocalHalfClose (0.05s)
+=== RUN   TestGeckoReverseHalfClose
+=== RUN   TestGeckoReverseHalfClose/h2-connect
+=== RUN   TestGeckoReverseHalfClose/h2-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h2-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h2-connect/flow-control
+=== RUN   TestGeckoReverseHalfClose/h3-connect
+=== RUN   TestGeckoReverseHalfClose/h3-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h3-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h3-connect/flow-control
+--- PASS: TestGeckoReverseHalfClose (0.69s)
+    --- PASS: TestGeckoReverseHalfClose/h2-connect (0.38s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/empty (0.14s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/buffered (0.12s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/flow-control (0.11s)
+    --- PASS: TestGeckoReverseHalfClose/h3-connect (0.31s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/empty (0.10s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/buffered (0.10s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/flow-control (0.11s)
+=== RUN   TestGeckoCONNECT
+=== RUN   TestGeckoCONNECT/h2-connect
+=== RUN   TestGeckoCONNECT/h3-connect
+--- PASS: TestGeckoCONNECT (0.31s)
+    --- PASS: TestGeckoCONNECT/h2-connect (0.15s)
+    --- PASS: TestGeckoCONNECT/h3-connect (0.16s)
+=== RUN   TestGeckoCONNECTHandoff
+=== RUN   TestGeckoCONNECTHandoff/h2-connect
+=== RUN   TestGeckoCONNECTHandoff/h3-connect
+--- PASS: TestGeckoCONNECTHandoff (0.33s)
+    --- PASS: TestGeckoCONNECTHandoff/h2-connect (0.14s)
+    --- PASS: TestGeckoCONNECTHandoff/h3-connect (0.18s)
+=== RUN   TestGeckoTrustBeforeCredentials
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root
+2026/10/23 08:41:16 http: TLS handshake error from 127.0.0.1:32794: remote error: tls: bad certificate
+2026/10/23 08:41:16 http: TLS handshake error from 127.0.0.1:32808: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname
+2026/10/23 08:41:16 http: TLS handshake error from 127.0.0.1:54694: remote error: tls: bad certificate
+2026/10/23 08:41:16 http: TLS handshake error from 127.0.0.1:54704: remote error: tls: bad certificate
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root
+=== RUN   TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname
+--- PASS: TestGeckoTrustBeforeCredentials (12.36s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root (0.09s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname (0.09s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root (6.10s)
+    --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname (6.08s)
+=== RUN   TestGeckoConcurrentCONNECT
+=== RUN   TestGeckoConcurrentCONNECT/h2-connect
+=== RUN   TestGeckoConcurrentCONNECT/h3-connect
+--- PASS: TestGeckoConcurrentCONNECT (0.80s)
+    --- PASS: TestGeckoConcurrentCONNECT/h2-connect (0.40s)
+    --- PASS: TestGeckoConcurrentCONNECT/h3-connect (0.40s)
+=== RUN   TestGeckoCancellation
+=== RUN   TestGeckoCancellation/h2-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h2-connect
+=== RUN   TestGeckoCancellation/h3-connect
+=== RUN   TestGeckoCancellation/setup-timeout-recovery/h3-connect
+--- PASS: TestGeckoCancellation (8.34s)
+    --- PASS: TestGeckoCancellation/h2-connect (0.08s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h2-connect (4.08s)
+    --- PASS: TestGeckoCancellation/h3-connect (0.08s)
+    --- PASS: TestGeckoCancellation/setup-timeout-recovery/h3-connect (4.10s)
+=== RUN   TestGeckoH3NoTCPFallback
+--- PASS: TestGeckoH3NoTCPFallback (1.08s)
+=== RUN   TestGeckoLocalHalfClose
+--- PASS: TestGeckoLocalHalfClose (0.06s)
+=== RUN   TestGeckoReverseHalfClose
+=== RUN   TestGeckoReverseHalfClose/h2-connect
+=== RUN   TestGeckoReverseHalfClose/h2-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h2-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h2-connect/flow-control
+=== RUN   TestGeckoReverseHalfClose/h3-connect
+=== RUN   TestGeckoReverseHalfClose/h3-connect/empty
+=== RUN   TestGeckoReverseHalfClose/h3-connect/buffered
+=== RUN   TestGeckoReverseHalfClose/h3-connect/flow-control
+--- PASS: TestGeckoReverseHalfClose (0.96s)
+    --- PASS: TestGeckoReverseHalfClose/h2-connect (0.37s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/empty (0.11s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/buffered (0.11s)
+        --- PASS: TestGeckoReverseHalfClose/h2-connect/flow-control (0.15s)
+    --- PASS: TestGeckoReverseHalfClose/h3-connect (0.59s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/empty (0.19s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/buffered (0.23s)
+        --- PASS: TestGeckoReverseHalfClose/h3-connect/flow-control (0.18s)
+PASS
+ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	73.113s
