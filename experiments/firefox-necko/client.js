@@ -69,7 +69,7 @@ if (typeof module !== "undefined") module.exports = { SocksParser, socksReply, f
 if (typeof Components !== "undefined") {
   const { classes: Cc, interfaces: Ci, results: Cr } = Components;
   const { NetUtil } = ChromeUtils.importESModule("resource://gre/modules/NetUtil.sys.mjs");
-  const { setTimeout, clearTimeout } = ChromeUtils.importESModule("resource://gre/modules/Timer.sys.mjs");
+  const { setTimeout, clearTimeout, setInterval, clearInterval } = ChromeUtils.importESModule("resource://gre/modules/Timer.sys.mjs");
   const thread = Services.tm.mainThread;
   const localFile = path => {
     const f = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
@@ -191,6 +191,26 @@ if (typeof Components !== "undefined") {
   }
 
   const sessions = new Set();
+  // Native copier completion is not exposed by the handoff API. Retain a
+  // bounded number of clean sessions until their drain budget expires. Never
+  // infer completion from IsAlive(): H3 currently always returns true there.
+  const draining = new Set();
+  const counters = { accepted: 0, completed: 0, rejected: 0, idle_expired: 0,
+    drain_expired: 0, upload_bytes: 0, download_bytes: 0 };
+  const sweep = setInterval(() => {
+    const now = Date.now();
+    for (const session of sessions) {
+      if (session.remote && now - session.lastProgress >= cfg.idle_timeout_ms) {
+        counters.idle_expired++; session.close();
+      }
+    }
+    for (const session of draining) {
+      if (now >= session.drainDeadline) { counters.drain_expired++; session.close(); }
+    }
+  }, Math.max(50, Math.min(1000, cfg.idle_timeout_ms / 2, cfg.drain_timeout_ms / 2)));
+  const stats = cfg.stats_interval_ms ? setInterval(() => {
+    print(JSON.stringify({ type: "stats", connected: [...sessions].filter(s => !!s.remote).length, oldest_ms: Math.max(0, ...[...sessions].map(s => Date.now() - s.lastProgress)), idle_limit: cfg.idle_timeout_ms, active: sessions.size, draining: draining.size, ...counters }));
+  }, cfg.stats_interval_ms) : null;
   // Standalone proxy handoff cannot reliably initialize several cold CONNECT
   // channels at once (both H2 and H3). Queue setup only; established streams retain
   // independent, concurrent pumps on the native multiplexed connection.
@@ -251,15 +271,21 @@ if (typeof Components !== "undefined") {
     });
   }
 
-  async function pump(source, destination) {
+  async function pump(source, destination, session, direction) {
     for (;;) {
       const data = await source.read();
       if (data === null) { destination.output.close(); return; }
+      session.lastProgress = Date.now();
       await destination.write(data);
+      session.lastProgress = Date.now();
+      counters[direction] += data.length;
     }
   }
   async function serve(transport) {
-    if (sessions.size >= cfg.max_connections) { transport.close(Cr.NS_BINDING_ABORTED); return; }
+    if (sessions.size >= cfg.max_connections || sessions.size + draining.size >= cfg.max_retained_connections) {
+      counters.rejected++; transport.close(Cr.NS_BINDING_ABORTED); return;
+    }
+    counters.accepted++;
     // Closing an ordinary Gecko socket output does not send FIN while input
     // remains open. Enable the pinned plain-TCP fix on the local SOCKS socket.
     // The guard keeps older research runtimes usable for blocker diagnostics.
@@ -269,14 +295,18 @@ if (typeof Components !== "undefined") {
     const local = new AsyncIO(
       transport.openInputStream(0, 0, 0).QueryInterface(Ci.nsIAsyncInputStream),
       transport.openOutputStream(0, 0, 0).QueryInterface(Ci.nsIAsyncOutputStream));
-    const session = { local, closed: false, channel: null, remote: null };
+    const session = { local, closed: false, established: false, lastProgress: Date.now(), channel: null, remote: null };
     session.close = (graceful = false) => {
       if (session.closed) return;
-      session.closed = true;
       // Both pumps close their destination writer on clean EOF. Native
       // copiers still own queued bytes and transports until those bytes drain.
       // Aborting here would discard the tail under network backpressure.
-      if (graceful) return;
+      if (graceful) {
+        session.drainDeadline = Date.now() + cfg.drain_timeout_ms;
+        draining.add(session); counters.completed++; return;
+      }
+      session.closed = true;
+      sessions.delete(session); draining.delete(session);
       if (session.cancelConnect) { session.cancelConnect(); session.cancelConnect = null; }
       if (session.channel) session.channel.cancel(Cr.NS_BINDING_ABORTED);
       local.close();
@@ -304,11 +334,11 @@ if (typeof Components !== "undefined") {
       }
       const remote = await openTunnel(request.authority, session);
       clearTimeout(timer);
-      await local.write(socksReply(0)); established = true;
+      await local.write(socksReply(0)); established = true; session.established = true; session.lastProgress = Date.now();
       if (request.early.length) await remote.write(request.early);
       // A failed pump aborts both directions. A clean EOF half-closes only
       // that direction; the other can deliver the remaining response bytes.
-      await Promise.all([pump(local, remote), pump(remote, local)]);
+      await Promise.all([pump(local, remote, session, "upload_bytes"), pump(remote, local, session, "download_bytes")]);
       completed = true;
     } catch {
       if (!established && !session.closed) {
@@ -327,10 +357,12 @@ if (typeof Components !== "undefined") {
     QueryInterface: ChromeUtils.generateQI(["nsIServerSocketListener"]),
   });
   print(JSON.stringify({ type: "ready", engine: "firefox-necko", transport: cfg.transport,
-    listen: `127.0.0.1:${server.port}`, version: Services.appinfo.platformVersion }));
+    listen: `127.0.0.1:${server.port}`, pid: Services.appinfo.processID, process_tag: root.split("/").pop(), version: Services.appinfo.platformVersion }));
   // Standalone xpcshell has no browser event loop. All callbacks above run on
   // this thread; native socket work remains on Gecko's networking threads.
   Services.tm.spinEventLoopUntil("FoxTunnel Firefox networking", () => stopped);
   for (const session of sessions) session.close();
+  for (const session of draining) session.close();
+  clearInterval(sweep); if (stats !== null) clearInterval(stats);
   pps.unregisterFilter(filter);
 }

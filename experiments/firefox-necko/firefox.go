@@ -29,14 +29,18 @@ var clientScript []byte
 // Config deliberately excludes options that Necko cannot enforce here, such
 // as SPKI pins, a different SNI, bonding, UDP and FoxTunnel padding.
 type Config struct {
-	Server           string `json:"server"`
-	Username         string `json:"username"`
-	Password         string `json:"password"`
-	Transport        string `json:"transport"`
-	Listen           string `json:"listen"`
-	CACert           string `json:"ca_cert,omitempty"`
-	MaxConnections   int    `json:"max_connections,omitempty"`
-	ConnectTimeoutMS int    `json:"connect_timeout_ms,omitempty"`
+	Server                 string `json:"server"`
+	Username               string `json:"username"`
+	Password               string `json:"password"`
+	Transport              string `json:"transport"`
+	Listen                 string `json:"listen"`
+	CACert                 string `json:"ca_cert,omitempty"`
+	MaxConnections         int    `json:"max_connections,omitempty"`
+	ConnectTimeoutMS       int    `json:"connect_timeout_ms,omitempty"`
+	IdleTimeoutMS          int    `json:"idle_timeout_ms,omitempty"`
+	DrainTimeoutMS         int    `json:"drain_timeout_ms,omitempty"`
+	MaxRetainedConnections int    `json:"max_retained_connections,omitempty"`
+	StatsIntervalMS        int    `json:"stats_interval_ms,omitempty"`
 }
 
 func (c Config) normalize() (Config, error) {
@@ -82,6 +86,18 @@ func (c Config) normalize() (Config, error) {
 	if c.ConnectTimeoutMS < 100 || c.ConnectTimeoutMS > 120000 {
 		return c, errors.New("invalid Firefox setup timeout")
 	}
+	if c.IdleTimeoutMS == 0 {
+		c.IdleTimeoutMS = 300000
+	}
+	if c.DrainTimeoutMS == 0 {
+		c.DrainTimeoutMS = 30000
+	}
+	if c.MaxRetainedConnections == 0 {
+		c.MaxRetainedConnections = min(c.MaxConnections*4, 4096)
+	}
+	if c.IdleTimeoutMS < 100 || c.IdleTimeoutMS > 86400000 || c.DrainTimeoutMS < 100 || c.DrainTimeoutMS > 120000 || c.MaxRetainedConnections < c.MaxConnections || c.MaxRetainedConnections > 16384 || (c.StatsIntervalMS != 0 && (c.StatsIntervalMS < 100 || c.StatsIntervalMS > 60000)) {
+		return c, errors.New("invalid Firefox lifetime or metrics limits")
+	}
 	return c, nil
 }
 
@@ -125,14 +141,18 @@ func ReadConfig(path string) (Config, error) {
 }
 
 type runtimeConfig struct {
-	ProxyHost        string `json:"proxy_host"`
-	ProxyPort        int    `json:"proxy_port"`
-	Authorization    string `json:"authorization"`
-	Transport        string `json:"transport"`
-	ListenPort       int    `json:"listen_port"`
-	MaxConnections   int    `json:"max_connections"`
-	ConnectTimeoutMS int    `json:"connect_timeout_ms"`
-	CAPEM            string `json:"ca_pem"`
+	ProxyHost              string `json:"proxy_host"`
+	ProxyPort              int    `json:"proxy_port"`
+	Authorization          string `json:"authorization"`
+	Transport              string `json:"transport"`
+	ListenPort             int    `json:"listen_port"`
+	MaxConnections         int    `json:"max_connections"`
+	ConnectTimeoutMS       int    `json:"connect_timeout_ms"`
+	CAPEM                  string `json:"ca_pem"`
+	IdleTimeoutMS          int    `json:"idle_timeout_ms"`
+	DrainTimeoutMS         int    `json:"drain_timeout_ms"`
+	MaxRetainedConnections int    `json:"max_retained_connections"`
+	StatsIntervalMS        int    `json:"stats_interval_ms"`
 }
 
 // Run owns a fresh private profile and helper process. Credentials never appear
@@ -177,7 +197,7 @@ func Run(ctx context.Context, runtimePath string, config Config, stdout, stderr 
 	if err := os.Mkdir(filepath.Join(private, "profile"), 0700); err != nil {
 		return err
 	}
-	data, err := json.Marshal(runtimeConfig{ProxyHost: u.Hostname(), ProxyPort: proxyPort, Authorization: "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)), Transport: c.Transport, ListenPort: listenPort, MaxConnections: c.MaxConnections, ConnectTimeoutMS: c.ConnectTimeoutMS, CAPEM: string(ca)})
+	data, err := json.Marshal(runtimeConfig{ProxyHost: u.Hostname(), ProxyPort: proxyPort, Authorization: "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)), Transport: c.Transport, ListenPort: listenPort, MaxConnections: c.MaxConnections, ConnectTimeoutMS: c.ConnectTimeoutMS, CAPEM: string(ca), IdleTimeoutMS: c.IdleTimeoutMS, DrainTimeoutMS: c.DrainTimeoutMS, MaxRetainedConnections: c.MaxRetainedConnections, StatsIntervalMS: c.StatsIntervalMS})
 	if err != nil {
 		return err
 	}
