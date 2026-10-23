@@ -36,6 +36,18 @@ class PackageTests(unittest.TestCase):
             bundle.archive(out, root / 'b.tar.gz')
             self.assertEqual(bundle.digest(root / 'a.tar.gz'), bundle.digest(root / 'b.tar.gz'))
 
+    def test_recursive_output_paths_are_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runtime, provenance, launcher = self.fixture(root)
+            with self.assertRaises(ValueError):
+                bundle.package(runtime, provenance, launcher, runtime / 'nested')
+            self.assertFalse((runtime / 'nested').exists())
+            out = root / 'bundle'
+            bundle.package(runtime, provenance, launcher, out)
+            with self.assertRaises(ValueError):
+                bundle.archive(out, out / 'recursive.tar.gz')
+
     def test_source_mismatch_tamper_and_links(self):
         for fault in ('source', 'tamper', 'symlink'):
             with self.subTest(fault=fault), tempfile.TemporaryDirectory() as tmp:

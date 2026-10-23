@@ -84,3 +84,23 @@ func TestLifetimeConfigValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestBundleResolvesVersionPointerBeforeExecution(t *testing.T) {
+	first := testBundle(t)
+	second := testBundle(t)
+	pointer := filepath.Join(t.TempDir(), "current")
+	if e := os.Symlink(first, pointer); e != nil {
+		t.Fatal(e)
+	}
+	verified, e := VerifyBundle(pointer)
+	if e != nil {
+		t.Fatal(e)
+	}
+	os.Remove(pointer)
+	if e := os.Symlink(second, pointer); e != nil {
+		t.Fatal(e)
+	}
+	if verified != filepath.Join(first, "runtime", "xpcshell") {
+		t.Fatal("verified runtime still follows mutable version pointer")
+	}
+}

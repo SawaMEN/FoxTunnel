@@ -44,6 +44,12 @@ func VerifyBundle(directory string) (string, error) {
 	if e != nil {
 		return "", invalid
 	}
+	// Freeze a version-directory symlink before verification and execution.
+	// Switching a "current" pointer must not change the path we verified.
+	absolute, e = filepath.EvalSymlinks(absolute)
+	if e != nil {
+		return "", invalid
+	}
 	root, e := os.OpenRoot(absolute)
 	if e != nil {
 		return "", invalid
