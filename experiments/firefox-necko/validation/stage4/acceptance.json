@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "status": "pending-after-memory-regression",
+  "scope": "controlled Linux amd64 qualification; separate opt-in launcher",
+  "branch": "firefox",
+  "qualified_code_commit": "eb92e13637a49a38013d97098209acfe59de99f5",
+  "native_source_commit": "cb5c2f08d99005377efd2fcdedd4f4a2faaaa777",
+  "native_source_run": 39952039057,
+  "native_runtime_artifact": 12501945687,
+  "source_lock_sha256": "f88ac666d42396979e74c6439fc0496f75ac0c50036a75ce9c02d656b17f5fd9",
+  "client_js_sha256": "c09dc383beb7ff6ba94a23633c4baf5ca11c9700874999797cfe0b000373b06b",
+  "prior_runtime_run": 39952847618,
+  "prior_runtime_result": "success",
+  "final_runtime_run": 39991403260,
+  "final_runtime_result": "pending",
+  "soak_seconds_per_protocol": 300,
+  "soak_method": {
+    "parallel_streams": 8,
+    "payload_bytes_per_round": 131072,
+    "warmup_tunnels": 16,
+    "resource_scope": "helper process only",
+    "max_end_fd_growth": 32,
+    "max_end_rss_growth_kib": 196608
+  },
+  "native_runtime_hashes": {
+    "xpcshell": "3a9771a9e473039c1c5b8b033084a19fe991a1ad7b6461cf9aa36bcb46d64319",
+    "libxul.so": "8a39d3e11c077e7842b31008101e8926cdf54689199cd2e6feb1f4cd952780d3",
+    "libnss3.so": "d535bafee0665498ce83c1ee3755bb610e1e996f69c892271b2333130097a338",
+    "platform.ini": "e98be751a092e5a05134560c76851a2b521fd500db27e5d2535f07194cc8698a"
+  },
+  "limitations": [
+    "controlled loopback disruption and NAT source-port rebinding",
+    "no proxy-IP or IPv4/IPv6 or mobile-handoff qualification",
+    "no multiday reliability claim",
+    "no ordinary navigation or DPI-indistinguishability claim",
+    "not integrated into ordinary CLI or SDK"
+  ],
+  "regression_runtime_run": 39988655835,
+  "regression_runtime_result": "failure: RSS growth"
+}

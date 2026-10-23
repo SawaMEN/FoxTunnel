@@ -11,7 +11,10 @@ A fresh full Firefox process and the xpcshell helper load the same pinned
 libxul/NSS and execute identical raw binary CONNECT workloads. Both protocols
 passed three repetitions covering cold startup, reuse, controlled reconnect,
 TLS resumption and directional EOF. The measured xpcshell User-Agent discrepancy
-was fixed. H2 retained fields, SETTINGS and HPACK then matched; H3 retained
+was fixed. H2 retained fields, SETTINGS and HPACK then matched in the original
+stage 3 observation. The stage 4 repetitions retained H2 raw HPACK/HEADERS-size
+and frame-order differences with matching decoded fields; see
+[the current report](validation/stage4/README.md). H3 retained
 fields matched except randomized extension order/JA3. H3 resumed for both clients;
 H2 did not resume for either in this fixture.
 
@@ -109,7 +112,8 @@ tools. The mozconfig hash records these options. CI keeps up to 2 GiB of
 compiler-cache entries without bypassing source hashes or native gates.
 
 The [source workflow](../../.github/workflows/necko-experiment.yml) builds the
-runtime and tests it. JS and Go helper changes also trigger native validation.
+runtime and tests it when native patches or the source lock change. JS and Go
+helper changes trigger the separate runtime validation workflow.
 The reverse-EOF and lifecycle gates repeat three times. Runtime artifacts remain
 available for seven days, including after a gate failure for diagnostics.
 Build provenance distinguishes source preparation from compilation; native test
@@ -117,8 +121,10 @@ results are recorded separately in workflow logs.
 
 The [runtime workflow](../../.github/workflows/necko-runtime-test.yml) also runs
 automatically for helper JS, Go tests and comparison-harness changes. It reuses
-the latest successful source-build artifact after verifying the exact source lock
-and four binary hashes; a different patch set is rejected. Manual dispatch can
+a compiled source-build artifact with the exact same source lock and verifies
+four binary hashes before testing. Artifacts from a failed gate are eligible
+for diagnostics, but all consuming runtime gates must pass before packaging;
+a different patch set is rejected. Manual dispatch can
 select a specific source-run ID. This fast verification does not replace source
 compilation when native patches change.
 

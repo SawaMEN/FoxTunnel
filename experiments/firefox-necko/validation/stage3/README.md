@@ -102,5 +102,7 @@ retransmitted, so the report compares unique stream IDs. Different extension
 orders and JA3 values remain real observations; three repetitions do not establish
 equality of probability distributions. Neither metadata agreement nor the use of
 a full Firefox process demonstrates Internet packet-shape parity, ordinary
-navigation parity, indistinguishability or DPI bypass. Stage 4 still covers load,
-unfinished drains, network changes, packaging and runtime updates.
+navigation parity, indistinguishability or DPI bypass. Subsequent operational
+qualification and the repeated wire comparison are recorded in
+[stage 4](../stage4/README.md); that repetition includes an H2 raw HPACK/HEADERS-size
+difference absent from this historical measurement.

@@ -39,7 +39,14 @@ slow path. Timeout cancellation never replays an interrupted application stream.
 
 JSON-line `stats` output contains active/draining counts, completions, refusals,
 idle/drain expirations and upload/download byte counters. It contains no
-credentials or destinations. Byte counters count JS pump progress, not peer
+credentials or destinations. `gc_collections` and `gc_ms` report the helper's
+retired-object GC/CC maintenance and cumulative wall time in milliseconds. After
+at least 64 retirements, it runs at most once per five seconds to bound retained
+JS/XPCOM callback cycles in the embedded shell. Live streams remain rooted;
+HTTP/TLS caches are not cleared. This may briefly pause the JS thread and its
+CPU cost is included in the soak measurements.
+
+Byte counters count JS pump progress, not peer
 acknowledgments. `ready.pid` is the process's own PID namespace; `process_tag`
 identifies its unique private profile for diagnostics in containers. The helper
 profile is removed after process termination/join.
