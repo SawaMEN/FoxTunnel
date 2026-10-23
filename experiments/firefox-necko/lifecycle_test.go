@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/quic-go/quic-go"
 )
 
 // Keep these native lifecycle gates separate from upload half-close: failure
@@ -314,7 +315,7 @@ func TestGeckoH3NoTCPFallback(t *testing.T) {
 	}
 }
 
-func nativeProxy(t *testing.T, mode string, handler http.Handler) Config {
+func nativeProxy(t *testing.T, mode string, handler http.Handler, quicConfig ...*quic.Config) Config {
 	t.Helper()
 	certificate, ca := testCertificate(t)
 	server := httptest.NewUnstartedServer(handler)
@@ -329,7 +330,7 @@ func nativeProxy(t *testing.T, mode string, handler http.Handler) Config {
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		finished := make(chan struct{})
-		go func() { defer close(finished); _ = serveTestH3(ctx, udp, server.TLS, handler) }()
+		go func() { defer close(finished); _ = serveTestH3(ctx, udp, server.TLS, handler, quicConfig...) }()
 		t.Cleanup(func() { cancel(); udp.Close(); <-finished })
 	}
 	caPath := filepath.Join(t.TempDir(), "ca.pem")

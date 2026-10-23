@@ -287,3 +287,21 @@ With the current JS setup queue and H2 pool limit, the same compiled runtime
 passes twelve simultaneous CONNECTs with distinct binary payloads for H2
 and H3, three repetitions under Go's race detector. This validates the JS
 setup correction, but does not validate the additional native EOF patches.
+
+## Response-first flow-control correction
+
+Run `39869936393` compiled all native patches and passed cold H2/H3 handoff,
+upload half-close, certificate rejection, local FIN, concurrent streams,
+setup-timeout recovery and the H3-only policy. Reverse upload still failed:
+H2 stopped at 65,535 bytes; H3 intermittently stopped at its receive window.
+
+The H2 session applies SETTINGS window changes to `mTunnelStreams` as well
+as ordinary transactions, and wakes blocked tunnel uploads when connection
+credit reopens. H3 explicitly resumes sending on a DataWritable event even
+when the stream is already queued. Queue deduplication remains in place.
+
+The reverse-FIN gate now also uses default H2 windows with stream credit
+sent before connection credit, and fixed 16 KiB QUIC stream / 32 KiB connection
+windows. Independent Go clients pass all cases. The old compiled runtime
+reproduces the small-window H3 stall. The native reverse-FIN gate repeats three
+times on the new source build; this correction is pending that native result.
