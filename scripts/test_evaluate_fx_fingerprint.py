@@ -53,6 +53,22 @@ class FXAuditTests(unittest.TestCase):
         self.assertEqual(result["results"]["h2-connect"]["inconclusive_fields"],
                          ["connection_1.hello.extensions"])
 
+    def test_persistent_mismatch_is_visible_even_under_variable_control(self):
+        c, f = reports()
+        for ob in c["observations"]:
+            if ob["transport"] == "h3-connect":
+                ob["checks"][1] = row("connection_1.hello.extensions",
+                                      [10, 16], [16, 10])
+        result = evaluate(c, f)
+        row_h3 = result["results"]["h3-connect"]
+        self.assertEqual(row_h3["persistent_under_variable_control"],
+                         ["connection_1.hello.extensions"])
+        freq = next(x for x in row_h3["mismatch_frequencies"]
+                    if x["field"] == "connection_1.hello.extensions")
+        self.assertEqual((freq["candidate"], freq["candidate_total"]), (3, 3))
+        self.assertEqual(freq["firefox_self"], 1)
+        self.assertEqual(result["status"], "inconclusive")
+
     def test_rejects_mixed_versions_missing_repetitions_and_schema_drift(self):
         c, f = reports()
         f["source_sha256"]["client"] = "wrong"

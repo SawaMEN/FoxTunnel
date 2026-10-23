@@ -93,7 +93,44 @@ async function pumpBuffered(source, destination, onProgress, onBytes) {
   }
 }
 
-if (typeof module !== "undefined") module.exports = { SocksParser, socksReply, firefoxUserAgent, pumpBuffered };
+// Encode at most 32 KiB once, even when the native output stream performs
+// partial writes or temporarily reports WOULD_BLOCK. Binary strings are used
+// only at the nsIOutputStream boundary; they are not UTF-8 text.
+async function writeAllWithBackpressure(data, attemptWrite) {
+  let encodings = 0;
+  for (let offset = 0; offset < data.length;) {
+    const encoded = String.fromCharCode(...data.subarray(offset, offset + 32768));
+    encodings++;
+    let written = 0;
+    while (written < encoded.length) {
+      const remaining = written ? encoded.substring(written) : encoded;
+      const n = await attemptWrite(remaining);
+      if (!Number.isInteger(n) || n < 0 || n > remaining.length) {
+        throw new Error("invalid native output write count");
+      }
+      // Zero means a real WOULD_BLOCK, never a successful zero-byte write.
+      written += n;
+    }
+    offset += encoded.length;
+  }
+  return encodings;
+}
+
+// The metrics snapshot intentionally avoids temporary arrays, Array.map and
+// Math.max(...manyValues). Diagnostic sampling should not create O(N) garbage.
+function sessionStatus(sessions, now) {
+  let connected = 0, oldest = 0;
+  for (const session of sessions) {
+    if (session.remote) connected++;
+    oldest = Math.max(oldest, Math.max(0, now - session.lastProgress));
+  }
+  return { connected, oldest_ms: oldest };
+}
+
+if (typeof module !== "undefined") module.exports = {
+  SocksParser, socksReply, firefoxUserAgent, pumpBuffered,
+  writeAllWithBackpressure, sessionStatus,
+};
 
 if (typeof Components !== "undefined") {
   const { classes: Cc, interfaces: Ci, results: Cr } = Components;
@@ -201,25 +238,22 @@ if (typeof Components !== "undefined") {
       });
     }
     async write(data) {
-      // One pending chunk per direction; backpressure reaches the SOCKS peer.
-      let offset = 0;
-      while (offset < data.length) {
-        await new Promise((resolve, reject) => {
-          this.output.asyncWait({
-            onOutputStreamReady: stream => {
-              try {
-                const text = String.fromCharCode(...data.subarray(offset, offset + 32768));
-                const n = stream.write(text, text.length);
-                if (n <= 0) throw Cr.NS_BASE_STREAM_CLOSED;
-                offset += n; resolve();
-              } catch (e) {
-                if (e.result === Cr.NS_BASE_STREAM_WOULD_BLOCK) resolve();
-                else reject(e);
-              }
-            }, QueryInterface: ChromeUtils.generateQI(["nsIOutputStreamCallback"]),
-          }, 0, 0, thread);
-        });
-      }
+      // Await each partial write before advancing the source buffer. Avoid
+      // recreating a 32 KiB binary string on each native short write.
+      return writeAllWithBackpressure(data, text => new Promise((resolve, reject) => {
+        this.output.asyncWait({
+          onOutputStreamReady: stream => {
+            try {
+              const n = stream.write(text, text.length);
+              if (n <= 0) throw Cr.NS_BASE_STREAM_CLOSED;
+              resolve(n);
+            } catch (e) {
+              if (e.result === Cr.NS_BASE_STREAM_WOULD_BLOCK) resolve(0);
+              else reject(e);
+            }
+          }, QueryInterface: ChromeUtils.generateQI(["nsIOutputStreamCallback"]),
+        }, 0, 0, thread);
+      }));
     }
     close() { try { this.input.close(); } catch {} try { this.output.close(); } catch {} }
   }
@@ -258,7 +292,8 @@ if (typeof Components !== "undefined") {
     }
   }, Math.max(50, Math.min(1000, cfg.idle_timeout_ms / 2, cfg.drain_timeout_ms / 2)));
   const stats = cfg.stats_interval_ms ? setInterval(() => {
-    print(JSON.stringify({ type: "stats", connected: [...sessions].filter(s => !!s.remote).length, oldest_ms: Math.max(0, ...[...sessions].map(s => Math.floor(ChromeUtils.now()) - s.lastProgress)), idle_limit: cfg.idle_timeout_ms, active: sessions.size, draining: draining.size, ...counters }));
+    print(JSON.stringify({ type: "stats", ...sessionStatus(sessions, Math.floor(ChromeUtils.now())),
+      idle_limit: cfg.idle_timeout_ms, active: sessions.size, draining: draining.size, ...counters }));
   }, cfg.stats_interval_ms) : null;
   // Standalone proxy handoff cannot reliably initialize several cold CONNECT
   // channels at once (both H2 and H3). Queue setup only; established streams retain

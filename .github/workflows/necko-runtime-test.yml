@@ -8,6 +8,8 @@ on:
       - 'scripts/analyze_firefox_self.py'
       - 'scripts/evaluate_fx_fingerprint.py'
       - 'scripts/test_evaluate_fx_fingerprint.py'
+      - 'scripts/report_fx_operations.py'
+      - 'scripts/test_report_fx_operations.py'
       - 'experiments/firefox-necko/client_test.cjs'
       - 'docs/FX.md'
       - 'scripts/collect_necko_licenses.py'
@@ -126,6 +128,7 @@ jobs:
         run: |
           node --test experiments/firefox-necko/client_test.cjs
           python3 -m unittest discover -s scripts -p 'test_evaluate_fx_fingerprint.py' -v
+          python3 -m unittest discover -s scripts -p 'test_report_fx_operations.py' -v
       - name: Native CONNECT, half-close and certificate trust gates
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
@@ -192,7 +195,36 @@ jobs:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
           FOXTUNNEL_SOAK_SECONDS: '300'
           FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
-        run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak
+        with:
+          name: foxtunnel-necko-linux-amd64
+          path: |
+            foxtunnel-necko-linux-amd64.tar.gz
+            SHA256SUMS
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: necko-operations
+          path: necko-operations/
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: necko-runtime-diagnostics
+          path: |
+            runtime-startup.log
+            runtime-startup.strace
+            runtime-startup.stack
+          if-no-files-found: ignore
+          retention-days: 7
+ -v -count=1 -timeout=720s
+      - name: FX resource efficiency report
+        run: |
+          python3 scripts/report_fx_operations.py --current necko-operations --reference experiments/firefox-necko/validation/stage4/ci-300s --out necko-operations/fx-resource-report.json
       - uses: actions/upload-artifact@v4
         with:
           name: foxtunnel-necko-linux-amd64

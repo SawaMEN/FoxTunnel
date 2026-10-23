@@ -68,19 +68,40 @@ def evaluate(candidate, control, minimum=3):
                 samples[field].add(json.dumps(row["candidate"], sort_keys=True))
         volatile.update(field for field, values in samples.items() if len(values) > 1)
         unexpected, variable = set(), set()
+        candidate_mismatches = {field: 0 for field in field_set}
+        control_mismatches = {field: 0 for field in field_set}
+        for ob in refs:
+            for field, row in _rows(ob).items():
+                control_mismatches[field] += row["status"] == "different"
         for ob in trials:
             rows = _rows(ob)
             if set(rows) != field_set:
                 raise ValueError("candidate and Firefox control fields differ")
             for field, row in rows.items():
                 if row["status"] == "different":
+                    candidate_mismatches[field] += 1
                     (variable if field in volatile else unexpected).add(field)
+        # Persistent mismatches against naturally variable Firefox fields merit
+        # investigation, but cannot be promoted to a "definite" mismatch.
+        persistent = sorted(field for field in variable
+                            if candidate_mismatches[field] == len(trials)
+                            and control_mismatches[field] < len(refs))
         out["results"][mode] = {
             "candidate_repetitions": len(trials),
             "control_repetitions": len(refs),
             "control_variable_fields": sorted(volatile),
             "unexpected_fields": sorted(unexpected),
-            "inconclusive_fields": sorted(variable)}
+            "inconclusive_fields": sorted(variable),
+            "persistent_under_variable_control": persistent,
+            "mismatch_frequencies": [
+                {"field": field,
+                 "candidate": candidate_mismatches[field],
+                 "candidate_total": len(trials),
+                 "firefox_self": control_mismatches[field],
+                 "firefox_self_total": len(refs)}
+                for field in sorted(field_set)
+                if candidate_mismatches[field] or control_mismatches[field]],
+        }
         out["unexpected_differences"] += len(unexpected)
         out["variable_differences"] += len(variable)
     out["status"] = ("regression-detected" if out["unexpected_differences"] else

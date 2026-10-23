@@ -101,3 +101,43 @@ test('pump never sends clean FIN on write failure', async () => {
   );
   assert.equal(fin, 0);
 });
+
+test('cached output encoding handles short writes and backpressure without corruption', async () => {
+  const { writeAllWithBackpressure } = require('./client.js');
+  const input = Buffer.alloc(100001);
+  for (let i = 0; i < input.length; i++) input[i] = i % 256;
+  const accepted = [];
+  let calls = 0;
+  const encodings = await writeAllWithBackpressure(input, async binary => {
+    calls++;
+    if (calls % 7 === 0) return 0; // WOULD_BLOCK: do not lose data
+    const n = Math.min(311, binary.length);
+    accepted.push(binary.slice(0, n));
+    return n;
+  });
+  assert.equal(encodings, Math.ceil(input.length / 32768));
+  assert.deepEqual(Buffer.from(accepted.join(''), 'latin1'), input);
+  assert.ok(calls > encodings);
+});
+
+test('invalid write count is rejected rather than silently losing data', async () => {
+  const { writeAllWithBackpressure } = require('./client.js');
+  await assert.rejects(writeAllWithBackpressure(Uint8Array.of(1, 2), async () => 3),
+    /invalid native output write count/);
+  await assert.rejects(writeAllWithBackpressure(Uint8Array.of(1), async () => -1),
+    /invalid native output write count/);
+  assert.equal(await writeAllWithBackpressure(Uint8Array.of(), async () => { throw Error('unexpected'); }), 0);
+});
+
+test('diagnostic session snapshot avoids allocation-heavy spreads', () => {
+  const { sessionStatus } = require('./client.js');
+  assert.deepEqual(sessionStatus(new Set(), 1000), { connected: 0, oldest_ms: 0 });
+  const sessions = new Set([
+    { remote: {}, lastProgress: 300 },
+    { remote: null, lastProgress: 1100 },
+    { remote: {}, lastProgress: 50 },
+  ]);
+  assert.deepEqual(sessionStatus(sessions, 1000), { connected: 2, oldest_ms: 950 });
+  const many = new Set(Array.from({ length: 90000 }, (_, i) => ({ remote: null, lastProgress: i })));
+  assert.deepEqual(sessionStatus(many, 100000), { connected: 0, oldest_ms: 100000 });
+});
