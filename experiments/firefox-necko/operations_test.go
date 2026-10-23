@@ -303,18 +303,18 @@ func TestGeckoSoak(t *testing.T) {
 				t.Fatal(e)
 			}
 			samples = append(samples, last)
-			if final.Completed != rounds+16 || final.Rejected != 0 || final.IdleExpired != 0 || final.Upload != int64(rounds+16)*(128<<10) || final.Download != int64(rounds+16)*(128<<10) {
-				t.Fatalf("soak counters: %+v rounds=%d", final, rounds)
-			}
-			if last.FDs > first.FDs+32 || last.RSSKB > first.RSSKB+192*1024 {
-				t.Fatalf("resource growth: first=%+v last=%+v", first, last)
-			}
 			if out := os.Getenv("FOXTUNNEL_OPERATIONS_OUT"); out != "" {
 				os.MkdirAll(out, 0700)
 				data, _ := json.MarshalIndent(map[string]any{"schema": 1, "transport": mode, "duration_seconds": seconds, "rounds": rounds, "payload_bytes_per_round": 128 << 10, "parallel_streams": 8, "warmup_tunnels": 16, "samples": samples, "counters": final, "cpu_ticks_per_second": ticksPerSecond, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond, "average_cpu_percent": 100000 * float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond / float64(last.AtMS-first.AtMS), "scope": "loopback churn plus binary half-close; not a production throughput benchmark"}, "", "  ")
 				if e := os.WriteFile(filepath.Join(out, mode+"-soak.json"), append(data, '\n'), 0600); e != nil {
 					t.Fatal(e)
 				}
+			}
+			if final.Completed != rounds+16 || final.Rejected != 0 || final.IdleExpired != 0 || final.Upload != int64(rounds+16)*(128<<10) || final.Download != int64(rounds+16)*(128<<10) {
+				t.Fatalf("soak counters: %+v rounds=%d", final, rounds)
+			}
+			if last.FDs > first.FDs+32 || last.RSSKB > first.RSSKB+192*1024 {
+				t.Fatalf("resource growth: first=%+v last=%+v", first, last)
 			}
 			t.Logf("%s: %d verified tunnels, RSS %d -> %d KiB, FDs %d -> %d, CPU +%d ticks", mode, rounds, first.RSSKB, last.RSSKB, first.FDs, last.FDs, last.CPUTicks-first.CPUTicks)
 		})

@@ -130,9 +130,9 @@ jobs:
       - name: Sustained native resource measurements
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
-          FOXTUNNEL_SOAK_SECONDS: '60'
+          FOXTUNNEL_SOAK_SECONDS: '300'
           FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
-        run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=240s
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
       - name: Package and verify opt-in Linux amd64 launcher
         run: |
           python3 -m unittest discover -s scripts -p test_package_necko.py -v
