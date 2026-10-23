@@ -26,6 +26,11 @@ HOST_MODULES = (
     "github.com/sagernet/sing-box",
     "github.com/xtls/xray-core",
 )
+# The reviewed Necko process API is now a supported runtime dependency.
+# Only this exact Go package is promoted; fingerprint tools, command-line lab
+# programs and any new experiment subpackages remain forbidden. Its native
+# fixtures are _test.go files and are not part of the production graph.
+PROMOTED_RUNTIME_PACKAGES = {MODULE + "/experiments/firefox-necko"}
 RESEARCH_PACKAGES = (
     MODULE + "/experiments",
     MODULE + "/cmd/ft-fingerprint",
@@ -54,7 +59,7 @@ def check(tags=""):
     for package in packages:
         if any(under(package.lower(), p.lower()) for p in HOST_MODULES):
             errors.append("host VPN dependency in runtime: " + package)
-        if any(under(package, p) for p in RESEARCH_PACKAGES):
+        if package not in PROMOTED_RUNTIME_PACKAGES and any(under(package, p) for p in RESEARCH_PACKAGES):
             errors.append("research package in runtime: " + package)
     # Check selected modules too, including unused direct/transitive requirements.
     modules = subprocess.check_output(
