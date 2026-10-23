@@ -23,7 +23,7 @@ def digest(path):
         return hashlib.file_digest(file, 'sha256').hexdigest()
 
 
-def package(runtime, provenance, launcher, out):
+def package(runtime, provenance, launcher, out, cli=None):
     if out.resolve().is_relative_to(runtime.resolve()):
         raise ValueError('bundle destination must be outside runtime')
     if out.exists():
@@ -49,6 +49,11 @@ def package(runtime, provenance, launcher, out):
         staging = Path(tmp) / 'bundle'
         staging.mkdir(mode=0o700)
         shutil.copytree(runtime, staging / 'runtime')
+        if cli is not None:
+            if not cli.is_file() or cli.is_symlink():
+                raise ValueError('regular compiled CLI required')
+            shutil.copyfile(cli, staging / 'foxtunnel')
+            (staging / 'foxtunnel').chmod(0o755)
         shutil.copyfile(launcher, staging / 'foxtunnel-necko')
         (staging / 'foxtunnel-necko').chmod(0o755)
         shutil.copyfile(provenance, staging / 'provenance.json')
@@ -98,10 +103,11 @@ def main():
     parser.add_argument('--launcher', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--archive', type=Path)
+    parser.add_argument('--cli', type=Path, help='main FoxTunnel CLI with owned Necko engine')
     args = parser.parse_args()
     if args.archive and args.archive.exists():
         parser.error('archive destination already exists')
-    package(args.runtime.resolve(), args.provenance, args.launcher, args.out)
+    package(args.runtime.resolve(), args.provenance, args.launcher, args.out, args.cli)
     if args.archive:
         archive(args.out, args.archive)
         print(digest(args.archive), args.archive.name)

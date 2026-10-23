@@ -30,6 +30,9 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 	if e != nil || n < 1 || n > 65535 || host == "" || strings.ContainsAny(host, "/\\\r\n\t @?#") {
 		return nil, errors.New("invalid TCP destination")
 	}
+	if c.managed != nil {
+		return c.dialManaged(ctx, address)
+	}
 	lifetime, cancel := context.WithCancel(context.Background())
 	stop := context.AfterFunc(ctx, cancel)
 	stream, e := c.openTunnel(lifetime, address)

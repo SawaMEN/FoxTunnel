@@ -1,7 +1,8 @@
 # Opt-in Necko distribution and operational qualification
 
-The target is Linux amd64. This launcher is separate from the ordinary FoxTunnel
-CLI/SDK. It runs xpcshell in a dedicated process and private temporary profile.
+The target is Linux amd64. The main CLI/SDK now own the verified runtime with
+engine `necko`; see [integration](INTEGRATION.md). The standalone launcher remains
+available. Both run xpcshell in a dedicated process and private temporary profile.
 The four-stage branch plan does not promise indistinguishability or deployment
 qualification on every network. Native acceptance for the current source lock
 must pass before distributing a bundle built from it.

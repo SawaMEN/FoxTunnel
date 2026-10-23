@@ -1,0 +1,87 @@
+# Necko in the main CLI and SDK
+
+The Linux amd64 main CLI and Go SDK now support `Engine: "necko"`. They verify
+the distribution, start one owned xpcshell process, wait for readiness and join
+it on shutdown. A separate manual launcher is no longer required. TLS, HTTP/2,
+HTTP/3 and QUIC remain in Mozilla; the Go adapter handles local IPC only.
+
+## Main CLI
+
+The runtime CI package includes both `foxtunnel` and the standalone
+`foxtunnel-necko`, the complete native runtime and integrity metadata.
+
+```sh
+export FOXTUNNEL_USER='your-user'
+export FOXTUNNEL_PASSWORD='your-password'
+./foxtunnel client --engine necko --transport h3-connect \
+  --server https://proxy.example.com --listen 127.0.0.1:1080
+```
+
+The main executable discovers its enclosing bundle by default. If the binary
+is installed elsewhere, add `--necko-bundle /absolute/path/to/verified-bundle`.
+Use `h2-connect` for HTTP/2; explicit H3 has no fallback. Existing connection
+links can be combined with `--engine necko --necko-bundle ...` when their carrier
+is H2/H3 CONNECT. `--events-json` continues to emit main-CLI process events;
+helper stdout and raw Gecko diagnostics do not contaminate that protocol.
+SIGTERM, Ctrl-C and `--shutdown-on-stdin-eof` stop and join the helper.
+
+## SDK
+
+```go
+client, err := foxtunnel.NewClient(foxtunnel.ClientConfig{
+    Engine: "necko",
+    NeckoBundle: "/opt/foxtunnel/version-1",
+    ServerURL: "https://proxy.example.com",
+    Credentials: foxtunnel.Credentials{Username: user, Password: password},
+    Transport: "h3-connect",
+})
+if err != nil { return err }
+defer client.Close()
+conn, err := client.DialContext(ctx, "tcp", "example.org:443")
+```
+
+Construction starts the helper and waits for bounded readiness. SDK setup
+context cancellation does not terminate an already established stream. Returned
+connections retain deadlines and `CloseWrite`; `Client.Close` cancels pending
+work, closes owned streams and joins the helper before removing its profile.
+The normal SDK connection limit, SOCKS listener ownership and status API apply.
+
+## Policy and ownership
+
+The private helper listener uses a fresh 128-bit random password in the owner's
+0600 temporary configuration. It refuses anonymous SOCKS and incorrect passwords.
+Its password is never placed in argv, process events or status. This keeps the
+helper port from bypassing main-CLI local SOCKS authentication.
+
+Unsupported policy is rejected: UDP, padding, Bond/discovery, fallback servers,
+balancing, XHTTP, SPKI/SNI overrides, strict FoxTunnel draft negotiation and
+manual TLS/QUIC/HTTP profile overrides. Hostname and certificate-chain checks
+remain in NSS. Additional CA files are supported. Setup time is 100 ms through
+120 seconds; the default is 15 seconds. Native idle/drain limits still apply.
+Legacy and NSS/Neqo `mozilla` selections remain explicit independent engines;
+`necko` requires the verified Linux amd64 runtime, without native Go build tags.
+
+## Firefox comparison
+
+The comparison now includes an independent control: two fresh full Firefox
+processes use the same pinned libxul, proxy, trust and binary CONNECT workload.
+Raw differences are retained, including order, frame lengths and HPACK hashes.
+
+In the first local repetitions, FoxTunnel versus Firefox agreed in all retained
+H2 fields in 3/3 runs. Firefox versus Firefox had HPACK/HEADERS and frame-order
+differences in 2/3 H2 runs. Both comparisons had randomized extension-order/JA3
+differences in all H3 runs. Thus exact byte equality between separate sessions is
+not a Firefox invariant. These results do not establish equality of distributions.
+
+The pinned Mozilla implementation marks an HPACK size update pending when peer
+SETTINGS arrive (`Http2Session::RecvSettings` and
+`Http2Compressor::SetMaxBufferSize`). Whether SETTINGS ACK precedes the first
+HEADERS affects which block contains that update. Forcing a fixed order or
+turning off H3 extension randomization would replace Mozilla's behavior with a
+custom deterministic profile. This integration leaves that behavior intact.
+No DPI indistinguishability claim is made.
+
+CI retains standalone, managed-engine and Firefox-self observations separately.
+It verifies actual main-CLI and SDK binary transfers, half-close, setup-context
+cancellation, capacity, owned shutdown, private IPC authentication and cleanup.
+See the integration validation record for the exact tested commit and CI run.

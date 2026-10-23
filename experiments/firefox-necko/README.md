@@ -1,8 +1,9 @@
 # Experimental Necko CONNECT runtime
 
 Stage 2 native acceptance has passed on Linux amd64. The prototype uses real
-Gecko networking for classic CONNECT over HTTP/2 and HTTP/3. It remains outside
-the production CLI and SDK runtime graph. Stage 3 controlled full-Firefox CONNECT
+Gecko networking for classic CONNECT over HTTP/2 and HTTP/3. The main CLI and
+SDK can now own it through `--engine necko` / `ClientConfig.Engine = "necko"`.
+See [integration and lifecycle](INTEGRATION.md). Stage 3 controlled full-Firefox CONNECT
 comparison and stage 4 operational qualification have passed within their stated
 scope. A separate opt-in Linux amd64 bundle is available through the runtime CI.
 See [operations and updates](OPERATIONS.md),
@@ -157,7 +158,7 @@ the same runtime and workload is recorded in stage 3 and repeated in stage 4.
 Controlled load, bounded drains, path outage/NAT rebinding, CPU/RSS/FDs, packaging
 and runtime compatibility are qualified in [stage 4](validation/stage4/README.md).
 Proxy-IP changes, IPv4/IPv6 switching, mobile handoff and multi-day reliability
-remain deployment-specific pilot work. The distribution stays opt-in.
+remain deployment-specific pilot work. The integrated engine stays opt-in.
 
 Earlier source run [39869936393](https://github.com/SawaMEN/FoxTunnel/actions/runs/39869936393)
 compiled but exposed the 65,535-byte H2 and intermittent H3 stalls. Run

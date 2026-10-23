@@ -68,8 +68,9 @@
    файлы отвергаются. Реальная передача H2/H3 и SIGTERM проверены из пакета.
    [Измерения и ограничения](../experiments/firefox-necko/validation/stage4/README.md),
    [запуск, обновление и откат](../experiments/firefox-necko/OPERATIONS.md).
-   Решение по поставке: Necko остаётся отдельным opt-in launcher, вне обычных
-   CLI/SDK. Смена IP прокси, IPv4/IPv6, мобильная сеть и многодневная работа
+   Necko подключён к основному CLI/SDK через `--engine necko` и
+   `ClientConfig.Engine = "necko"`. Основной клиент сам запускает helper и
+   завершает его при закрытии. [Запуск и ограничения интеграции](../experiments/firefox-necko/INTEGRATION.md). Смена IP прокси, IPv4/IPv6, мобильная сеть и многодневная работа
    требуют отдельного пилота; неотличимость от браузера не заявляется.
 
 ## Использование CONNECT сейчас

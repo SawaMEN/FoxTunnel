@@ -25,7 +25,12 @@ import (
 // Full Firefox and the helper share libxul, target, proxy, trust, payload and
 // reconnect policy. This measures Firefox's native raw CONNECT API; a browser
 // page navigation has a different workload and is not claimed equivalent.
-func TestGeckoBrowserFingerprint(t *testing.T) {
+func TestGeckoBrowserFingerprint(t *testing.T) { browserFingerprint(t, false) }
+
+// Firefox versus Firefox supplies a control for scheduling and TLS randomness.
+func TestGeckoFirefoxSelfComparison(t *testing.T) { browserFingerprint(t, true) }
+
+func browserFingerprint(t *testing.T, self bool) {
 	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
 	if runtime == "" {
 		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
@@ -127,11 +132,15 @@ func TestGeckoBrowserFingerprint(t *testing.T) {
 			_, portText, _ := net.SplitHostPort(address)
 			port, _ := strconv.Atoi(portText)
 			var browserVersion string
-			for _, subject := range []string{"firefox", "foxtunnel"} {
+			subjects := []string{"firefox", "foxtunnel"}
+			if self {
+				subjects = []string{"firefox-a", "firefox-b"}
+			}
+			for _, subject := range subjects {
 				capture.Lock()
 				capture.subject = subject
 				capture.Unlock()
-				if subject == "firefox" {
+				if self || subject == "firefox" {
 					cfg := map[string]any{"runtime": filepath.Join(filepath.Dir(runtime), "firefox"), "transport": mode, "proxy_host": "127.0.0.1", "proxy_port": port, "authorization": "Basic dTpw", "ca_pem": string(caPEM), "target": "http://" + echo.Addr().String() + "/", "rounds": 4, "payload": base64.StdEncoding.EncodeToString(payload)}
 					data, _ := json.Marshal(cfg)
 					cmd := exec.CommandContext(ctx, "python3", "fingerprint/browser.py")
@@ -163,12 +172,32 @@ func TestGeckoBrowserFingerprint(t *testing.T) {
 				} else {
 					helperCtx, stop := context.WithCancel(ctx)
 					defer stop()
-					listen, stderr, finished := startTestHelperContext(t, helperCtx, runtime, Config{Server: "https://" + address, Username: "u", Password: "p", Transport: mode, Listen: "127.0.0.1:0", CACert: caPath})
+					cfg := Config{Server: "https://" + address, Username: "u", Password: "p", Transport: mode, Listen: "127.0.0.1:0", CACert: caPath}
+					var listen string
+					stderr := new(lockedBuffer)
+					var finished <-chan struct{}
+					var dial func(string) (net.Conn, error)
+					if bundle := os.Getenv("FOXTUNNEL_FINGERPRINT_BUNDLE"); bundle != "" {
+						managed, e := NewManaged(bundle, cfg)
+						if e != nil {
+							t.Fatal(e)
+						}
+						defer managed.Close()
+						previousStop := stop
+						stop = func() { previousStop(); managed.Close() }
+						closed := make(chan struct{})
+						close(closed)
+						finished = closed
+						dial = func(target string) (net.Conn, error) { return managed.DialContext(helperCtx, "tcp", target) }
+					} else {
+						listen, stderr, finished = startTestHelperContext(t, helperCtx, runtime, cfg)
+						dial = func(target string) (net.Conn, error) { return nativeSOCKS(listen, target) }
+					}
 					for round := 0; round < 4; round++ {
 						if round == 2 {
 							time.Sleep(700 * time.Millisecond)
 						}
-						conn, e := nativeSOCKS(listen, echo.Addr().String())
+						conn, e := dial(echo.Addr().String())
 						if e != nil {
 							stop()
 							t.Fatalf("candidate CONNECT: %v\n%s", e, stderr.text())
@@ -207,7 +236,7 @@ func TestGeckoBrowserFingerprint(t *testing.T) {
 					t.Fatalf("incomplete observation: %+v", p)
 				}
 			}
-			if len(capture.connections) != 4 || counts["firefox"] != 4 || counts["foxtunnel"] != 4 {
+			if len(capture.connections) != 4 || counts[subjects[0]] != 4 || counts[subjects[1]] != 4 {
 				t.Fatalf("request counts: %v", counts)
 			}
 			result := map[string]any{"schema": 1, "kind": "necko-firefox-connect-comparison", "transport": mode, "browser_version": browserVersion, "runtime_sha256": hashes, "source_sha256": sources, "payload_bytes": len(payload), "rounds_per_subject": 4, "connections": capture.connections,
@@ -215,11 +244,21 @@ func TestGeckoBrowserFingerprint(t *testing.T) {
 				"reconnect_policy":     "server closes each connection 200ms after its second tunnel completes; both clients pause before request three; process TLS cache remains alive",
 				"quic_parameter_scope": "selected effective peer parameters including decoder defaults; no raw parameter order/presence claim",
 				"limitations":          []string{"TLS 1.3-only loopback fixture; explicit H3 proxy and custom lab root", "Both clients disable socket process because raw handoff requires it", "ClientHello excludes randoms, SNI value, tickets and key bytes; QUIC record_version is zero", "HPACK digests cover fixture header bytes; credentials and destination values are not serialized", "H3 decoded headers/settings are recorded; QPACK instruction bytes are not measured", "FIN packets may be retransmitted; frame counts are not packet-shape parity", "No DPI indistinguishability or production-readiness claim"}}
+			if !self && os.Getenv("FOXTUNNEL_FINGERPRINT_BUNDLE") != "" {
+				result["candidate_mode"] = "managed-bundle"
+			}
+			if self {
+				result["kind"] = "firefox-self-connect-comparison"
+				result["scope"] = "Two fresh full Firefox processes; same patched libxul, proxy and workload. Control for scheduling and TLS randomness."
+			}
 			encoded, e := json.MarshalIndent(result, "", "  ")
 			if e != nil {
 				t.Fatal(e)
 			}
 			if out := os.Getenv("FOXTUNNEL_FINGERPRINT_OUT"); out != "" {
+				if self {
+					out = filepath.Join(out, "firefox-self")
+				}
 				if e := os.MkdirAll(out, 0700); e != nil {
 					t.Fatal(e)
 				}

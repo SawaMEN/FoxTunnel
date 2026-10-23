@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -310,9 +311,10 @@ func main() {
 		balance := fs.String("balance", "failover", i18n.Text("new-stream scheduling: failover, round-robin, least-active, adaptive"))
 		attemptTimeout := fs.Duration("fallback-attempt-timeout", 5*time.Second, i18n.Text("setup time per endpoint when fallbacks are configured"))
 		padding := fs.Bool("padding", false, i18n.Text("require experimental initial-record padding (server must enable it)"))
+		neckoBundle := fs.String("necko-bundle", "", "verified Necko bundle directory (with --engine necko)")
 		engine := new(string)
 		if os.Args[1] == "client" {
-			fs.StringVar(engine, "engine", "legacy", i18n.Text("local transport engine: legacy (default) or mozilla (NSS/Neqo build required)"))
+			fs.StringVar(engine, "engine", "legacy", i18n.Text("local transport engine: legacy (default), mozilla (NSS/Neqo) or necko (verified bundle)"))
 		}
 		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, h3-connect, wss, xhttp-stream-one, xhttp-stream-up, xhttp-packet-up, or auto with --engine mozilla"))
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
@@ -361,7 +363,7 @@ func main() {
 			conflict := false
 			fs.Visit(func(f *flag.Flag) {
 				switch f.Name {
-				case "events-json", "shutdown-on-stdin-eof", "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "engine-status-interval", "node-pins-file", "socks-allow-lan", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
+				case "events-json", "shutdown-on-stdin-eof", "listen", "ca-cert", "lang", "link", "link-file", "enable-udp", "udp-stream", "udp-multi-node", "max-connections", "h2-receive-profile", "tls-client-profile", "bond-lanes", "quic-backend", "h3-fallback", "quic-handshake-timeout", "engine", "necko-bundle", "engine-status-interval", "node-pins-file", "socks-allow-lan", "bond-route", "bond-adaptive", "bond-autotune", "bond-traffic", "bond-metrics-interval", "node-status-interval":
 				default:
 					conflict = true
 				}
@@ -487,11 +489,31 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		failClient := func(v ...any) { client.Close(); log.Fatal(v...) }
 		intent := transportengine.Config{
-			Engine: *engine, Transport: *nativeTransport,
+			Engine: *engine, Transport: *nativeTransport, NeckoBundle: *neckoBundle,
 			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,
 			H3Fallback: *h3Fallback, QUICHandshakeTimeout: *quicTimeout,
 			TLSClientProfile: *tlsProfile, HTTP2ReceiveProfile: *h2Profile,
+		}
+		if *engine == "necko" {
+			explicit := map[string]bool{}
+			fs.Visit(func(f *flag.Flag) { explicit[f.Name] = true })
+			if !explicit["quic-backend"] {
+				intent.QUICBackend = ""
+			}
+			for _, name := range []string{"xhttp-path", "xhttp-host", "node-pins-file"} {
+				if explicit[name] {
+					failClient("Necko does not support " + name)
+				}
+			}
+			if *neckoBundle == "" {
+				exe, e := os.Executable()
+				if e != nil {
+					failClient(e)
+				}
+				intent.NeckoBundle = filepath.Dir(exe)
+			}
 		}
 		if *engine == "mozilla" {
 			explicit := map[string]bool{}
@@ -510,35 +532,35 @@ func main() {
 		}
 		plan, err := transportengine.Resolve(intent)
 		if err != nil {
-			log.Fatal(err)
+			failClient(err)
 		}
 		if err := plan.Apply(client, *sni, *pin); err != nil {
-			log.Fatal(err)
+			failClient(err)
 		}
 		if err := client.SetXHTTPSettings(*xhttpPath, *xhttpHost); err != nil {
-			log.Fatal(err)
+			failClient(err)
 		}
 		client.MaxConnections = *maxConnections
 		client.SOCKSUsername = os.Getenv("FOXTUNNEL_SOCKS_USER")
 		client.SOCKSPassword = os.Getenv("FOXTUNNEL_SOCKS_PASSWORD")
 		if err := client.ValidateSOCKSAuth(); err != nil {
-			log.Fatal(err)
+			failClient(err)
 		}
 		client.EnableUDP = *enableUDP
 		client.UDPStreaming = *udpStream
 		client.UDPMultiNode = *udpMultiNode
 		if err := client.SetFallbackServers(fallbacks); err != nil {
-			log.Fatal(err)
+			failClient(err)
 		}
 		if err := client.SetBalance(*balance); err != nil {
-			log.Fatal(err)
+			failClient(err)
 		}
 		if *nodePinsFile != "" {
 			if *discover {
-				log.Fatal("--node-pins-file requires explicit configured nodes; use verified discovery identity policies for --discover")
+				failClient("--node-pins-file requires explicit configured nodes; use verified discovery identity policies for --discover")
 			}
 			if err := client.SetNodePinsFile(*nodePinsFile); err != nil {
-				log.Fatal(err)
+				failClient(err)
 			}
 		}
 		client.AllowPublicSOCKS = *allowPublicSOCKS
@@ -552,7 +574,7 @@ func main() {
 		case "8":
 			client.BondPipeline = 8
 		default:
-			log.Fatal(i18n.Text("bond pipeline must be auto, 4 or 8"))
+			failClient(i18n.Text("bond pipeline must be auto, 4 or 8"))
 		}
 		client.BondLanes = *bondLanes
 		client.BondRoute = *bondRoute
@@ -567,7 +589,7 @@ func main() {
 				err = client.EnableBond()
 			}
 			if err != nil {
-				log.Fatal(err)
+				failClient(err)
 			}
 		}
 		defer client.Close()
@@ -625,19 +647,22 @@ func main() {
 				}
 			}()
 		}
+		if err := client.Prepare(ctx); err != nil {
+			failClient(err)
+		}
 		listener, err := net.Listen("tcp", *listen)
 		if err != nil {
-			log.Fatal(err)
+			failClient(err)
 		}
 		defer listener.Close()
 		if addr, ok := listener.Addr().(*net.TCPAddr); !ok || !addr.IP.IsLoopback() {
 			if !client.AllowPublicSOCKS || client.SOCKSUsername == "" {
-				log.Fatal("non-loopback SOCKS5 requires explicit --socks-allow-lan plus FOXTUNNEL_SOCKS_USER/PASSWORD; SOCKS5 passwords are plaintext on the local network")
+				failClient("non-loopback SOCKS5 requires explicit --socks-allow-lan plus FOXTUNNEL_SOCKS_USER/PASSWORD; SOCKS5 passwords are plaintext on the local network")
 			}
 		}
 		log.Printf(i18n.Text("SOCKS5 listener: %s"), listener.Addr())
 		if err := emitProcessEvent(*eventsJSON, processEvent{Sequence: 1, Type: "ready", Role: "client", TCPListen: listener.Addr().String()}); err != nil {
-			log.Fatal("process event output failed")
+			failClient("process event output failed")
 		}
 		serveErr := client.ServeContext(ctx, listener)
 		client.Close()
@@ -646,10 +671,10 @@ func main() {
 			outcome = "serve_failed"
 		}
 		if err := emitProcessEvent(*eventsJSON, processEvent{Sequence: 2, Type: "stopped", Role: "client", Outcome: outcome}); err != nil {
-			log.Fatal("process event output failed")
+			failClient("process event output failed")
 		}
 		if serveErr != nil {
-			log.Fatal(serveErr)
+			failClient(serveErr)
 		}
 		return
 	default:

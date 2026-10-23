@@ -3,6 +3,14 @@ on:
   push:
     branches: [firefox]
     paths:
+      - 'foxtunnel*.go'
+      - 'necko_integration_test.go'
+      - 'scripts/analyze_firefox_self.py'
+      - 'scripts/collect_necko_licenses.py'
+      - 'internal/tunnel/**'
+      - 'internal/transportengine/**'
+      - 'internal/buildinfo/**'
+      - 'cmd/foxtunnel/**'
       - 'experiments/firefox-necko/client.js'
       - 'experiments/firefox-necko/gecko.lock.json'
       - 'experiments/firefox-necko/patches/**'
@@ -114,8 +122,9 @@ jobs:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
           FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
         run: |
-          go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -v -count=3 -timeout=180s
+          go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint|GeckoFirefoxSelfComparison)' -v -count=3 -timeout=180s
           python3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json
+          python3 scripts/analyze_firefox_self.py --observations necko-fingerprint/observations/firefox-self --out necko-fingerprint/firefox-self.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -137,14 +146,36 @@ jobs:
         run: |
           python3 -m unittest discover -s scripts -p test_package_necko.py -v
           go build -trimpath -ldflags='-s -w' -o necko-launcher ./experiments/firefox-necko/cmd/foxtunnel-necko
+          go build -trimpath -ldflags='-s -w' -o necko-main-cli ./cmd/foxtunnel
+          python3 scripts/collect_necko_licenses.py --out /tmp/necko-notices.txt
+          cmp /tmp/necko-notices.txt experiments/firefox-necko/LICENSES.go.txt
           provenance=$(find runtime-provenance -name provenance.json -type f)
-          python3 scripts/package_necko.py --runtime runtime --provenance "$provenance" --launcher necko-launcher --out necko-bundle --archive foxtunnel-necko-linux-amd64.tar.gz
+          python3 scripts/package_necko.py --runtime runtime --provenance "$provenance" --launcher necko-launcher --cli necko-main-cli --out necko-bundle --archive foxtunnel-necko-linux-amd64.tar.gz
           necko-bundle/foxtunnel-necko --bundle "$PWD/necko-bundle" --verify
           sha256sum foxtunnel-necko-linux-amd64.tar.gz > SHA256SUMS
       - name: Real H2/H3 transfer and SIGTERM from packaged launcher
         env:
           FOXTUNNEL_BUNDLE: ${{ github.workspace }}/necko-bundle
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoPackagedLauncher$' -v -count=1 -timeout=90s
+      - name: Integrated main CLI and SDK native gates
+        env:
+          FOXTUNNEL_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
+        run: go test -race . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManagedIPC)'  -v -count=1 -timeout=120s
+      - name: Managed engine Firefox wire comparison
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          FOXTUNNEL_FINGERPRINT_BUNDLE: ${{ github.workspace }}/necko-bundle
+          FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-integrated-fingerprint/observations
+        run: |
+          go test -race ./experiments/firefox-necko -run '^TestGeckoBrowserFingerprint$' -v -count=3 -timeout=180s
+          python3 scripts/compare_necko_firefox.py --observations necko-integrated-fingerprint/observations --out necko-integrated-fingerprint/comparison.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: necko-integrated-fingerprint
+          path: necko-integrated-fingerprint/
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
           name: foxtunnel-necko-linux-amd64

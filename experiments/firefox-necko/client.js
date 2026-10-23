@@ -8,14 +8,28 @@ class SocksParser {
     if (this.bytes.length + data.length > 65536) throw new Error("SOCKS input limit");
     this.bytes.push(...data);
   }
-  greeting() {
+  greeting(method = 0) {
     const b = this.bytes;
     if (b.length < 2) return null;
     if (b[0] !== 5 || b[1] === 0) throw new Error("invalid SOCKS greeting");
     if (b.length < 2 + b[1]) return null;
-    const accepted = b.slice(2, 2 + b[1]).includes(0);
+    const accepted = b.slice(2, 2 + b[1]).includes(method);
     b.splice(0, 2 + b[1]); this.greeted = true;
     return accepted;
+  }
+  authentication() {
+    const b = this.bytes;
+    if (b.length < 2) return null;
+    if (b[0] !== 1 || !b[1]) throw new Error("invalid SOCKS authentication");
+    const p = 2 + b[1];
+    if (b.length < p + 1) return null;
+    if (!b[p]) throw new Error("invalid SOCKS authentication");
+    const end = p + 1 + b[p];
+    if (b.length < end) return null;
+    const user = String.fromCharCode(...b.slice(2, p));
+    const password = String.fromCharCode(...b.slice(p + 1, end));
+    b.splice(0, end);
+    return {user, password};
   }
   request() {
     const b = this.bytes;
@@ -348,10 +362,21 @@ if (typeof Components !== "undefined") {
       let greeting = null;
       while (greeting === null) {
         const chunk = await local.read(); if (chunk === null) return;
-        parser.push(chunk); greeting = parser.greeting();
+        parser.push(chunk); greeting = parser.greeting(cfg.socks_token ? 2 : 0);
       }
-      await local.write(Uint8Array.from([5, greeting ? 0 : 255]));
+      await local.write(Uint8Array.from([5, greeting ? (cfg.socks_token ? 2 : 0) : 255]));
       if (!greeting) return;
+      if (cfg.socks_token) {
+        let auth = parser.authentication();
+        while (auth === null) {
+          const chunk = await local.read(); if (chunk === null) return;
+          parser.push(chunk); auth = parser.authentication();
+        }
+        if (auth.user !== "foxtunnel" || auth.password !== cfg.socks_token) {
+          await local.write(Uint8Array.from([1, 1])); return;
+        }
+        await local.write(Uint8Array.from([1, 0]));
+      }
       let request = parser.request();
       while (request === null) {
         const chunk = await local.read(); if (chunk === null) return;

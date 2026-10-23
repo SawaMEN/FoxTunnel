@@ -29,6 +29,7 @@ var clientScript []byte
 // Config deliberately excludes options that Necko cannot enforce here, such
 // as SPKI pins, a different SNI, bonding, UDP and FoxTunnel padding.
 type Config struct {
+	SOCKSToken             string `json:"-"` // Private authenticated IPC; not accepted in user JSON.
 	Server                 string `json:"server"`
 	Username               string `json:"username"`
 	Password               string `json:"password"`
@@ -141,6 +142,7 @@ func ReadConfig(path string) (Config, error) {
 }
 
 type runtimeConfig struct {
+	SOCKSToken             string `json:"socks_token,omitempty"`
 	ProxyHost              string `json:"proxy_host"`
 	ProxyPort              int    `json:"proxy_port"`
 	Authorization          string `json:"authorization"`
@@ -197,7 +199,7 @@ func Run(ctx context.Context, runtimePath string, config Config, stdout, stderr 
 	if err := os.Mkdir(filepath.Join(private, "profile"), 0700); err != nil {
 		return err
 	}
-	data, err := json.Marshal(runtimeConfig{ProxyHost: u.Hostname(), ProxyPort: proxyPort, Authorization: "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)), Transport: c.Transport, ListenPort: listenPort, MaxConnections: c.MaxConnections, ConnectTimeoutMS: c.ConnectTimeoutMS, CAPEM: string(ca), IdleTimeoutMS: c.IdleTimeoutMS, DrainTimeoutMS: c.DrainTimeoutMS, MaxRetainedConnections: c.MaxRetainedConnections, StatsIntervalMS: c.StatsIntervalMS})
+	data, err := json.Marshal(runtimeConfig{SOCKSToken: c.SOCKSToken, ProxyHost: u.Hostname(), ProxyPort: proxyPort, Authorization: "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)), Transport: c.Transport, ListenPort: listenPort, MaxConnections: c.MaxConnections, ConnectTimeoutMS: c.ConnectTimeoutMS, CAPEM: string(ca), IdleTimeoutMS: c.IdleTimeoutMS, DrainTimeoutMS: c.DrainTimeoutMS, MaxRetainedConnections: c.MaxRetainedConnections, StatsIntervalMS: c.StatsIntervalMS})
 	if err != nil {
 		return err
 	}
