@@ -255,9 +255,13 @@ if (typeof Components !== "undefined") {
       transport.openInputStream(0, 0, 0).QueryInterface(Ci.nsIAsyncInputStream),
       transport.openOutputStream(0, 0, 0).QueryInterface(Ci.nsIAsyncOutputStream));
     const session = { local, closed: false, channel: null, remote: null };
-    session.close = () => {
+    session.close = (graceful = false) => {
       if (session.closed) return;
       session.closed = true;
+      // Both pumps close their destination writer on clean EOF. Native
+      // copiers still own queued bytes and transports until those bytes drain.
+      // Aborting here would discard the tail under network backpressure.
+      if (graceful) return;
       if (session.cancelConnect) { session.cancelConnect(); session.cancelConnect = null; }
       if (session.channel) session.channel.cancel(Cr.NS_BINDING_ABORTED);
       local.close();
@@ -268,6 +272,7 @@ if (typeof Components !== "undefined") {
     sessions.add(session);
     const timer = setTimeout(session.close, cfg.connect_timeout_ms);
     let established = false;
+    let completed = false;
     try {
       const parser = new SocksParser();
       let greeting = null;
@@ -289,12 +294,13 @@ if (typeof Components !== "undefined") {
       // A failed pump aborts both directions. A clean EOF half-closes only
       // that direction; the other can deliver the remaining response bytes.
       await Promise.all([pump(local, remote), pump(remote, local)]);
+      completed = true;
     } catch {
       if (!established && !session.closed) {
         try { await local.write(socksReply(1)); } catch {}
       }
       // Do not serialize exception text: Gecko errors may contain targets.
-    } finally { clearTimeout(timer); session.close(); sessions.delete(session); }
+    } finally { clearTimeout(timer); session.close(completed); sessions.delete(session); }
   }
 
   const server = Cc["@mozilla.org/network/server-socket;1"].createInstance(Ci.nsIServerSocket);

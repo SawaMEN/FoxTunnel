@@ -305,3 +305,18 @@ sent before connection credit, and fixed 16 KiB QUIC stream / 32 KiB connection
 windows. Independent Go clients pass all cases. The old compiled runtime
 reproduces the small-window H3 stall. The native reverse-FIN gate repeats three
 times on the new source build; this correction is pending that native result.
+
+## Draining the handoff pipes
+
+Small-window tests on runtime `b2d8522` exposed a separate helper cleanup race:
+the JS pump finishes after closing its pipe writer, while the native copier
+can still be draining buffered bytes. Calling transport close with
+`NS_BINDING_ABORTED` at that point discards the tail of an otherwise clean
+transfer. Clean completion now leaves those already-closed writer ends and
+their transports with the native copiers until draining finishes. Error,
+setup-timeout and shutdown paths still abort through the existing cleanup.
+
+With this JS correction, all six native reverse-FIN cases passed three times
+locally under the race detector on the matching compiled runtime. The source
+workflow now also triggers on JS and Go helper changes, so they cannot skip
+native validation merely because the C++ patch lock is unchanged.
