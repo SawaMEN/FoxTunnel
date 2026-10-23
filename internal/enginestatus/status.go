@@ -64,10 +64,10 @@ func (r *Recorder) Configure(engine, transport, tlsBackend, quicBackend, fallbac
 	if fallback == "" {
 		fallback = "none"
 	}
-	r.s.Engine = fixedName(engine, "legacy", "mozilla")
-	r.s.Transport = fixedName(transport, "h2-connect", "h2-post", "h3-post", "wss", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up")
+	r.s.Engine = fixedName(engine, "legacy", "mozilla", "necko")
+	r.s.Transport = fixedName(transport, "h2-connect", "h3-connect", "h2-post", "h3-post", "wss", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up")
 	r.s.TLSBackend = fixedName(tlsBackend, "auto", "go", "nss")
-	r.s.QUICBackend, r.s.H3Fallback = fixedName(quicBackend, "quic-go", "neqo"), fixedName(fallback, "none", "h2")
+	r.s.QUICBackend, r.s.H3Fallback = fixedName(quicBackend, "quic-go", "neqo", "necko"), fixedName(fallback, "none", "h2")
 	r.s.State, r.s.LastRoute, r.s.LastReason = "configured", "", ""
 	r.s.UpdatedAt = time.Now().UTC()
 }

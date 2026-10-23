@@ -90,6 +90,15 @@ class NeckoSourceTests(unittest.TestCase):
         self.assertIn("--enable-tests", config)
         self.assertNotIn("artifact", config)
 
+    def test_local_build_without_cache_preserves_source_build(self):
+        config = build.mozconfig(Path("/tmp/objects"), 4, "none", True)
+        self.assertNotIn("--with-ccache", config)
+        self.assertIn("--enable-bootstrap=no-update", config)
+        self.assertIn("--enable-application=browser", config)
+        self.assertNotIn("artifact", config)
+        with self.assertRaisesRegex(ValueError, "compiler cache"):
+            build.mozconfig(Path("/tmp/objects"), 4, "unsafe")
+
     def test_repository_lock_and_patch_digests(self):
         build.load_lock()
 

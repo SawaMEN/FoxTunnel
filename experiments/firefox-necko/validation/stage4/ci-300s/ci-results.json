@@ -1,0 +1,228 @@
+{
+  "jobs": {
+    "jobs": [
+      {
+        "id": 120544147607,
+        "name": "runtime",
+        "status": "completed",
+        "conclusion": "success",
+        "run_id": 39991403260,
+        "logs_url": null,
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Select compiled runtime for this verification",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Run actions/download-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Run actions/download-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Install runtime libraries and diagnostic tools",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6
+          },
+          {
+            "name": "Extract and verify exact source and runtime hashes",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7
+          },
+          {
+            "name": "Basic xpcshell startup with bounded diagnostics",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8
+          },
+          {
+            "name": "Run actions/setup-go@v5",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 9
+          },
+          {
+            "name": "Native CONNECT, half-close and certificate trust gates",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 10
+          },
+          {
+            "name": "Full Firefox wire comparison on the verified runtime",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 11
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12
+          },
+          {
+            "name": "Operational bounds, path outage and QUIC NAT rebinding",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13
+          },
+          {
+            "name": "Sustained native resource measurements",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14
+          },
+          {
+            "name": "Package and verify opt-in Linux amd64 launcher",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15
+          },
+          {
+            "name": "Real H2/H3 transfer and SIGTERM from packaged launcher",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 16
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 18
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 19
+          },
+          {
+            "name": "Post Run actions/setup-go@v5",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 37
+          },
+          {
+            "name": "Post Run actions/checkout@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 38
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 39
+          }
+        ]
+      }
+    ]
+  },
+  "artifacts": {
+    "artifacts": [
+      {
+        "id": 12519446093,
+        "name": "necko-runtime-diagnostics",
+        "size_in_bytes": 239,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12519446093",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12519446093/zip",
+        "expired": false,
+        "created_at": "2026-10-23T17:19:07Z",
+        "expires_at": "2026-10-30T17:19:06Z",
+        "updated_at": "2026-10-23T17:19:07Z",
+        "digest": "sha256:4ba4cd59f98b223a7c2944aa4a84b8db584ab5eb85d1ee3e865d9bff6596513f",
+        "workflow_run": {
+          "id": 39991403260,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "eb92e13637a49a38013d97098209acfe59de99f5"
+        }
+      },
+      {
+        "id": 12519391254,
+        "name": "foxtunnel-necko-linux-amd64",
+        "size_in_bytes": 180121166,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12519391254",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12519391254/zip",
+        "expired": false,
+        "created_at": "2026-10-23T17:19:04Z",
+        "expires_at": "2026-11-06T17:19:01Z",
+        "updated_at": "2026-10-23T17:19:04Z",
+        "digest": "sha256:da221145ebad4892f7d66e544f0dca6f2b6c64d6d607bf6f005cb57ccce25f6e",
+        "workflow_run": {
+          "id": 39991403260,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "eb92e13637a49a38013d97098209acfe59de99f5"
+        }
+      },
+      {
+        "id": 12519311409,
+        "name": "necko-operations",
+        "size_in_bytes": 39558,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12519311409",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12519311409/zip",
+        "expired": false,
+        "created_at": "2026-10-23T17:19:06Z",
+        "expires_at": "2026-11-06T17:19:05Z",
+        "updated_at": "2026-10-23T17:19:06Z",
+        "digest": "sha256:43a6251659d3faf2b41145fc124d856d32c67a776ae78b724c86ff9da6cd13fe",
+        "workflow_run": {
+          "id": 39991403260,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "eb92e13637a49a38013d97098209acfe59de99f5"
+        }
+      },
+      {
+        "id": 12517934013,
+        "name": "necko-firefox-fingerprint",
+        "size_in_bytes": 25483,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12517934013",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12517934013/zip",
+        "expired": false,
+        "created_at": "2026-10-23T17:07:40Z",
+        "expires_at": "2026-11-06T17:07:40Z",
+        "updated_at": "2026-10-23T17:07:40Z",
+        "digest": "sha256:cca03943fe99eb8952a3d368d0b84f63c91a06bda75d67bbbe56a2658c8b97ea",
+        "workflow_run": {
+          "id": 39991403260,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "eb92e13637a49a38013d97098209acfe59de99f5"
+        }
+      }
+    ]
+  }
+}

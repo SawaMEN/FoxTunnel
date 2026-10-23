@@ -33,6 +33,7 @@ import (
 // Client exposes local SOCKS5 TCP over the selected native HTTPS transport.
 // NSS is the default in NSS-tagged Linux builds for TCP transports; HTTP/3 defaults to Go QUIC; explicit Neqo uses NSS.
 type Client struct {
+	managed *managedTransport
 	// RequireProtocolNegotiation rejects peers without draft/capability confirmation.
 	// Set before concurrent use. False preserves explicitly chosen legacy behavior.
 	RequireProtocolNegotiation bool
@@ -220,7 +221,19 @@ func (c *Client) SetTLSBackend(name string) error {
 	return nil
 }
 
-func (c *Client) Close() { c.transport.CloseIdleConnections() }
+func (c *Client) Close() {
+	if c.managed != nil {
+		m := c.managed
+		m.Lock()
+		m.closed = true
+		tr := m.transport
+		m.Unlock()
+		if tr != nil {
+			tr.Close()
+		}
+	}
+	c.transport.CloseIdleConnections()
+}
 
 // NotifyNetworkChange is an optional integration hook for OS connectivity
 // changes (e.g. switching Wi-Fi/mobile networks). It clears stale negative
@@ -259,6 +272,9 @@ func (c *Client) Serve(listener net.Listener) error {
 
 // ServeContext cancels SOCKS relay requests and closes the listener on ctx end.
 func (c *Client) ServeContext(ctx context.Context, listener net.Listener) error {
+	if err := c.Prepare(ctx); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithCancel(ctx)
 	var workers sync.WaitGroup
 	defer func() { cancel(); workers.Wait() }()
@@ -312,6 +328,10 @@ func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 		return
 	}
 
+	if c.managed != nil {
+		c.relayManaged(ctx, conn, target)
+		return
+	}
 	if c.bondClient != nil || c.bondDiscovery != nil {
 		c.handleBondContext(ctx, conn, target)
 		return

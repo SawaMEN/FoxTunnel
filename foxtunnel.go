@@ -43,6 +43,7 @@ type NodeStatus = nodeperf.Snapshot
 
 type Credentials struct{ Username, Password string }
 type ClientConfig struct {
+	NeckoBundle string // Verified Necko distribution; Engine must be necko.
 	// RequireProtocolNegotiation opts into strict draft/capability confirmation.
 	// False preserves legacy interoperability. Configure both ends explicitly.
 	RequireProtocolNegotiation bool
@@ -50,7 +51,7 @@ type ClientConfig struct {
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
-	Engine               string // Empty/legacy preserves old selection; mozilla selects NSS and Neqo when available.
+	Engine               string // Empty/legacy preserves old selection; mozilla selects NSS/Neqo; necko owns a full verified Necko process.
 	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for default H3); Neqo uses NSS.
 	Transport            string // Empty selects h2-connect.
 	QUICBackend          string // Empty/quic-go preserves the default; neqo is an opt-in build.
@@ -90,6 +91,9 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if config.UDPStreaming && !config.EnableUDP {
 		return nil, errors.New("UDP streaming requires UDP to be enabled")
 	}
+	if config.Engine == "necko" && (config.XHTTPPath != "" || config.XHTTPHost != "") {
+		return nil, errors.New("Necko does not support XHTTP settings")
+	}
 	core, err := tunnel.NewClient(config.ServerURL, config.Credentials.Username, config.Credentials.Password, config.CACertFile)
 	if err != nil {
 		return nil, err
@@ -103,7 +107,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 		}
 	}()
 	plan, err := transportengine.Resolve(transportengine.Config{
-		Engine: config.Engine, Transport: config.Transport,
+		Engine: config.Engine, Transport: config.Transport, NeckoBundle: config.NeckoBundle,
 		TLSBackend: config.TLSBackend, QUICBackend: config.QUICBackend,
 		H3Fallback: config.H3Fallback, QUICHandshakeTimeout: config.QUICHandshakeTimeout,
 		TLSClientProfile: config.TLSClientProfile, HTTP2ReceiveProfile: config.HTTP2ReceiveProfile,
@@ -136,6 +140,9 @@ func NewClient(config ClientConfig) (*Client, error) {
 	core.Padding = config.Padding
 	core.EnableUDP = config.EnableUDP
 	core.UDPStreaming = config.UDPStreaming
+	if err := core.Prepare(context.Background()); err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	success = true
 	return &Client{core: core, ctx: ctx, cancel: cancel, limit: limit, conns: make(map[*ownedConn]struct{}), udpConns: make(map[*UDPConn]struct{}), listeners: make(map[net.Listener]struct{})}, nil
@@ -205,7 +212,7 @@ func (c *Client) ownLocked(raw net.Conn) *ownedConn {
 }
 
 // ServeSOCKS takes ownership of listener and closes it on return or Client.Close.
-// SOCKS5 supports TCP and opt-in experimental UDP ASSOCIATE. No child process or panel is required.
+// SOCKS5 supports TCP and opt-in experimental UDP ASSOCIATE. Engine necko owns its helper process.
 func (c *Client) ServeSOCKS(listener net.Listener) error {
 	return c.serveSOCKS(context.Background(), listener)
 }

@@ -1,0 +1,378 @@
+{
+  "jobs": {
+    "jobs": [
+      {
+        "id": 120646357946,
+        "name": "runtime",
+        "status": "completed",
+        "conclusion": "success",
+        "run_id": 40021334528,
+        "logs_url": null,
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Select compiled runtime for this verification",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Run actions/download-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Run actions/download-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Install runtime libraries and diagnostic tools",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6
+          },
+          {
+            "name": "Extract and verify exact source and runtime hashes",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7
+          },
+          {
+            "name": "Basic xpcshell startup with bounded diagnostics",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8
+          },
+          {
+            "name": "Run actions/setup-go@v5",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 9
+          },
+          {
+            "name": "Native CONNECT, half-close and certificate trust gates",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 10
+          },
+          {
+            "name": "Full Firefox wire comparison on the verified runtime",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 11
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12
+          },
+          {
+            "name": "Operational bounds, path outage and QUIC NAT rebinding",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13
+          },
+          {
+            "name": "Package and verify opt-in Linux amd64 launcher",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14
+          },
+          {
+            "name": "Real H2/H3 transfer and SIGTERM from packaged launcher",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15
+          },
+          {
+            "name": "Integrated main CLI and SDK native gates",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 16
+          },
+          {
+            "name": "Managed engine Firefox wire comparison",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 18
+          },
+          {
+            "name": "Sustained native resource measurements",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 19
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 20
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 21
+          },
+          {
+            "name": "Run actions/upload-artifact@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 22
+          },
+          {
+            "name": "Post Run actions/setup-go@v5",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 43
+          },
+          {
+            "name": "Post Run actions/checkout@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 44
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 45
+          }
+        ]
+      }
+    ]
+  },
+  "artifacts": {
+    "artifacts": [
+      {
+        "id": 12532075725,
+        "name": "foxtunnel-necko-linux-amd64",
+        "size_in_bytes": 184504175,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12532075725",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12532075725/zip",
+        "expired": false,
+        "created_at": "2026-10-23T20:58:16Z",
+        "expires_at": "2026-11-06T20:58:14Z",
+        "updated_at": "2026-10-23T20:58:16Z",
+        "digest": "sha256:2b25493b1589f896a4ed84fe0c4c786c3418e16759f9281ca265d7c192c18af7",
+        "workflow_run": {
+          "id": 40021334528,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "12414b0ae84f0afbfae43db3ae2a6584bcdb2abd"
+        }
+      },
+      {
+        "id": 12531821272,
+        "name": "necko-operations",
+        "size_in_bytes": 38178,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12531821272",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12531821272/zip",
+        "expired": false,
+        "created_at": "2026-10-23T20:58:17Z",
+        "expires_at": "2026-11-06T20:58:17Z",
+        "updated_at": "2026-10-23T20:58:17Z",
+        "digest": "sha256:0318d251bbeec0d08203b63d77427d415f6bdf9826747b40e49cf0290701bb52",
+        "workflow_run": {
+          "id": 40021334528,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "12414b0ae84f0afbfae43db3ae2a6584bcdb2abd"
+        }
+      },
+      {
+        "id": 12531425299,
+        "name": "necko-firefox-fingerprint",
+        "size_in_bytes": 51007,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12531425299",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12531425299/zip",
+        "expired": false,
+        "created_at": "2026-10-23T20:45:57Z",
+        "expires_at": "2026-11-06T20:45:57Z",
+        "updated_at": "2026-10-23T20:45:57Z",
+        "digest": "sha256:0966d9b30d5c56341494b1f4d61c17853c914f80543a862e65d99ca29542bc97",
+        "workflow_run": {
+          "id": 40021334528,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "12414b0ae84f0afbfae43db3ae2a6584bcdb2abd"
+        }
+      },
+      {
+        "id": 12530794040,
+        "name": "necko-runtime-diagnostics",
+        "size_in_bytes": 239,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12530794040",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12530794040/zip",
+        "expired": false,
+        "created_at": "2026-10-23T20:58:18Z",
+        "expires_at": "2026-10-30T20:58:18Z",
+        "updated_at": "2026-10-23T20:58:18Z",
+        "digest": "sha256:c959e7def4449a6ef3dff8cff42b43b7d4dba010c56bb303d36a49d77df058c8",
+        "workflow_run": {
+          "id": 40021334528,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "12414b0ae84f0afbfae43db3ae2a6584bcdb2abd"
+        }
+      },
+      {
+        "id": 12529874988,
+        "name": "necko-integrated-fingerprint",
+        "size_in_bytes": 25381,
+        "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12529874988",
+        "archive_download_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/artifacts/12529874988/zip",
+        "expired": false,
+        "created_at": "2026-10-23T20:48:05Z",
+        "expires_at": "2026-11-06T20:48:04Z",
+        "updated_at": "2026-10-23T20:48:05Z",
+        "digest": "sha256:3a5dafa6b193715471846d1de3844ee1ae41245746b3cae6a7666d8aba75c154",
+        "workflow_run": {
+          "id": 40021334528,
+          "repository_id": 1423709467,
+          "head_repository_id": 1423709467,
+          "head_branch": "firefox",
+          "head_sha": "12414b0ae84f0afbfae43db3ae2a6584bcdb2abd"
+        }
+      }
+    ]
+  },
+  "qualified_code_commit": "12414b0ae84f0afbfae43db3ae2a6584bcdb2abd",
+  "production_code_commit": "043de8363fecdeff613c960d4a5a0b6f0812cbf3",
+  "branch": "firefox",
+  "schema": 1,
+  "status": "passed",
+  "runtime_run": 40021334528,
+  "runtime_job": 120646357946,
+  "other_checks": {
+    "Tests": {
+      "run": 40021334564,
+      "result": "success"
+    },
+    "NSS": {
+      "run": 40021334495,
+      "result": "success"
+    },
+    "Neqo_previous_code_equivalent": {
+      "run": 40019995010,
+      "result": "success"
+    }
+  },
+  "soak": {
+    "h3-connect": {
+      "average_cpu_percent": 84.26286165368147,
+      "counters": {
+        "gc_collections": 56,
+        "gc_ms": 778,
+        "connected": 0,
+        "oldest_ms": 0,
+        "idle_limit": 5000,
+        "type": "stats",
+        "listen": "",
+        "pid": 0,
+        "process_tag": "",
+        "active": 0,
+        "draining": 0,
+        "completed": 13072,
+        "rejected": 0,
+        "idle_expired": 0,
+        "drain_expired": 13072,
+        "upload_bytes": 1713373184,
+        "download_bytes": 1713373184
+      },
+      "cpu_seconds": 254.05,
+      "cpu_ticks_per_second": 100,
+      "duration_seconds": 300,
+      "parallel_streams": 8,
+      "payload_bytes_per_round": 131072,
+      "rounds": 13056,
+      "schema": 1,
+      "scope": "loopback churn plus binary half-close; not a production throughput benchmark",
+      "transport": "h3-connect",
+      "warmup_tunnels": 16,
+      "sample_first": {
+        "rss_kib": 131772,
+        "cpu_ticks": 39,
+        "fds": 45,
+        "at_ms": 1690
+      },
+      "sample_last": {
+        "rss_kib": 244472,
+        "cpu_ticks": 25444,
+        "fds": 45,
+        "at_ms": 303187
+      }
+    },
+    "h2-connect": {
+      "average_cpu_percent": 48.47290771108634,
+      "counters": {
+        "gc_collections": 57,
+        "gc_ms": 1138,
+        "connected": 0,
+        "oldest_ms": 0,
+        "idle_limit": 5000,
+        "type": "stats",
+        "listen": "",
+        "pid": 0,
+        "process_tag": "",
+        "active": 0,
+        "draining": 0,
+        "completed": 13760,
+        "rejected": 0,
+        "idle_expired": 0,
+        "drain_expired": 13760,
+        "upload_bytes": 1803550720,
+        "download_bytes": 1803550720
+      },
+      "cpu_seconds": 146.14,
+      "cpu_ticks_per_second": 100,
+      "duration_seconds": 300,
+      "parallel_streams": 8,
+      "payload_bytes_per_round": 131072,
+      "rounds": 13744,
+      "schema": 1,
+      "scope": "loopback churn plus binary half-close; not a production throughput benchmark",
+      "transport": "h2-connect",
+      "warmup_tunnels": 16,
+      "sample_first": {
+        "rss_kib": 122552,
+        "cpu_ticks": 23,
+        "fds": 45,
+        "at_ms": 1700
+      },
+      "sample_last": {
+        "rss_kib": 241660,
+        "cpu_ticks": 14637,
+        "fds": 45,
+        "at_ms": 303188
+      }
+    }
+  },
+  "bundle_archive_sha256": "0d947b8404cd56e9b2ad4bc17a141fedf5cf0de8e70ef5d66b4077927ae71466",
+  "scope": "Linux amd64 main CLI and SDK; controlled native helper resource qualification"
+}

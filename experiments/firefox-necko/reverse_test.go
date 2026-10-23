@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
@@ -31,34 +32,38 @@ func TestGeckoReverseHalfClose(t *testing.T) {
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
-			payload := bytes.Repeat([]byte{0, 255, 13, 10, 42, 1}, 22000)
-			result := make(chan error, 1)
-			cfg := reverseProxy(t, mode, payload, result)
-			listen, stderr := startTestHelper(t, runtime, cfg)
-			conn, err := nativeSOCKS(listen, "127.0.0.1:443")
-			if err != nil {
-				t.Fatalf("CONNECT: %v\n%s", err, stderr.text())
-			}
-			defer conn.Close()
-			var one [1]byte
-			if n, err := conn.Read(one[:]); n != 0 || err != io.EOF {
-				t.Fatalf("response FIN: n=%d err=%v\n%s", n, err, stderr.text())
-			}
-			// Intentionally upload only after receiving EOF, across several
-			// flow-control windows, then require the peer to see upload FIN.
-			if _, err := conn.Write(payload); err != nil {
-				t.Fatalf("upload after response FIN: %v\n%s", err, stderr.text())
-			}
-			if err := conn.(*net.TCPConn).CloseWrite(); err != nil {
-				t.Fatal(err)
-			}
-			select {
-			case err := <-result:
-				if err != nil {
-					t.Fatalf("peer upload after response FIN: %v\n%s", err, stderr.text())
-				}
-			case <-time.After(12 * time.Second):
-				t.Fatalf("peer never received upload FIN\n%s", stderr.text())
+			for _, scenario := range reverseResponseCases() {
+				t.Run(scenario.name, func(t *testing.T) {
+					payload := bytes.Repeat([]byte{0, 255, 13, 10, 42, 1}, 22000)
+					result := make(chan error, 1)
+					cfg := reverseProxy(t, mode, payload, scenario.body, result, scenario.flowControl)
+					listen, stderr := startTestHelper(t, runtime, cfg)
+					conn, err := nativeSOCKS(listen, "127.0.0.1:443")
+					if err != nil {
+						t.Fatalf("CONNECT: %v\n%s", err, stderr.text())
+					}
+					defer conn.Close()
+					received, err := io.ReadAll(io.LimitReader(conn, int64(len(scenario.body)+1)))
+					if err != nil || !bytes.Equal(received, scenario.body) {
+						t.Fatalf("response bytes + FIN: received %d of %d: %v\n%s", len(received), len(scenario.body), err, stderr.text())
+					}
+					// Intentionally upload only after receiving EOF, across several
+					// flow-control windows, then require the peer to see upload FIN.
+					if _, err := conn.Write(payload); err != nil {
+						t.Fatalf("upload after response FIN: %v\n%s", err, stderr.text())
+					}
+					if err := conn.(*net.TCPConn).CloseWrite(); err != nil {
+						t.Fatal(err)
+					}
+					select {
+					case err := <-result:
+						if err != nil {
+							t.Fatalf("peer upload after response FIN: %v\n%s", err, stderr.text())
+						}
+					case <-time.After(12 * time.Second):
+						t.Fatalf("peer never received upload FIN\n%s", stderr.text())
+					}
+				})
 			}
 		})
 	}
@@ -69,87 +74,122 @@ func TestGeckoReverseHalfClose(t *testing.T) {
 func TestReverseHalfClosePeers(t *testing.T) {
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
-			payload := bytes.Repeat([]byte{0, 255, 13, 10, 42, 1}, 22000)
-			result := make(chan error, 1)
-			cfg := reverseProxy(t, mode, payload, result)
-			ca, err := os.ReadFile(cfg.CACert)
-			if err != nil {
-				t.Fatal(err)
-			}
-			roots := x509.NewCertPool()
-			if !roots.AppendCertsFromPEM(ca) {
-				t.Fatal("invalid fixture CA")
-			}
-			tlsConfig := &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13}
-			var client http.RoundTripper
-			if mode == "h2-connect" {
-				transport := &http2.Transport{TLSClientConfig: tlsConfig}
-				t.Cleanup(transport.CloseIdleConnections)
-				client = transport
-			} else {
-				transport := &http3.Transport{TLSClientConfig: tlsConfig}
-				t.Cleanup(func() { transport.Close() })
-				client = transport
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
-			defer cancel()
-			reader, writer := io.Pipe()
-			defer reader.Close()
-			defer writer.Close()
-			req, err := http.NewRequestWithContext(ctx, "CONNECT", cfg.Server, reader)
-			if err != nil {
-				t.Fatal(err)
-			}
-			req.Host = "127.0.0.1:443"
-			response, err := client.RoundTrip(req)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer response.Body.Close()
-			if response.StatusCode != 200 {
-				t.Fatal(response.Status)
-			}
-			var one [1]byte
-			if n, err := response.Body.Read(one[:]); n != 0 || err != io.EOF {
-				t.Fatal("peer response FIN", n, err)
-			}
-			if _, err := writer.Write(payload); err != nil {
-				t.Fatal("peer upload", err)
-			}
-			if err := writer.Close(); err != nil {
-				t.Fatal(err)
-			}
-			select {
-			case err := <-result:
-				if err != nil {
-					t.Fatal(err)
-				}
-			case <-ctx.Done():
-				t.Fatal(ctx.Err())
+			for _, scenario := range reverseResponseCases() {
+				t.Run(scenario.name, func(t *testing.T) {
+					payload := bytes.Repeat([]byte{0, 255, 13, 10, 42, 1}, 22000)
+					result := make(chan error, 1)
+					cfg := reverseProxy(t, mode, payload, scenario.body, result, scenario.flowControl)
+					client := independentPeerTransport(t, cfg, mode)
+					ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+					defer cancel()
+					reader, writer := io.Pipe()
+					defer reader.Close()
+					defer writer.Close()
+					req, err := http.NewRequestWithContext(ctx, "CONNECT", cfg.Server, reader)
+					if err != nil {
+						t.Fatal(err)
+					}
+					req.Host = "127.0.0.1:443"
+					response, err := client.RoundTrip(req)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer response.Body.Close()
+					if response.StatusCode != 200 {
+						t.Fatal(response.Status)
+					}
+					received, err := io.ReadAll(io.LimitReader(response.Body, int64(len(scenario.body)+1)))
+					if err != nil || !bytes.Equal(received, scenario.body) {
+						t.Fatal("peer response bytes + FIN", len(received), err)
+					}
+					if _, err := writer.Write(payload); err != nil {
+						t.Fatal("peer upload", err)
+					}
+					if err := writer.Close(); err != nil {
+						t.Fatal(err)
+					}
+					select {
+					case err := <-result:
+						if err != nil {
+							t.Fatal(err)
+						}
+					case <-ctx.Done():
+						t.Fatal(ctx.Err())
+					}
+				})
 			}
 		})
 	}
 }
 
-func reverseProxy(t *testing.T, mode string, payload []byte, result chan<- error) Config {
+func reverseResponseCases() []struct {
+	name        string
+	body        []byte
+	flowControl bool
+} {
+	body := make([]byte, 8192)
+	for i := range body {
+		body[i] = byte(i)
+	}
+	return []struct {
+		name        string
+		body        []byte
+		flowControl bool
+	}{{name: "empty"}, {name: "buffered", body: body}, {name: "flow-control", flowControl: true}}
+}
+
+func independentPeerTransport(t *testing.T, cfg Config, mode string) http.RoundTripper {
+	t.Helper()
+	ca, err := os.ReadFile(cfg.CACert)
+	if err != nil {
+		t.Fatal(err)
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM(ca) {
+		t.Fatal("invalid fixture CA")
+	}
+	tlsConfig := &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS13}
+	if mode == "h2-connect" {
+		transport := &http2.Transport{TLSClientConfig: tlsConfig}
+		t.Cleanup(transport.CloseIdleConnections)
+		return transport
+	}
+	transport := &http3.Transport{TLSClientConfig: tlsConfig}
+	t.Cleanup(func() { transport.Close() })
+	return transport
+}
+
+func reverseProxy(t *testing.T, mode string, payload, response []byte, result chan<- error, flowControl bool) Config {
 	t.Helper()
 	if mode == "h2-connect" {
-		return reverseH2Proxy(t, payload, result)
+		return reverseH2Proxy(t, payload, response, result, flowControl)
 	}
-	return nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "CONNECT" || r.ProtoMajor != 3 || r.Host != "127.0.0.1:443" || r.URL.Path != "" {
 			reportReverseResult(result, fmt.Errorf("unexpected request: %s %s %s", r.Method, r.Proto, r.Host))
 			return
 		}
 		stream := w.(http3.HTTPStreamer).HTTPStream()
 		stream.SetDeadline(time.Now().Add(10 * time.Second))
+		if len(response) > 0 {
+			if _, err := stream.Write(response); err != nil {
+				reportReverseResult(result, err)
+				return
+			}
+		}
 		if err := stream.Close(); err != nil { // QUIC send FIN, retain receive half.
 			reportReverseResult(result, err)
 			return
 		}
 		data, err := io.ReadAll(io.LimitReader(stream, int64(len(payload)+1)))
 		reportReverseResult(result, checkReverseUpload(data, payload, err))
-	}))
+	})
+	var config *quic.Config
+	if flowControl {
+		config = &quic.Config{InitialStreamReceiveWindow: 16 << 10, MaxStreamReceiveWindow: 16 << 10,
+			InitialConnectionReceiveWindow: 32 << 10, MaxConnectionReceiveWindow: 32 << 10}
+	}
+	return nativeProxy(t, mode, handler, config)
 }
 
 func reportReverseResult(result chan<- error, err error) {
@@ -168,7 +208,7 @@ func checkReverseUpload(data, want []byte, err error) error {
 	return nil
 }
 
-func reverseH2Proxy(t *testing.T, payload []byte, result chan<- error) Config {
+func reverseH2Proxy(t *testing.T, payload, response []byte, result chan<- error, flowControl bool) Config {
 	t.Helper()
 	certificate, ca := testCertificate(t)
 	server := httptest.NewUnstartedServer(nil)
@@ -176,7 +216,7 @@ func reverseH2Proxy(t *testing.T, payload []byte, result chan<- error) Config {
 	server.TLS = &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}}
 	server.Config.TLSNextProto = map[string]func(*http.Server, *tls.Conn, http.Handler){
 		"h2": func(_ *http.Server, conn *tls.Conn, _ http.Handler) {
-			reportReverseResult(result, receiveReverseH2(conn, payload))
+			reportReverseResult(result, receiveReverseH2(conn, payload, response, flowControl))
 		},
 	}
 	server.StartTLS()
@@ -188,7 +228,7 @@ func reverseH2Proxy(t *testing.T, payload []byte, result chan<- error) Config {
 	return Config{Server: server.URL, Username: "u", Password: "p", Transport: "h2-connect", Listen: "127.0.0.1:0", CACert: caPath}
 }
 
-func receiveReverseH2(conn *tls.Conn, payload []byte) error {
+func receiveReverseH2(conn *tls.Conn, payload, response []byte, flowControl bool) error {
 	conn.SetDeadline(time.Now().Add(10 * time.Second))
 	preface := make([]byte, len(http2.ClientPreface))
 	if _, err := io.ReadFull(conn, preface); err != nil {
@@ -199,12 +239,21 @@ func receiveReverseH2(conn *tls.Conn, payload []byte) error {
 	}
 	f := http2.NewFramer(conn, conn)
 	f.ReadMetaHeaders = hpack.NewDecoder(4096, nil)
-	if err := f.WriteSettings(http2.Setting{ID: http2.SettingInitialWindowSize, Val: 1 << 20}); err != nil {
-		return err
+
+	if flowControl {
+		if err := f.WriteSettings(); err != nil {
+			return err
+		}
+	} else {
+		if err := f.WriteSettings(http2.Setting{ID: http2.SettingInitialWindowSize, Val: 1 << 20}); err != nil {
+			return err
+		}
+		if err := f.WriteWindowUpdate(0, 1<<20); err != nil {
+			return err
+		}
 	}
-	if err := f.WriteWindowUpdate(0, 1<<20); err != nil {
-		return err
-	}
+	var credited int
+
 	var id uint32
 	var upload []byte
 	for {
@@ -233,7 +282,7 @@ func receiveReverseH2(conn *tls.Conn, payload []byte) error {
 			if err := f.WriteHeaders(http2.HeadersFrameParam{StreamID: id, BlockFragment: []byte{0x88}, EndHeaders: true}); err != nil {
 				return err
 			}
-			if err := f.WriteData(id, true, nil); err != nil {
+			if err := f.WriteData(id, true, response); err != nil {
 				return err
 			}
 		case *http2.DataFrame:
@@ -243,6 +292,18 @@ func receiveReverseH2(conn *tls.Conn, payload []byte) error {
 			upload = append(upload, frame.Data()...)
 			if len(upload) > len(payload) {
 				return fmt.Errorf("excess upload bytes")
+			}
+			// Refill only after exhausting both default windows. Send stream
+			// credit before connection credit: resumption must handle either order.
+			if flowControl && len(upload)-credited >= 65535 {
+				delta := len(upload) - credited
+				if err := f.WriteWindowUpdate(id, uint32(delta)); err != nil {
+					return err
+				}
+				if err := f.WriteWindowUpdate(0, uint32(delta)); err != nil {
+					return err
+				}
+				credited = len(upload)
 			}
 			if frame.StreamEnded() {
 				return checkReverseUpload(upload, payload, nil)

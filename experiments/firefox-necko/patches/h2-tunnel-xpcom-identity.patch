@@ -1,6 +1,15 @@
 --- a/netwerk/protocol/http/Http2StreamTunnel.cpp
 +++ b/netwerk/protocol/http/Http2StreamTunnel.cpp
-@@ -28,9 +28,8 @@
+@@ -18,6 +18,8 @@
+ #include "nsHttpConnectionMgr.h"
+ #include "nsHttpHandler.h"
+ #include "nsProxyRelease.h"
++#include "nsSocketTransportService2.h"
++#include "nsThreadUtils.h"
+ #include "nsQueryObject.h"
+
+ namespace mozilla::net {
+@@ -28,9 +30,8 @@
  NS_INTERFACE_MAP_BEGIN(Http2StreamTunnel)
    NS_INTERFACE_MAP_ENTRY(nsITransport)
    NS_INTERFACE_MAP_ENTRY_CONCRETE(Http2StreamTunnel)
@@ -8,13 +17,44 @@
    NS_INTERFACE_MAP_ENTRY(nsISocketTransport)
 -NS_INTERFACE_MAP_END
 +NS_INTERFACE_MAP_END_INHERITING(Http2StreamBase)
- 
+
  Http2StreamTunnel::Http2StreamTunnel(Http2Session* session, int32_t priority,
                                       uint64_t bcId,
-@@ -289,6 +288,18 @@
+@@ -41,7 +42,9 @@
+ Http2StreamTunnel::~Http2StreamTunnel() { ClearTransactionsBlockedOnTunnel(); }
+
+ void Http2StreamTunnel::HandleResponseHeaders(nsACString& aHeadersOut,
+-                                              int32_t httpResponseCode) {}
++                                              int32_t httpResponseCode) {
++  mTunnelEstablished = httpResponseCode >= 200 && httpResponseCode < 300;
++}
+
+ // TODO We do not need this. Fix in bug 1772212.
+ void Http2StreamTunnel::ClearTransactionsBlockedOnTunnel() {
+@@ -109,6 +112,19 @@
+
+ NS_IMETHODIMP
+ Http2StreamTunnel::Close(nsresult aReason) {
++  // nsITransport is exposed to the main-thread XPConnect handoff consumer.
++  // Session/stream teardown must run on the socket thread, including errors.
++  if (!OnSocketThread()) {
++    if (!gSocketTransportService) {
++      return NS_ERROR_NOT_AVAILABLE;
++    }
++    RefPtr<Http2StreamTunnel> self(this);
++    return gSocketTransportService->Dispatch(
++        NS_NewRunnableFunction("Http2StreamTunnel::Close",
++            [self = std::move(self), aReason]() { self->Close(aReason); }),
++        NS_DISPATCH_NORMAL);
++  }
++
+   LOG(("Http2StreamTunnel::Close this=%p", this));
+   RefPtr<Http2Session> session = Session();
+   if (NS_SUCCEEDED(mCondition)) {
+@@ -289,6 +305,47 @@
    return conn.forget();
  }
- 
+
 +void Http2StreamTunnel::CloseSendStream() {
 +  MOZ_ASSERT(OnSocketThread());
 +  if (mSendClosed || mClosed) {
@@ -27,12 +67,41 @@
 +  }
 +}
 +
++// Response EOF closes the receive side, not an established CONNECT upload.
++// Preserve the base's buffered-data deferral before notifying the consumer.
++bool Http2StreamTunnel::DeferCleanup(nsresult aStatus) {
++  if (Http2StreamBase::DeferCleanup(aStatus)) {
++    return true;
++  }
++  if (NS_SUCCEEDED(aStatus) && mTunnelEstablished && RecvdFin() &&
++      mUpstreamState != UPSTREAM_COMPLETE) {
++    (void)mInput->OnSocketReady(NS_BASE_STREAM_CLOSED);
++    return true;
++  }
++  return false;
++}
++
++nsresult Http2StreamTunnel::ReadSegments(nsAHttpSegmentReader* aReader,
++                                       uint32_t aCount, uint32_t* aCountRead) {
++  nsresult rv = Http2StreamBase::ReadSegments(aReader, aCount, aCountRead);
++  // The final request frame has reached the session output queue. Only now
++  // can a response-first tunnel leave the session's stream tables.
++  if (NS_SUCCEEDED(rv) && mUpstreamState == UPSTREAM_COMPLETE && RecvdFin() &&
++      !DataBuffered()) {
++    RefPtr<Http2Session> session = Session();
++    if (session) {
++      session->CleanupStream(this, NS_OK, Http2Session::CANCEL_ERROR);
++    }
++  }
++  return rv;
++}
++
  nsresult Http2StreamTunnel::CallToReadData(uint32_t count,
                                             uint32_t* countRead) {
    LOG(("Http2StreamTunnel::CallToReadData this=%p", this));
-@@ -411,10 +422,16 @@
+@@ -411,10 +468,16 @@
    mCondition = reason;
- 
+
    RefPtr<Http2StreamTunnel> tunnel = mWeakStream.get();
 -  mWeakStream = nullptr;
    if (!tunnel) {
@@ -48,3 +117,14 @@
    RefPtr<Http2Session> session = tunnel->Session();
    if (!session) {
      return NS_OK;
+@@ -541,6 +604,10 @@
+   LOG(("InputStreamTunnel::CloseWithStatus [this=%p reason=%" PRIx32 "]\n",
+        this, static_cast<uint32_t>(reason)));
+   mCondition = reason;
++  if (NS_SUCCEEDED(reason) || reason == NS_BASE_STREAM_CLOSED) {
++    return NS_OK;
++  }
++
+
+   RefPtr<Http2StreamTunnel> tunnel = mWeakStream.get();
+   mWeakStream = nullptr;

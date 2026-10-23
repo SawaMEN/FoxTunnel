@@ -5,6 +5,9 @@ package transportengine
 import (
 	"errors"
 	"fmt"
+	firefox "github.com/SawaMEN/FoxTunnel/experiments/firefox-necko"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
@@ -14,8 +17,9 @@ import (
 )
 
 // Config is local client policy. It is not serialized into connection links.
-// Engine is "legacy" (default) or the opt-in "mozilla".
+// Engine is legacy (default), mozilla (NSS/Neqo) or necko (owned runtime).
 type Config struct {
+	NeckoBundle          string
 	Engine               string
 	Transport            string
 	TLSBackend           string
@@ -34,14 +38,31 @@ type Plan struct{ Config }
 // mode selects Neqo/H3 when available, otherwise NSS/H2 for an automatic
 // transport. It never substitutes Go TLS or quic-go for Mozilla explicitly.
 func Resolve(cfg Config) (Plan, error) {
+	if cfg.NeckoBundle != "" && cfg.Engine != "necko" {
+		return Plan{}, errors.New("Necko bundle requires engine necko")
+	}
 	switch cfg.Engine {
 	case "", "legacy":
 		cfg.Engine = "legacy"
 		return Plan{Config: cfg}, nil
+	case "necko":
+		if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+			return Plan{}, errors.New("Necko currently requires Linux amd64")
+		}
+		if cfg.Transport == "" || cfg.Transport == "auto" {
+			cfg.Transport = "h2-connect"
+		}
+		if cfg.Transport != "h2-connect" && cfg.Transport != "h3-connect" {
+			return Plan{}, errors.New("Necko requires h2-connect or h3-connect")
+		}
+		if (cfg.TLSBackend != "" && cfg.TLSBackend != "auto") || cfg.QUICBackend != "" || (cfg.H3Fallback != "" && cfg.H3Fallback != "none") || cfg.QUICHandshakeTimeout != 0 || (cfg.TLSClientProfile != "" && cfg.TLSClientProfile != "default") || (cfg.HTTP2ReceiveProfile != "" && cfg.HTTP2ReceiveProfile != "default") {
+			return Plan{}, errors.New("Necko owns TLS, QUIC and HTTP settings; backend/profile overrides and fallback are unsupported")
+		}
+		return Plan{Config: cfg}, nil
 	case "mozilla":
 		return resolveMozilla(cfg)
 	default:
-		return Plan{}, fmt.Errorf("unknown transport engine %q (choose legacy or mozilla)", cfg.Engine)
+		return Plan{}, fmt.Errorf("unknown transport engine %q (choose legacy, mozilla or necko)", cfg.Engine)
 	}
 }
 
@@ -121,6 +142,21 @@ func resolveMozilla(cfg Config) (Plan, error) {
 // is installed before the final transport is used. The NSS/Neqo adapters
 // continue to enforce CA, SNI, SPKI, ALPN and request-before-fallback rules.
 func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
+	if p.Engine == "necko" {
+		if serverName != "" || pin != "" {
+			return errors.New("Necko currently requires URL hostname verification without SNI overrides or SPKI pins")
+		}
+		verified, err := firefox.VerifyBundle(p.NeckoBundle)
+		if err != nil {
+			return err
+		}
+		bundle := filepath.Dir(filepath.Dir(verified))
+		c.SetManagedTransport(p.Transport, func() (tunnel.ManagedTransport, error) {
+			return firefox.NewManaged(bundle, firefox.Config{Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: p.Transport, MaxConnections: c.MaxConnections, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
+		})
+		c.SetEngineStatus("necko", p.Transport, "nss", "necko", "none")
+		return nil
+	}
 	initialBackend := p.TLSBackend
 	if initialBackend == "" {
 		initialBackend = "auto"

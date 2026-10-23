@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "platform": "linux-amd64",
+  "compiled_runtime": {
+    "commit": "b2d8522900396165a76163e2200ed3e755e44fe3",
+    "workflow_run": 39910478555,
+    "artifact_id": 12483207125,
+    "binary_sha256": {
+      "xpcshell": "8d84694543130d185b8f1dc04cee264e5ed2e7affb7fb22587e017a5d0327218",
+      "libxul.so": "8e47182d1bbec20c78f49fb480caf01b44033fa8271c2f0f5a98999f7ce4511d",
+      "libnss3.so": "df0185359c1fd627a9285b5351c2e7bfcf62612600de8301f6b7e88bc9502cc8",
+      "platform.ini": "b4068c619893472cd991b8213de3ae947c83e478d3dd006f2aa8254f459baf80"
+    }
+  },
+  "tested_helper_commit": "0fc71924c05ffe65b9e4ed2ba1c04febb98ab16b",
+  "source_lock_sha256": "7602076d144ed425c4cdf7e0ad721be847d18cab4aa76f174ce3669665a95622",
+  "client_js_sha256": "edac47d686ecc4392768aa9cb0173a33b56653c6ac3b5eae1ccbf72e47b729b8",
+  "local_native_checks": {
+    "command": "FOXTUNNEL_XPCSHELL=$RUNTIME/xpcshell go test -race ./experiments/firefox-necko -run '^TestGecko' -count=3 -v -timeout=180s",
+    "result": "passed",
+    "duration_seconds": 73.113,
+    "top_level_passes": {
+      "TestGeckoCONNECT": 3,
+      "TestGeckoCONNECTHandoff": 3,
+      "TestGeckoCancellation": 3,
+      "TestGeckoConcurrentCONNECT": 3,
+      "TestGeckoH3NoTCPFallback": 3,
+      "TestGeckoLocalHalfClose": 3,
+      "TestGeckoReverseHalfClose": 3,
+      "TestGeckoTrustBeforeCredentials": 3
+    }
+  },
+  "ci_verification": {
+    "commit": "0fc71924c05ffe65b9e4ed2ba1c04febb98ab16b",
+    "workflow_run": 39912988779,
+    "job_id": 120280024564,
+    "result": "success",
+    "native_gate_groups_passed": 5
+  }
+}

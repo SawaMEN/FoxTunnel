@@ -1,0 +1,830 @@
+﻿2026-10-23T16:39:59.5623797Z Current runner version: '2.338.0'
+2026-10-23T16:39:59.5647302Z ##[group]Runner Image Provisioner
+2026-10-23T16:39:59.5648261Z Hosted Compute Agent
+2026-10-23T16:39:59.5648827Z Version: 20261012.601
+2026-10-23T16:39:59.5649447Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+2026-10-23T16:39:59.5650207Z Build Date: 2026-10-12T17:48:21Z
+2026-10-23T16:39:59.5650881Z Worker ID: {96e63735-f99d-4d84-b68d-9fb542e9462c}
+2026-10-23T16:39:59.5651600Z Region: centralus
+2026-10-23T16:39:59.5652328Z Cloud: Azure
+2026-10-23T16:39:59.5652838Z ##[endgroup]
+2026-10-23T16:39:59.5654178Z ##[group]Operating System
+2026-10-23T16:39:59.5654781Z Ubuntu
+2026-10-23T16:39:59.5655335Z 24.04.5
+2026-10-23T16:39:59.5655891Z LTS
+2026-10-23T16:39:59.5656369Z ##[endgroup]
+2026-10-23T16:39:59.5656951Z ##[group]Runner Image
+2026-10-23T16:39:59.5657534Z Image: ubuntu-24.04
+2026-10-23T16:39:59.5658088Z Version: 20261012.334.1
+2026-10-23T16:39:59.5659390Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-23T16:39:59.5661132Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+2026-10-23T16:39:59.5662399Z ##[endgroup]
+2026-10-23T16:39:59.5663627Z ##[group]GITHUB_TOKEN Permissions
+2026-10-23T16:39:59.5665864Z Actions: read
+2026-10-23T16:39:59.5666524Z Contents: read
+2026-10-23T16:39:59.5667092Z Metadata: read
+2026-10-23T16:39:59.5667626Z ##[endgroup]
+2026-10-23T16:39:59.5669557Z Secret source: Actions
+2026-10-23T16:39:59.5670479Z Cache mode: write
+2026-10-23T16:39:59.5671485Z Prepare workflow directory
+2026-10-23T16:39:59.5983165Z Prepare all required actions
+2026-10-23T16:39:59.6029781Z Getting action download info
+2026-10-23T16:39:59.8840453Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-23T16:40:00.0170797Z Download action repository 'actions/download-artifact@v4' (SHA:d3f86a106a0bac45b974a628896c90dbdf5c8093)
+2026-10-23T16:40:00.5690040Z Download action repository 'actions/setup-go@v5' (SHA:40f1582b2485089dde7abd97c1529aa768e1baff)
+2026-10-23T16:40:01.1320501Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-23T16:40:01.4461176Z Complete job name: runtime
+2026-10-23T16:40:01.5370914Z ##[group]Run actions/checkout@v4
+2026-10-23T16:40:01.5372424Z with:
+2026-10-23T16:40:01.5373341Z   repository: SawaMEN/FoxTunnel
+2026-10-23T16:40:01.5381240Z   token: ***
+2026-10-23T16:40:01.5382357Z   ssh-strict: true
+2026-10-23T16:40:01.5383267Z   ssh-user: git
+2026-10-23T16:40:01.5384185Z   persist-credentials: true
+2026-10-23T16:40:01.5385183Z   clean: true
+2026-10-23T16:40:01.5386222Z   sparse-checkout-cone-mode: true
+2026-10-23T16:40:01.5387313Z   fetch-depth: 1
+2026-10-23T16:40:01.5388215Z   fetch-tags: false
+2026-10-23T16:40:01.5389107Z   show-progress: true
+2026-10-23T16:40:01.5390038Z   lfs: false
+2026-10-23T16:40:01.5390906Z   submodules: false
+2026-10-23T16:40:01.5392063Z   set-safe-directory: true
+2026-10-23T16:40:01.5393154Z   allow-unsafe-pr-checkout: false
+2026-10-23T16:40:01.5394453Z ##[endgroup]
+2026-10-23T16:40:01.6522275Z Syncing repository: SawaMEN/FoxTunnel
+2026-10-23T16:40:01.6526235Z ##[group]Getting Git version info
+2026-10-23T16:40:01.6528705Z Working directory is '/home/runner/work/FoxTunnel/FoxTunnel'
+2026-10-23T16:40:01.6532030Z [command]/usr/bin/git version
+2026-10-23T16:40:01.6557008Z git version 2.55.0
+2026-10-23T16:40:01.6575990Z ##[endgroup]
+2026-10-23T16:40:01.6587220Z Temporarily overriding HOME='/home/runner/work/_temp/39026816-0511-42e6-b7df-d9e28cae6fec' before making global git config changes
+2026-10-23T16:40:01.6591618Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-23T16:40:01.6595556Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/FoxTunnel/FoxTunnel
+2026-10-23T16:40:01.6645756Z Deleting the contents of '/home/runner/work/FoxTunnel/FoxTunnel'
+2026-10-23T16:40:01.6651300Z ##[group]Initializing the repository
+2026-10-23T16:40:01.6662527Z [command]/usr/bin/git init /home/runner/work/FoxTunnel/FoxTunnel
+2026-10-23T16:40:01.6745941Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-23T16:40:01.6748874Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-23T16:40:01.6751471Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-23T16:40:01.6753874Z hint: call:
+2026-10-23T16:40:01.6754872Z hint:
+2026-10-23T16:40:01.6756007Z hint: 	git config --global init.defaultBranch <name>
+2026-10-23T16:40:01.6757800Z hint:
+2026-10-23T16:40:01.6759285Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-23T16:40:01.6761071Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-23T16:40:01.6763449Z hint:
+2026-10-23T16:40:01.6764574Z hint: 	git branch -m <name>
+2026-10-23T16:40:01.6765854Z hint:
+2026-10-23T16:40:01.6767547Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-23T16:40:01.6770242Z Initialized empty Git repository in /home/runner/work/FoxTunnel/FoxTunnel/.git/
+2026-10-23T16:40:01.6775586Z [command]/usr/bin/git remote add origin https://github.com/SawaMEN/FoxTunnel
+2026-10-23T16:40:01.6809826Z ##[endgroup]
+2026-10-23T16:40:01.6812535Z ##[group]Disabling automatic garbage collection
+2026-10-23T16:40:01.6815261Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-23T16:40:01.6904194Z ##[endgroup]
+2026-10-23T16:40:01.6907106Z ##[group]Setting up auth
+2026-10-23T16:40:01.6909715Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-23T16:40:01.6917119Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-23T16:40:01.7203883Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-23T16:40:01.7226835Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-23T16:40:01.7431980Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-23T16:40:01.7468302Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-23T16:40:01.7644791Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-23T16:40:01.7682181Z ##[endgroup]
+2026-10-23T16:40:01.7684359Z ##[group]Fetching the repository
+2026-10-23T16:40:01.7691246Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +212c2ac36de1e2638faf6ffc6784d80eb3f05cbb:refs/remotes/origin/firefox
+2026-10-23T16:40:03.4257402Z From https://github.com/SawaMEN/FoxTunnel
+2026-10-23T16:40:03.4258245Z  * [new ref]         212c2ac36de1e2638faf6ffc6784d80eb3f05cbb -> origin/firefox
+2026-10-23T16:40:03.4261053Z ##[endgroup]
+2026-10-23T16:40:03.4262070Z ##[group]Determining the checkout info
+2026-10-23T16:40:03.4264722Z ##[endgroup]
+2026-10-23T16:40:03.4271000Z [command]/usr/bin/git sparse-checkout disable
+2026-10-23T16:40:03.4320002Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-23T16:40:03.4348668Z ##[group]Checking out the ref
+2026-10-23T16:40:03.4354002Z [command]/usr/bin/git checkout --progress --force -B firefox refs/remotes/origin/firefox
+2026-10-23T16:40:03.4628770Z Switched to a new branch 'firefox'
+2026-10-23T16:40:03.4632763Z branch 'firefox' set up to track 'origin/firefox'.
+2026-10-23T16:40:03.4638100Z ##[endgroup]
+2026-10-23T16:40:03.4677490Z [command]/usr/bin/git log -1 --format=%H
+2026-10-23T16:40:03.4700120Z 212c2ac36de1e2638faf6ffc6784d80eb3f05cbb
+2026-10-23T16:40:03.4958165Z ##[group]Run if [ -n "$REQUESTED_RUN" ]; then
+2026-10-23T16:40:03.4958659Z [36;1mif [ -n "$REQUESTED_RUN" ]; then[0m
+2026-10-23T16:40:03.4959153Z [36;1m  if ! [[ "$REQUESTED_RUN" =~ ^[0-9]+$ ]]; then[0m
+2026-10-23T16:40:03.4959486Z [36;1m    echo 'Source run must be numeric.' >&2[0m
+2026-10-23T16:40:03.4959778Z [36;1m    exit 1[0m
+2026-10-23T16:40:03.4959997Z [36;1m  fi[0m
+2026-10-23T16:40:03.4960263Z [36;1m  echo "run_id=$REQUESTED_RUN" >> "$GITHUB_OUTPUT"[0m
+2026-10-23T16:40:03.4960563Z [36;1melse[0m
+2026-10-23T16:40:03.4960879Z [36;1m  python3 scripts/select_necko_runtime.py --output "$GITHUB_OUTPUT"[0m
+2026-10-23T16:40:03.4961239Z [36;1mfi[0m
+2026-10-23T16:40:03.5123210Z shell: /usr/bin/bash -e {0}
+2026-10-23T16:40:03.5123525Z env:
+2026-10-23T16:40:03.5126046Z   GH_TOKEN: ***
+2026-10-23T16:40:03.5126273Z   REQUESTED_RUN: 
+2026-10-23T16:40:03.5126510Z ##[endgroup]
+2026-10-23T16:40:05.1214464Z Selected compiled runtime run 39952039057
+2026-10-23T16:40:05.1358506Z ##[group]Run actions/download-artifact@v4
+2026-10-23T16:40:05.1358797Z with:
+2026-10-23T16:40:05.1359017Z   name: necko-linux-amd64-runtime
+2026-10-23T16:40:05.1359291Z   run-id: 39952039057
+2026-10-23T16:40:05.1362171Z   github-token: ***
+2026-10-23T16:40:05.1362400Z   path: runtime-archive
+2026-10-23T16:40:05.1362627Z   merge-multiple: false
+2026-10-23T16:40:05.1362853Z   repository: SawaMEN/FoxTunnel
+2026-10-23T16:40:05.1363089Z ##[endgroup]
+2026-10-23T16:40:05.2827407Z Downloading single artifact
+2026-10-23T16:40:05.2900380Z (node:2322) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-23T16:40:05.2901129Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-23T16:40:05.3090890Z (node:2322) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-23T16:40:05.5477773Z Preparing to download the following artifacts:
+2026-10-23T16:40:05.5478889Z - necko-linux-amd64-runtime (ID: 12501945687, Size: 157414215, Expected Digest: sha256:2e17ec90f97a8c08c2d0820888f6fa53169da1ad0778e971fe36498034ae9d66)
+2026-10-23T16:40:05.5525906Z Downloading artifact '12501945687' from 'SawaMEN/FoxTunnel'
+2026-10-23T16:40:05.7443397Z Redirecting to blob download url: https://productionresultssa2.blob.core.windows.net/actions-results/d117bdaa-35ee-8680-ad42-f3c20c0a321a/workflow-job-run-be6ce129-16a1-5823-bead-be7878a69cbd/artifacts/211009bdb33e3adc37f146df8e205ff44889127f06d467535fea4c397551f2fe.zip
+2026-10-23T16:40:05.7445520Z Starting download of artifact to: /home/runner/work/FoxTunnel/FoxTunnel/runtime-archive
+2026-10-23T16:40:05.9353696Z (node:2322) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+2026-10-23T16:40:08.9493450Z SHA256 digest of downloaded artifact is 2e17ec90f97a8c08c2d0820888f6fa53169da1ad0778e971fe36498034ae9d66
+2026-10-23T16:40:08.9500153Z Artifact download completed successfully.
+2026-10-23T16:40:08.9500714Z Total of 1 artifact(s) downloaded
+2026-10-23T16:40:08.9502016Z Download artifact has finished successfully
+2026-10-23T16:40:08.9693496Z ##[group]Run actions/download-artifact@v4
+2026-10-23T16:40:08.9693916Z with:
+2026-10-23T16:40:08.9694218Z   name: necko-source-provenance
+2026-10-23T16:40:08.9694544Z   run-id: 39952039057
+2026-10-23T16:40:08.9697166Z   github-token: ***
+2026-10-23T16:40:08.9697391Z   path: runtime-provenance
+2026-10-23T16:40:08.9697620Z   merge-multiple: false
+2026-10-23T16:40:08.9697850Z   repository: SawaMEN/FoxTunnel
+2026-10-23T16:40:08.9698086Z ##[endgroup]
+2026-10-23T16:40:09.1104584Z Downloading single artifact
+2026-10-23T16:40:09.1167112Z (node:2335) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-23T16:40:09.1360488Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-23T16:40:09.1362421Z (node:2335) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-23T16:40:09.3621364Z Preparing to download the following artifacts:
+2026-10-23T16:40:09.3622419Z - necko-source-provenance (ID: 12500704133, Size: 22284, Expected Digest: sha256:5280fab1d97e90a826849ef188c833381c7caa037713ed3c4da32c38c7e0ee9f)
+2026-10-23T16:40:09.3651682Z Downloading artifact '12500704133' from 'SawaMEN/FoxTunnel'
+2026-10-23T16:40:09.6153813Z Redirecting to blob download url: https://productionresultssa2.blob.core.windows.net/actions-results/d117bdaa-35ee-8680-ad42-f3c20c0a321a/workflow-job-run-be6ce129-16a1-5823-bead-be7878a69cbd/artifacts/0777babc2701abf9a4507124a90d04b3de4ee8bf5294058a7f051ea363159919.zip
+2026-10-23T16:40:09.6155512Z Starting download of artifact to: /home/runner/work/FoxTunnel/FoxTunnel/runtime-provenance
+2026-10-23T16:40:09.7766852Z (node:2335) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+2026-10-23T16:40:09.8075768Z SHA256 digest of downloaded artifact is 5280fab1d97e90a826849ef188c833381c7caa037713ed3c4da32c38c7e0ee9f
+2026-10-23T16:40:09.8077035Z Artifact download completed successfully.
+2026-10-23T16:40:09.8077691Z Total of 1 artifact(s) downloaded
+2026-10-23T16:40:09.8083680Z Download artifact has finished successfully
+2026-10-23T16:40:09.8183558Z ##[group]Run sudo apt-get update -qq && sudo apt-get install -y libgtk-3-0t64 libdbus-glib-1-2 libasound2t64 libxt6 strace gdb zstd
+2026-10-23T16:40:09.8184397Z [36;1msudo apt-get update -qq && sudo apt-get install -y libgtk-3-0t64 libdbus-glib-1-2 libasound2t64 libxt6 strace gdb zstd[0m
+2026-10-23T16:40:09.8228715Z shell: /usr/bin/bash -e {0}
+2026-10-23T16:40:09.8229028Z ##[endgroup]
+2026-10-23T16:40:14.2808192Z Reading package lists...
+2026-10-23T16:40:14.4671051Z Building dependency tree...
+2026-10-23T16:40:14.4678360Z Reading state information...
+2026-10-23T16:40:14.6284677Z libgtk-3-0t64 is already the newest version (3.24.41-4ubuntu1.3).
+2026-10-23T16:40:14.6285312Z libgtk-3-0t64 set to manually installed.
+2026-10-23T16:40:14.6285738Z libasound2t64 is already the newest version (1.2.11-1ubuntu0.3).
+2026-10-23T16:40:14.6286144Z libasound2t64 set to manually installed.
+2026-10-23T16:40:14.6286522Z libxt6t64 is already the newest version (1:1.2.1-1.2build1).
+2026-10-23T16:40:14.6286923Z libxt6t64 set to manually installed.
+2026-10-23T16:40:14.6287214Z strace is already the newest version (6.8-0ubuntu2).
+2026-10-23T16:40:14.6287514Z strace set to manually installed.
+2026-10-23T16:40:14.6287808Z zstd is already the newest version (1.5.5+dfsg2-2build1.1).
+2026-10-23T16:40:14.6288118Z zstd set to manually installed.
+2026-10-23T16:40:14.6288404Z The following additional packages will be installed:
+2026-10-23T16:40:14.6289018Z   libbabeltrace1 libc6-dbg libdebuginfod-common libdebuginfod1t64 libipt2
+2026-10-23T16:40:14.6292398Z   libsource-highlight-common libsource-highlight4t64
+2026-10-23T16:40:14.6299148Z Suggested packages:
+2026-10-23T16:40:14.6299691Z   gdb-doc gdbserver
+2026-10-23T16:40:14.6473106Z The following NEW packages will be installed:
+2026-10-23T16:40:14.6473671Z   gdb libbabeltrace1 libc6-dbg libdbus-glib-1-2 libdebuginfod-common
+2026-10-23T16:40:14.6479254Z   libdebuginfod1t64 libipt2 libsource-highlight-common libsource-highlight4t64
+2026-10-23T16:40:14.6644782Z 0 upgraded, 9 newly installed, 0 to remove and 99 not upgraded.
+2026-10-23T16:40:14.6645225Z Need to get 12.2 MB of archives.
+2026-10-23T16:40:14.6645630Z After this operation, 24.0 MB of additional disk space will be used.
+2026-10-23T16:40:14.6646070Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-23T16:40:14.7129571Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libdebuginfod-common all 0.190-1.1ubuntu0.1 [14.6 kB]
+2026-10-23T16:40:14.7455280Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libbabeltrace1 amd64 1.5.11-3build3 [164 kB]
+2026-10-23T16:40:14.7793155Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libdebuginfod1t64 amd64 0.190-1.1ubuntu0.1 [17.1 kB]
+2026-10-23T16:40:14.8114118Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libipt2 amd64 2.0.6-1build1 [45.7 kB]
+2026-10-23T16:40:14.8437934Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libsource-highlight-common all 3.1.9-4.3build1 [64.2 kB]
+2026-10-23T16:40:14.8760438Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libsource-highlight4t64 amd64 3.1.9-4.3build1 [258 kB]
+2026-10-23T16:40:14.9205249Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 gdb amd64 15.1-1ubuntu1~24.04.1 [4083 kB]
+2026-10-23T16:40:15.0656141Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libdbus-glib-1-2 amd64 0.112-3build2 [64.2 kB]
+2026-10-23T16:40:15.0977901Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libc6-dbg amd64 2.39-0ubuntu8.9 [7474 kB]
+2026-10-23T16:40:15.3888070Z Preconfiguring packages ...
+2026-10-23T16:40:15.4433552Z Fetched 12.2 MB in 1s (23.8 MB/s)
+2026-10-23T16:40:15.4672425Z Selecting previously unselected package libdebuginfod-common.
+2026-10-23T16:40:15.4838776Z (Reading database ... 
+2026-10-23T16:40:15.4839333Z (Reading database ... 5%
+2026-10-23T16:40:15.4839625Z (Reading database ... 10%
+2026-10-23T16:40:15.4839878Z (Reading database ... 15%
+2026-10-23T16:40:15.4840405Z (Reading database ... 20%
+2026-10-23T16:40:15.4841057Z (Reading database ... 25%
+2026-10-23T16:40:15.4841401Z (Reading database ... 30%
+2026-10-23T16:40:15.4841913Z (Reading database ... 35%
+2026-10-23T16:40:15.4842267Z (Reading database ... 40%
+2026-10-23T16:40:15.4842593Z (Reading database ... 45%
+2026-10-23T16:40:15.4842904Z (Reading database ... 50%
+2026-10-23T16:40:15.4874753Z (Reading database ... 55%
+2026-10-23T16:40:15.6228097Z (Reading database ... 60%
+2026-10-23T16:40:15.8277798Z (Reading database ... 65%
+2026-10-23T16:40:16.0156762Z (Reading database ... 70%
+2026-10-23T16:40:16.2199666Z (Reading database ... 75%
+2026-10-23T16:40:16.3644021Z (Reading database ... 80%
+2026-10-23T16:40:16.5640274Z (Reading database ... 85%
+2026-10-23T16:40:16.7268609Z (Reading database ... 90%
+2026-10-23T16:40:16.8847248Z (Reading database ... 95%
+2026-10-23T16:40:16.8847680Z (Reading database ... 100%
+2026-10-23T16:40:16.8848158Z (Reading database ... 203540 files and directories currently installed.)
+2026-10-23T16:40:16.8893944Z Preparing to unpack .../0-libdebuginfod-common_0.190-1.1ubuntu0.1_all.deb ...
+2026-10-23T16:40:16.9002090Z Unpacking libdebuginfod-common (0.190-1.1ubuntu0.1) ...
+2026-10-23T16:40:16.9206792Z Selecting previously unselected package libbabeltrace1:amd64.
+2026-10-23T16:40:16.9325249Z Preparing to unpack .../1-libbabeltrace1_1.5.11-3build3_amd64.deb ...
+2026-10-23T16:40:16.9347569Z Unpacking libbabeltrace1:amd64 (1.5.11-3build3) ...
+2026-10-23T16:40:16.9545821Z Selecting previously unselected package libdebuginfod1t64:amd64.
+2026-10-23T16:40:16.9663847Z Preparing to unpack .../2-libdebuginfod1t64_0.190-1.1ubuntu0.1_amd64.deb ...
+2026-10-23T16:40:16.9675997Z Unpacking libdebuginfod1t64:amd64 (0.190-1.1ubuntu0.1) ...
+2026-10-23T16:40:16.9847120Z Selecting previously unselected package libipt2.
+2026-10-23T16:40:16.9964844Z Preparing to unpack .../3-libipt2_2.0.6-1build1_amd64.deb ...
+2026-10-23T16:40:16.9975953Z Unpacking libipt2 (2.0.6-1build1) ...
+2026-10-23T16:40:17.0154368Z Selecting previously unselected package libsource-highlight-common.
+2026-10-23T16:40:17.0271387Z Preparing to unpack .../4-libsource-highlight-common_3.1.9-4.3build1_all.deb ...
+2026-10-23T16:40:17.0283650Z Unpacking libsource-highlight-common (3.1.9-4.3build1) ...
+2026-10-23T16:40:17.0803694Z Selecting previously unselected package libsource-highlight4t64:amd64.
+2026-10-23T16:40:17.0923008Z Preparing to unpack .../5-libsource-highlight4t64_3.1.9-4.3build1_amd64.deb ...
+2026-10-23T16:40:17.0935621Z Unpacking libsource-highlight4t64:amd64 (3.1.9-4.3build1) ...
+2026-10-23T16:40:17.1159342Z Selecting previously unselected package gdb.
+2026-10-23T16:40:17.1275673Z Preparing to unpack .../6-gdb_15.1-1ubuntu1~24.04.1_amd64.deb ...
+2026-10-23T16:40:17.1284738Z Unpacking gdb (15.1-1ubuntu1~24.04.1) ...
+2026-10-23T16:40:17.2542237Z Selecting previously unselected package libdbus-glib-1-2:amd64.
+2026-10-23T16:40:17.2662829Z Preparing to unpack .../7-libdbus-glib-1-2_0.112-3build2_amd64.deb ...
+2026-10-23T16:40:17.2674106Z Unpacking libdbus-glib-1-2:amd64 (0.112-3build2) ...
+2026-10-23T16:40:17.2849835Z Selecting previously unselected package libc6-dbg:amd64.
+2026-10-23T16:40:17.2970471Z Preparing to unpack .../8-libc6-dbg_2.39-0ubuntu8.9_amd64.deb ...
+2026-10-23T16:40:17.2983087Z Unpacking libc6-dbg:amd64 (2.39-0ubuntu8.9) ...
+2026-10-23T16:40:17.4888250Z Setting up libdebuginfod-common (0.190-1.1ubuntu0.1) ...
+2026-10-23T16:40:17.6793796Z Setting up libsource-highlight-common (3.1.9-4.3build1) ...
+2026-10-23T16:40:17.9258614Z Setting up libc6-dbg:amd64 (2.39-0ubuntu8.9) ...
+2026-10-23T16:40:18.1808745Z Setting up libdbus-glib-1-2:amd64 (0.112-3build2) ...
+2026-10-23T16:40:18.3986987Z Setting up libipt2 (2.0.6-1build1) ...
+2026-10-23T16:40:18.5473041Z Setting up libbabeltrace1:amd64 (1.5.11-3build3) ...
+2026-10-23T16:40:18.5996866Z Setting up libdebuginfod1t64:amd64 (0.190-1.1ubuntu0.1) ...
+2026-10-23T16:40:18.6436982Z Setting up libsource-highlight4t64:amd64 (3.1.9-4.3build1) ...
+2026-10-23T16:40:18.6967550Z Setting up gdb (15.1-1ubuntu1~24.04.1) ...
+2026-10-23T16:40:18.7663220Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-10-23T16:40:18.8074986Z Not building database; man-db/auto-update is not 'true'.
+2026-10-23T16:40:18.8397069Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-10-23T16:40:19.7458193Z 
+2026-10-23T16:40:19.7458914Z Running kernel seems to be up-to-date.
+2026-10-23T16:40:19.7459307Z 
+2026-10-23T16:40:19.7459447Z No services need to be restarted.
+2026-10-23T16:40:19.7459638Z 
+2026-10-23T16:40:19.7459807Z No containers need to be restarted.
+2026-10-23T16:40:19.7460092Z 
+2026-10-23T16:40:19.7460307Z No user sessions are running outdated binaries.
+2026-10-23T16:40:19.7460613Z 
+2026-10-23T16:40:19.7460916Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-10-23T16:40:20.9385611Z ##[group]Run mkdir runtime
+2026-10-23T16:40:20.9386077Z [36;1mmkdir runtime[0m
+2026-10-23T16:40:20.9386686Z [36;1mtar --no-same-owner --zstd -xf runtime-archive/runtime.tar.zst -C runtime[0m
+2026-10-23T16:40:20.9387352Z [36;1mpython3 - <<'PY'[0m
+2026-10-23T16:40:20.9387754Z [36;1mimport hashlib, json[0m
+2026-10-23T16:40:20.9388125Z [36;1mfrom pathlib import Path[0m
+2026-10-23T16:40:20.9388657Z [36;1mfiles = list(Path('runtime-provenance').rglob('provenance.json'))[0m
+2026-10-23T16:40:20.9389227Z [36;1massert len(files) == 1, files[0m
+2026-10-23T16:40:20.9389656Z [36;1mp = json.loads(files[0].read_text())[0m
+2026-10-23T16:40:20.9390295Z [36;1mlock = json.loads(Path('experiments/firefox-necko/gecko.lock.json').read_text())[0m
+2026-10-23T16:40:20.9391119Z [36;1massert p['source'] == lock, 'Runtime was built from a different source lock'[0m
+2026-10-23T16:40:20.9392009Z [36;1massert p['status'] == 'built-not-interop-tested'[0m
+2026-10-23T16:40:20.9392595Z [36;1mfor name, digest in p['runtime'].items():[0m
+2026-10-23T16:40:20.9393102Z [36;1m    with (Path('runtime') / name).open('rb') as f:[0m
+2026-10-23T16:40:20.9393704Z [36;1m        assert hashlib.file_digest(f, 'sha256').hexdigest() == digest, name[0m
+2026-10-23T16:40:20.9394245Z [36;1mprint('Pinned compiled runtime verified')[0m
+2026-10-23T16:40:20.9394624Z [36;1mPY[0m
+2026-10-23T16:40:20.9434522Z shell: /usr/bin/bash -e {0}
+2026-10-23T16:40:20.9434833Z ##[endgroup]
+2026-10-23T16:40:22.0239358Z Pinned compiled runtime verified
+2026-10-23T16:40:22.0582285Z ##[group]Run set +e
+2026-10-23T16:40:22.0582569Z [36;1mset +e[0m
+2026-10-23T16:40:22.0583637Z [36;1mtimeout -k 3 15 runtime/xpcshell -g "$PWD/runtime" -a "$PWD/runtime" -e 'print("xpcshell-ready")' > runtime-startup.log 2>&1[0m
+2026-10-23T16:40:22.0584512Z [36;1mresult=$?[0m
+2026-10-23T16:40:22.0584797Z [36;1mcat runtime-startup.log[0m
+2026-10-23T16:40:22.0585099Z [36;1mif [ "$result" != 0 ]; then[0m
+2026-10-23T16:40:22.0585780Z [36;1m  timeout -k 3 8 strace -f -tt -o runtime-startup.strace runtime/xpcshell -g "$PWD/runtime" -a "$PWD/runtime" -e 'print("xpcshell-ready")'[0m
+2026-10-23T16:40:22.0586345Z [36;1m  tail -100 runtime-startup.strace[0m
+2026-10-23T16:40:22.0586747Z [36;1m  runtime/xpcshell -g "$PWD/runtime" -a "$PWD/runtime" -e 'print("xpcshell-ready")' &[0m
+2026-10-23T16:40:22.0587139Z [36;1m  runtime_pid=$![0m
+2026-10-23T16:40:22.0587364Z [36;1m  sleep 3[0m
+2026-10-23T16:40:22.0587886Z [36;1m  sudo timeout -k 3 20 gdb -batch -ex 'set pagination off' -ex 'thread apply all bt' -p "$runtime_pid" > runtime-startup.stack 2>&1[0m
+2026-10-23T16:40:22.0588409Z [36;1m  cat runtime-startup.stack[0m
+2026-10-23T16:40:22.0588675Z [36;1m  kill "$runtime_pid"[0m
+2026-10-23T16:40:22.0588924Z [36;1m  wait "$runtime_pid"[0m
+2026-10-23T16:40:22.0589150Z [36;1mfi[0m
+2026-10-23T16:40:22.0589350Z [36;1mexit "$result"[0m
+2026-10-23T16:40:22.0627874Z shell: /usr/bin/bash -e {0}
+2026-10-23T16:40:22.0628140Z env:
+2026-10-23T16:40:22.0628420Z   LD_LIBRARY_PATH: /home/runner/work/FoxTunnel/FoxTunnel/runtime
+2026-10-23T16:40:22.0628768Z   MOZ_DISABLE_SOCKET_PROCESS: 1
+2026-10-23T16:40:22.0629001Z ##[endgroup]
+2026-10-23T16:40:22.7965509Z [2872] Sandbox: CanCreateUserNamespace() unshare(CLONE_NEWPID): EPERM
+2026-10-23T16:40:22.7966128Z xpcshell-ready
+2026-10-23T16:40:22.8135363Z ##[group]Run actions/setup-go@v5
+2026-10-23T16:40:22.8135627Z with:
+2026-10-23T16:40:22.8135824Z   go-version: 1.26.10
+2026-10-23T16:40:22.8136034Z   check-latest: false
+2026-10-23T16:40:22.8138227Z   token: ***
+2026-10-23T16:40:22.8138417Z   cache: true
+2026-10-23T16:40:22.8138607Z ##[endgroup]
+2026-10-23T16:40:22.9378993Z Setup go version spec 1.26.10
+2026-10-23T16:40:22.9387437Z Attempting to download 1.26.10...
+2026-10-23T16:40:22.9491026Z (node:2905) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-23T16:40:22.9492325Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-23T16:40:23.6653236Z matching 1.26.10...
+2026-10-23T16:40:23.6687039Z Acquiring 1.26.10 from https://github.com/actions/go-versions/releases/download/1.26.10-39437851726/go-1.26.10-linux-x64.tar.gz
+2026-10-23T16:40:24.2141291Z Extracting Go...
+2026-10-23T16:40:24.2260084Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/d8f9be65-ecd6-4883-9989-a43c99e8c48f -f /home/runner/work/_temp/2bb7570f-a1bc-44bc-96a4-3c2a14467299
+2026-10-23T16:40:26.0987445Z Successfully extracted go to /home/runner/work/_temp/d8f9be65-ecd6-4883-9989-a43c99e8c48f
+2026-10-23T16:40:26.0988203Z Adding to the cache ...
+2026-10-23T16:40:31.6345749Z Successfully cached go to /opt/hostedtoolcache/go/1.26.10/x64
+2026-10-23T16:40:31.6347112Z Added go to the path
+2026-10-23T16:40:31.6349935Z Successfully set up Go version 1.26.10
+2026-10-23T16:40:31.6545689Z [command]/opt/hostedtoolcache/go/1.26.10/x64/bin/go env GOMODCACHE
+2026-10-23T16:40:31.6576159Z [command]/opt/hostedtoolcache/go/1.26.10/x64/bin/go env GOCACHE
+2026-10-23T16:40:31.6606891Z /home/runner/go/pkg/mod
+2026-10-23T16:40:31.6627918Z /home/runner/.cache/go-build
+2026-10-23T16:40:31.8677687Z Cache hit for: setup-go-Linux-x64-ubuntu24-go-1.26.10-476c3f4e9e9bdaa69131eefcaed2c68197f96c26a9a2819a1c3db963f344dcdc
+2026-10-23T16:40:31.8775811Z (node:2905) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-23T16:40:32.8266021Z Received 61973877 of 61973877 (100.0%), 74.5 MBs/sec
+2026-10-23T16:40:32.8266588Z Cache Size: ~59 MB (61973877 B)
+2026-10-23T16:40:32.8404482Z [command]/usr/bin/tar -xf /home/runner/work/_temp/f1460998-4252-4628-a962-51087ee2ca8e/cache.tzst -P -C /home/runner/work/FoxTunnel/FoxTunnel --use-compress-program unzstd
+2026-10-23T16:40:33.1624866Z Cache restored successfully
+2026-10-23T16:40:33.1660862Z Cache restored from key: setup-go-Linux-x64-ubuntu24-go-1.26.10-476c3f4e9e9bdaa69131eefcaed2c68197f96c26a9a2819a1c3db963f344dcdc
+2026-10-23T16:40:33.1685694Z go version go1.26.10 linux/amd64
+2026-10-23T16:40:33.1685933Z 
+2026-10-23T16:40:33.1686315Z ##[group]go env
+2026-10-23T16:40:33.1826490Z AR='ar'
+2026-10-23T16:40:33.1826875Z CC='gcc'
+2026-10-23T16:40:33.1827221Z CGO_CFLAGS='-O2 -g'
+2026-10-23T16:40:33.1827615Z CGO_CPPFLAGS=''
+2026-10-23T16:40:33.1827943Z CGO_CXXFLAGS='-O2 -g'
+2026-10-23T16:40:33.1828289Z CGO_ENABLED='1'
+2026-10-23T16:40:33.1828593Z CGO_FFLAGS='-O2 -g'
+2026-10-23T16:40:33.1828905Z CGO_LDFLAGS='-O2 -g'
+2026-10-23T16:40:33.1829291Z CXX='g++'
+2026-10-23T16:40:33.1829520Z GCCGO='gccgo'
+2026-10-23T16:40:33.1829734Z GO111MODULE=''
+2026-10-23T16:40:33.1829951Z GOAMD64='v1'
+2026-10-23T16:40:33.1830159Z GOARCH='amd64'
+2026-10-23T16:40:33.1830383Z GOAUTH='netrc'
+2026-10-23T16:40:33.1830604Z GOBIN=''
+2026-10-23T16:40:33.1830840Z GOCACHE='/home/runner/.cache/go-build'
+2026-10-23T16:40:33.1831124Z GOCACHEPROG=''
+2026-10-23T16:40:33.1831334Z GODEBUG=''
+2026-10-23T16:40:33.1831620Z GOENV='/home/runner/.config/go/env'
+2026-10-23T16:40:33.1832028Z GOEXE=''
+2026-10-23T16:40:33.1832238Z GOEXPERIMENT=''
+2026-10-23T16:40:33.1832470Z GOFIPS140='off'
+2026-10-23T16:40:33.1832697Z GOFLAGS=''
+2026-10-23T16:40:33.1833550Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build920993757=/tmp/go-build -gno-record-gcc-switches'
+2026-10-23T16:40:33.1834201Z GOHOSTARCH='amd64'
+2026-10-23T16:40:33.1834432Z GOHOSTOS='linux'
+2026-10-23T16:40:33.1834678Z GOINSECURE=''
+2026-10-23T16:40:33.1834956Z GOMOD='/home/runner/work/FoxTunnel/FoxTunnel/go.mod'
+2026-10-23T16:40:33.1835305Z GOMODCACHE='/home/runner/go/pkg/mod'
+2026-10-23T16:40:33.1835583Z GONOPROXY=''
+2026-10-23T16:40:33.1835797Z GONOSUMDB=''
+2026-10-23T16:40:33.1836030Z GOOS='linux'
+2026-10-23T16:40:33.1836257Z GOPATH='/home/runner/go'
+2026-10-23T16:40:33.1836500Z GOPRIVATE=''
+2026-10-23T16:40:33.1836786Z GOPROXY='https://proxy.golang.org,direct'
+2026-10-23T16:40:33.1837127Z GOROOT='/opt/hostedtoolcache/go/1.26.10/x64'
+2026-10-23T16:40:33.1838456Z GOSUMDB='sum.golang.org'
+2026-10-23T16:40:33.1838792Z GOTELEMETRY='local'
+2026-10-23T16:40:33.1839171Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+2026-10-23T16:40:33.1839663Z GOTMPDIR=''
+2026-10-23T16:40:33.1839886Z GOTOOLCHAIN='auto'
+2026-10-23T16:40:33.1840230Z GOTOOLDIR='/opt/hostedtoolcache/go/1.26.10/x64/pkg/tool/linux_amd64'
+2026-10-23T16:40:33.1840590Z GOVCS=''
+2026-10-23T16:40:33.1840805Z GOVERSION='go1.26.10'
+2026-10-23T16:40:33.1841054Z GOWORK=''
+2026-10-23T16:40:33.1841279Z PKG_CONFIG='pkg-config'
+2026-10-23T16:40:33.1841438Z 
+2026-10-23T16:40:33.1841948Z ##[endgroup]
+2026-10-23T16:40:33.1999055Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s
+2026-10-23T16:40:33.1999704Z [36;1mgo test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s[0m
+2026-10-23T16:40:33.2049926Z shell: /usr/bin/bash -e {0}
+2026-10-23T16:40:33.2050327Z env:
+2026-10-23T16:40:33.2050819Z   FOXTUNNEL_XPCSHELL: /home/runner/work/FoxTunnel/FoxTunnel/runtime/xpcshell
+2026-10-23T16:40:33.2051408Z ##[endgroup]
+2026-10-23T16:40:56.5054091Z === RUN   TestGeckoPackagedLauncher
+2026-10-23T16:40:56.5059196Z     bundle_native_test.go:19: set FOXTUNNEL_BUNDLE to the packaged launcher/runtime
+2026-10-23T16:40:56.5059984Z --- SKIP: TestGeckoPackagedLauncher (0.00s)
+2026-10-23T16:40:56.5060431Z === RUN   TestGeckoBrowserFingerprint
+2026-10-23T16:40:56.8621226Z === RUN   TestGeckoBrowserFingerprint/h2-connect
+2026-10-23T16:41:03.4404081Z     fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+2026-10-23T16:41:03.4405780Z === RUN   TestGeckoBrowserFingerprint/h3-connect
+2026-10-23T16:41:03.4437945Z 2026/10/23 16:41:03 connection doesn't allow setting of receive buffer size. Not a *net.UDPConn?. See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+2026-10-23T16:41:08.4912504Z     fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+2026-10-23T16:41:08.4915177Z --- PASS: TestGeckoBrowserFingerprint (11.99s)
+2026-10-23T16:41:08.4915781Z     --- PASS: TestGeckoBrowserFingerprint/h2-connect (6.58s)
+2026-10-23T16:41:08.4916344Z     --- PASS: TestGeckoBrowserFingerprint/h3-connect (5.05s)
+2026-10-23T16:41:08.4916836Z === RUN   TestGeckoCONNECT
+2026-10-23T16:41:08.4917317Z === RUN   TestGeckoCONNECT/h2-connect
+2026-10-23T16:41:08.6446247Z === RUN   TestGeckoCONNECT/h3-connect
+2026-10-23T16:41:08.7965186Z --- PASS: TestGeckoCONNECT (0.30s)
+2026-10-23T16:41:08.7966031Z     --- PASS: TestGeckoCONNECT/h2-connect (0.15s)
+2026-10-23T16:41:08.7966661Z     --- PASS: TestGeckoCONNECT/h3-connect (0.15s)
+2026-10-23T16:41:08.7967196Z === RUN   TestGeckoCONNECTHandoff
+2026-10-23T16:41:08.7967563Z === RUN   TestGeckoCONNECTHandoff/h2-connect
+2026-10-23T16:41:08.9317638Z === RUN   TestGeckoCONNECTHandoff/h3-connect
+2026-10-23T16:41:09.0822296Z --- PASS: TestGeckoCONNECTHandoff (0.29s)
+2026-10-23T16:41:09.0822855Z     --- PASS: TestGeckoCONNECTHandoff/h2-connect (0.14s)
+2026-10-23T16:41:09.0823315Z     --- PASS: TestGeckoCONNECTHandoff/h3-connect (0.15s)
+2026-10-23T16:41:09.0823694Z === RUN   TestGeckoTrustBeforeCredentials
+2026-10-23T16:41:09.0824440Z === RUN   TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root
+2026-10-23T16:41:09.1638143Z 2026/10/23 16:41:09 http: TLS handshake error from 127.0.0.1:35684: remote error: tls: bad certificate
+2026-10-23T16:41:09.1704090Z 2026/10/23 16:41:09 http: TLS handshake error from 127.0.0.1:35694: remote error: tls: bad certificate
+2026-10-23T16:41:09.1807788Z === RUN   TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname
+2026-10-23T16:41:09.2601387Z 2026/10/23 16:41:09 http: TLS handshake error from 127.0.0.1:59766: remote error: tls: bad certificate
+2026-10-23T16:41:09.2667991Z 2026/10/23 16:41:09 http: TLS handshake error from 127.0.0.1:59768: remote error: tls: bad certificate
+2026-10-23T16:41:09.2716237Z === RUN   TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root
+2026-10-23T16:41:15.3673357Z === RUN   TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname
+2026-10-23T16:41:21.4449047Z --- PASS: TestGeckoTrustBeforeCredentials (12.36s)
+2026-10-23T16:41:21.4449913Z     --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/untrusted-root (0.10s)
+2026-10-23T16:41:21.4450756Z     --- PASS: TestGeckoTrustBeforeCredentials/h2-connect/wrong-hostname (0.09s)
+2026-10-23T16:41:21.4451579Z     --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/untrusted-root (6.10s)
+2026-10-23T16:41:21.4453036Z     --- PASS: TestGeckoTrustBeforeCredentials/h3-connect/wrong-hostname (6.08s)
+2026-10-23T16:41:21.4453633Z === RUN   TestGeckoConcurrentCONNECT
+2026-10-23T16:41:21.4454290Z === RUN   TestGeckoConcurrentCONNECT/h2-connect
+2026-10-23T16:41:21.8394817Z === RUN   TestGeckoConcurrentCONNECT/h3-connect
+2026-10-23T16:41:22.2612900Z --- PASS: TestGeckoConcurrentCONNECT (0.82s)
+2026-10-23T16:41:22.2613656Z     --- PASS: TestGeckoConcurrentCONNECT/h2-connect (0.39s)
+2026-10-23T16:41:22.2614167Z     --- PASS: TestGeckoConcurrentCONNECT/h3-connect (0.42s)
+2026-10-23T16:41:22.2614658Z === RUN   TestGeckoCancellation
+2026-10-23T16:41:22.2614990Z === RUN   TestGeckoCancellation/h2-connect
+2026-10-23T16:41:22.3464069Z === RUN   TestGeckoCancellation/setup-timeout-recovery/h2-connect
+2026-10-23T16:41:26.4479331Z === RUN   TestGeckoCancellation/h3-connect
+2026-10-23T16:41:26.5388964Z === RUN   TestGeckoCancellation/setup-timeout-recovery/h3-connect
+2026-10-23T16:41:30.6280176Z --- PASS: TestGeckoCancellation (8.37s)
+2026-10-23T16:41:30.6280949Z     --- PASS: TestGeckoCancellation/h2-connect (0.08s)
+2026-10-23T16:41:30.6282306Z     --- PASS: TestGeckoCancellation/setup-timeout-recovery/h2-connect (4.10s)
+2026-10-23T16:41:30.6283159Z     --- PASS: TestGeckoCancellation/h3-connect (0.09s)
+2026-10-23T16:41:30.6283657Z     --- PASS: TestGeckoCancellation/setup-timeout-recovery/h3-connect (4.09s)
+2026-10-23T16:41:30.6284102Z === RUN   TestGeckoH3NoTCPFallback
+2026-10-23T16:41:32.2372957Z --- PASS: TestGeckoH3NoTCPFallback (1.61s)
+2026-10-23T16:41:32.2373587Z === RUN   TestGeckoLocalHalfClose
+2026-10-23T16:41:32.2839051Z --- PASS: TestGeckoLocalHalfClose (0.05s)
+2026-10-23T16:41:32.2839826Z === RUN   TestGeckoNetworkRecovery
+2026-10-23T16:41:32.2840525Z === RUN   TestGeckoNetworkRecovery/h2-connect
+2026-10-23T16:41:33.0843770Z     network_test.go:236: same helper recovered after outage; interrupted streams were not replayed
+2026-10-23T16:41:33.0893428Z === RUN   TestGeckoNetworkRecovery/h3-connect
+2026-10-23T16:41:36.7296066Z     network_test.go:236: same helper recovered after outage; interrupted streams were not replayed
+2026-10-23T16:41:36.7355581Z --- PASS: TestGeckoNetworkRecovery (4.45s)
+2026-10-23T16:41:36.7356260Z     --- PASS: TestGeckoNetworkRecovery/h2-connect (0.81s)
+2026-10-23T16:41:36.7356954Z     --- PASS: TestGeckoNetworkRecovery/h3-connect (3.65s)
+2026-10-23T16:41:36.7357347Z === RUN   TestGeckoIdleAndDrainLimits
+2026-10-23T16:41:36.7357720Z === RUN   TestGeckoIdleAndDrainLimits/h2-connect
+2026-10-23T16:41:38.2184948Z === RUN   TestGeckoIdleAndDrainLimits/h3-connect
+2026-10-23T16:41:39.8723560Z --- PASS: TestGeckoIdleAndDrainLimits (3.14s)
+2026-10-23T16:41:39.8724676Z     --- PASS: TestGeckoIdleAndDrainLimits/h2-connect (1.48s)
+2026-10-23T16:41:39.8725383Z     --- PASS: TestGeckoIdleAndDrainLimits/h3-connect (1.65s)
+2026-10-23T16:41:39.8726004Z === RUN   TestGeckoSoak
+2026-10-23T16:41:39.8727501Z     operations_test.go:243: set FOXTUNNEL_SOAK_SECONDS for sustained native load
+2026-10-23T16:41:39.8728352Z --- SKIP: TestGeckoSoak (0.00s)
+2026-10-23T16:41:39.8729060Z === RUN   TestGeckoReverseHalfClose
+2026-10-23T16:41:39.8729837Z === RUN   TestGeckoReverseHalfClose/h2-connect
+2026-10-23T16:41:39.8731566Z === RUN   TestGeckoReverseHalfClose/h2-connect/empty
+2026-10-23T16:41:39.9719261Z === RUN   TestGeckoReverseHalfClose/h2-connect/buffered
+2026-10-23T16:41:40.0746990Z === RUN   TestGeckoReverseHalfClose/h2-connect/flow-control
+2026-10-23T16:41:40.1893671Z === RUN   TestGeckoReverseHalfClose/h3-connect
+2026-10-23T16:41:40.1894461Z === RUN   TestGeckoReverseHalfClose/h3-connect/empty
+2026-10-23T16:41:40.3054815Z === RUN   TestGeckoReverseHalfClose/h3-connect/buffered
+2026-10-23T16:41:40.4193167Z === RUN   TestGeckoReverseHalfClose/h3-connect/flow-control
+2026-10-23T16:41:40.5293636Z --- PASS: TestGeckoReverseHalfClose (0.66s)
+2026-10-23T16:41:40.5294273Z     --- PASS: TestGeckoReverseHalfClose/h2-connect (0.32s)
+2026-10-23T16:41:40.5294804Z         --- PASS: TestGeckoReverseHalfClose/h2-connect/empty (0.10s)
+2026-10-23T16:41:40.5295625Z         --- PASS: TestGeckoReverseHalfClose/h2-connect/buffered (0.10s)
+2026-10-23T16:41:40.5296199Z         --- PASS: TestGeckoReverseHalfClose/h2-connect/flow-control (0.11s)
+2026-10-23T16:41:40.5296699Z     --- PASS: TestGeckoReverseHalfClose/h3-connect (0.34s)
+2026-10-23T16:41:40.5297187Z         --- PASS: TestGeckoReverseHalfClose/h3-connect/empty (0.12s)
+2026-10-23T16:41:40.5297687Z         --- PASS: TestGeckoReverseHalfClose/h3-connect/buffered (0.11s)
+2026-10-23T16:41:40.5298222Z         --- PASS: TestGeckoReverseHalfClose/h3-connect/flow-control (0.11s)
+2026-10-23T16:41:40.5298558Z PASS
+2026-10-23T16:41:41.5328108Z ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	45.036s
+2026-10-23T16:41:41.7322894Z ##[group]Run go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -v -count=3 -timeout=180s
+2026-10-23T16:41:41.7323742Z [36;1mgo test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -v -count=3 -timeout=180s[0m
+2026-10-23T16:41:41.7324529Z [36;1mpython3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json[0m
+2026-10-23T16:41:41.7364541Z shell: /usr/bin/bash -e {0}
+2026-10-23T16:41:41.7364972Z env:
+2026-10-23T16:41:41.7365313Z   FOXTUNNEL_XPCSHELL: /home/runner/work/FoxTunnel/FoxTunnel/runtime/xpcshell
+2026-10-23T16:41:41.7365854Z   FOXTUNNEL_FINGERPRINT_OUT: /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations
+2026-10-23T16:41:41.7366295Z ##[endgroup]
+2026-10-23T16:41:42.2230119Z === RUN   TestFingerprintRFC9001Initial
+2026-10-23T16:41:42.2240568Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-23T16:41:42.2241300Z === RUN   TestFingerprintHPACKFragmentationAndReuse
+2026-10-23T16:41:42.2252324Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-23T16:41:42.2253201Z === RUN   TestGeckoBrowserFingerprint
+2026-10-23T16:41:42.5789534Z === RUN   TestGeckoBrowserFingerprint/h2-connect
+2026-10-23T16:41:47.5704787Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h2-connect-1792773707569985382.json
+2026-10-23T16:41:47.5706715Z     fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+2026-10-23T16:41:47.5708112Z === RUN   TestGeckoBrowserFingerprint/h3-connect
+2026-10-23T16:41:47.5742549Z 2026/10/23 16:41:47 connection doesn't allow setting of receive buffer size. Not a *net.UDPConn?. See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+2026-10-23T16:41:52.6908616Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h3-connect-1792773712690360159.json
+2026-10-23T16:41:52.6910057Z     fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+2026-10-23T16:41:52.6912856Z --- PASS: TestGeckoBrowserFingerprint (10.47s)
+2026-10-23T16:41:52.6913576Z     --- PASS: TestGeckoBrowserFingerprint/h2-connect (4.99s)
+2026-10-23T16:41:52.6914167Z     --- PASS: TestGeckoBrowserFingerprint/h3-connect (5.12s)
+2026-10-23T16:41:52.6914951Z === RUN   TestFingerprintRFC9001Initial
+2026-10-23T16:41:52.6925438Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-23T16:41:52.6926122Z === RUN   TestFingerprintHPACKFragmentationAndReuse
+2026-10-23T16:41:52.6928857Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-23T16:41:52.6929619Z === RUN   TestGeckoBrowserFingerprint
+2026-10-23T16:41:53.0444167Z === RUN   TestGeckoBrowserFingerprint/h2-connect
+2026-10-23T16:41:58.1054855Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h2-connect-1792773718104952560.json
+2026-10-23T16:41:58.1059476Z     fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+2026-10-23T16:41:58.1060493Z === RUN   TestGeckoBrowserFingerprint/h3-connect
+2026-10-23T16:42:03.1898826Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h3-connect-1792773723189336024.json
+2026-10-23T16:42:03.1900368Z     fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+2026-10-23T16:42:03.1901487Z --- PASS: TestGeckoBrowserFingerprint (10.50s)
+2026-10-23T16:42:03.1902403Z     --- PASS: TestGeckoBrowserFingerprint/h2-connect (5.06s)
+2026-10-23T16:42:03.1903076Z     --- PASS: TestGeckoBrowserFingerprint/h3-connect (5.08s)
+2026-10-23T16:42:03.1904815Z === RUN   TestFingerprintRFC9001Initial
+2026-10-23T16:42:03.1915229Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-23T16:42:03.1916364Z === RUN   TestFingerprintHPACKFragmentationAndReuse
+2026-10-23T16:42:03.1919393Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-23T16:42:03.1920940Z === RUN   TestGeckoBrowserFingerprint
+2026-10-23T16:42:03.5414271Z === RUN   TestGeckoBrowserFingerprint/h2-connect
+2026-10-23T16:42:08.5580829Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h2-connect-1792773728557525126.json
+2026-10-23T16:42:08.5583313Z     fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+2026-10-23T16:42:08.5587376Z === RUN   TestGeckoBrowserFingerprint/h3-connect
+2026-10-23T16:42:13.5673407Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h3-connect-1792773733566818348.json
+2026-10-23T16:42:13.5675191Z     fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
+2026-10-23T16:42:13.5676184Z --- PASS: TestGeckoBrowserFingerprint (10.38s)
+2026-10-23T16:42:13.5676971Z     --- PASS: TestGeckoBrowserFingerprint/h2-connect (5.02s)
+2026-10-23T16:42:13.5677713Z     --- PASS: TestGeckoBrowserFingerprint/h3-connect (5.01s)
+2026-10-23T16:42:13.5678295Z PASS
+2026-10-23T16:42:14.5707996Z ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	32.356s
+2026-10-23T16:42:14.6277523Z Repetitions: {'h2-connect': 3, 'h3-connect': 3}
+2026-10-23T16:42:14.6278602Z h2-connect-1792773707569985382.json differences: connection_1.hpack_blocks, connection_1.h2_frames
+2026-10-23T16:42:14.6279689Z h2-connect-1792773718104952560.json differences: none in recorded fields
+2026-10-23T16:42:14.6280289Z h2-connect-1792773728557525126.json differences: none in recorded fields
+2026-10-23T16:42:14.6281332Z h3-connect-1792773712690360159.json differences: connection_1.hello.extensions, connection_1.hello.ja3, connection_1.hello.ja3_md5, connection_2.hello.extensions, connection_2.hello.ja3, connection_2.hello.ja3_md5
+2026-10-23T16:42:14.6283008Z h3-connect-1792773723189336024.json differences: connection_1.hello.extensions, connection_1.hello.ja3, connection_1.hello.ja3_md5, connection_2.hello.extensions, connection_2.hello.ja3, connection_2.hello.ja3_md5
+2026-10-23T16:42:14.6284415Z h3-connect-1792773733566818348.json differences: connection_1.hello.extensions, connection_1.hello.ja3, connection_1.hello.ja3_md5, connection_2.hello.extensions, connection_2.hello.ja3, connection_2.hello.ja3_md5
+2026-10-23T16:42:14.6401667Z ##[group]Run actions/upload-artifact@v4
+2026-10-23T16:42:14.6402285Z with:
+2026-10-23T16:42:14.6402584Z   name: necko-firefox-fingerprint
+2026-10-23T16:42:14.6402945Z   path: necko-fingerprint/
+2026-10-23T16:42:14.6403286Z   if-no-files-found: ignore
+2026-10-23T16:42:14.6403626Z   retention-days: 14
+2026-10-23T16:42:14.6403972Z   compression-level: 6
+2026-10-23T16:42:14.6404274Z   overwrite: false
+2026-10-23T16:42:14.6404572Z   include-hidden-files: false
+2026-10-23T16:42:14.6404910Z ##[endgroup]
+2026-10-23T16:42:14.8007913Z (node:9701) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-23T16:42:14.8008865Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-23T16:42:14.8068478Z With the provided path, there will be 7 files uploaded
+2026-10-23T16:42:14.8074431Z Artifact name is valid!
+2026-10-23T16:42:14.8075216Z Root directory input is valid!
+2026-10-23T16:42:15.0942051Z Beginning upload of artifact content to blob storage
+2026-10-23T16:42:15.1231501Z (node:9701) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-23T16:42:15.3091100Z Uploaded bytes 25512
+2026-10-23T16:42:15.3531230Z Finished uploading artifact content to blob storage!
+2026-10-23T16:42:15.3532793Z SHA256 digest of uploaded artifact zip is 7edf8ba19ae98e286999cd0e6bb1745c6150dfcbd2a8b0b1b181613e8f832d1a
+2026-10-23T16:42:15.3533635Z Finalizing artifact upload
+2026-10-23T16:42:15.8047589Z Artifact necko-firefox-fingerprint.zip successfully finalized. Artifact ID 12517271550
+2026-10-23T16:42:15.8048589Z Artifact necko-firefox-fingerprint has been successfully uploaded! Final size is 25512 bytes. Artifact ID is 12517271550
+2026-10-23T16:42:15.8054193Z Artifact download URL: https://github.com/SawaMEN/FoxTunnel/actions/runs/39988655835/artifacts/12517271550
+2026-10-23T16:42:15.8171700Z ##[group]Run go test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s
+2026-10-23T16:42:15.8173290Z [36;1mgo test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s[0m
+2026-10-23T16:42:15.8214517Z shell: /usr/bin/bash -e {0}
+2026-10-23T16:42:15.8215014Z env:
+2026-10-23T16:42:15.8215442Z   FOXTUNNEL_XPCSHELL: /home/runner/work/FoxTunnel/FoxTunnel/runtime/xpcshell
+2026-10-23T16:42:15.8215956Z ##[endgroup]
+2026-10-23T16:42:16.3202711Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper
+2026-10-23T16:42:16.3217492Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/xpcshell
+2026-10-23T16:42:16.3235655Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/libxul.so
+2026-10-23T16:42:16.3251317Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock.json
+2026-10-23T16:42:16.3270003Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-file
+2026-10-23T16:42:16.3281135Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-link
+2026-10-23T16:42:16.3293873Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/replacement-link
+2026-10-23T16:42:16.3305756Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/missing
+2026-10-23T16:42:16.3321946Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-version
+2026-10-23T16:42:16.3335728Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-js
+2026-10-23T16:42:16.3349571Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock
+2026-10-23T16:42:16.3364360Z --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper (0.02s)
+2026-10-23T16:42:16.3365598Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/xpcshell (0.00s)
+2026-10-23T16:42:16.3366712Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/libxul.so (0.00s)
+2026-10-23T16:42:16.3367503Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock.json (0.00s)
+2026-10-23T16:42:16.3368344Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-file (0.00s)
+2026-10-23T16:42:16.3369077Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-link (0.00s)
+2026-10-23T16:42:16.3369855Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/replacement-link (0.00s)
+2026-10-23T16:42:16.3370622Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/missing (0.00s)
+2026-10-23T16:42:16.3371387Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-version (0.00s)
+2026-10-23T16:42:16.3372346Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-js (0.00s)
+2026-10-23T16:42:16.3373113Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock (0.00s)
+2026-10-23T16:42:16.3373719Z === RUN   TestLifetimeConfigValidation
+2026-10-23T16:42:16.3374127Z --- PASS: TestLifetimeConfigValidation (0.00s)
+2026-10-23T16:42:16.3374655Z === RUN   TestBundleResolvesVersionPointerBeforeExecution
+2026-10-23T16:42:16.3384522Z --- PASS: TestBundleResolvesVersionPointerBeforeExecution (0.00s)
+2026-10-23T16:42:16.3387140Z === RUN   TestGeckoNetworkRecovery
+2026-10-23T16:42:16.3388226Z === RUN   TestGeckoNetworkRecovery/h2-connect
+2026-10-23T16:42:16.4828290Z     network_test.go:236: same helper recovered after outage; interrupted streams were not replayed
+2026-10-23T16:42:16.5060810Z === RUN   TestGeckoNetworkRecovery/h3-connect
+2026-10-23T16:42:16.5093804Z 2026/10/23 16:42:16 failed to sufficiently increase receive buffer size (was: 1024 kiB, wanted: 7168 kiB, got: 2048 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+2026-10-23T16:42:20.1585914Z     network_test.go:236: same helper recovered after outage; interrupted streams were not replayed
+2026-10-23T16:42:20.1639752Z --- PASS: TestGeckoNetworkRecovery (3.83s)
+2026-10-23T16:42:20.1640612Z     --- PASS: TestGeckoNetworkRecovery/h2-connect (0.17s)
+2026-10-23T16:42:20.1641383Z     --- PASS: TestGeckoNetworkRecovery/h3-connect (3.66s)
+2026-10-23T16:42:20.1642224Z === RUN   TestNetworkRelayPeers
+2026-10-23T16:42:20.1642823Z === RUN   TestNetworkRelayPeers/tcp
+2026-10-23T16:42:20.1650224Z === RUN   TestNetworkRelayPeers/udp
+2026-10-23T16:42:20.2666270Z --- PASS: TestNetworkRelayPeers (0.10s)
+2026-10-23T16:42:20.2667411Z     --- PASS: TestNetworkRelayPeers/tcp (0.00s)
+2026-10-23T16:42:20.2667991Z     --- PASS: TestNetworkRelayPeers/udp (0.10s)
+2026-10-23T16:42:20.2668496Z === RUN   TestGeckoIdleAndDrainLimits
+2026-10-23T16:42:20.2673063Z === RUN   TestGeckoIdleAndDrainLimits/h2-connect
+2026-10-23T16:42:21.7460849Z === RUN   TestGeckoIdleAndDrainLimits/h3-connect
+2026-10-23T16:42:23.4130701Z --- PASS: TestGeckoIdleAndDrainLimits (3.15s)
+2026-10-23T16:42:23.4131968Z     --- PASS: TestGeckoIdleAndDrainLimits/h2-connect (1.48s)
+2026-10-23T16:42:23.4132659Z     --- PASS: TestGeckoIdleAndDrainLimits/h3-connect (1.67s)
+2026-10-23T16:42:23.4133432Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper
+2026-10-23T16:42:23.4147315Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/xpcshell
+2026-10-23T16:42:23.4163618Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/libxul.so
+2026-10-23T16:42:23.4176997Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock.json
+2026-10-23T16:42:23.4191217Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-file
+2026-10-23T16:42:23.4201387Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-link
+2026-10-23T16:42:23.4211395Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/replacement-link
+2026-10-23T16:42:23.4222286Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/missing
+2026-10-23T16:42:23.4233016Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-version
+2026-10-23T16:42:23.4245675Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-js
+2026-10-23T16:42:23.4258276Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock
+2026-10-23T16:42:23.4271824Z --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper (0.01s)
+2026-10-23T16:42:23.4272936Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/xpcshell (0.00s)
+2026-10-23T16:42:23.4273830Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/libxul.so (0.00s)
+2026-10-23T16:42:23.4274635Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock.json (0.00s)
+2026-10-23T16:42:23.4275427Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-file (0.00s)
+2026-10-23T16:42:23.4276175Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-link (0.00s)
+2026-10-23T16:42:23.4276957Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/replacement-link (0.00s)
+2026-10-23T16:42:23.4277716Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/missing (0.00s)
+2026-10-23T16:42:23.4278472Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-version (0.00s)
+2026-10-23T16:42:23.4279231Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-js (0.00s)
+2026-10-23T16:42:23.4279963Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock (0.00s)
+2026-10-23T16:42:23.4281048Z === RUN   TestLifetimeConfigValidation
+2026-10-23T16:42:23.4281625Z --- PASS: TestLifetimeConfigValidation (0.00s)
+2026-10-23T16:42:23.4282253Z === RUN   TestBundleResolvesVersionPointerBeforeExecution
+2026-10-23T16:42:23.4290343Z --- PASS: TestBundleResolvesVersionPointerBeforeExecution (0.00s)
+2026-10-23T16:42:23.4292053Z === RUN   TestGeckoNetworkRecovery
+2026-10-23T16:42:23.4292621Z === RUN   TestGeckoNetworkRecovery/h2-connect
+2026-10-23T16:42:23.5581226Z     network_test.go:236: same helper recovered after outage; interrupted streams were not replayed
+2026-10-23T16:42:23.5635411Z === RUN   TestGeckoNetworkRecovery/h3-connect
+2026-10-23T16:42:27.2099533Z     network_test.go:236: same helper recovered after outage; interrupted streams were not replayed
+2026-10-23T16:42:27.2163914Z --- PASS: TestGeckoNetworkRecovery (3.79s)
+2026-10-23T16:42:27.2165295Z     --- PASS: TestGeckoNetworkRecovery/h2-connect (0.13s)
+2026-10-23T16:42:27.2166311Z     --- PASS: TestGeckoNetworkRecovery/h3-connect (3.65s)
+2026-10-23T16:42:27.2167234Z === RUN   TestNetworkRelayPeers
+2026-10-23T16:42:27.2167876Z === RUN   TestNetworkRelayPeers/tcp
+2026-10-23T16:42:27.2173440Z === RUN   TestNetworkRelayPeers/udp
+2026-10-23T16:42:27.3185494Z --- PASS: TestNetworkRelayPeers (0.10s)
+2026-10-23T16:42:27.3186525Z     --- PASS: TestNetworkRelayPeers/tcp (0.00s)
+2026-10-23T16:42:27.3187332Z     --- PASS: TestNetworkRelayPeers/udp (0.10s)
+2026-10-23T16:42:27.3187999Z === RUN   TestGeckoIdleAndDrainLimits
+2026-10-23T16:42:27.3188524Z === RUN   TestGeckoIdleAndDrainLimits/h2-connect
+2026-10-23T16:42:28.7983236Z === RUN   TestGeckoIdleAndDrainLimits/h3-connect
+2026-10-23T16:42:30.4550973Z --- PASS: TestGeckoIdleAndDrainLimits (3.14s)
+2026-10-23T16:42:30.4552100Z     --- PASS: TestGeckoIdleAndDrainLimits/h2-connect (1.48s)
+2026-10-23T16:42:30.4553142Z     --- PASS: TestGeckoIdleAndDrainLimits/h3-connect (1.66s)
+2026-10-23T16:42:30.4554025Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper
+2026-10-23T16:42:30.4565350Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/xpcshell
+2026-10-23T16:42:30.4580430Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/libxul.so
+2026-10-23T16:42:30.4594441Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock.json
+2026-10-23T16:42:30.4609319Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-file
+2026-10-23T16:42:30.4619638Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-link
+2026-10-23T16:42:30.4630020Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/replacement-link
+2026-10-23T16:42:30.4641007Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/missing
+2026-10-23T16:42:30.4652449Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-version
+2026-10-23T16:42:30.4666168Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-js
+2026-10-23T16:42:30.4679104Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock
+2026-10-23T16:42:30.4695995Z --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper (0.01s)
+2026-10-23T16:42:30.4696899Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/xpcshell (0.00s)
+2026-10-23T16:42:30.4698099Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/libxul.so (0.00s)
+2026-10-23T16:42:30.4699332Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock.json (0.00s)
+2026-10-23T16:42:30.4700599Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-file (0.00s)
+2026-10-23T16:42:30.4701908Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/extra-link (0.00s)
+2026-10-23T16:42:30.4703175Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/replacement-link (0.00s)
+2026-10-23T16:42:30.4704442Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/missing (0.00s)
+2026-10-23T16:42:30.4705543Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-version (0.00s)
+2026-10-23T16:42:30.4706767Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/helper-js (0.00s)
+2026-10-23T16:42:30.4707640Z     --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper/source-lock (0.00s)
+2026-10-23T16:42:30.4708215Z === RUN   TestLifetimeConfigValidation
+2026-10-23T16:42:30.4708683Z --- PASS: TestLifetimeConfigValidation (0.00s)
+2026-10-23T16:42:30.4709537Z === RUN   TestBundleResolvesVersionPointerBeforeExecution
+2026-10-23T16:42:30.4718821Z --- PASS: TestBundleResolvesVersionPointerBeforeExecution (0.00s)
+2026-10-23T16:42:30.4721005Z === RUN   TestGeckoNetworkRecovery
+2026-10-23T16:42:30.4721679Z === RUN   TestGeckoNetworkRecovery/h2-connect
+2026-10-23T16:42:30.6091689Z     network_test.go:236: same helper recovered after outage; interrupted streams were not replayed
+2026-10-23T16:42:30.6138046Z === RUN   TestGeckoNetworkRecovery/h3-connect
+2026-10-23T16:42:34.2823646Z     network_test.go:236: same helper recovered after outage; interrupted streams were not replayed
+2026-10-23T16:42:34.2884121Z --- PASS: TestGeckoNetworkRecovery (3.82s)
+2026-10-23T16:42:34.2885021Z     --- PASS: TestGeckoNetworkRecovery/h2-connect (0.14s)
+2026-10-23T16:42:34.2885733Z     --- PASS: TestGeckoNetworkRecovery/h3-connect (3.67s)
+2026-10-23T16:42:34.2886820Z === RUN   TestNetworkRelayPeers
+2026-10-23T16:42:34.2887595Z === RUN   TestNetworkRelayPeers/tcp
+2026-10-23T16:42:34.2894434Z === RUN   TestNetworkRelayPeers/udp
+2026-10-23T16:42:34.3916376Z --- PASS: TestNetworkRelayPeers (0.10s)
+2026-10-23T16:42:34.3917611Z     --- PASS: TestNetworkRelayPeers/tcp (0.00s)
+2026-10-23T16:42:34.3918438Z     --- PASS: TestNetworkRelayPeers/udp (0.10s)
+2026-10-23T16:42:34.3919132Z === RUN   TestGeckoIdleAndDrainLimits
+2026-10-23T16:42:34.3919843Z === RUN   TestGeckoIdleAndDrainLimits/h2-connect
+2026-10-23T16:42:35.8546377Z === RUN   TestGeckoIdleAndDrainLimits/h3-connect
+2026-10-23T16:42:37.5021116Z --- PASS: TestGeckoIdleAndDrainLimits (3.11s)
+2026-10-23T16:42:37.5022300Z     --- PASS: TestGeckoIdleAndDrainLimits/h2-connect (1.46s)
+2026-10-23T16:42:37.5022870Z     --- PASS: TestGeckoIdleAndDrainLimits/h3-connect (1.65s)
+2026-10-23T16:42:37.5023316Z PASS
+2026-10-23T16:42:38.5049860Z ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	22.193s
+2026-10-23T16:42:38.5169787Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
+2026-10-23T16:42:38.5170899Z [36;1mgo test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s[0m
+2026-10-23T16:42:38.5228028Z shell: /usr/bin/bash -e {0}
+2026-10-23T16:42:38.5228553Z env:
+2026-10-23T16:42:38.5229234Z   FOXTUNNEL_XPCSHELL: /home/runner/work/FoxTunnel/FoxTunnel/runtime/xpcshell
+2026-10-23T16:42:38.5230037Z   FOXTUNNEL_SOAK_SECONDS: 300
+2026-10-23T16:42:38.5230780Z   FOXTUNNEL_OPERATIONS_OUT: /home/runner/work/FoxTunnel/FoxTunnel/necko-operations
+2026-10-23T16:42:38.5231527Z ##[endgroup]
+2026-10-23T16:42:39.0135200Z === RUN   TestGeckoSoak
+2026-10-23T16:42:39.0136074Z === RUN   TestGeckoSoak/h2-connect
+2026-10-23T16:47:42.2793484Z     operations_test.go:317: resource growth: first={RSSKB:129000 CPUTicks:50 FDs:45 AtMS:1665} last={RSSKB:489792 CPUTicks:21976 FDs:45 AtMS:303156}
+2026-10-23T16:47:42.3047403Z === RUN   TestGeckoSoak/h3-connect
+2026-10-23T16:47:42.3068673Z 2026/10/23 16:47:42 failed to sufficiently increase receive buffer size (was: 1024 kiB, wanted: 7168 kiB, got: 2048 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+2026-10-23T16:52:45.7010188Z     operations_test.go:317: resource growth: first={RSSKB:136628 CPUTicks:106 FDs:45 AtMS:1685} last={RSSKB:395464 CPUTicks:41444 FDs:45 AtMS:303302}
+2026-10-23T16:52:45.7262840Z --- FAIL: TestGeckoSoak (606.71s)
+2026-10-23T16:52:45.7264800Z     --- FAIL: TestGeckoSoak/h2-connect (303.29s)
+2026-10-23T16:52:45.7265493Z     --- FAIL: TestGeckoSoak/h3-connect (303.42s)
+2026-10-23T16:52:45.7266036Z FAIL
+2026-10-23T16:52:45.7337317Z FAIL	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	606.728s
+2026-10-23T16:52:45.7360927Z FAIL
+2026-10-23T16:52:45.7443796Z ##[error]Process completed with exit code 1.
+2026-10-23T16:52:45.7526444Z ##[group]Run actions/upload-artifact@v4
+2026-10-23T16:52:45.7526808Z with:
+2026-10-23T16:52:45.7527151Z   name: necko-operations
+2026-10-23T16:52:45.7527480Z   path: necko-operations/
+2026-10-23T16:52:45.7527815Z   if-no-files-found: ignore
+2026-10-23T16:52:45.7528196Z   retention-days: 14
+2026-10-23T16:52:45.7528503Z   compression-level: 6
+2026-10-23T16:52:45.7528976Z   overwrite: false
+2026-10-23T16:52:45.7529345Z   include-hidden-files: false
+2026-10-23T16:52:45.7529676Z ##[endgroup]
+2026-10-23T16:52:45.9144047Z (node:10451) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-23T16:52:45.9144857Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-23T16:52:45.9229614Z With the provided path, there will be 2 files uploaded
+2026-10-23T16:52:45.9234509Z Artifact name is valid!
+2026-10-23T16:52:45.9235517Z Root directory input is valid!
+2026-10-23T16:52:46.2133028Z Beginning upload of artifact content to blob storage
+2026-10-23T16:52:46.2341862Z (node:10451) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-23T16:52:46.4823554Z Uploaded bytes 22643
+2026-10-23T16:52:46.5301894Z Finished uploading artifact content to blob storage!
+2026-10-23T16:52:46.5303918Z SHA256 digest of uploaded artifact zip is ce104a4e49aa5a266c4d28bc6eb98a64c12912de3ba658ccd18ec053f03717b8
+2026-10-23T16:52:46.5305221Z Finalizing artifact upload
+2026-10-23T16:52:47.1594725Z Artifact necko-operations.zip successfully finalized. Artifact ID 12517242728
+2026-10-23T16:52:47.1596255Z Artifact necko-operations has been successfully uploaded! Final size is 22643 bytes. Artifact ID is 12517242728
+2026-10-23T16:52:47.1602225Z Artifact download URL: https://github.com/SawaMEN/FoxTunnel/actions/runs/39988655835/artifacts/12517242728
+2026-10-23T16:52:47.1729662Z ##[group]Run actions/upload-artifact@v4
+2026-10-23T16:52:47.1730088Z with:
+2026-10-23T16:52:47.1730412Z   name: necko-runtime-diagnostics
+2026-10-23T16:52:47.1730921Z   path: runtime-startup.log
+runtime-startup.strace
+runtime-startup.stack
+
+2026-10-23T16:52:47.1731431Z   if-no-files-found: ignore
+2026-10-23T16:52:47.1731982Z   retention-days: 7
+2026-10-23T16:52:47.1732428Z   compression-level: 6
+2026-10-23T16:52:47.1732884Z   overwrite: false
+2026-10-23T16:52:47.1733271Z   include-hidden-files: false
+2026-10-23T16:52:47.1733653Z ##[endgroup]
+2026-10-23T16:52:47.3297673Z (node:10464) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-23T16:52:47.3299158Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-23T16:52:47.3350362Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-23T16:52:47.3353960Z The least common ancestor is /home/runner/work/FoxTunnel/FoxTunnel. This will be the root directory of the artifact
+2026-10-23T16:52:47.3355037Z With the provided path, there will be 1 file uploaded
+2026-10-23T16:52:47.3361171Z Artifact name is valid!
+2026-10-23T16:52:47.3362162Z Root directory input is valid!
+2026-10-23T16:52:47.6227270Z Beginning upload of artifact content to blob storage
+2026-10-23T16:52:47.6387363Z (node:10464) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-23T16:52:47.7658716Z Uploaded bytes 239
+2026-10-23T16:52:47.8134360Z Finished uploading artifact content to blob storage!
+2026-10-23T16:52:47.8135744Z SHA256 digest of uploaded artifact zip is 251a2518e5344cd5c3ca86c488be6361eeb728fbef5cdbfee2ae681dee02fda4
+2026-10-23T16:52:47.8136822Z Finalizing artifact upload
+2026-10-23T16:52:48.4624521Z Artifact necko-runtime-diagnostics.zip successfully finalized. Artifact ID 12517347564
+2026-10-23T16:52:48.4626202Z Artifact necko-runtime-diagnostics has been successfully uploaded! Final size is 239 bytes. Artifact ID is 12517347564
+2026-10-23T16:52:48.4633558Z Artifact download URL: https://github.com/SawaMEN/FoxTunnel/actions/runs/39988655835/artifacts/12517347564
+2026-10-23T16:52:48.4808026Z Post job cleanup.
+2026-10-23T16:52:48.5598921Z [command]/usr/bin/git version
+2026-10-23T16:52:48.5635684Z git version 2.55.0
+2026-10-23T16:52:48.5667308Z Temporarily overriding HOME='/home/runner/work/_temp/f4e2424f-9815-4078-84c0-c7eb6e96a2b9' before making global git config changes
+2026-10-23T16:52:48.5668967Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-23T16:52:48.5672620Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/FoxTunnel/FoxTunnel
+2026-10-23T16:52:48.5708253Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-23T16:52:48.5739093Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-23T16:52:48.5956750Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-23T16:52:48.5982592Z http.https://github.com/.extraheader
+2026-10-23T16:52:48.6003070Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-23T16:52:48.6054433Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-23T16:52:48.6265298Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-23T16:52:48.6296968Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-23T16:52:48.6643267Z Cleaning up orphan processes
+2026-10-23T16:52:48.6917005Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/download-artifact@v4, actions/setup-go@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

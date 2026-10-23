@@ -93,6 +93,9 @@ func (c *Client) EnableBondDiscovery(ctx context.Context) error {
 	if c.RequireProtocolNegotiation {
 		return errors.New("strict protocol policy is not supported with bond/discovery")
 	}
+	if c.managed != nil {
+		return errors.New("Necko does not support bond or discovery")
+	}
 	if pool, ok := c.transport.(*identityPool); ok && len(pool.nodePolicies) != 0 {
 		return i18n.Error("cannot combine dynamic discovery and static per-node SPKI pins")
 	}

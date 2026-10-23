@@ -1,214 +1,168 @@
-# Necko CONNECT research prototype
+# Experimental Necko CONNECT runtime
 
-**Blocked experiment. Not included in `foxtunnel` or its SDK runtime graph.**
+Stage 2 native acceptance has passed on Linux amd64. The prototype uses real
+Gecko networking for classic CONNECT over HTTP/2 and HTTP/3. The main CLI and
+SDK can now own it through `--engine necko` / `ClientConfig.Engine = "necko"`.
+See [integration and lifecycle](INTEGRATION.md). Stage 3 controlled full-Firefox CONNECT
+comparison and stage 4 operational qualification have passed within their stated
+scope. A separate opt-in Linux amd64 bundle is available through the runtime CI.
+See [operations and updates](OPERATIONS.md),
+[stage 4 results and limits](validation/stage4/README.md) and
+[the completed branch plan](../../docs/FIREFOX.md).
 
-The prototype runs actual Gecko networking through `xpcshell` and a fresh private
-profile. It does not synthesize HTTP/2 in Go. The SOCKS adapter, bounded stream
-copies and process launcher are present, but the native CONNECT handoff has
-not passed the end-to-end gate. Do not use it as a working Firefox transport.
+## Full Firefox comparison
 
-## What was tested
+A fresh full Firefox process and the xpcshell helper load the same pinned
+libxul/NSS and execute identical raw binary CONNECT workloads. Both protocols
+passed three repetitions covering cold startup, reuse, controlled reconnect,
+TLS resumption and directional EOF. The measured xpcshell User-Agent discrepancy
+was fixed. H2 retained fields, SETTINGS and HPACK then matched in the original
+stage 3 observation. The stage 4 repetitions retained H2 raw HPACK/HEADERS-size
+and frame-order differences with matching decoded fields; see
+[the current report](validation/stage4/README.md). H3 retained
+fields matched except randomized extension order/JA3. H3 resumed for both clients;
+H2 did not resume for either in this fixture.
 
-Linux amd64 Mozilla CI runtime:
+[Method, observations and limitations](validation/stage3/README.md) distinguish
+this raw native API reference from ordinary page navigation and stock Firefox.
+The result does not establish packet-shape parity or DPI indistinguishability.
 
-- Task: `e2JM7VtaRWmm7wOrhkX-GA`, run 0.
-- Build ID: `20261021092254`, Firefox `160.0a1`.
-- Source: mozilla-central `f62de275299e8e64e7cb1ee2dd76e025f255beba`.
-- Matching `target.tar.xz` and `target.common.tests.tar.zst`; the latter supplies
-  `bin/xpcshell`, which is not part of the ordinary Firefox installation.
+## Native acceptance
 
-Observed failures:
+The complete `^TestGecko` suite passed three times with Go's race detector on
+compiled runtime `b2d8522` and helper `0fc7192`. Its four binary hashes and
+source lock were verified before recording the result. No native group skipped.
 
-1. A fresh H2 proxy session created by a connect-only transaction is closed
-   before the destination CONNECT is submitted (`NS_ERROR_NET_RESET`).
-2. A normal anonymous request can initialize the outer session. The subsequent
-   authority-form CONNECT reaches the independent Go server, but the C++ to JS
-   `onTransportAvailable` handoff fails before the JS callback executes.
-   Warming up is a diagnostic only and is absent from the committed prototype.
-3. The H3 end-to-end test did not pass either. It must not be inferred from
-   Neqo's separate interoperability tests or an H2 fallback.
+- Cold H2/H3 CONNECT handoff and binary transfer.
+- Upload EOF with a complete response after half-close.
+- Reverse EOF, then all 132,000 upload bytes and upload FIN. Each protocol
+  covers an empty response, an 8 KiB binary response and restricted flow control.
+- H2 stream credit before connection credit after exhausting the default windows;
+  H3 fixed 16 KiB stream and 32 KiB connection receive windows.
+- Plain local TCP output FIN while the upload half remains open.
+- Untrusted roots and incorrect proxy hostnames rejected before HTTP credentials.
+- Twelve simultaneously active tunnels with distinct 128 KiB binary payloads.
+- Helper cancellation, listener cleanup and setup-timeout recovery in one helper.
+- No TCP HTTP request when explicitly selected H3 cannot connect.
 
-## Pinned source build
+[Machine-readable results](validation/native-0fc7192.json) include the runtime
+artifact, hashes, source lock, helper revision and pass counts.
+[The complete native log](validation/native-0fc7192.log) records all three runs.
+The fresh source build and all native CI gates passed in
+[39912988779](https://github.com/SawaMEN/FoxTunnel/actions/runs/39912988779),
+including three repetitions of the reverse-EOF and lifecycle gates.
 
-The candidate fixes are now in [patches](patches/), pinned by
-[gecko.lock.json](gecko.lock.json) to Git revision
-`0f76fed7aea1f77db85afbf5a895754d8ad971d7`. This is a separate source build;
-do not attribute its results to the stock Taskcluster binary above.
+## Implementation
 
-- The outer H2 session must not take the connect-only early-close path. That
-  path still applies to the inner tunnel connection.
-- `Http2StreamTunnel::QueryInterface` delegates unknown interfaces to its base,
-  preserving the base's canonical `nsISupports` identity for XPConnect. The
-  duplicate `nsITransport` map entry is removed.
-- The JS upgrade's H2 pipes use an inline copier on the socket thread. Native
-  H2 Read/Write require the native readiness callback to remain on the stack;
-  `NS_AsyncCopy` defers that operation and repeatedly gets WOULD_BLOCK. The new
-  copier retains at most 16 KiB per direction, handles partial writes, and
-  limits work per callback. It is selected only for the raw H2 tunnel.
-- A clean output EOF closes only the sending side of H2/H3; errors still abort
-  the stream. Vendored Neqo receives the same classic CONNECT classification
-  fix as the separate Neqo bridge, so its response survives upload FIN.
-  Its `.cargo-checksum.json` entry is updated by a separate pinned patch;
-  Cargo's integrity checks remain enabled. The regression check verifies that
-  all other checksum entries and the package checksum are unchanged.
-- Plain TCP gains an opt-in `ENABLE_TCP_HALF_CLOSE` connection flag. On clean
-  output closure it sends `PR_SHUTDOWN_SEND` after buffered output drains,
-  leaving input open. The SOCKS adapter sets it only on the accepted local
-  socket, before opening streams. Layered sockets and sockets without the flag
-  retain their existing close behavior; shutdown errors still abort normally.
+The Go launcher starts `xpcshell` with a fresh private profile and bounded setup.
+The JS adapter accepts loopback SOCKS5 CONNECT and pumps binary TCP data through
+Gecko streams. HTTP/2, HTTP/3, TLS and QUIC belong to Mozilla's stack. Proxy
+credentials attach to the fixed proxy, and trust/hostname verification stays in
+NSS. An additional CA applies only to the helper's profile. Explicit H3 rejects
+fallback and verifies the negotiated protocol before reporting SOCKS success.
 
-The stream-copy and EOF changes are candidates until a new source build passes
-the tests. The prototype remains excluded from the production CLI and SDK.
+The launcher sets `MOZ_DISABLE_SOCKET_PROCESS=1` before JS executes, matching
+Mozilla's standalone test harness. Connect-only stream handoff is kept inside
+the dedicated helper because the socket-process path does not implement it.
 
-## Results on the first compiled runtime
+Native patches are combined per source file and pinned in
+[gecko.lock.json](gecko.lock.json) to revision
+`0f76fed7aea1f77db85afbf5a895754d8ad971d7`:
 
-Source workflow run `39685378279`, commit
-`47a2586cee6a9244c90be53fc0f850b82729b5f1`, successfully compiled Gecko with
-the cold-start and identity fixes. Its first tests timed out before readiness.
-Native thread stacks from runtime gate run `39729125556` identified a startup
-deadlock: the profiler's download-directory lookup initialized HTTP and tried
-to launch the socket process before client JS could set its preferences.
+- Cold outer H2 initialization and canonical XPConnect interface identity.
+- A socket-thread inline H2 copier with a 16 KiB buffer per direction and a
+  per-callback work limit. H2 readiness-dependent I/O stays on the callback stack.
+- Separate request/response EOF state. An established CONNECT can upload after
+  response FIN; buffered response bytes drain before input EOF is notified.
+- An opt-in plain-TCP half-close flag sends local output FIN without closing input.
+- Classic CONNECT classification in vendored Neqo preserves the response after
+  upload FIN. Its Cargo checksum changes with the patched source; integrity
+  checking stays enabled and unrelated checksum entries are verified unchanged.
+- H2 SETTINGS deltas and connection-window resumption include separately owned
+  tunnel streams. H3 DataWritable wakes sending even if its stream is already queued.
+- H3 cancellation wakes UDP output after queuing a reset on an idle connection.
 
-The launcher now sets `MOZ_DISABLE_SOCKET_PROCESS=1` before starting xpcshell,
-matching Mozilla's own standalone test harness. No profiler or certificate
-checks are disabled. The environment setting is needed before any script runs.
+The two JS pumps close their destination writer on clean EOF. Completion leaves
+native copiers owning the remaining queued bytes. The helper retains their
+transports within a configured budget and drain deadline, then aborts any work
+still remaining. Force-closing at JS completion used to drop the upload tail
+under network backpressure. Error and setup-timeout paths retain abort cleanup;
+retired references and JS/XPCOM cycles are reclaimed by bounded maintenance.
 
-Using that exact compiled artifact, with the launcher/JS corrections:
+CONNECT setup is serialized for both protocols; established pumps remain
+concurrent. The session limit and setup deadline bound that queue. H2's per-host
+pool limit follows `max_connections`, capped at Necko's native maximum of 255.
+These choices affect burst timing and belong in stage 3 fingerprint measurements.
+Using the Mozilla stack alone does not establish Firefox fingerprint parity.
 
-- **H3 cold handoff and binary transfer passed locally with `-race`.** Two
-  authority-form CONNECTs delivered binary payloads through an independent
-  Go H3 server. An explicitly supplied CA also requires turning off Firefox's
-  automatic H3 fallback for third-party roots; NSS still validates the chain
-  and proxy hostname.
-- H2 native handoff succeeded, but payload stalled. The native trace identified
-  the deferred-copier mismatch described above. The inline copier needs a new
-  compiled runtime to validate it.
-- H3 upload half-close returned an empty response. The native EOF and vendored
-  Neqo fixes above need a new compiled runtime too.
-- Separate native trust tests reject both an untrusted root and a wrong proxy
-  hostname before any HTTP request reaches the proxy. A setup timeout may end
-  with a closed SOCKS socket; it must never report success.
+## Build the pinned runtime
 
-These observations do not close the full H2/H3 gate. In particular, reverse
-half-close and the new H2 stream copier still need native verification.
-Concurrency, cancellation under load, and protocol fallback
-must be verified before promotion.
-
-## Additional lifecycle gates
-
-Source run `39731105034` stopped at Cargo's integrity check before the new
-libxul was built: the patched vendored Rust source still had its upstream
-checksum entry. The source lock now includes the matching checksum patch;
-this failure is not a native interop result.
-
-The additional native tests use a real TCP echo destination and an independent
-Go proxy. On the first compiled runtime, with the updated JS adapter, local
-`-race` runs confirmed:
-
-- Twelve simultaneously active H3 CONNECTs, each carrying a distinct 128 KiB
-  binary payload containing every byte value; repeated three times.
-- Cancellation joins the helper, closes the active local stream and removes
-  the SOCKS listener; repeated three times.
-- A TCP/H2-only proxy receives zero HTTP requests when H3 is explicitly
-  selected and its QUIC endpoint is unavailable.
-
-Cold parallel H3 setup previously caused failures and an H2 fallback. The H3
-adapter now queues CONNECT setup, while established streams keep independent
-concurrent pumps. The existing connection limit and per-session setup timeout
-bound that queue. This adds setup latency to a burst of new tunnels and must
-be included in stage 3 timing comparisons. The adapter also disables H3 error
-fallback preferences and delays the TCP backup beyond the setup deadline.
-The protocol check on handoff remains in place.
-
-The new source build runs these lifecycle gates for **both** H2 and H3, in
-addition to upload EOF and certificate checks. Success on the earlier H3
-artifact does not count as verification of the new C++/Rust patches.
-
-## Reverse half-close gate
-
-`TestGeckoReverseHalfClose` checks the other EOF direction independently: the
-proxy sends its response FIN first, then must receive all 132,000 binary upload
-bytes and the client's FIN. The H2 fixture uses a TLS/HPACK/frame peer; the H3
-fixture takes over the QUIC stream so sending FIN does not finish the handler
-and cancel the request. Neither fixture dials the dummy CONNECT destination.
-`TestReverseHalfClosePeers` validates both fixtures with independent Go clients;
-both passed locally with the race detector.
-
-On the first compiled runtime (`47a2586`), both native modes timed out waiting
-for response EOF. An isolated native socket probe found another blocker:
-`nsSocketTransport` output closure does not send TCP FIN while input remains
-open. The probe received its response marker and could upload afterward, but
-the TCP peer timed out waiting for EOF. This occurs without HTTP or a proxy.
-`TestGeckoLocalHalfClose` now checks that contract independently: buffered data,
-response FIN, then a complete upload and upload FIN on the same socket.
-
-The opt-in socket patch is a candidate until the new source runtime passes.
-The adapter's feature guard preserves older runtimes for blocker diagnostics;
-it does not make those runtimes pass the half-close gates. The earlier source
-build at `97bcf1d` predates this patch. New source runs preserve an already
-running build instead of cancelling it on a push.
-Both EOF directions must pass before promotion; fixing the local FIN does not
-establish correctness of native H2/H3 receive-side stream cleanup.
-
-## Source compilation blocker
-
-Source runs `39733228026` (`97bcf1d`) and `39736309532` (`fa254f7`) both
-stopped compiling `nsHttpConnectionMgr.cpp`: the copier patch included
-`mozilla/Unused.h`, which is absent at the pinned Gecko revision. Neither run
-produced the new runtime or executed native interop gates. The copier now uses
-explicit `(void)` casts for discarded results and does not need that header.
-Its patch and resulting-source hashes have been updated. This corrects the
-reported build error; compilation and native gates still require a new run.
-
-The [Necko source workflow](../../.github/workflows/necko-experiment.yml)
-bootstraps Mozilla's C++ build dependencies, builds libxul and xpcshell, then
-runs five mandatory native gates: cold handoff/binary transfer, upload
-half-close, rejection of invalid certificates before credentials, local TCP FIN
-and reverse half-close, and repeated concurrency/cancellation/H3-only checks.
-These are real native tests; none counts an H2 fallback as H3 success.
-The latter gates run if compilation succeeds even if handoff fails.
-Build provenance distinguishes source preparation from a compiled runtime;
-interop results remain in the workflow logs. Runtime artifacts are retained
-for seven days so the same compiled build can be diagnosed without rebuilding.
-The manual [runtime gates workflow](../../.github/workflows/necko-runtime-test.yml)
-accepts a source workflow run ID and verifies its source lock and binary hashes
-before reusing the artifact. It refuses a runtime from a different patch set.
-
-To reproduce with a clean, shallow checkout of the locked Git revision:
+Bootstrap a clean checkout of the locked Gecko revision first:
 
 ```sh
-# First bootstrap inside that checkout:
+# Run inside the Gecko checkout:
 python3 mach --no-interactive bootstrap --application-choice=browser --no-agentic-tools
 
-# Then from FoxTunnel; paths must be absolute or relative to this directory:
+# Then run from FoxTunnel:
 python3 scripts/build_necko.py --source /path/to/gecko --out /path/to/necko-build --jobs 2
 ```
 
-The builder rejects revision drift, unrelated tracked changes, source drift,
-and patch digest mismatches. Applying the exact patches again is idempotent.
-`--prepare-only` validates/applies source changes without claiming compilation.
-This is a full C++ build; Mozilla artifact builds cannot apply these fixes.
+The builder checks the source revision, patch hashes and exact source hashes
+before and after patching. It rejects unrelated tracked changes. Applying the
+same patches again is idempotent. `--prepare-only` prepares sources without
+claiming compilation. This is a full C++ build; an artifact build cannot supply
+the modified libxul.
 
-## Checks
+Mozilla bootstrap supplies `sccache`. Hosts without that daemon can pass
+`--compiler-cache none`; `--no-bootstrap-update` reuses already bootstrapped
+tools. The mozconfig hash records these options. CI keeps up to 2 GiB of
+compiler-cache entries without bypassing source hashes or native gates.
+
+The [source workflow](../../.github/workflows/necko-experiment.yml) builds the
+runtime and tests it when native patches or the source lock change. JS and Go
+helper changes trigger the separate runtime validation workflow.
+The reverse-EOF and lifecycle gates repeat three times. Runtime artifacts remain
+available for seven days, including after a gate failure for diagnostics.
+Build provenance distinguishes source preparation from compilation; native test
+results are recorded separately in workflow logs.
+
+The [runtime workflow](../../.github/workflows/necko-runtime-test.yml) also runs
+automatically for helper JS, Go tests and comparison-harness changes. It reuses
+a compiled source-build artifact with the exact same source lock and verifies
+four binary hashes before testing. Artifacts from a failed gate are eligible
+for diagnostics, but all consuming runtime gates must pass before packaging;
+a different patch set is rejected. Manual dispatch can
+select a specific source-run ID. This fast verification does not replace source
+compilation when native patches change.
+
+## Reproduce the checks
 
 ```sh
 node --test experiments/firefox-necko/client_test.cjs
 python3 -m unittest discover -s scripts -p test_build_necko.py
 go test -race ./experiments/firefox-necko
 
-# Expected to expose the native blocker on the stock runtime above:
-FOXTUNNEL_XPCSHELL=/absolute/gecko-runtime/xpcshell \
-  go test -race ./experiments/firefox-necko -run TestGeckoCONNECT -v -count=1 -timeout=80s
-
-# Same gates with the patched source build:
 FOXTUNNEL_XPCSHELL=/path/to/necko-build/obj/dist/bin/xpcshell \
-  go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s
+  go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=3 -timeout=180s
 ```
 
-Without `FOXTUNNEL_XPCSHELL`, the native test is skipped, not passed. Parser and
-configuration tests still run. Never enable raw Gecko logging with real user
-traffic or credentials; native logs can include destinations and headers.
+Without `FOXTUNNEL_XPCSHELL`, native tests skip; they do not count as passed.
+A stock Gecko binary lacks the required C++ changes. Raw Gecko logging can
+include destinations and headers, so the diagnostic runs use isolated fixtures.
 
-The future integration must keep certificate verification in Gecko, reject
-unsupported trust settings, bound setup and queues, preserve half-close,
-prevent direct/fallback leaks, and join the native process on cancellation.
+## Remaining scope
+
+The experimental configuration deliberately excludes SPKI pins, SNI overrides,
+UDP forwarding, bonding and FoxTunnel padding. Full Necko wire comparison on
+the same runtime and workload is recorded in stage 3 and repeated in stage 4.
+Controlled load, bounded drains, path outage/NAT rebinding, CPU/RSS/FDs, packaging
+and runtime compatibility are qualified in [stage 4](validation/stage4/README.md).
+Proxy-IP changes, IPv4/IPv6 switching, mobile handoff and multi-day reliability
+remain deployment-specific pilot work. The integrated engine stays opt-in.
+
+Earlier source run [39869936393](https://github.com/SawaMEN/FoxTunnel/actions/runs/39869936393)
+compiled but exposed the 65,535-byte H2 and intermittent H3 stalls. Run
+[39910478555](https://github.com/SawaMEN/FoxTunnel/actions/runs/39910478555)
+supplied the corrected native runtime; restricted-window tests then identified
+the JS cleanup race fixed in helper `0fc7192`. The acceptance record explicitly
+identifies that runtime/helper combination rather than crediting an older binary.

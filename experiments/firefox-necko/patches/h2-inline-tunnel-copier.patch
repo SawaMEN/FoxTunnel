@@ -2,11 +2,11 @@
 +++ b/netwerk/protocol/http/nsHttpConnectionMgr.cpp
 @@ -12,11 +12,13 @@
  #define LOG_ENABLED() LOG5_ENABLED()
- 
+
  #include <algorithm>
 +#include <array>
  #include <utility>
- 
+
  #include "ConnectionHandle.h"
  #include "ETWTools.h"
  #include "HttpConnectionUDP.h"
@@ -26,7 +26,7 @@
 @@ -2861,6 +2865,114 @@
    OnMsgProcessPendingQ(0, ci);
  }
- 
+
 +// H2 tunnel I/O is pull-driven: Read/Write are valid only while its native
 +// readiness callback is on the stack. NS_AsyncCopy posts a continuation, so
 +// it loses that context and repeatedly gets WOULD_BLOCK. Keep the JS-facing
@@ -137,16 +137,24 @@
 +
  void nsHttpConnectionMgr::OnMsgCompleteUpgrade(int32_t, ARefBase* param) {
    MOZ_ASSERT(OnSocketThread(), "not on socket thread");
- 
-@@ -2901,6 +3013,7 @@
+
+@@ -2901,6 +3013,15 @@
    // PSM and NSS rely on those connections only being used on the socket
    // thread.
    if (data->mJsWrapped) {
 +    RefPtr<Http2StreamTunnel> h2Tunnel = do_QueryObject(data->mSocketTransport);
++    if (h2Tunnel && NS_SUCCEEDED(rv) &&
++        (data->mTrans->Caps() & NS_HTTP_CONNECT_ONLY)) {
++      // TakeTransport transferred the raw tunnel to the handoff consumer.
++      // Release the transaction's handle to the now-empty bootstrap connection;
++      // keeping it until JS/XPCOM collection exhausts the destination pool.
++      // The actual H2 stream still owns its session/concurrency slot.
++      data->mTrans->SetConnection(nullptr);
++    }
      nsCOMPtr<nsIAsyncInputStream> pipeIn;
      uint32_t segsize = 0;
      uint32_t segcount = 0;
-@@ -2908,16 +3021,20 @@
+@@ -2908,16 +3029,20 @@
      if (NS_SUCCEEDED(rv)) {
        NS_NewPipe2(getter_AddRefs(pipeIn), getter_AddRefs(socketOut), true, true,
                    segsize, segcount);
@@ -157,7 +165,7 @@
 +               : NS_AsyncCopy(pipeIn, data->mSocketOut, gSocketTransportService,
 +                              NS_ASYNCCOPY_VIA_READSEGMENTS, segsize);
      }
- 
+
      nsCOMPtr<nsIAsyncOutputStream> pipeOut;
      if (NS_SUCCEEDED(rv)) {
        NS_NewPipe2(getter_AddRefs(socketIn), getter_AddRefs(pipeOut), true, true,

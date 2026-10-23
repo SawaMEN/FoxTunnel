@@ -88,13 +88,18 @@ def prepare(source, lock, root=ROOT):
             raise ValueError("patched Gecko source digest mismatch")
 
 
-def mozconfig(objdir, jobs):
+def mozconfig(objdir, jobs, compiler_cache="sccache", no_bootstrap_update=False):
     # These paths are parsed by mozconfig's shell, not by subprocess. Restrict
     # them instead of accepting shell substitutions from an output path.
     if not re.fullmatch(r"[/A-Za-z0-9_.-]+", str(objdir)):
         raise ValueError("Gecko object path must not contain shell metacharacters")
     if not 1 <= jobs <= 16:
         raise ValueError("Gecko jobs must be between 1 and 16")
+    if compiler_cache not in ("sccache", "none"):
+        raise ValueError("unsupported compiler cache")
+    extra = "ac_add_options --with-ccache=sccache\n" if compiler_cache == "sccache" else ""
+    if no_bootstrap_update:
+        extra += "ac_add_options --enable-bootstrap=no-update\n"
     return f"""mk_add_options MOZ_OBJDIR={objdir}
 mk_add_options MOZ_MAKE_FLAGS=-j{jobs}
 ac_add_options --enable-application=browser
@@ -107,7 +112,7 @@ ac_add_options --disable-warnings-as-errors
 ac_add_options --disable-lto
 ac_add_options --enable-optimize=-O1
 ac_add_options --enable-linker=lld
-"""
+{extra}"""
 
 
 def main():
@@ -116,6 +121,10 @@ def main():
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--compiler-cache", choices=("sccache", "none"), default="sccache",
+                        help="use none on hosts without a compiler-cache daemon")
+    parser.add_argument("--no-bootstrap-update", action="store_true",
+                        help="reuse already bootstrapped Mozilla toolchains")
     args = parser.parse_args()
     source, out = args.source.resolve(), args.out.resolve()
     if out == source or out.is_relative_to(source):
@@ -124,7 +133,7 @@ def main():
     prepare(source, lock)
     out.mkdir(parents=True, exist_ok=True)
     config = out / "mozconfig"
-    config.write_text(mozconfig(out / "obj", args.jobs))
+    config.write_text(mozconfig(out / "obj", args.jobs, args.compiler_cache, args.no_bootstrap_update))
     provenance = {"schema": 1, "status": "source-prepared", "source": lock,
                   "mozconfig_sha256": sha256(config)}
     provenance_path = out / "provenance.json"

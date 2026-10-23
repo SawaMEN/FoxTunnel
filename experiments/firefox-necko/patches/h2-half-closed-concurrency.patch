@@ -1,0 +1,43 @@
+--- a/netwerk/protocol/http/Http2Session.cpp
++++ b/netwerk/protocol/http/Http2Session.cpp
+@@ -854,7 +854,11 @@
+     mInputFrameFinal = false;
+     LOG3(("  SetRecvdFin id=0x%x\n", mInputFrameDataStream->StreamID()));
+     mInputFrameDataStream->SetRecvdFin(true);
+-    MaybeDecrementConcurrent(mInputFrameDataStream);
++    // A successful raw CONNECT can keep uploading after response FIN.
++    // CloseStream releases its concurrency slot after both halves finish.
++    if (!mInputFrameDataStream->KeepSendingAfterResponseFin()) {
++      MaybeDecrementConcurrent(mInputFrameDataStream);
++    }
+   }
+   mInputFrameFinal = false;
+   mInputFrameBufferUsed = 0;
+@@ -1894,6 +1898,11 @@
+         for (const auto& stream : self->mStreamTransactionHash.Values()) {
+           stream->UpdateServerReceiveWindow(delta);
+         }
++        // Raw CONNECT streams are owned separately from HTTP transactions.
++        // They must receive SETTINGS deltas even before handoff completes.
++        for (const auto& stream : self->mTunnelStreams) {
++          stream->UpdateServerReceiveWindow(delta);
++        }
+       } break;
+
+       case SETTINGS_TYPE_MAX_FRAME_SIZE: {
+@@ -2197,6 +2206,15 @@
+         self->mQueueManager.AddStreamToQueue(
+             Http2StreamQueueType::ReadyForWrite, stream);
+         self->SetWriteCallbacks();
++      }
++      // A response-first CONNECT can still be blocked on upload credit.
++      // WINDOW_UPDATE for the connection must wake its separate stream too.
++      for (const auto& stream : self->mTunnelStreams) {
++        if (stream->BlockedOnRwin() && stream->ServerReceiveWindow() > 0) {
++          self->mQueueManager.AddStreamToQueue(
++              Http2StreamQueueType::ReadyForWrite, stream);
++          self->SetWriteCallbacks();
++        }
+       }
+     }
+     LOG3(

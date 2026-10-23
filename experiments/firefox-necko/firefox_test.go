@@ -171,7 +171,7 @@ func testGeckoCONNECT(t *testing.T, halfClose bool) {
 						conn.Close()
 						t.Fatal(err)
 					}
-					data, err = io.ReadAll(conn)
+					data, err = io.ReadAll(io.LimitReader(conn, int64(len(payload)+1)))
 				} else {
 					data = make([]byte, len(payload))
 					var n int
@@ -210,6 +210,9 @@ func startTestHelperContext(t *testing.T, parent context.Context, runtime string
 	finished := make(chan struct{})
 	go func() {
 		err := Run(ctx, runtime, cfg, write, stderr)
+		if err != nil && ctx.Err() == nil {
+			_, _ = stderr.Write([]byte("\nhelper exit: " + err.Error() + "\n"))
+		}
 		write.CloseWithError(err)
 		close(finished)
 	}()

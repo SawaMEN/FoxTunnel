@@ -32,6 +32,9 @@ type nodePinEntry struct {
 // Call after TLS/profile and fallback configuration, before EnableBond/Serve.
 // Discovery supplies a separate, dynamic TLS policy: do not combine them.
 func (c *Client) SetNodePinsFile(path string) error {
+	if c.managed != nil && path != "" {
+		return errors.New("Necko does not support per-node pins")
+	}
 	if path == "" || c.bondClient != nil || c.bondDiscovery != nil ||
 		c.identity != (tlsidentity.Policy{}) {
 		return errors.New("configure per-node SPKI pins before bonding, without discovery or a separate primary identity override")
