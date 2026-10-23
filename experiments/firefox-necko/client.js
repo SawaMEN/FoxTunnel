@@ -198,7 +198,7 @@ if (typeof Components !== "undefined") {
   const counters = { accepted: 0, completed: 0, rejected: 0, idle_expired: 0,
     drain_expired: 0, upload_bytes: 0, download_bytes: 0 };
   const sweep = setInterval(() => {
-    const now = Date.now();
+    const now = Math.floor(ChromeUtils.now());
     for (const session of sessions) {
       if (session.remote && now - session.lastProgress >= cfg.idle_timeout_ms) {
         counters.idle_expired++; session.close();
@@ -209,7 +209,7 @@ if (typeof Components !== "undefined") {
     }
   }, Math.max(50, Math.min(1000, cfg.idle_timeout_ms / 2, cfg.drain_timeout_ms / 2)));
   const stats = cfg.stats_interval_ms ? setInterval(() => {
-    print(JSON.stringify({ type: "stats", connected: [...sessions].filter(s => !!s.remote).length, oldest_ms: Math.max(0, ...[...sessions].map(s => Date.now() - s.lastProgress)), idle_limit: cfg.idle_timeout_ms, active: sessions.size, draining: draining.size, ...counters }));
+    print(JSON.stringify({ type: "stats", connected: [...sessions].filter(s => !!s.remote).length, oldest_ms: Math.max(0, ...[...sessions].map(s => Math.floor(ChromeUtils.now()) - s.lastProgress)), idle_limit: cfg.idle_timeout_ms, active: sessions.size, draining: draining.size, ...counters }));
   }, cfg.stats_interval_ms) : null;
   // Standalone proxy handoff cannot reliably initialize several cold CONNECT
   // channels at once (both H2 and H3). Queue setup only; established streams retain
@@ -275,9 +275,9 @@ if (typeof Components !== "undefined") {
     for (;;) {
       const data = await source.read();
       if (data === null) { destination.output.close(); return; }
-      session.lastProgress = Date.now();
+      session.lastProgress = Math.floor(ChromeUtils.now());
       await destination.write(data);
-      session.lastProgress = Date.now();
+      session.lastProgress = Math.floor(ChromeUtils.now());
       counters[direction] += data.length;
     }
   }
@@ -295,14 +295,14 @@ if (typeof Components !== "undefined") {
     const local = new AsyncIO(
       transport.openInputStream(0, 0, 0).QueryInterface(Ci.nsIAsyncInputStream),
       transport.openOutputStream(0, 0, 0).QueryInterface(Ci.nsIAsyncOutputStream));
-    const session = { local, closed: false, established: false, lastProgress: Date.now(), channel: null, remote: null };
+    const session = { local, closed: false, established: false, lastProgress: Math.floor(ChromeUtils.now()), channel: null, remote: null };
     session.close = (graceful = false) => {
       if (session.closed) return;
       // Both pumps close their destination writer on clean EOF. Native
       // copiers still own queued bytes and transports until those bytes drain.
       // Aborting here would discard the tail under network backpressure.
       if (graceful) {
-        session.drainDeadline = Date.now() + cfg.drain_timeout_ms;
+        session.drainDeadline = Math.floor(ChromeUtils.now()) + cfg.drain_timeout_ms;
         draining.add(session); counters.completed++; return;
       }
       session.closed = true;
@@ -334,7 +334,7 @@ if (typeof Components !== "undefined") {
       }
       const remote = await openTunnel(request.authority, session);
       clearTimeout(timer);
-      await local.write(socksReply(0)); established = true; session.established = true; session.lastProgress = Date.now();
+      await local.write(socksReply(0)); established = true; session.established = true; session.lastProgress = Math.floor(ChromeUtils.now());
       if (request.early.length) await remote.write(request.early);
       // A failed pump aborts both directions. A clean EOF half-closes only
       // that direction; the other can deliver the remaining response bytes.

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -263,6 +264,14 @@ func TestGeckoSoak(t *testing.T) {
 				}
 			}
 			awaitOperational(t, h, func(s operationalStats) bool { return s.Active == 0 && s.Draining == 0 })
+			ticksRaw, e := exec.Command("getconf", "CLK_TCK").Output()
+			if e != nil {
+				t.Fatal(e)
+			}
+			ticksPerSecond, e := strconv.ParseFloat(strings.TrimSpace(string(ticksRaw)), 64)
+			if e != nil || ticksPerSecond <= 0 {
+				t.Fatal("invalid CLK_TCK")
+			}
 			first, e := sampleProcess(h.pid, start)
 			if e != nil {
 				t.Fatal(e)
@@ -302,7 +311,7 @@ func TestGeckoSoak(t *testing.T) {
 			}
 			if out := os.Getenv("FOXTUNNEL_OPERATIONS_OUT"); out != "" {
 				os.MkdirAll(out, 0700)
-				data, _ := json.MarshalIndent(map[string]any{"schema": 1, "transport": mode, "duration_seconds": seconds, "rounds": rounds, "payload_bytes_per_round": 128 << 10, "parallel_streams": 8, "warmup_tunnels": 16, "samples": samples, "counters": final, "cpu_tick_scope": "raw Linux /proc ticks; getconf CLK_TCK on this host", "scope": "loopback churn plus binary half-close; not a production throughput benchmark"}, "", "  ")
+				data, _ := json.MarshalIndent(map[string]any{"schema": 1, "transport": mode, "duration_seconds": seconds, "rounds": rounds, "payload_bytes_per_round": 128 << 10, "parallel_streams": 8, "warmup_tunnels": 16, "samples": samples, "counters": final, "cpu_ticks_per_second": ticksPerSecond, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond, "average_cpu_percent": 100000 * float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond / float64(last.AtMS-first.AtMS), "scope": "loopback churn plus binary half-close; not a production throughput benchmark"}, "", "  ")
 				if e := os.WriteFile(filepath.Join(out, mode+"-soak.json"), append(data, '\n'), 0600); e != nil {
 					t.Fatal(e)
 				}
