@@ -4,6 +4,8 @@ on:
     branches: [firefox]
     paths:
       - 'experiments/firefox-necko/client.js'
+      - 'experiments/firefox-necko/gecko.lock.json'
+      - 'experiments/firefox-necko/patches/**'
       - 'experiments/firefox-necko/*.go'
       - 'experiments/firefox-necko/fingerprint/**'
       - 'experiments/firefox-necko/cmd/**'

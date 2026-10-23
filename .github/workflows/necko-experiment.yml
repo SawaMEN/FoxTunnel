@@ -5,10 +5,6 @@ on:
     paths:
       - 'experiments/firefox-necko/patches/**'
       - 'experiments/firefox-necko/gecko.lock.json'
-      - 'experiments/firefox-necko/client.js'
-      - 'experiments/firefox-necko/*.go'
-      - 'experiments/firefox-necko/fingerprint/**'
-      - 'scripts/compare_necko_firefox.py'
       - 'scripts/build_necko.py'
       - 'scripts/test_build_necko.py'
       - '.github/workflows/necko-experiment.yml'
@@ -17,7 +13,7 @@ permissions:
   contents: read
 concurrency:
   group: necko-source-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   native:
     runs-on: ubuntu-24.04

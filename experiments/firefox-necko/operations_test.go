@@ -171,7 +171,7 @@ func TestGeckoIdleAndDrainLimits(t *testing.T) {
 			}
 			awaitOperational(t, h, func(s operationalStats) bool { return s.IdleExpired == 1 && s.Active == 0 })
 			if e := operationalRound(h, echo, 1); e != nil {
-				t.Fatal(e)
+				t.Fatalf("post-idle transfer: %v\n%s", e, h.stderr.text())
 			}
 			awaitOperational(t, h, func(s operationalStats) bool { return s.Completed == 1 && s.Draining == 1 })
 			if c, e := nativeSOCKS(h.listen, echo); e == nil {
@@ -263,7 +263,7 @@ func TestGeckoSoak(t *testing.T) {
 					t.Fatalf("warmup transfer: %v", e)
 				}
 			}
-			awaitOperational(t, h, func(s operationalStats) bool { return s.Active == 0 && s.Draining == 0 })
+			awaitOperational(t, h, func(s operationalStats) bool { return s.Completed == 16 && s.Active == 0 && s.Draining == 0 })
 			ticksRaw, e := exec.Command("getconf", "CLK_TCK").Output()
 			if e != nil {
 				t.Fatal(e)
@@ -297,13 +297,13 @@ func TestGeckoSoak(t *testing.T) {
 				samples = append(samples, s)
 				time.Sleep(100 * time.Millisecond)
 			}
-			final := awaitOperational(t, h, func(s operationalStats) bool { return s.Active == 0 && s.Draining == 0 })
+			final := awaitOperational(t, h, func(s operationalStats) bool { return s.Completed == rounds+16 && s.Active == 0 && s.Draining == 0 })
 			last, e := sampleProcess(h.pid, start)
 			if e != nil {
 				t.Fatal(e)
 			}
 			samples = append(samples, last)
-			if final.Completed != rounds+16 || final.Rejected != 0 || final.IdleExpired != 0 {
+			if final.Completed != rounds+16 || final.Rejected != 0 || final.IdleExpired != 0 || final.Upload != int64(rounds+16)*(128<<10) || final.Download != int64(rounds+16)*(128<<10) {
 				t.Fatalf("soak counters: %+v rounds=%d", final, rounds)
 			}
 			if last.FDs > first.FDs+32 || last.RSSKB > first.RSSKB+192*1024 {

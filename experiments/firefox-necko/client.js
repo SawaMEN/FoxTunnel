@@ -335,7 +335,11 @@ if (typeof Components !== "undefined") {
       const remote = await openTunnel(request.authority, session);
       clearTimeout(timer);
       await local.write(socksReply(0)); established = true; session.established = true; session.lastProgress = Math.floor(ChromeUtils.now());
-      if (request.early.length) await remote.write(request.early);
+      if (request.early.length) {
+        await remote.write(request.early);
+        session.lastProgress = Math.floor(ChromeUtils.now());
+        counters.upload_bytes += request.early.length;
+      }
       // A failed pump aborts both directions. A clean EOF half-closes only
       // that direction; the other can deliver the remaining response bytes.
       await Promise.all([pump(local, remote, session, "upload_bytes"), pump(remote, local, session, "download_bytes")]);
