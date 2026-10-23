@@ -1,7 +1,7 @@
 name: Mozilla Necko runtime gates
 on:
   push:
-    branches: [firefox]
+    branches: [main, firefox]
     paths:
       - 'foxtunnel*.go'
       - 'necko_integration_test.go'
@@ -24,6 +24,11 @@ on:
       - 'scripts/compare_necko_firefox.py'
       - 'scripts/test_compare_necko_firefox.py'
       - '.github/workflows/necko-runtime-test.yml'
+  workflow_call:
+    inputs:
+      release_version:
+        type: string
+        default: v0.0.0-ci
   workflow_dispatch:
     inputs:
       source_run:
@@ -34,7 +39,7 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: necko-runtime-${{ github.ref }}
+  group: necko-runtime-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   runtime:
@@ -137,10 +142,13 @@ jobs:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s
       - name: Package and verify opt-in Linux amd64 launcher
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version || 'v0.0.0-ci' }}
         run: |
           python3 -m unittest discover -s scripts -p test_package_necko.py -v
-          go build -trimpath -ldflags='-s -w' -o necko-launcher ./experiments/firefox-necko/cmd/foxtunnel-necko
-          go build -trimpath -ldflags='-s -w' -o necko-main-cli ./cmd/foxtunnel
+          stamp="-s -w -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Version=$RELEASE_VERSION -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Commit=$GITHUB_SHA -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Dirty=false"
+          go build -trimpath -ldflags="$stamp" -o necko-launcher ./experiments/firefox-necko/cmd/foxtunnel-necko
+          go build -trimpath -ldflags="$stamp" -o necko-main-cli ./cmd/foxtunnel
           python3 scripts/collect_necko_licenses.py --out /tmp/necko-notices.txt
           cmp /tmp/necko-notices.txt experiments/firefox-necko/LICENSES.go.txt
           provenance=$(find runtime-provenance -name provenance.json -type f)

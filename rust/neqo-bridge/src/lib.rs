@@ -287,9 +287,12 @@ pub unsafe extern "C" fn ftn_event(
                     out.kind = 5;
                     out.stream = stream_id.as_u64()
                 }
-                Http3ClientEvent::Reset { stream_id, .. }
-                | Http3ClientEvent::StopSending { stream_id, .. } => {
+                Http3ClientEvent::Reset { stream_id, .. } => {
                     out.kind = 6;
+                    out.stream = stream_id.as_u64()
+                }
+                Http3ClientEvent::StopSending { stream_id, .. } => {
+                    out.kind = 10;
                     out.stream = stream_id.as_u64()
                 }
                 Http3ClientEvent::GoawayReceived => out.kind = 8,

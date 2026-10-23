@@ -36,10 +36,15 @@ func digestBytes(data []byte) string { s := sha256.Sum256(data); return hex.Enco
 // binds the runtime to this helper's source lock and embedded JS. Archive hashes
 // must still be obtained from a trusted publisher: a manifest is not a signature.
 func VerifyBundle(directory string) (string, error) {
-	invalid := errors.New("incompatible or damaged Firefox bundle")
 	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
 		return "", errors.New("Firefox bundle currently requires Linux amd64")
 	}
+	return verifyBundle(directory)
+}
+
+// Integrity validation is independent of the host's ability to execute Gecko.
+func verifyBundle(directory string) (string, error) {
+	invalid := errors.New("incompatible or damaged Firefox bundle")
 	absolute, e := filepath.Abs(directory)
 	if e != nil {
 		return "", invalid

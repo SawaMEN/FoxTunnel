@@ -2,6 +2,7 @@ name: Mozilla Neqo client experiment
 on:
   push:
   pull_request:
+  workflow_call:
   workflow_dispatch:
 jobs:
   neqo:
@@ -46,7 +47,7 @@ jobs:
         run: |
           set -euo pipefail
           source rust/neqo-bridge/target/foxtunnel-build/env.sh
-          GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/neqo -run '^TestStage6|^TestUpdate' -count=5 -timeout=120s
+          GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/neqo -run '^TestStage6|^TestUpdate|^TestEarlyResponse' -count=5 -timeout=120s
           GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/nsstls -run '^TestConcurrentCloseUnblocksRead$|^TestHandshakeCancellation$|^TestStage3NSS' -count=8 -timeout=120s
       - name: Verify explicit backend reporting
         shell: bash

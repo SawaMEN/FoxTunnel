@@ -292,6 +292,20 @@ func (c *connection) run() {
 				c.owner.retire(c)
 			case 9:
 				c.saveSession(metadata[:n], arg)
+			case 10:
+				// STOP_SENDING closes only our upload direction. A server
+				// may finish a response without consuming the request body.
+				// RESET_STREAM (case 6) still fails the response direction.
+				if s != nil {
+					s.sendStopped = true
+					if s.pendingSend != nil {
+						s.pendingSend.reply <- result{err: errClosed}
+						s.pendingSend = nil
+					}
+					if s.req.Body != nil {
+						go s.req.Body.Close()
+					}
+				}
 			}
 		}
 		// Authentication and request creation can generate output without another
@@ -355,6 +369,10 @@ func (c *connection) run() {
 			}
 			switch cmd.kind {
 			case 'w':
+				if s.sendStopped {
+					cmd.reply <- result{err: errClosed}
+					continue
+				}
 				if len(cmd.data) == 0 {
 					cmd.reply <- result{}
 					continue
@@ -381,12 +399,22 @@ func (c *connection) run() {
 					delete(streams, s.id)
 				}
 			case 'f':
+				if s.sendStopped {
+					cmd.reply <- result{err: errClosed}
+					continue
+				}
 				err := e.fin(s.id)
 				cmd.reply <- result{err: err}
 				if err != nil {
 					fail(s, err)
 					delete(streams, s.id)
 				}
+			case 'a':
+				if s.sendStopped {
+					cmd.reply <- result{}
+					continue
+				}
+				fallthrough
 			case 'x':
 				e.reset(s.id)
 				fail(s, errClosed)

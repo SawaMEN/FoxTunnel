@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -27,14 +28,14 @@ func testBundle(t *testing.T) string {
 }
 func TestBundleRejectsCorruptionLinksAndIncompatibleHelper(t *testing.T) {
 	root := testBundle(t)
-	if _, e := VerifyBundle(root); e != nil {
+	if _, e := verifyBundle(root); e != nil {
 		t.Fatal(e)
 	}
 	for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "source-lock.json"} {
 		t.Run(name, func(t *testing.T) {
 			root := testBundle(t)
 			os.WriteFile(filepath.Join(root, name), []byte("tampered"), 0600)
-			if _, e := VerifyBundle(root); e == nil {
+			if _, e := verifyBundle(root); e == nil {
 				t.Fatal("accepted tampered bundle")
 			}
 		})
@@ -68,7 +69,7 @@ func TestBundleRejectsCorruptionLinksAndIncompatibleHelper(t *testing.T) {
 				data, _ = json.Marshal(m)
 				os.WriteFile(filepath.Join(root, "manifest.json"), data, 0600)
 			}
-			if _, e := VerifyBundle(root); e == nil {
+			if _, e := verifyBundle(root); e == nil {
 				t.Fatal("accepted incompatible bundle")
 			}
 		})
@@ -92,7 +93,7 @@ func TestBundleResolvesVersionPointerBeforeExecution(t *testing.T) {
 	if e := os.Symlink(first, pointer); e != nil {
 		t.Fatal(e)
 	}
-	verified, e := VerifyBundle(pointer)
+	verified, e := verifyBundle(pointer)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -102,5 +103,14 @@ func TestBundleResolvesVersionPointerBeforeExecution(t *testing.T) {
 	}
 	if verified != filepath.Join(first, "runtime", "xpcshell") {
 		t.Fatal("verified runtime still follows mutable version pointer")
+	}
+}
+
+func TestBundleExecutionPlatformGate(t *testing.T) {
+	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
+		return
+	}
+	if _, err := VerifyBundle(testBundle(t)); err == nil {
+		t.Fatal("unsupported host accepted executable bundle")
 	}
 }

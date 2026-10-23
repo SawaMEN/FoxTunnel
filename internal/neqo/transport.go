@@ -82,6 +82,7 @@ type stream struct {
 	stop                     func() bool
 	pendingRead, pendingSend *command
 	recvFin                  bool
+	sendStopped              bool // actor-owned upload direction
 	headerSeen               bool
 }
 
@@ -393,7 +394,7 @@ func (s *stream) upload() {
 			if err == io.EOF {
 				_, _ = s.conn.call(s.conn.ctx, command{kind: 'f', stream: s})
 			} else {
-				_, _ = s.conn.call(s.conn.ctx, command{kind: 'x', stream: s})
+				_, _ = s.conn.call(s.conn.ctx, command{kind: 'a', stream: s})
 			}
 			return
 		}

@@ -3,6 +3,7 @@
 package neqo
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -132,5 +133,42 @@ func TestUpdateNeqoSessionResumptionTrustAndNoEarlyRequests(t *testing.T) {
 				t.Fatal("HTTP data reached server after trust rejection")
 			}
 		})
+	}
+}
+
+// A peer may cancel an unread upload after sending a complete response. QUIC
+// STOP_SENDING must not turn that independent response into RESET_STREAM.
+func TestEarlyResponsePreservesBodyAfterUploadStopped(t *testing.T) {
+	payload := bytes.Repeat([]byte("verified-response"), 8192)
+	raw, cfg := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write(payload); err != nil {
+			t.Errorf("response: %v", err)
+		}
+	}))
+	client, err := NewTransport(Config{TLS: cfg, HandshakeTimeout: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.CloseIdleConnections()
+	for round := range 10 {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		var body io.ReadCloser = io.NopCloser(bytes.NewReader(make([]byte, 4<<20)))
+		if round%2 == 1 {
+			reader, writer := io.Pipe()
+			defer writer.Close()
+			body = reader // STOP_SENDING must unblock an idle upload too.
+		}
+		req, _ := http.NewRequestWithContext(ctx, "POST", raw, body)
+		resp, err := client.RoundTrip(req)
+		if err != nil {
+			cancel()
+			t.Fatal(err)
+		}
+		got, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		cancel()
+		if err != nil || !bytes.Equal(got, payload) {
+			t.Fatalf("response truncated: %d/%d: %v", len(got), len(payload), err)
+		}
 	}
 }
