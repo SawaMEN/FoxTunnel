@@ -1,11 +1,15 @@
 name: Mozilla Necko runtime gates
 on:
   push:
-    branches: [main, firefox]
+    branches: [main, firefox, fx]
     paths:
       - 'foxtunnel*.go'
       - 'necko_integration_test.go'
       - 'scripts/analyze_firefox_self.py'
+      - 'scripts/evaluate_fx_fingerprint.py'
+      - 'scripts/test_evaluate_fx_fingerprint.py'
+      - 'experiments/firefox-necko/client_test.cjs'
+      - 'docs/FX.md'
       - 'scripts/collect_necko_licenses.py'
       - 'internal/tunnel/**'
       - 'internal/transportengine/**'
@@ -118,6 +122,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.10'
+      - name: FX buffer and fingerprint audit unit regressions
+        run: |
+          node --test experiments/firefox-necko/client_test.cjs
+          python3 -m unittest discover -s scripts -p 'test_evaluate_fx_fingerprint.py' -v
       - name: Native CONNECT, half-close and certificate trust gates
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
@@ -130,6 +138,7 @@ jobs:
           go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint|GeckoFirefoxSelfComparison)' -v -count=3 -timeout=180s
           python3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json
           python3 scripts/analyze_firefox_self.py --observations necko-fingerprint/observations/firefox-self --out necko-fingerprint/firefox-self.json
+          python3 scripts/evaluate_fx_fingerprint.py --candidate necko-fingerprint/comparison.json --control necko-fingerprint/firefox-self.json --out necko-fingerprint/fx-audit.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

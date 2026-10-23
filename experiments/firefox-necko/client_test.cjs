@@ -60,3 +60,44 @@ test('private IPC requires password method and handles fragmented authentication
  assert.deepEqual(q.authentication(),{user:'foxtunnel',password:'key'});
  assert.equal(q.request().authority,'127.0.0.1:80');
 });
+
+test('pump reuses one bounded buffer and preserves bytes, backpressure and FIN', async () => {
+  const { pumpBuffered } = require('./client.js');
+  const chunks = [Buffer.alloc(32768, 0x80), Buffer.from([0, 1, 255]), Buffer.alloc(32768, 0x42)];
+  const buffers = [], received = [];
+  let index = 0, closed = 0, progress = 0, total = 0;
+  const source = { async read(scratch) {
+    assert.equal(scratch.length, 32768);
+    buffers.push(scratch);
+    if (index === chunks.length) return null;
+    const part = chunks[index++];
+    scratch.set(part);
+    return scratch.subarray(0, part.length);
+  }};
+  const destination = {
+    output: { close() { closed++; } },
+    async write(part) {
+      // An awaited write must finish before the shared scratch is overwritten.
+      await Promise.resolve();
+      received.push(Buffer.from(part));
+    }
+  };
+  await pumpBuffered(source, destination, () => { progress++; }, n => { total += n; });
+  assert.equal(new Set(buffers).size, 1);
+  assert.deepEqual(Buffer.concat(received), Buffer.concat(chunks));
+  assert.equal(total, Buffer.concat(chunks).length);
+  assert.equal(progress, chunks.length * 2);
+  assert.equal(closed, 1);
+});
+
+test('pump never sends clean FIN on write failure', async () => {
+  const { pumpBuffered } = require('./client.js');
+  let fin = 0;
+  await assert.rejects(
+    pumpBuffered({ async read(buf) { buf[0] = 9; return buf.subarray(0, 1); } },
+      { output: { close() { fin++; } }, async write() { throw Error('failed write'); } },
+      () => {}, () => {}),
+    /failed write/
+  );
+  assert.equal(fin, 0);
+});

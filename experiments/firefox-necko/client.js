@@ -78,7 +78,22 @@ function firefoxUserAgent(nativeUA) {
 
 function socksReply(code) { return Uint8Array.from([5, code, 0, 1, 0, 0, 0, 0, 0, 0]); }
 
-if (typeof module !== "undefined") module.exports = { SocksParser, socksReply, firefoxUserAgent };
+// One scratch buffer per active direction, not one ArrayBuffer allocation for
+// every 32 KiB of payload. A read's slice must be fully written before the next
+// read overwrites it. The buffer is released when the pump exits, even on error.
+async function pumpBuffered(source, destination, onProgress, onBytes) {
+  const scratch = new Uint8Array(32768);
+  for (;;) {
+    const data = await source.read(scratch);
+    if (data === null) { destination.output.close(); return; }
+    onProgress();
+    await destination.write(data);
+    onProgress();
+    onBytes(data.length);
+  }
+}
+
+if (typeof module !== "undefined") module.exports = { SocksParser, socksReply, firefoxUserAgent, pumpBuffered };
 
 if (typeof Components !== "undefined") {
   const { classes: Cc, interfaces: Ci, results: Cr } = Components;
@@ -160,21 +175,21 @@ if (typeof Components !== "undefined") {
 
   class AsyncIO {
     constructor(input, output) { this.input = input; this.output = output; }
-    read() {
+    read(scratch = null) {
       return new Promise((resolve, reject) => {
         const callback = {
           onInputStreamReady: stream => {
             try {
-              const n = Math.min(stream.available(), 32768);
+              const n = Math.min(stream.available(), scratch ? scratch.byteLength : 32768);
               if (!n) { resolve(null); return; }
               const binary = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream);
               binary.setInputStream(stream);
-              // Fill the bounded byte buffer directly. readByteArray creates
-              // a boxed JS array before Uint8Array.from copies it again.
-              const bytes = new Uint8Array(n);
+              // During an established pump, reuse its own bounded ArrayBuffer.
+              // No second read starts before the previous write completes.
+              const bytes = scratch || new Uint8Array(n);
               const count = binary.readArrayBuffer(n, bytes.buffer);
               if (!count) { resolve(null); return; }
-              resolve(count === n ? bytes : bytes.subarray(0, count));
+              resolve(bytes.subarray(0, count));
             } catch (e) {
               if (e.result === Cr.NS_BASE_STREAM_WOULD_BLOCK) stream.asyncWait(callback, 0, 0, thread);
               else if (e.result === Cr.NS_BASE_STREAM_CLOSED) resolve(null);
@@ -306,14 +321,9 @@ if (typeof Components !== "undefined") {
   }
 
   async function pump(source, destination, session, direction) {
-    for (;;) {
-      const data = await source.read();
-      if (data === null) { destination.output.close(); return; }
-      session.lastProgress = Math.floor(ChromeUtils.now());
-      await destination.write(data);
-      session.lastProgress = Math.floor(ChromeUtils.now());
-      counters[direction] += data.length;
-    }
+    return pumpBuffered(source, destination,
+      () => { session.lastProgress = Math.floor(ChromeUtils.now()); },
+      count => { counters[direction] += count; });
   }
   async function serve(transport) {
     if (sessions.size >= cfg.max_connections || sessions.size + draining.size >= cfg.max_retained_connections) {
