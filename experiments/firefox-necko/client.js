@@ -155,7 +155,12 @@ if (typeof Components !== "undefined") {
               if (!n) { resolve(null); return; }
               const binary = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream);
               binary.setInputStream(stream);
-              resolve(Uint8Array.from(binary.readByteArray(n)));
+              // Fill the bounded byte buffer directly. readByteArray creates
+              // a boxed JS array before Uint8Array.from copies it again.
+              const bytes = new Uint8Array(n);
+              const count = binary.readArrayBuffer(n, bytes.buffer);
+              if (!count) { resolve(null); return; }
+              resolve(count === n ? bytes : bytes.subarray(0, count));
             } catch (e) {
               if (e.result === Cr.NS_BASE_STREAM_WOULD_BLOCK) stream.asyncWait(callback, 0, 0, thread);
               else if (e.result === Cr.NS_BASE_STREAM_CLOSED) resolve(null);
@@ -313,6 +318,10 @@ if (typeof Components !== "undefined") {
       if (session.remote) session.remote.close();
       if (session.remoteTransport) session.remoteTransport.close(Cr.NS_BINDING_ABORTED);
       transport.close(Cr.NS_BINDING_ABORTED);
+      // Retired sessions must not retain native channels/streams through the
+      // session -> close closure -> serve scope after their drain deadline.
+      session.channel = session.remote = session.remoteTransport = session.local = null;
+      session.close = () => {};
     };
     sessions.add(session);
     const timer = setTimeout(session.close, cfg.connect_timeout_ms);
