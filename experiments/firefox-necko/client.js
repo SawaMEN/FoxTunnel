@@ -201,7 +201,9 @@ if (typeof Components !== "undefined") {
   // infer completion from IsAlive(): H3 currently always returns true there.
   const draining = new Set();
   const counters = { accepted: 0, completed: 0, rejected: 0, idle_expired: 0,
-    drain_expired: 0, upload_bytes: 0, download_bytes: 0 };
+    drain_expired: 0, upload_bytes: 0, download_bytes: 0, gc_collections: 0, gc_ms: 0 };
+  let retiredSinceCollection = 0;
+  let lastCollection = Math.floor(ChromeUtils.now());
   const sweep = setInterval(() => {
     const now = Math.floor(ChromeUtils.now());
     for (const session of sessions) {
@@ -211,6 +213,19 @@ if (typeof Components !== "undefined") {
     }
     for (const session of draining) {
       if (now >= session.drainDeadline) { counters.drain_expired++; session.close(); }
+    }
+    // Bound reclamation of native wrappers and callback cycles in the
+    // embedded shell without relying on browser idle GC/CC scheduling.
+    // Collect retired work at a bounded cadence; keep live objects rooted
+    // and leave HTTP/TLS
+    // caches alone (no global memory-pressure notification).
+    if (retiredSinceCollection >= 64 && now - lastCollection >= 5000) {
+      const start = ChromeUtils.now();
+      Cu.forceGC(); Cu.forceCC(); Cu.forceGC();
+      counters.gc_collections++;
+      counters.gc_ms += Math.ceil(ChromeUtils.now() - start);
+      retiredSinceCollection = 0;
+      lastCollection = Math.floor(ChromeUtils.now());
     }
   }, Math.max(50, Math.min(1000, cfg.idle_timeout_ms / 2, cfg.drain_timeout_ms / 2)));
   const stats = cfg.stats_interval_ms ? setInterval(() => {
@@ -322,6 +337,7 @@ if (typeof Components !== "undefined") {
       // session -> close closure -> serve scope after their drain deadline.
       session.channel = session.remote = session.remoteTransport = session.local = null;
       session.close = () => {};
+      retiredSinceCollection++;
     };
     sessions.add(session);
     const timer = setTimeout(session.close, cfg.connect_timeout_ms);

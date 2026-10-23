@@ -19,21 +19,23 @@ import (
 )
 
 type operationalStats struct {
-	Connected    int    `json:"connected"`
-	OldestMS     int64  `json:"oldest_ms"`
-	IdleLimit    int    `json:"idle_limit"`
-	Type         string `json:"type"`
-	Listen       string `json:"listen"`
-	PID          int    `json:"pid"`
-	ProcessTag   string `json:"process_tag"`
-	Active       int    `json:"active"`
-	Draining     int    `json:"draining"`
-	Completed    int    `json:"completed"`
-	Rejected     int    `json:"rejected"`
-	IdleExpired  int    `json:"idle_expired"`
-	DrainExpired int    `json:"drain_expired"`
-	Upload       int64  `json:"upload_bytes"`
-	Download     int64  `json:"download_bytes"`
+	GCCollections int    `json:"gc_collections"`
+	GCMS          int    `json:"gc_ms"`
+	Connected     int    `json:"connected"`
+	OldestMS      int64  `json:"oldest_ms"`
+	IdleLimit     int    `json:"idle_limit"`
+	Type          string `json:"type"`
+	Listen        string `json:"listen"`
+	PID           int    `json:"pid"`
+	ProcessTag    string `json:"process_tag"`
+	Active        int    `json:"active"`
+	Draining      int    `json:"draining"`
+	Completed     int    `json:"completed"`
+	Rejected      int    `json:"rejected"`
+	IdleExpired   int    `json:"idle_expired"`
+	DrainExpired  int    `json:"drain_expired"`
+	Upload        int64  `json:"upload_bytes"`
+	Download      int64  `json:"download_bytes"`
 }
 type operationalHelper struct {
 	sync.Mutex
@@ -310,7 +312,7 @@ func TestGeckoSoak(t *testing.T) {
 					t.Fatal(e)
 				}
 			}
-			if final.Completed != rounds+16 || final.Rejected != 0 || final.IdleExpired != 0 || final.Upload != int64(rounds+16)*(128<<10) || final.Download != int64(rounds+16)*(128<<10) {
+			if (seconds >= 30 && final.GCCollections == 0) || final.Completed != rounds+16 || final.Rejected != 0 || final.IdleExpired != 0 || final.Upload != int64(rounds+16)*(128<<10) || final.Download != int64(rounds+16)*(128<<10) {
 				t.Fatalf("soak counters: %+v rounds=%d", final, rounds)
 			}
 			if last.FDs > first.FDs+32 || last.RSSKB > first.RSSKB+192*1024 {
