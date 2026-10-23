@@ -40,8 +40,19 @@
   ],
   "comparison_script_sha256": "ee0c1750d66d79c4ab8bdfb32f469b083299f22425eb0115fe84941894795adf",
   "ci_verification": {
-    "workflow_run": 39945692782,
-    "commit": "ce221aa89c7461dd3cb6f8f6cf5e4361e1f21211",
-    "status": "in_progress"
+    "workflow_run": 39946382981,
+    "job_id": 120389962230,
+    "commit": "607ed701db11a527f38e83903c735a7fc6247642",
+    "result": "success",
+    "compiled_runtime_run": 39912988779,
+    "fingerprint_repetitions": {
+      "h2-connect": 3,
+      "h3-connect": 3
+    },
+    "fingerprint_artifact": {
+      "id": 12498342377,
+      "sha256": "3039f7757524aa5d98064077b465eb883b76bb46cb3f3eef3fab65231fa2cd3f"
+    },
+    "observed_differences": "H2: none in retained fields. H3: TLS extension order and dependent JA3/JA3 MD5 only."
   }
 }

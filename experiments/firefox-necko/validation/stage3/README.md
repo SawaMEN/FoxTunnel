@@ -78,6 +78,13 @@ python3 scripts/compare_necko_firefox.py \
   --observations /absolute/path/to/new-observations --out /absolute/path/to/new-report.json
 ```
 
+The [runtime CI verification](https://github.com/SawaMEN/FoxTunnel/actions/runs/39946382981)
+passed on `607ed70`. It verified the source lock and runtime hashes, passed the
+complete native gates, then repeated the Firefox comparison three times for each
+protocol. Its retained-field differences match the local results above. The
+`necko-firefox-fingerprint` artifact contains all six CI observations and its
+comparison; the acceptance record includes its SHA-256.
+
 The source and runtime workflows archive these observations and their comparison.
 The comparator rejects mixed runtime/source versions, incomplete streams,
 truncation and insufficient repetitions. It preserves all exact order differences
