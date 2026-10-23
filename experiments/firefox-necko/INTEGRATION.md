@@ -67,11 +67,13 @@ The comparison now includes an independent control: two fresh full Firefox
 processes use the same pinned libxul, proxy, trust and binary CONNECT workload.
 Raw differences are retained, including order, frame lengths and HPACK hashes.
 
-In the first local repetitions, FoxTunnel versus Firefox agreed in all retained
-H2 fields in 3/3 runs. Firefox versus Firefox had HPACK/HEADERS and frame-order
-differences in 2/3 H2 runs. Both comparisons had randomized extension-order/JA3
-differences in all H3 runs. Thus exact byte equality between separate sessions is
-not a Firefox invariant. These results do not establish equality of distributions.
+In the final CI repetitions, managed FoxTunnel versus Firefox had raw H2
+HPACK/HEADERS and frame-order differences in 1/3 runs. The standalone helper had
+them in 3/3 runs; Firefox versus Firefox had them in 2/3 runs. Decoded headers
+agreed throughout. All three comparisons had extension-order/JA3 differences in
+3/3 H3 runs, with matching extension sets. Thus exact byte equality between
+separate sessions is not a Firefox invariant. These small samples do not establish
+equality of distributions.
 
 The pinned Mozilla implementation marks an HPACK size update pending when peer
 SETTINGS arrive (`Http2Session::RecvSettings` and
@@ -87,4 +89,5 @@ No DPI indistinguishability claim is made.
 CI retains standalone, managed-engine and Firefox-self observations separately.
 It verifies actual main-CLI and SDK binary transfers, half-close, setup-context
 cancellation, capacity, owned shutdown, private IPC authentication and cleanup.
-See the integration validation record for the exact tested commit and CI run.
+See the [integration validation record](validation/integration/README.md) for the
+exact tested commit, retained observations and CI run.

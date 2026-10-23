@@ -1,0 +1,277 @@
+{
+  "schema": 1,
+  "run_id": 40021334528,
+  "qualified_commit": "12414b0ae84f0afbfae43db3ae2a6584bcdb2abd",
+  "comparisons": {
+    "standalone": {
+      "artifact_id": 12531425299,
+      "repetitions": {
+        "h2-connect": 3,
+        "h3-connect": 3
+      },
+      "observations": [
+        {
+          "file": "h2-connect-1792788292307521448.json",
+          "sha256": "fff87a025c43034b9d83d59b26672185f3b577b1b438da0b096af6e1fc2de170",
+          "transport": "h2-connect",
+          "differences": [
+            "connection_1.hpack_blocks",
+            "connection_1.h2_frames"
+          ]
+        },
+        {
+          "file": "h2-connect-1792788315513398440.json",
+          "sha256": "cea8891d627b46e8b51b222065087c16c29f2c0398c6a8da486b18f1705c0e04",
+          "transport": "h2-connect",
+          "differences": [
+            "connection_1.hpack_blocks",
+            "connection_1.h2_frames"
+          ]
+        },
+        {
+          "file": "h2-connect-1792788338091051237.json",
+          "sha256": "b2736433e2fc45d1e0e0ee6a54c666b47086dcbea6bdd00e1bd1ca933d353cae",
+          "transport": "h2-connect",
+          "differences": [
+            "connection_1.hpack_blocks",
+            "connection_1.h2_frames"
+          ]
+        },
+        {
+          "file": "h3-connect-1792788297104164977.json",
+          "sha256": "3e87c40730c1b0a909726473d339da4ac81fc68557bd39aeabbf347f48487e48",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        },
+        {
+          "file": "h3-connect-1792788320270458502.json",
+          "sha256": "b0a6e83228bcea3a0e6a6c1a3f3ab6f6fb5296cb6113fd099435467ff9200429",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        },
+        {
+          "file": "h3-connect-1792788342892599167.json",
+          "sha256": "1c5c2537f98eab0ec4b2d41d207fed7b0c6768328f75b215f86fa2a0c18735a8",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        }
+      ],
+      "runtime_sha256": {
+        "firefox": "43c3d10bb03f05034729c7b9834280edb3795cd29474d54a37fc33f4ca1eda67",
+        "libnss3.so": "d535bafee0665498ce83c1ee3755bb610e1e996f69c892271b2333130097a338",
+        "libxul.so": "8a39d3e11c077e7842b31008101e8926cdf54689199cd2e6feb1f4cd952780d3",
+        "platform.ini": "e98be751a092e5a05134560c76851a2b521fd500db27e5d2535f07194cc8698a",
+        "xpcshell": "3a9771a9e473039c1c5b8b033084a19fe991a1ad7b6461cf9aa36bcb46d64319"
+      },
+      "source_sha256": {
+        "client.js": "92c5b3ac4763c2f3889a7eb678f24b381f903135951424dae4be175c6f8d7cd0",
+        "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+        "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+        "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+        "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+        "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+        "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+        "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+        "gecko.lock.json": "f88ac666d42396979e74c6439fc0496f75ac0c50036a75ce9c02d656b17f5fd9"
+      }
+    },
+    "firefox-self": {
+      "artifact_id": 12531425299,
+      "repetitions": {
+        "h2-connect": 3,
+        "h3-connect": 3
+      },
+      "observations": [
+        {
+          "file": "h2-connect-1792788303816485952.json",
+          "sha256": "fb36ca81301e6d42be09a31211790a749973fa19ba6b0729c366431f1b94baaa",
+          "transport": "h2-connect",
+          "differences": [
+            "connection_1.hpack_blocks",
+            "connection_1.h2_frames"
+          ]
+        },
+        {
+          "file": "h2-connect-1792788326864049630.json",
+          "sha256": "f618f219385f8527338367bfc61a69caa9ef07d50bd29a23a01ebc419d96624b",
+          "transport": "h2-connect",
+          "differences": []
+        },
+        {
+          "file": "h2-connect-1792788349548306741.json",
+          "sha256": "7f75692f0d296c61ae41c5b7a6e04f65cd5262450fdaafe4ada4c49ded75b72b",
+          "transport": "h2-connect",
+          "differences": [
+            "connection_1.hpack_blocks",
+            "connection_1.h2_frames"
+          ]
+        },
+        {
+          "file": "h3-connect-1792788310502104946.json",
+          "sha256": "978dc1666c4e0c50ee7ad610f6fd42f1e8dac4ed42743015d953354dfcf4fc38",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        },
+        {
+          "file": "h3-connect-1792788333126101853.json",
+          "sha256": "c6bb8049c255d00638bb95007da15620125316ffe60072fc8f51b114805c9766",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        },
+        {
+          "file": "h3-connect-1792788356047190289.json",
+          "sha256": "ea68fc0f9d4415e28ecb58fa4cb4aa0b25e13c81211185299327830fd3aad849",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        }
+      ],
+      "runtime_sha256": {
+        "firefox": "43c3d10bb03f05034729c7b9834280edb3795cd29474d54a37fc33f4ca1eda67",
+        "libnss3.so": "d535bafee0665498ce83c1ee3755bb610e1e996f69c892271b2333130097a338",
+        "libxul.so": "8a39d3e11c077e7842b31008101e8926cdf54689199cd2e6feb1f4cd952780d3",
+        "platform.ini": "e98be751a092e5a05134560c76851a2b521fd500db27e5d2535f07194cc8698a",
+        "xpcshell": "3a9771a9e473039c1c5b8b033084a19fe991a1ad7b6461cf9aa36bcb46d64319"
+      },
+      "source_sha256": {
+        "client.js": "92c5b3ac4763c2f3889a7eb678f24b381f903135951424dae4be175c6f8d7cd0",
+        "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+        "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+        "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+        "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+        "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+        "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+        "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+        "gecko.lock.json": "f88ac666d42396979e74c6439fc0496f75ac0c50036a75ce9c02d656b17f5fd9"
+      }
+    },
+    "managed": {
+      "artifact_id": 12529874988,
+      "repetitions": {
+        "h2-connect": 3,
+        "h3-connect": 3
+      },
+      "observations": [
+        {
+          "file": "h2-connect-1792788455139437927.json",
+          "sha256": "913f9aa82272dca4638e57a271b72bfc32bbb2d928d2b8739328e0ea3d774096",
+          "transport": "h2-connect",
+          "differences": []
+        },
+        {
+          "file": "h2-connect-1792788466619168518.json",
+          "sha256": "f937ccfdf4ad013083b44b6f8da86c59b7ec1bb887fb0ca8afc52a93ccc85d6c",
+          "transport": "h2-connect",
+          "differences": [
+            "connection_1.hpack_blocks",
+            "connection_1.h2_frames"
+          ]
+        },
+        {
+          "file": "h2-connect-1792788478227675394.json",
+          "sha256": "af0a556d100763e60ed3ccc62792cb6ac94414772a3c380f82202812c7daba5d",
+          "transport": "h2-connect",
+          "differences": []
+        },
+        {
+          "file": "h3-connect-1792788460735568811.json",
+          "sha256": "37db358aa3e2c83134e8f327674c5bad6cf6b65a411867c788c3c06b51ae1952",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        },
+        {
+          "file": "h3-connect-1792788472299749000.json",
+          "sha256": "6a068286ddd810f1d24d77bba931fc4cdf1580ed7fbe13c1717617a68edc924d",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        },
+        {
+          "file": "h3-connect-1792788483798777299.json",
+          "sha256": "87386796b15034640def47d064c571a35568c1fd99e26e946bbc071c61c69dad",
+          "transport": "h3-connect",
+          "differences": [
+            "connection_1.hello.extensions",
+            "connection_1.hello.ja3",
+            "connection_1.hello.ja3_md5",
+            "connection_2.hello.extensions",
+            "connection_2.hello.ja3",
+            "connection_2.hello.ja3_md5"
+          ]
+        }
+      ],
+      "runtime_sha256": {
+        "firefox": "43c3d10bb03f05034729c7b9834280edb3795cd29474d54a37fc33f4ca1eda67",
+        "libnss3.so": "d535bafee0665498ce83c1ee3755bb610e1e996f69c892271b2333130097a338",
+        "libxul.so": "8a39d3e11c077e7842b31008101e8926cdf54689199cd2e6feb1f4cd952780d3",
+        "platform.ini": "e98be751a092e5a05134560c76851a2b521fd500db27e5d2535f07194cc8698a",
+        "xpcshell": "3a9771a9e473039c1c5b8b033084a19fe991a1ad7b6461cf9aa36bcb46d64319"
+      },
+      "source_sha256": {
+        "client.js": "92c5b3ac4763c2f3889a7eb678f24b381f903135951424dae4be175c6f8d7cd0",
+        "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+        "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+        "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+        "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+        "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+        "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+        "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+        "gecko.lock.json": "f88ac666d42396979e74c6439fc0496f75ac0c50036a75ce9c02d656b17f5fd9"
+      }
+    }
+  }
+}
