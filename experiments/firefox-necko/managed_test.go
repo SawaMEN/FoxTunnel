@@ -2,11 +2,14 @@ package firefox
 
 import (
 	"context"
+	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -16,7 +19,9 @@ func TestGeckoManagedIPC(t *testing.T) {
 	if bundle == "" {
 		t.Skip("verified integration bundle required")
 	}
-	cfg := nativeProxy(t, "h2-connect", &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true})
+	var requests atomic.Int32
+	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true}
+	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests.Add(1); server.ServeHTTP(w, r) }))
 	m, err := NewManaged(bundle, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -43,6 +48,11 @@ func TestGeckoManagedIPC(t *testing.T) {
 		var reply [2]byte
 		if _, e = io.ReadFull(c, reply[:]); e != nil {
 			c.Close()
+			// Rejection may close the socket before the queued failure
+			// frame reaches TCP. EOF is denial; timeout or success is not.
+			if method == 0 && (errors.Is(e, io.EOF) || errors.Is(e, io.ErrUnexpectedEOF)) {
+				continue
+			}
 			t.Fatal(e)
 		}
 		if method == 0 {
@@ -54,11 +64,19 @@ func TestGeckoManagedIPC(t *testing.T) {
 				t.Fatal("IPC password method not selected")
 			}
 			c.Write([]byte{1, 1, 'x', 1, 'x'})
-			if _, e = io.ReadFull(c, reply[:]); e != nil || reply != [2]byte{1, 1} {
-				t.Fatal("IPC accepted incorrect credentials", e)
+			_, e = io.ReadFull(c, reply[:])
+			if e != nil {
+				if !errors.Is(e, io.EOF) && !errors.Is(e, io.ErrUnexpectedEOF) {
+					t.Fatal("IPC rejection did not finish", e)
+				}
+			} else if reply != [2]byte{1, 1} {
+				t.Fatal("IPC accepted incorrect credentials")
 			}
 		}
 		c.Close()
+	}
+	if requests.Load() != 0 {
+		t.Fatal("unauthenticated IPC reached the HTTPS proxy")
 	}
 	c, err := m.DialContext(ctx, "tcp", nativeEcho(t))
 	if err != nil {

@@ -136,12 +136,6 @@ jobs:
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s
-      - name: Sustained native resource measurements
-        env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
-          FOXTUNNEL_SOAK_SECONDS: '300'
-          FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
-        run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
       - name: Package and verify opt-in Linux amd64 launcher
         run: |
           python3 -m unittest discover -s scripts -p test_package_necko.py -v
@@ -176,6 +170,12 @@ jobs:
           path: necko-integrated-fingerprint/
           if-no-files-found: ignore
           retention-days: 14
+      - name: Sustained native resource measurements
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          FOXTUNNEL_SOAK_SECONDS: '300'
+          FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
       - uses: actions/upload-artifact@v4
         with:
           name: foxtunnel-necko-linux-amd64

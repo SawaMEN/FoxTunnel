@@ -76,7 +76,10 @@ not a Firefox invariant. These results do not establish equality of distribution
 The pinned Mozilla implementation marks an HPACK size update pending when peer
 SETTINGS arrive (`Http2Session::RecvSettings` and
 `Http2Compressor::SetMaxBufferSize`). Whether SETTINGS ACK precedes the first
-HEADERS affects which block contains that update. Forcing a fixed order or
+HEADERS affects which block contains that update. Attribution of the observed three-byte
+HPACK difference to that update is consistent with the source and ACK ordering;
+the observation files retain hashes rather than a raw HPACK instruction dump.
+Forcing a fixed order or
 turning off H3 extension randomization would replace Mozilla's behavior with a
 custom deterministic profile. This integration leaves that behavior intact.
 No DPI indistinguishability claim is made.
