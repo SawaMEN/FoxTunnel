@@ -7,6 +7,8 @@ on:
       - 'experiments/firefox-necko/gecko.lock.json'
       - 'experiments/firefox-necko/client.js'
       - 'experiments/firefox-necko/*.go'
+      - 'experiments/firefox-necko/fingerprint/**'
+      - 'scripts/compare_necko_firefox.py'
       - 'scripts/build_necko.py'
       - 'scripts/test_build_necko.py'
       - '.github/workflows/necko-experiment.yml'
@@ -105,6 +107,23 @@ jobs:
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGecko(ConcurrentCONNECT|Cancellation|H3NoTCPFallback)$' -v -count=3 -timeout=120s
+      - name: Full Firefox versus Necko helper wire measurements
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: foxtunnel
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+          FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
+        run: |
+          go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -v -count=3 -timeout=180s
+          python3 scripts/compare_necko_firefox.py --observations ../necko-fingerprint/observations --out ../necko-fingerprint/comparison.json
+      - name: Keep full Firefox comparison observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: necko-firefox-fingerprint
+          path: necko-fingerprint/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Archive the patched runtime for repeatable native diagnostics
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |

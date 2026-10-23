@@ -75,6 +75,20 @@ jobs:
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s
+      - name: Full Firefox wire comparison on the verified runtime
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
+        run: |
+          go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -v -count=3 -timeout=180s
+          python3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: necko-firefox-fingerprint
+          path: necko-fingerprint/
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:

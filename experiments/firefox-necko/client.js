@@ -50,9 +50,21 @@ class SocksParser {
   }
 }
 
+// xpcshell has no Firefox application name, although its HTTP implementation
+// and platform token come from the same libxul. Use the UA's own Gecko version
+// (which already applies Mozilla's version reduction), not appinfo.version's
+// prerelease suffix. Keep native OS/architecture tokens intact.
+function firefoxUserAgent(nativeUA) {
+  const version = nativeUA.match(/\brv:(\d+\.\d+)\)/);
+  if (!version || !/ (?:\/[^\s]+|Firefox\/[^\s]+)$/.test(nativeUA)) {
+    throw new Error("unsupported native Firefox user agent");
+  }
+  return nativeUA.replace(/ (?:\/[^\s]+|Firefox\/[^\s]+)$/, ` Firefox/${version[1]}`);
+}
+
 function socksReply(code) { return Uint8Array.from([5, code, 0, 1, 0, 0, 0, 0, 0, 0]); }
 
-if (typeof module !== "undefined") module.exports = { SocksParser, socksReply };
+if (typeof module !== "undefined") module.exports = { SocksParser, socksReply, firefoxUserAgent };
 
 if (typeof Components !== "undefined") {
   const { classes: Cc, interfaces: Ci, results: Cr } = Components;
@@ -114,6 +126,9 @@ if (typeof Components !== "undefined") {
       Services.prefs.setBoolPref("network.http.http3.disable_when_third_party_roots_found", false);
     }
   }
+
+  const httpProtocol = Cc["@mozilla.org/network/protocol;1?name=http"].getService(Ci.nsIHttpProtocolHandler);
+  Services.prefs.setStringPref("general.useragent.override", firefoxUserAgent(httpProtocol.userAgent));
 
   const pps = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService(Ci.nsIProtocolProxyService);
   // A fixed proxy with no DIRECT/failover entry. Credentials are attached to

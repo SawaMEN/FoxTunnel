@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { SocksParser } = require('./client.js');
+const { SocksParser, firefoxUserAgent } = require('./client.js');
 
 test('fragmented domain request keeps application bytes and never resolves DNS', () => {
   const p = new SocksParser();
@@ -37,4 +37,15 @@ test('rejects UDP, reserved bytes, URI injection, empty names and zero ports', (
 test('authentication refusal and buffer bounds', () => {
   const p = new SocksParser(); p.push([5,1,2]); assert.equal(p.greeting(), false);
   assert.throws(() => p.push(new Uint8Array(65537)));
+});
+
+test('xpcshell UA keeps native platform and reduced Gecko version', () => {
+  for (const platform of ['X11; Linux x86_64', 'Windows NT 10.0; Win64; x64', 'Macintosh; Intel Mac OS X 10.15']) {
+    const prefix = `Mozilla/5.0 (${platform}; rv:160.0) Gecko/20100101`;
+    assert.equal(firefoxUserAgent(prefix + ' /160.0a1'), prefix + ' Firefox/160.0');
+    assert.equal(firefoxUserAgent(prefix + ' Firefox/160.0'), prefix + ' Firefox/160.0');
+  }
+  for (const value of ['Mozilla/5.0 /160.0a1', 'Mozilla/5.0 (rv:160.0) Gecko/20100101 Other/160.0']) {
+    assert.throws(() => firefoxUserAgent(value));
+  }
 });
