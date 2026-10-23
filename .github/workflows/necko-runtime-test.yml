@@ -1,5 +1,14 @@
 name: Mozilla Necko runtime gates
 on:
+  push:
+    branches: [firefox]
+    paths:
+      - 'experiments/firefox-necko/client.js'
+      - 'experiments/firefox-necko/*.go'
+      - 'experiments/firefox-necko/fingerprint/**'
+      - 'scripts/compare_necko_firefox.py'
+      - 'scripts/test_compare_necko_firefox.py'
+      - '.github/workflows/necko-runtime-test.yml'
   workflow_dispatch:
     inputs:
       source_run:
@@ -15,16 +24,31 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Select compiled runtime for this verification
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN: ${{ inputs.source_run }}
+        run: |
+          source_run="$REQUESTED_RUN"
+          if [ -z "$source_run" ]; then
+            source_run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/necko-experiment.yml/runs?branch=firefox&status=success&per_page=1" --jq '.workflow_runs[0].id // empty')
+          fi
+          if ! [[ "$source_run" =~ ^[0-9]+$ ]]; then
+            echo 'No compiled runtime found; run the source workflow first.' >&2
+            exit 1
+          fi
+          echo "run_id=$source_run" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
           name: necko-linux-amd64-runtime
-          run-id: ${{ inputs.source_run }}
+          run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
           path: runtime-archive
       - uses: actions/download-artifact@v4
         with:
           name: necko-source-provenance
-          run-id: ${{ inputs.source_run }}
+          run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
           path: runtime-provenance
       - name: Install runtime libraries and diagnostic tools

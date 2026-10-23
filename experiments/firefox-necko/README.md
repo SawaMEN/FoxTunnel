@@ -115,9 +115,12 @@ available for seven days, including after a gate failure for diagnostics.
 Build provenance distinguishes source preparation from compilation; native test
 results are recorded separately in workflow logs.
 
-The manual [runtime workflow](../../.github/workflows/necko-runtime-test.yml)
-can reuse an artifact by source-run ID. It verifies the source lock and four
-binary hashes, and rejects a runtime built with a different patch set.
+The [runtime workflow](../../.github/workflows/necko-runtime-test.yml) also runs
+automatically for helper JS, Go tests and comparison-harness changes. It reuses
+the latest successful source-build artifact after verifying the exact source lock
+and four binary hashes; a different patch set is rejected. Manual dispatch can
+select a specific source-run ID. This fast verification does not replace source
+compilation when native patches change.
 
 ## Reproduce the checks
 
