@@ -57,7 +57,7 @@ class OperationsReportTests(unittest.TestCase):
             b = json.loads((base / "h2-connect-soak.json").read_text())
             b["ci_run_id"] = "wrong"
             (base / "h2-connect-soak.json").write_text(json.dumps(b))
-            with self.assertRaisesRegex(ValueError, "same CI run"):
+            with self.assertRaisesRegex(ValueError, "CI run and runner"):
                 report(curr, paired_baseline=base)
 
     def test_reject_bad_counters(self):
