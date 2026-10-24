@@ -63,7 +63,7 @@ def measures(result):
     }
 
 
-def report(current, reference=None):
+def report(current, reference=None, paired_baseline=None):
     now, before = {}, {}
     for mode in MODES:
         filename = mode + "-soak.json"
@@ -73,18 +73,49 @@ def report(current, reference=None):
             keys = ("duration_seconds", "parallel_streams", "payload_bytes_per_round")
             if any(now[mode][key] != before[mode][key] for key in keys):
                 raise ValueError("different test workload")
+    paired = None
+    if paired_baseline is not None:
+        paired = {}
+        for mode in MODES:
+            filename = mode + "-soak.json"
+            cur_raw = json.loads((current / filename).read_text())
+            base_raw = json.loads((paired_baseline / filename).read_text())
+            if cur_raw.get("variant") != "current" or base_raw.get("variant") != "baseline":
+                raise ValueError("not a baseline/current pair")
+            run = cur_raw.get("ci_run_id")
+            host = cur_raw.get("runner_name")
+            if not run or not host or run != base_raw.get("ci_run_id") or host != base_raw.get("runner_name"):
+                raise ValueError("paired workloads must share a CI run and runner")
+            a, b = now[mode], measures(base_raw)
+            keys = ("duration_seconds", "parallel_streams", "payload_bytes_per_round")
+            if any(a[key] != b[key] for key in keys):
+                raise ValueError("different paired workloads")
+            paired[mode] = {
+                "runner_name": host,
+                "ci_run_id": run,
+                "baseline": b,
+                "current": a,
+                "throughput_change_percent": round(
+                    100 * (a["app_mib_per_second"] / b["app_mib_per_second"] - 1), 2),
+                "cpu_per_gib_change_percent": round(
+                    100 * (a["cpu_seconds_per_gib"] / b["cpu_seconds_per_gib"] - 1), 2),
+                "sampled_peak_rss_change_kib": a["rss_max_sampled_kib"] - b["rss_max_sampled_kib"],
+                "scope": "Sequential runs on one CI runner; not statistically significant.",
+            }
     return {
         "schema": 1,
         "kind": "fx-necko-resource-report",
         "current": now,
         "historical_reference": before if reference is not None else None,
-        "comparison_validity": "uncontrolled-between-runs; do not infer speedup",
+        "paired_baseline": paired,
+        "comparison_validity": "paired-sequential-single-run" if paired is not None else "uncontrolled-between-runs; do not infer speedup",
         "limits": [
             "Process RSS and CPU cover xpcshell helper only, not complete server/client.",
             "Wire application bytes include upload and download; no WAN throughput conclusion.",
             "Historical reference was measured on a different CI execution; CPU and RSS vary by host and runtime.",
             "These samples are not proof of lower allocations; inspect heap profiles before claims.",
-            "Sampled peak RSS can miss true instantaneous peak."
+            "Sampled peak RSS can miss true instantaneous peak.",
+            "Sequential paired runs share host and runtime but may suffer drift; repeat before claiming speedups."
         ],
     }
 
@@ -93,9 +124,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--current", type=Path, required=True)
     parser.add_argument("--reference", type=Path)
+    parser.add_argument("--paired-baseline", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
-    result = report(args.current, args.reference)
+    result = report(args.current, args.reference, args.paired_baseline)
     fd = os.open(args.out, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     with os.fdopen(fd, "w") as f:
         json.dump(result, f, indent=2, sort_keys=True)
@@ -104,6 +136,11 @@ def main():
         print(mode, "CPU s/GiB", value["cpu_seconds_per_gib"],
               "MiB/s", value["app_mib_per_second"],
               "sampled RSS peak KiB", value["rss_max_sampled_kib"])
+        if result["paired_baseline"]:
+            pair = result["paired_baseline"][mode]
+            print("paired", mode, "throughput delta %", pair["throughput_change_percent"],
+                  "CPU s/GiB delta %", pair["cpu_per_gib_change_percent"],
+                  "sampled RSS peak delta KiB", pair["sampled_peak_rss_change_kib"])
 
 
 if __name__ == "__main__":

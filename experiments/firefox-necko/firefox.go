@@ -161,6 +161,13 @@ type runtimeConfig struct {
 // in argv. It never launches a browser with the user's normal Firefox profile.
 // Cancellation terminates and joins the helper before removing its files.
 func Run(ctx context.Context, runtimePath string, config Config, stdout, stderr io.Writer) error {
+	return runWithClient(ctx, runtimePath, config, stdout, stderr, clientScript)
+}
+
+// runWithClient is private to this package. Production callers always get
+// the embedded clientScript; native tests may substitute a pinned historical
+// client for same-run A/B measurements without affecting runtime configuration.
+func runWithClient(ctx context.Context, runtimePath string, config Config, stdout, stderr io.Writer, scriptSource []byte) error {
 	c, err := config.normalize()
 	if err != nil {
 		return err
@@ -207,7 +214,7 @@ func Run(ctx context.Context, runtimePath string, config Config, stdout, stderr 
 		return err
 	}
 	script := filepath.Join(private, "client.js")
-	if err := os.WriteFile(script, clientScript, 0600); err != nil {
+	if err := os.WriteFile(script, scriptSource, 0600); err != nil {
 		return err
 	}
 	cmd := exec.CommandContext(ctx, runtimePath, "-g", filepath.Dir(runtimePath), "-a", filepath.Dir(runtimePath), "-f", script)

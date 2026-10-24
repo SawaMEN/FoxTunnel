@@ -1,6 +1,9 @@
 import copy
 import unittest
-from report_fx_operations import measures, MODES
+from report_fx_operations import measures, report
+from pathlib import Path
+import json
+import tempfile
 
 
 def fixture():
@@ -29,6 +32,33 @@ class OperationsReportTests(unittest.TestCase):
         self.assertEqual(a["rss_delta_kib"], 500)
         self.assertEqual(a["fd_max_sampled"], 50)
         self.assertGreater(a["cpu_seconds_per_gib"], 0)
+
+    def test_paired_report_requires_same_runner_and_variant(self):
+        with tempfile.TemporaryDirectory() as root:
+            curr = Path(root) / "current"
+            base = Path(root) / "baseline"
+            curr.mkdir()
+            base.mkdir()
+            for mode in ("h2-connect", "h3-connect"):
+                a = fixture()
+                a.update(transport=mode, variant="current", ci_run_id="100",
+                         runner_name="gha-1")
+                b = copy.deepcopy(a)
+                b["variant"] = "baseline"
+                b["rounds"] = 80
+                b["counters"]["completed"] = 96
+                b["counters"]["upload_bytes"] = 96 * 131072
+                b["counters"]["download_bytes"] = 96 * 131072
+                (curr / (mode + "-soak.json")).write_text(json.dumps(a))
+                (base / (mode + "-soak.json")).write_text(json.dumps(b))
+            result = report(curr, paired_baseline=base)
+            self.assertEqual(result["comparison_validity"], "paired-sequential-single-run")
+            self.assertGreater(result["paired_baseline"]["h2-connect"]["throughput_change_percent"], 0)
+            b = json.loads((base / "h2-connect-soak.json").read_text())
+            b["ci_run_id"] = "wrong"
+            (base / "h2-connect-soak.json").write_text(json.dumps(b))
+            with self.assertRaisesRegex(ValueError, "same CI run"):
+                report(curr, paired_baseline=base)
 
     def test_reject_bad_counters(self):
         for key in ("download_bytes", "completed", "rejected"):

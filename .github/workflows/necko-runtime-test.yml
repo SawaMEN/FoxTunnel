@@ -11,6 +11,7 @@ on:
       - 'scripts/report_fx_operations.py'
       - 'scripts/test_report_fx_operations.py'
       - 'experiments/firefox-necko/client_test.cjs'
+      - 'experiments/firefox-necko/validation/baseline/client.js'
       - 'docs/FX.md'
       - 'scripts/collect_necko_licenses.py'
       - 'internal/tunnel/**'
@@ -141,7 +142,7 @@ jobs:
           go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint|GeckoFirefoxSelfComparison)' -v -count=3 -timeout=180s
           python3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json
           python3 scripts/analyze_firefox_self.py --observations necko-fingerprint/observations/firefox-self --out necko-fingerprint/firefox-self.json
-          python3 scripts/evaluate_fx_fingerprint.py --candidate necko-fingerprint/comparison.json --control necko-fingerprint/firefox-self.json --out necko-fingerprint/fx-audit.json
+          python3 scripts/evaluate_fx_fingerprint.py --candidate necko-fingerprint/comparison.json --control necko-fingerprint/firefox-self.json --out necko-fingerprint/fx-audit.json --enforce
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -196,9 +197,24 @@ jobs:
           FOXTUNNEL_SOAK_SECONDS: '300'
           FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
+      - name: FX pinned pre-optimization paired control (60 seconds per protocol)
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          FOXTUNNEL_SOAK_SECONDS: '60'
+          FOXTUNNEL_SOAK_VARIANT: baseline
+          FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations-paired-baseline
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=240s
+      - name: FX current paired workload (60 seconds per protocol)
+        env:
+          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          FOXTUNNEL_SOAK_SECONDS: '60'
+          FOXTUNNEL_SOAK_VARIANT: current
+          FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations-paired-current
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=240s
       - name: FX resource efficiency report
         run: |
           python3 scripts/report_fx_operations.py --current necko-operations --reference experiments/firefox-necko/validation/stage4/ci-300s --out necko-operations/fx-resource-report.json
+          python3 scripts/report_fx_operations.py --current necko-operations-paired-current --paired-baseline necko-operations-paired-baseline --out necko-operations/paired-fx-report.json
       - uses: actions/upload-artifact@v4
         with:
           name: foxtunnel-necko-linux-amd64

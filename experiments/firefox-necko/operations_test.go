@@ -48,6 +48,10 @@ type operationalHelper struct {
 }
 
 func startOperationalHelper(t *testing.T, parent context.Context, cfg Config) *operationalHelper {
+	return startOperationalHelperWithClient(t, parent, cfg, clientScript)
+}
+
+func startOperationalHelperWithClient(t *testing.T, parent context.Context, cfg Config, script []byte) *operationalHelper {
 	t.Helper()
 	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
 	if runtime == "" {
@@ -60,7 +64,7 @@ func startOperationalHelper(t *testing.T, parent context.Context, cfg Config) *o
 	ready := make(chan operationalStats, 1)
 	go func() {
 		defer close(h.finished)
-		e := Run(ctx, runtime, cfg, write, &h.stderr)
+		e := runWithClient(ctx, runtime, cfg, write, &h.stderr, script)
 		if e != nil && ctx.Err() == nil {
 			h.stderr.Write([]byte(fmt.Sprintf("helper failure: %v", e)))
 		}
@@ -248,6 +252,23 @@ func TestGeckoSoak(t *testing.T) {
 	if e != nil || seconds < 10 || seconds > 3600 {
 		t.Fatal("soak seconds must be 10..3600")
 	}
+	variant := os.Getenv("FOXTUNNEL_SOAK_VARIANT")
+	if variant == "" {
+		variant = "current"
+	}
+	script := clientScript
+	switch variant {
+	case "current":
+	case "baseline":
+		// This historical adapter is a test fixture pinned to pre-fx main.
+		// Never allow a caller-provided path or untrusted source in production.
+		script, e = os.ReadFile("validation/baseline/client.js")
+		if e != nil {
+			t.Fatal(e)
+		}
+	default:
+		t.Fatalf("unsupported soak variant: %q", variant)
+	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
 			echo := nativeEcho(t)
@@ -258,7 +279,7 @@ func TestGeckoSoak(t *testing.T) {
 			cfg.MaxRetainedConnections = 128
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(seconds+30)*time.Second)
 			defer cancel()
-			h := startOperationalHelper(t, ctx, cfg)
+			h := startOperationalHelperWithClient(t, ctx, cfg, script)
 			start := time.Now()
 			for i := 0; i < 16; i++ {
 				if e := operationalRound(h, echo, -i); e != nil {
@@ -307,7 +328,7 @@ func TestGeckoSoak(t *testing.T) {
 			samples = append(samples, last)
 			if out := os.Getenv("FOXTUNNEL_OPERATIONS_OUT"); out != "" {
 				os.MkdirAll(out, 0700)
-				data, _ := json.MarshalIndent(map[string]any{"schema": 1, "transport": mode, "duration_seconds": seconds, "rounds": rounds, "payload_bytes_per_round": 128 << 10, "parallel_streams": 8, "warmup_tunnels": 16, "samples": samples, "counters": final, "cpu_ticks_per_second": ticksPerSecond, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond, "average_cpu_percent": 100000 * float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond / float64(last.AtMS-first.AtMS), "scope": "loopback churn plus binary half-close; not a production throughput benchmark"}, "", "  ")
+				data, _ := json.MarshalIndent(map[string]any{"schema": 1, "transport": mode, "duration_seconds": seconds, "rounds": rounds, "payload_bytes_per_round": 128 << 10, "parallel_streams": 8, "warmup_tunnels": 16, "samples": samples, "counters": final, "cpu_ticks_per_second": ticksPerSecond, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond, "average_cpu_percent": 100000 * float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond / float64(last.AtMS-first.AtMS), "variant": variant, "ci_run_id": os.Getenv("GITHUB_RUN_ID"), "runner_name": os.Getenv("RUNNER_NAME"), "scope": "loopback churn plus binary half-close; not a production throughput benchmark"}, "", "  ")
 				if e := os.WriteFile(filepath.Join(out, mode+"-soak.json"), append(data, '\n'), 0600); e != nil {
 					t.Fatal(e)
 				}
