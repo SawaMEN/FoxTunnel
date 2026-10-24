@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 )
@@ -41,8 +42,17 @@ func TestGeckoManagedBond(t *testing.T) {
 				hub := server.NewBondHub()
 				defer hub.Close()
 				server.Bond = hub
-				var failed atomic.Bool
+				var failed atomic.Int32
+				failed.Store(-1)
 				var calls [2]atomic.Int32
+				var activeLanes [2]atomic.Int32
+				var cutLanes atomic.Int32
+				var paths [2]context.Context
+				var losePath [2]context.CancelFunc
+				for index := range paths {
+					paths[index], losePath[index] = context.WithCancel(context.Background())
+					defer losePath[index]()
+				}
 				var manifest cluster.Manifest
 				ready := make(chan struct{})
 				endpoint := func(index int) Config {
@@ -58,9 +68,20 @@ func TestGeckoManagedBond(t *testing.T) {
 							return
 						}
 						calls[index].Add(1)
-						if index == 0 && failed.Load() {
+						if int32(index) == failed.Load() {
 							http.Error(w, "outage", 503)
 							return
+						}
+						if r.Header.Get(bond.LaneHeader) != "" {
+							activeLanes[index].Add(1)
+							defer activeLanes[index].Add(-1)
+							// A new-request rejection alone leaves an existing lane
+							// alive. Cut its upload body to actually lose that path.
+							stop := context.AfterFunc(paths[index], func() {
+								cutLanes.Add(1)
+								r.Body.Close()
+							})
+							defer stop()
 						}
 						server.ServeHTTP(w, r)
 					}))
@@ -139,7 +160,17 @@ func TestGeckoManagedBond(t *testing.T) {
 				payload := bytes.Repeat([]byte{0, 255, 128, 42}, 32<<10)
 				for i := 0; i < 2; i++ {
 					if i == 1 {
-						failed.Store(true)
+						index := 0
+						if lanes {
+							if activeLanes[index].Load() == 0 {
+								index = 1
+							}
+							if activeLanes[index].Load() == 0 {
+								t.Fatal("no active native lane available for path-loss test")
+							}
+						}
+						failed.Store(int32(index))
+						losePath[index]()
 					}
 					written := make(chan error, 1)
 					go func() { _, e := conn.Write(payload); written <- e }()
@@ -153,6 +184,9 @@ func TestGeckoManagedBond(t *testing.T) {
 				}
 				if calls[1].Load() == 0 {
 					t.Fatal("secondary HTTPS origin was not used")
+				}
+				if lanes && cutLanes.Load() == 0 {
+					t.Fatal("path loss did not interrupt an established native lane")
 				}
 			})
 		}

@@ -295,3 +295,11 @@ hide a leaked association. Exit loss must also close the SOCKS control socket,
 with no stream reopening or silent migration of existing UDP flows. These new
 native lifecycle cases await the early-response-header source build; passing
 ordinary routing fixtures does not qualify them.
+
+The native Bond outage gate now cancels a body on an actually established lane
+before the second binary transfer, and rejects subsequent requests to that
+exit. It records active lanes and requires at least one real lane interruption;
+returning 503 only for new requests would not test persistent-path loss. The
+RPC cases retain first-origin rejection. Both explicit topology and discovery
+must preserve the same connection's binary data through the outage. Native
+qualification of this stronger lane gate remains pending.
