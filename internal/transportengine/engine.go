@@ -5,8 +5,8 @@ package transportengine
 import (
 	"errors"
 	"fmt"
-	"os"
 	firefox "github.com/SawaMEN/FoxTunnel/experiments/firefox-necko"
+	"os"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -20,7 +20,7 @@ import (
 // Config is local client policy. It is not serialized into connection links.
 // Engine is legacy (default), auto, mozilla (NSS/Neqo) or necko (owned runtime).
 type Config struct {
-	NeckoBundle          string
+	NeckoBundle string
 	// AutoNeckoExcluded prevents selecting Necko for features that its runtime cannot enforce.
 	// Explicit necko mode still rejects unsupported policy at its existing validation boundary.
 	AutoNeckoExcluded    bool
