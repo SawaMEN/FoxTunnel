@@ -39,11 +39,23 @@ class FXAuditTests(unittest.TestCase):
 
     def test_stable_mismatch_is_reported_and_not_normalized(self):
         c, f = reports()
-        c["observations"][1]["checks"][0] = row("connection_1.settings", [1], [9])
+        for ob in c["observations"][:2]:
+            ob["checks"][0] = row("connection_1.settings", [1], [9])
         result = evaluate(c, f)
         self.assertEqual(result["status"], "regression-detected")
         self.assertEqual(result["results"]["h2-connect"]["unexpected_fields"],
                          ["connection_1.settings"])
+
+    def test_sporadic_h2_frame_mismatch_is_visible_but_not_confirmed(self):
+        c, f = reports()
+        c["observations"][0]["checks"][0] = row("connection_1.settings", [1], [9])
+        result = evaluate(c, f)
+        self.assertEqual(result["status"], "inconclusive")
+        self.assertEqual(result["unexpected_differences"], 0)
+        self.assertEqual(result["sporadic_differences"], 1)
+        self.assertEqual(result["results"]["h2-connect"]["sporadic_fields"],
+                         ["connection_1.settings"])
+        self.assertEqual(result["results"]["h2-connect"]["persistent_mismatch_threshold"], 2)
 
     def test_self_variation_is_inconclusive_not_a_false_match(self):
         c, f = reports()

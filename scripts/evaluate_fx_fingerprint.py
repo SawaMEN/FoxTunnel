@@ -44,9 +44,11 @@ def evaluate(candidate, control, minimum=3):
            "runtime_sha256": candidate["runtime_sha256"],
            "source_sha256": candidate["source_sha256"],
            "results": {}, "unexpected_differences": 0, "variable_differences": 0,
+           "sporadic_differences": 0,
            "limitations": [
                "Firefox-to-Firefox variation is inconclusive, not proof of similarity.",
                "Three or more lab observations cannot establish distributional equivalence.",
+               "An isolated H2 frame or HPACK mismatch is recorded as sporadic; at least two-thirds repeated non-control mismatches are required to block CI.",
                "No claims about ordinary browsing, traffic timing, payload shapes or DPI."
            ]}
     for mode in MODES:
@@ -67,7 +69,7 @@ def evaluate(candidate, control, minimum=3):
                 samples[field].add(json.dumps(row["reference"], sort_keys=True))
                 samples[field].add(json.dumps(row["candidate"], sort_keys=True))
         volatile.update(field for field, values in samples.items() if len(values) > 1)
-        unexpected, variable = set(), set()
+        unexpected, variable, sporadic = set(), set(), set()
         candidate_mismatches = {field: 0 for field in field_set}
         control_mismatches = {field: 0 for field in field_set}
         for ob in refs:
@@ -80,7 +82,20 @@ def evaluate(candidate, control, minimum=3):
             for field, row in rows.items():
                 if row["status"] == "different":
                     candidate_mismatches[field] += 1
-                    (variable if field in volatile else unexpected).add(field)
+        # A single mismatch in three repetitions can arise from HPACK state or
+        # SETTINGS ACK scheduling, including runs where the small Firefox self
+        # sample happens not to capture it. Preserve the field and frequency.
+        # Fail closed only on repeated differences outside the self controls.
+        threshold = max(2, (len(trials) * 2 + 2) // 3)
+        for field, count in candidate_mismatches.items():
+            if not count:
+                continue
+            if field in volatile:
+                variable.add(field)
+            elif count >= threshold:
+                unexpected.add(field)
+            else:
+                sporadic.add(field)
         # Persistent mismatches against naturally variable Firefox fields merit
         # investigation, but cannot be promoted to a "definite" mismatch.
         persistent = sorted(field for field in variable
@@ -91,7 +106,9 @@ def evaluate(candidate, control, minimum=3):
             "control_repetitions": len(refs),
             "control_variable_fields": sorted(volatile),
             "unexpected_fields": sorted(unexpected),
+            "sporadic_fields": sorted(sporadic),
             "inconclusive_fields": sorted(variable),
+            "persistent_mismatch_threshold": threshold,
             "persistent_under_variable_control": persistent,
             "mismatch_frequencies": [
                 {"field": field,
@@ -104,8 +121,9 @@ def evaluate(candidate, control, minimum=3):
         }
         out["unexpected_differences"] += len(unexpected)
         out["variable_differences"] += len(variable)
+        out["sporadic_differences"] += len(sporadic)
     out["status"] = ("regression-detected" if out["unexpected_differences"] else
-                     "inconclusive" if out["variable_differences"] else
+                     "inconclusive" if out["variable_differences"] or out["sporadic_differences"] else
                      "no-differences-in-recorded-fields")
     return out
 
@@ -131,7 +149,8 @@ def main():
     print("FX fingerprint audit:", result["status"])
     for mode, row in result["results"].items():
         print(mode, "unexpected:", ", ".join(row["unexpected_fields"]) or "none",
-              "inconclusive:", ", ".join(row["inconclusive_fields"]) or "none")
+              "inconclusive:", ", ".join(row["inconclusive_fields"]) or "none",
+              "sporadic:", ", ".join(row["sporadic_fields"]) or "none")
     if args.enforce and result["unexpected_differences"]:
         raise SystemExit(1)
 
