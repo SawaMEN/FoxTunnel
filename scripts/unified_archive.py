@@ -11,12 +11,12 @@ import merge_necko_nss
 import release_verify as contract
 
 
-def unpack(source, destination, version, commit):
+def unpack(source, destination, version, commit, archive_name=None):
     contract.validate_version(version)
     if not contract.COMMIT.fullmatch(commit):
         raise ValueError("expected full source commit")
     expected = "foxtunnel_" + version[1:] + "_linux_amd64.tar.gz"
-    if source.name != expected:
+    if (archive_name or source.name) != expected:
         raise ValueError("not a version-matched Linux amd64 unified archive")
     merge_necko_nss.extract_regular(source, destination, prefix="foxtunnel-necko")
     manifest = contract.read_json(destination / "manifest.json")
