@@ -35,8 +35,11 @@ func (c *Client) validateManaged() error {
 	if c.ConnectTimeout > 0 && c.ConnectTimeout < 100*time.Millisecond {
 		return errors.New("Necko setup timeout must be at least 100ms")
 	}
-	if c.Padding || c.EnableUDP || c.UDPStreaming || c.UDPMultiNode || c.RequireProtocolNegotiation || len(c.fallbackServers) > 0 || c.bondClient != nil || c.bondDiscovery != nil || (c.balance != "" && c.balance != "failover") {
-		return errors.New("Necko supports TCP CONNECT without padding, UDP, bond, balancing, fallback servers or draft negotiation")
+	if c.Padding || c.UDPStreaming || c.UDPMultiNode || c.RequireProtocolNegotiation || len(c.fallbackServers) > 0 || c.bondClient != nil || c.bondDiscovery != nil || (c.balance != "" && c.balance != "failover") {
+		return errors.New("Necko supports TCP CONNECT and bounded UDP v1 without padding, UDP streaming, bond, balancing, fallback servers or draft negotiation")
+	}
+	if c.EnableUDP && c.nativeTransport != "h2-connect" {
+		return errors.New("Necko native UDP v1 requires h2-connect; h3-connect UDP is not implemented")
 	}
 	return nil
 }
@@ -125,4 +128,26 @@ func (c *Client) relayManaged(ctx context.Context, local net.Conn, target string
 	go func() { defer close(done); copyHalf(remote, local) }()
 	copyHalf(local, remote)
 	<-done
+}
+
+ // exchangeManagedUDP requires an authenticated Mozilla HTTP/2 IPC adapter.
+ // Absence of the feature is an error; never send credentials or packets
+ // through the legacy Go transport as an implicit fallback.
+func (c *Client) exchangeManagedUDP(ctx context.Context, wire []byte) ([]byte, error) {
+	if err := c.Prepare(ctx); err != nil {
+		return nil, err
+	}
+	c.managed.Lock()
+	transport, closed := c.managed.transport, c.managed.closed
+	c.managed.Unlock()
+	if closed {
+		return nil, net.ErrClosed
+	}
+	exchange, ok := transport.(interface {
+		ExchangeUDP(context.Context, []byte) ([]byte, error)
+	})
+	if !ok {
+		return nil, errors.New("managed Necko transport cannot exchange UDP")
+	}
+	return exchange.ExchangeUDP(ctx, wire)
 }

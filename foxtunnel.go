@@ -108,7 +108,9 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}()
 	plan, err := transportengine.Resolve(transportengine.Config{
 		Engine: config.Engine, Transport: config.Transport, NeckoBundle: config.NeckoBundle,
-		AutoNeckoExcluded: config.RequireProtocolNegotiation || config.Padding || config.EnableUDP ||
+		AutoNeckoExcluded: config.RequireProtocolNegotiation || config.Padding ||
+			(config.EnableUDP && (config.UDPStreaming || (config.Transport != "" &&
+				config.Transport != "h2-connect" && config.Transport != "auto"))) ||
 			config.UDPStreaming || len(config.FallbackServers) > 0 || config.XHTTPPath != "" ||
 			config.XHTTPHost != "" || config.ServerName != "" || config.SPKIPin != "" ||
 			(config.Balance != "" && config.Balance != "failover"),

@@ -533,7 +533,8 @@ func main() {
 		failClient := func(v ...any) { client.Close(); log.Fatal(v...) }
 		intent := transportengine.Config{
 			Engine: *engine, Transport: *nativeTransport, NeckoBundle: *neckoBundle,
-			AutoNeckoExcluded: wirePolicy == contract.ProtocolStrict || *enableUDP || *padding ||
+			AutoNeckoExcluded: wirePolicy == contract.ProtocolStrict || (*enableUDP &&
+				(*udpStream || *udpMultiNode || (*nativeTransport != "h2-connect" && *nativeTransport != "auto"))) || *padding ||
 				*bonded || *discover || len(fallbacks) > 0 || *xhttpPath != "" ||
 				*xhttpHost != "" || *sni != "" || *pin != "" || *nodePinsFile != "" ||
 				(*balance != "" && *balance != "failover"),
