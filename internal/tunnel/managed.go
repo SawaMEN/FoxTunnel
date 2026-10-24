@@ -188,7 +188,7 @@ func (c *Client) openManagedUDPStream(ctx context.Context, endpoint *url.URL) (*
 	stop := context.AfterFunc(ctx, func() { _ = stream.Close() })
 	return &udpStream{
 		response: stream,
-		writer: stream,
+		writer:   stream,
 		cancel: func() {
 			stop()
 			_ = stream.Close()
