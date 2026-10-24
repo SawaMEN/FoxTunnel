@@ -404,7 +404,8 @@ if (typeof Components !== "undefined") {
       return Promise.reject(new Error("unsupported native UDP operation"));
     }
     return new Promise((resolve, reject) => {
-      const target = `https://${cfg.proxy_host}:${cfg.proxy_port}/.well-known/foxtunnel-udp-v1`;
+      const host = cfg.proxy_host.includes(":") ? `[${cfg.proxy_host}]` : cfg.proxy_host;
+      const target = `https://${host}:${cfg.proxy_port}/.well-known/foxtunnel-udp-v1`;
       const channel = NetUtil.newChannel({
         uri: target, loadUsingSystemPrincipal: true,
         securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |

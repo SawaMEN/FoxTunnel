@@ -59,8 +59,8 @@ func TestManagedUDPFailClosedOnUnsupportedModes(t *testing.T) {
 	} {
 		c, err := NewClient("https://127.0.0.1:8443", "user", "password", "")
 		if err != nil {
-		t.Fatal(err)
-	}
+			t.Fatal(err)
+		}
 		c.SetManagedTransport(tt.mode, func() (ManagedTransport, error) { return &udpManagedFixture{}, nil })
 		c.EnableUDP = true
 		c.UDPStreaming = tt.stream
