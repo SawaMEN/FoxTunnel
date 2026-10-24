@@ -1,7 +1,7 @@
 name: Mozilla Necko runtime gates
 on:
   push:
-    branches: [main, firefox, fx]
+    branches: [main, firefox, fx, xfd]
     paths:
       - 'foxtunnel*.go'
       - 'necko_integration_test.go'

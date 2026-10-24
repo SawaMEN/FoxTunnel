@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"time"
 
 	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 )
@@ -143,3 +144,100 @@ func (m *Managed) ExchangeUDP(ctx context.Context, wire []byte) ([]byte, error) 
 	return data, nil
 }
 
+// OpenUDPStream opens the experimental authenticated UDP-v2 IPC bridge.
+// The setup budget expires after handshake; parent cancellation owns the flow.
+// Normal client configuration remains gated pending native runtime validation.
+func (m *Managed) OpenUDPStream(ctx context.Context) (io.ReadWriteCloser, error) {
+	op, cancel := context.WithTimeout(ctx, m.timeout)
+	defer cancel()
+	if err := m.Ready(op); err != nil {
+		return nil, err
+	}
+	m.mu.Lock()
+	listen, closed := m.listen, m.closed
+	m.mu.Unlock()
+	if closed {
+		return nil, net.ErrClosed
+	}
+	c, err := (&net.Dialer{}).DialContext(op, "tcp", listen)
+	if err != nil {
+		return nil, err
+	}
+	keep := false
+	defer func() {
+		if !keep {
+			_ = c.Close()
+		}
+	}()
+	if deadline, ok := op.Deadline(); ok {
+		_ = c.SetDeadline(deadline)
+	}
+	stop := context.AfterFunc(op, func() { _ = c.Close() })
+	defer stop()
+	write := func(bytes []byte) error {
+		for len(bytes) > 0 {
+			n, e := c.Write(bytes)
+			if e != nil {
+				return e
+			}
+			if n == 0 {
+				return io.ErrShortWrite
+			}
+			bytes = bytes[n:]
+		}
+		return nil
+	}
+	var greeting [2]byte
+	if err = write([]byte{5, 1, 2}); err == nil {
+		_, err = io.ReadFull(c, greeting[:])
+	}
+	if err != nil {
+		return nil, err
+	}
+	if greeting != [2]byte{5, 2} {
+		return nil, errors.New("Necko UDP IPC greeting rejected")
+	}
+	auth := append([]byte{1, 9}, []byte("foxtunnel")...)
+	auth = append(auth, byte(len(m.token)))
+	auth = append(auth, []byte(m.token)...)
+	if err = write(auth); err == nil {
+		_, err = io.ReadFull(c, greeting[:])
+	}
+	if err != nil {
+		return nil, err
+	}
+	if greeting != [2]byte{1, 0} {
+		return nil, errors.New("Necko UDP IPC authentication rejected")
+	}
+	if err := write([]byte{5, 0xf1, 0, 0}); err != nil {
+		return nil, err
+	}
+	var reply [4]byte
+	if _, err := io.ReadFull(c, reply[:]); err != nil {
+		return nil, err
+	}
+	if reply != [4]byte{5, 0, 0, 0} {
+		return nil, errors.New("Necko UDP stream rejected")
+	}
+	if !stop() {
+		return nil, context.DeadlineExceeded
+	}
+	if err := op.Err(); err != nil {
+		return nil, err
+	}
+	if err := c.SetDeadline(time.Time{}); err != nil {
+		return nil, err
+	}
+	stream := &managedUDPConn{Conn: c}
+	stream.stop = context.AfterFunc(ctx, func() { _ = c.Close() })
+	keep = true
+	return stream, nil
+}
+
+// Closing the flow also releases its parent context callback.
+type managedUDPConn struct {
+	net.Conn
+	stop func() bool
+}
+
+func (c *managedUDPConn) Close() error { c.stop(); return c.Conn.Close() }

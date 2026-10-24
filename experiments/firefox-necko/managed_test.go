@@ -26,8 +26,12 @@ func TestGeckoManagedIPC(t *testing.T) {
 		requests.Add(1)
 		if r.URL.Path == "/.well-known/foxtunnel-udp-v1" {
 			nativePOST.Add(1)
-			if r.ProtoMajor == 2 { nativeH2.Add(1) }
-			if r.Header.Get("Proxy-Authorization") != "" { nativeAuth.Add(1) }
+			if r.ProtoMajor == 2 {
+				nativeH2.Add(1)
+			}
+			if r.Header.Get("Proxy-Authorization") != "" {
+				nativeAuth.Add(1)
+			}
 		}
 		server.ServeHTTP(w, r)
 	}))
@@ -146,5 +150,66 @@ func TestGeckoManagedIPC(t *testing.T) {
 	if c, err = net.DialTimeout("tcp", listen, 100*time.Millisecond); err == nil {
 		c.Close()
 		t.Fatal("helper listener survived Close")
+	}
+}
+
+// The peer flushes response headers before reading upload bytes. This detects
+// Gecko buffering an unknown-length upload until EOF, as well as lost duplex.
+func TestGeckoManagedUDPStream(t *testing.T) {
+	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	if bundle == "" {
+		t.Skip("verified integration bundle required")
+	}
+	var posts atomic.Int32
+	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/.well-known/foxtunnel-udp-stream-v2" || r.Method != "POST" || r.ProtoMajor != 2 || r.Header.Get("Proxy-Authorization") == "" {
+			http.Error(w, "invalid stream", http.StatusBadRequest)
+			return
+		}
+		posts.Add(1)
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		for {
+			packet, err := udpproto.ReadFrame(r.Body)
+			if err != nil {
+				return
+			}
+			if err := udpproto.WriteFrame(w, packet); err != nil {
+				return
+			}
+			w.(http.Flusher).Flush()
+		}
+	}))
+	m, err := NewManaged(bundle, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	stream, err := m.OpenUDPStream(ctx)
+	if err != nil {
+		t.Fatal("native response-before-upload handshake:", err)
+	}
+	defer stream.Close()
+	wire, err := udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: 53, Data: []byte{0, 255, 128, 0}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 64; i++ {
+		if err := udpproto.WriteFrame(stream, wire); err != nil {
+			t.Fatal(err)
+		}
+		got, err := udpproto.ReadFrame(stream)
+		if err != nil || string(got) != string(wire) {
+			t.Fatalf("native duplex frame %d: %v", i, err)
+		}
+	}
+	if posts.Load() != 1 {
+		t.Fatal("stream reopened the HTTP request")
+	}
+	cancel()
+	if _, err := stream.Read(make([]byte, 1)); err == nil {
+		t.Fatal("cancel did not close flow")
 	}
 }

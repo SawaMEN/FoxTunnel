@@ -39,6 +39,11 @@ class SocksParser {
     // Reserved command 0xf0 is internal, authenticated IPC, never public SOCKS.
     // It carries exactly one bounded UDP-v1 packet. The native Gecko HTTP
     // stack performs the HTTPS POST, not a Go TLS/HTTP fallback.
+    if (b[1] === 0xf1) {
+      if (b[3] !== 0 || b.length !== 4) throw new Error("invalid private UDP stream operation");
+      b.splice(0, 4);
+      return { udpStream: true };
+    }
     if (b[1] === 0xf0) {
       if (b[3] !== 0 || b.length < 6) {
         if (b[3] !== 0) throw new Error("invalid private UDP operation");
@@ -82,7 +87,7 @@ class SocksParser {
 
 // FoxTunnel UDP stream-v2 uses BE16-sized, complete RFC1928 UDP packets.
 // Keep this codec independent of XPCOM for deterministic fuzz and fragment
-// testing. The streaming Gecko upload channel is NOT implemented yet.
+// testing. The native streaming adapter below uses bounded async pipes.
 const MAX_NATIVE_UDP_DATAGRAM = 1232;
 function validateNativeUDPDatagram(data) {
   if (!(data instanceof Uint8Array) || data.length < 8 ||
@@ -201,6 +206,29 @@ async function pumpBuffered(source, destination, onProgress, onBytes) {
   }
 }
 
+// Validate each complete datagram before forwarding it. Read no further input
+// while a downstream write is pending; at most one 32 KiB chunk and one partial
+// packet are retained. A partial final frame aborts the stream rather than FIN.
+async function pumpNativeUDPFrames(source, destination, onProgress = () => {}) {
+  const scratch = new Uint8Array(32768);
+  let packets = [];
+  const decoder = new NativeUDPFrameDecoder(packet => packets.push(packet));
+  for (;;) {
+    const chunk = await source.read(scratch);
+    if (chunk === null) {
+      decoder.finish();
+      destination.output.close();
+      return;
+    }
+    decoder.push(chunk);
+    for (const packet of packets) {
+      await destination.write(encodeNativeUDPStreamFrame(packet));
+      onProgress(packet.length);
+    }
+    packets = [];
+  }
+}
+
 // Encode at most 32 KiB once, even when the native output stream performs
 // partial writes or temporarily reports WOULD_BLOCK. Binary strings are used
 // only at the nsIOutputStream boundary; they are not UTF-8 text.
@@ -238,7 +266,7 @@ function sessionStatus(sessions, now) {
 if (typeof module !== "undefined") module.exports = {
   SocksParser, socksReply, firefoxUserAgent, pumpBuffered,
   writeAllWithBackpressure, sessionStatus, udpIPCReply,
-  validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder,
+  validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder, pumpNativeUDPFrames,
 };
 
 if (typeof Components !== "undefined") {
@@ -320,7 +348,7 @@ if (typeof Components !== "undefined") {
       // nor inherit a system proxy. The only such URL is constructed below.
       if (uri.scheme === "https" && uri.host === cfg.proxy_host &&
           (uri.port === -1 ? 443 : uri.port) === cfg.proxy_port &&
-          uri.pathQueryRef === "/.well-known/foxtunnel-udp-v1") {
+          ["/.well-known/foxtunnel-udp-v1", "/.well-known/foxtunnel-udp-stream-v2"].includes(uri.pathQueryRef)) {
         callback.onProxyFilterResult(null); return;
       }
       callback.onProxyFilterResult(proxy);
@@ -589,6 +617,77 @@ if (typeof Components !== "undefined") {
     });
   }
 
+  // Experimental UDP-v2 bridge. Production configuration remains gated until
+  // the pinned runtime passes native full-duplex and long-session validation.
+  function openUDPStreamThroughNecko(session) {
+    if (!cfg.socks_token || cfg.transport !== "h2-connect")
+      return Promise.reject(new Error("unsupported native UDP stream"));
+    return new Promise((resolve, reject) => {
+      const host = cfg.proxy_host.includes(":") ? `[${cfg.proxy_host}]` : cfg.proxy_host;
+      const channel = NetUtil.newChannel({
+        uri: `https://${host}:${cfg.proxy_port}/.well-known/foxtunnel-udp-stream-v2`,
+        loadUsingSystemPrincipal: true,
+        securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |
+          Ci.nsILoadInfo.SEC_DONT_FOLLOW_REDIRECTS | Ci.nsILoadInfo.SEC_COOKIES_OMIT,
+      }).QueryInterface(Ci.nsIHttpChannel);
+      session.channel = channel;
+      channel.QueryInterface(Ci.nsIHttpChannelInternal).blockAuthPrompt = true;
+      channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
+      const makePipe = () => {
+        const pipe = Cc["@mozilla.org/pipe;1"].createInstance(Ci.nsIPipe);
+        pipe.init(true, true, 32768, 2);
+        return pipe;
+      };
+      const upload = makePipe(), download = makePipe();
+      const remote = new AsyncIO(download.inputStream.QueryInterface(Ci.nsIAsyncInputStream),
+        upload.outputStream.QueryInterface(Ci.nsIAsyncOutputStream));
+      const sink = new AsyncIO(upload.inputStream.QueryInterface(Ci.nsIAsyncInputStream),
+        download.outputStream.QueryInterface(Ci.nsIAsyncOutputStream));
+      // Own both ends even if channel setup, TLS or authentication fails.
+      const closeRemote = remote.close.bind(remote);
+      remote.close = () => { closeRemote(); sink.close(); };
+      session.remote = remote;
+      channel.QueryInterface(Ci.nsIUploadChannel2).explicitSetUploadStream(
+        upload.inputStream, "application/octet-stream", -1, "POST");
+      channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);
+      let started = false, pending = Promise.resolve();
+      channel.asyncOpen({
+        onStartRequest() {
+          try {
+            if (channel.protocolVersion !== "h2" || channel.responseStatus !== 200)
+              throw new Error("native UDP stream rejected");
+            started = true;
+            resolve(remote);
+          } catch {
+            reject(new Error("native UDP stream rejected")); session.close();
+          }
+        },
+        onDataAvailable(request, input, offset, count) {
+          try {
+            if (!started || count > 32768) throw new Error("invalid native UDP response chunk");
+            const binary = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream);
+            binary.setInputStream(input);
+            const bytes = new Uint8Array(count);
+            if (binary.readArrayBuffer(count, bytes.buffer) !== count)
+              throw new Error("truncated native UDP response chunk");
+            // Suspend before yielding to the event loop. Gecko cannot queue a
+            // second callback while the bounded download pipe is blocked.
+            channel.suspend();
+            pending = sink.write(bytes).then(() => {
+              if (!session.closed) channel.resume();
+            }).catch(() => session.close());
+          } catch { session.close(); }
+        },
+        onStopRequest(request, status) {
+          if (!started) reject(new Error("native UDP stream setup failed"));
+          if (!Components.isSuccessCode(status)) { session.close(); return; }
+          void pending.then(() => { try { sink.output.close(); } catch {} });
+        },
+        QueryInterface: ChromeUtils.generateQI(["nsIStreamListener", "nsIRequestObserver"]),
+      });
+    });
+  }
+
   async function pump(source, destination, session, direction) {
     return pumpBuffered(source, destination,
       () => { session.lastProgress = Math.floor(ChromeUtils.now()); },
@@ -660,6 +759,21 @@ if (typeof Components !== "undefined") {
       while (request === null) {
         const chunk = await local.read(); if (chunk === null) return;
         parser.push(chunk); request = parser.request();
+      }
+      if (request.udpStream) {
+        const remote = await openUDPStreamThroughNecko(session);
+        clearTimeout(timer);
+        await local.write(Uint8Array.of(5, 0, 0, 0));
+        established = true; session.established = true;
+        const progress = direction => count => {
+          session.lastProgress = Math.floor(ChromeUtils.now());
+          counters[direction] += count;
+        };
+        await Promise.all([
+          pumpNativeUDPFrames(local, remote, progress("upload_bytes")),
+          pumpNativeUDPFrames(remote, local, progress("download_bytes")),
+        ]);
+        return;
       }
       if (request.udp) {
         // Fail closed for an unauthenticated/public SOCKS socket and for

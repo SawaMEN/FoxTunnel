@@ -217,3 +217,43 @@ test('UDP-v2 native framer rejects malformed packets, lengths and truncated fram
   assert.throws(() => decoder.finish(), /truncated/);
   assert.throws(() => new NativeUDPFrameDecoder(() => {}).push(new Uint8Array(32769)));
 });
+
+test('UDP-v2 pump validates frames, awaits backpressure and preserves binary bytes', async () => {
+  const { pumpNativeUDPFrames, encodeNativeUDPStreamFrame } = require('./client.js');
+  const frame = encodeNativeUDPStreamFrame(Uint8Array.of(0,0,0,1,127,0,0,1,0,53,0,255,128));
+  let reads = 0, writing = false, fin = 0;
+  const received = [];
+  const input = Buffer.concat([frame, frame]);
+  const source = { async read(scratch) {
+    assert.equal(writing, false);
+    if (reads === input.length) return null;
+    scratch[0] = input[reads++];
+    return scratch.subarray(0,1);
+  }};
+  await pumpNativeUDPFrames(source, { output: {close() {fin++;}}, async write(data) {
+    writing = true;
+    await new Promise(resolve => setImmediate(resolve));
+    received.push(Buffer.from(data)); writing = false;
+  }});
+  assert.deepEqual(Buffer.concat(received), input);
+  assert.equal(fin, 1);
+});
+
+test('UDP-v2 pump aborts truncated and malformed streams without clean FIN', async () => {
+  const { pumpNativeUDPFrames } = require('./client.js');
+  for (const bytes of [Uint8Array.of(0), Uint8Array.of(0,0), Uint8Array.of(0,10,0)]) {
+    let sent = false, fin = 0;
+    await assert.rejects(pumpNativeUDPFrames({async read() {
+      if (sent) return null; sent = true; return bytes;
+    }}, {output: {close() {fin++;}}, async write() {assert.fail('invalid packet forwarded');}}));
+    assert.equal(fin, 0);
+  }
+});
+
+test('private UDP-v2 command is exact and rejects pipelined bytes', () => {
+  for (const raw of [[5,0xf1,0,0], [5,0xf1,0,1], [5,0xf1,0,0,0]]) {
+    const parser = new SocksParser(); parser.push([5,1,2]); parser.greeting(2); parser.push(raw);
+    if (raw.length === 4 && raw[3] === 0) assert.deepEqual(parser.request(), {udpStream:true});
+    else assert.throws(() => parser.request());
+  }
+});

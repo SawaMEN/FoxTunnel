@@ -101,3 +101,21 @@ through Gecko's own H2/TLS stack. The local UDP ASSOCIATE socket and reply
 source checks remain owned by FoxTunnel Go. It is deliberately not QUIC
 DATAGRAM or UDP stream-v2. Necko H3 UDP, streaming, Bond, balancing and XHTTP
 remain unimplemented. Do not enable those options with forced Necko.
+
+### Experimental UDP v2 bridge (not enabled in client configuration)
+
+The private `OpenUDPStream` adapter now requests a single native H2 POST to
+`/.well-known/foxtunnel-udp-stream-v2`. Authenticated IPC command `0xf1` receives
+an acknowledgement only after native H2 response headers; following bytes are
+BE16-framed RFC1928 packets. Both directions validate complete packets and stop
+reading while downstream writes are pending. Async upload/download pipes are
+bounded to two 32 KiB segments. Closing or canceling the flow closes its IPC
+socket and aborts the native channel; remote errors never select Go HTTP.
+
+`UDPStreaming` remains rejected by normal Necko client configuration pending
+native validation. `TestGeckoManagedUDPStream` checks response headers before
+any upload, 64 binary request/reply frames on one H2 request, and cancellation.
+This gate requires `FOXTUNNEL_NECKO_BUNDLE`; Node codec/pump tests alone do not
+establish that the pinned Gecko streams unknown-length uploads. Long-session,
+load and runtime compatibility validation are still required before enabling
+this path. Native H3 UDP, XHTTP and Bonding remain pending.

@@ -105,3 +105,79 @@ func TestManagedUDPRejectsInvalidFrameBeforeSocket(t *testing.T) {
 		t.Fatal("invalid datagram must not start IPC")
 	}
 }
+
+func TestManagedUDPStreamPrivateIPC(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	done := make(chan error, 1)
+	go func() {
+		c, err := listener.Accept()
+		if err != nil {
+			done <- err
+			return
+		}
+		defer c.Close()
+		_ = c.SetDeadline(time.Now().Add(3 * time.Second))
+		expect := func(want []byte) error {
+			got := make([]byte, len(want))
+			if _, err := io.ReadFull(c, got); err != nil {
+				return err
+			}
+			if !bytes.Equal(got, want) {
+				return io.ErrUnexpectedEOF
+			}
+			return nil
+		}
+		if err := expect([]byte{5, 1, 2}); err != nil {
+			done <- err
+			return
+		}
+		_, _ = c.Write([]byte{5, 2})
+		if err := expect(append([]byte{1, 9}, []byte("foxtunnel\x03key")...)); err != nil {
+			done <- err
+			return
+		}
+		_, _ = c.Write([]byte{1, 0})
+		if err := expect([]byte{5, 0xf1, 0, 0}); err != nil {
+			done <- err
+			return
+		}
+		_, _ = c.Write([]byte{5, 0, 0, 0})
+		_, err = io.Copy(c, c)
+		done <- err
+	}()
+	ready := make(chan struct{})
+	close(ready)
+	m := &Managed{ready: ready, done: make(chan struct{}), listen: listener.Addr().String(), timeout: time.Second, token: "key"}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stream, err := m.OpenUDPStream(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stream.Close()
+	// OpenUDPStream's deferred setup cancellation must not close a live flow.
+	wire, err := udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: 53, Data: []byte{0, 255, 128}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := udpproto.WriteFrame(stream, wire); err != nil {
+		t.Fatal(err)
+	}
+	got, err := udpproto.ReadFrame(stream)
+	if err != nil || !bytes.Equal(got, wire) {
+		t.Fatal("stream framing", err)
+	}
+	cancel()
+	if _, err := stream.Read(make([]byte, 1)); err == nil {
+		t.Fatal("parent cancellation did not close stream")
+	}
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("IPC peer did not terminate")
+	}
+}
