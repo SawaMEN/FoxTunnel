@@ -287,3 +287,11 @@ the factory correction, packaged against the verified source runtime from
 40118209336 and its original matching source lock/provenance. No old runtime
 was relabeled as containing the early-response-header API. The complete matrix
 must still pass again on the new source build.
+
+The native Multi-Node gate now runs both SOCKS-control closure and single-exit
+loss after binary UDP transfer. Each case requires both remote stream handlers
+to finish while the client/helper remain alive, so whole-client shutdown cannot
+hide a leaked association. Exit loss must also close the SOCKS control socket,
+with no stream reopening or silent migration of existing UDP flows. These new
+native lifecycle cases await the early-response-header source build; passing
+ordinary routing fixtures does not qualify them.
