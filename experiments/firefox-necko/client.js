@@ -80,6 +80,85 @@ class SocksParser {
   }
 }
 
+// FoxTunnel UDP stream-v2 uses BE16-sized, complete RFC1928 UDP packets.
+// Keep this codec independent of XPCOM for deterministic fuzz and fragment
+// testing. The streaming Gecko upload channel is NOT implemented yet.
+const MAX_NATIVE_UDP_DATAGRAM = 1232;
+function validateNativeUDPDatagram(data) {
+  if (!(data instanceof Uint8Array) || data.length < 8 ||
+      data.length > MAX_NATIVE_UDP_DATAGRAM || data[0] !== 0 ||
+      data[1] !== 0 || data[2] !== 0) throw new Error("invalid native UDP datagram");
+  let end;
+  switch (data[3]) {
+    case 1: end = 8; break;
+    case 4: end = 20; break;
+    case 3: {
+      if (data.length < 7 || !data[4]) throw new Error("invalid native UDP hostname");
+      end = 5 + data[4];
+      if (data.length < end + 2) throw new Error("truncated native UDP hostname");
+      for (let i = 5; i < end; i++) {
+        const byte = data[i];
+        if (byte === 0 || byte === 32 || (byte >= 9 && byte <= 13) ||
+            byte === 47 || byte === 92 || byte === 64 || byte === 63 || byte === 35)
+          throw new Error("invalid native UDP hostname");
+      }
+      break;
+    }
+    default: throw new Error("unknown native UDP address type");
+  }
+  if (data.length < end + 2 || (data[end] === 0 && data[end + 1] === 0))
+    throw new Error("invalid native UDP destination port");
+  return true;
+}
+function encodeNativeUDPStreamFrame(packet) {
+  validateNativeUDPDatagram(packet);
+  const frame = new Uint8Array(packet.length + 2);
+  frame[0] = packet.length >>> 8;
+  frame[1] = packet.length & 255;
+  frame.set(packet, 2);
+  return frame;
+}
+class NativeUDPFrameDecoder {
+  constructor(onPacket) {
+    if (typeof onPacket !== "function") throw new TypeError("onPacket required");
+    this.onPacket = onPacket;
+    this.buffer = new Uint8Array(MAX_NATIVE_UDP_DATAGRAM);
+    this.length = -1;
+    this.offset = 0;
+    this.header = -1;
+  }
+  push(chunk) {
+    if (!(chunk instanceof Uint8Array) || chunk.length > 32768)
+      throw new Error("invalid native UDP stream chunk");
+    for (let i = 0; i < chunk.length;) {
+      if (this.length < 0) {
+        if (this.header < 0) { this.header = chunk[i++]; continue; }
+        this.length = (this.header << 8) | chunk[i++];
+        this.header = -1;
+        if (this.length < 8 || this.length > MAX_NATIVE_UDP_DATAGRAM)
+          throw new Error("invalid native UDP stream frame length");
+        this.offset = 0;
+      }
+      const count = Math.min(this.length - this.offset, chunk.length - i);
+      this.buffer.set(chunk.subarray(i, i + count), this.offset);
+      this.offset += count;
+      i += count;
+      if (this.offset === this.length) {
+        const packet = Uint8Array.from(this.buffer.subarray(0, this.length));
+        this.offset = 0;
+        this.length = -1;
+        validateNativeUDPDatagram(packet);
+        // The callback is synchronous: no unbounded event queue can build up.
+        this.onPacket(packet);
+      }
+    }
+  }
+  finish() {
+    if (this.header >= 0 || this.length >= 0)
+      throw new Error("truncated native UDP stream frame");
+  }
+}
+
 // xpcshell has no Firefox application name, although its HTTP implementation
 // and platform token come from the same libxul. Use the UA's own Gecko version
 // (which already applies Mozilla's version reduction), not appinfo.version's
@@ -159,6 +238,7 @@ function sessionStatus(sessions, now) {
 if (typeof module !== "undefined") module.exports = {
   SocksParser, socksReply, firefoxUserAgent, pumpBuffered,
   writeAllWithBackpressure, sessionStatus, udpIPCReply,
+  validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder,
 };
 
 if (typeof Components !== "undefined") {

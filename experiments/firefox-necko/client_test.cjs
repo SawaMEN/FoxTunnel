@@ -178,3 +178,42 @@ test('UDP IPC rejects unauthorized commands, excessive frames and trailing bytes
     assert.throws(() => p.request());
   }
 });
+
+
+test('UDP-v2 native framer survives byte-wise fragmentation and coalescing', () => {
+  const { encodeNativeUDPStreamFrame, NativeUDPFrameDecoder } = require('./client.js');
+  const payload = Uint8Array.of(0, 0, 0, 1, 127, 0, 0, 1, 0, 53, 0, 255, 254, 128, 0);
+  const frame = encodeNativeUDPStreamFrame(payload);
+  let replies = [];
+  let decoder = new NativeUDPFrameDecoder(packet => replies.push(packet));
+  for (const b of frame) decoder.push(Uint8Array.of(b));
+  decoder.finish();
+  assert.deepEqual([...replies[0]], [...payload]);
+  replies = [];
+  decoder = new NativeUDPFrameDecoder(packet => replies.push(packet));
+  const many = new Uint8Array(frame.length * 150);
+  for (let n = 0; n < 150; n++) many.set(frame, n * frame.length);
+  decoder.push(many);
+  decoder.finish();
+  assert.equal(replies.length, 150);
+  for (const packet of replies) assert.deepEqual([...packet], [...payload]);
+});
+test('UDP-v2 native framer rejects malformed packets, lengths and truncated frames', () => {
+  const { validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder } = require('./client.js');
+  for (const wire of [
+    Uint8Array.of(0, 0, 1, 1, 127, 0, 0, 1, 0, 53),
+    Uint8Array.of(0, 0, 0, 1, 127, 0, 0, 1, 0, 0),
+    Uint8Array.of(0, 0, 0, 3, 0, 0, 53),
+    new Uint8Array(1233),
+  ]) {
+    assert.throws(() => validateNativeUDPDatagram(wire));
+    assert.throws(() => encodeNativeUDPStreamFrame(wire));
+  }
+  for (const frame of [Uint8Array.of(0, 0), Uint8Array.of(4, 209)])
+    assert.throws(() => new NativeUDPFrameDecoder(() => {}).push(frame));
+  const valid = encodeNativeUDPStreamFrame(Uint8Array.of(0, 0, 0, 1, 127, 0, 0, 1, 0, 53));
+  const decoder = new NativeUDPFrameDecoder(() => {});
+  decoder.push(valid.subarray(0, valid.length - 1));
+  assert.throws(() => decoder.finish(), /truncated/);
+  assert.throws(() => new NativeUDPFrameDecoder(() => {}).push(new Uint8Array(32769)));
+});
