@@ -43,7 +43,7 @@ type NodeStatus = nodeperf.Snapshot
 
 type Credentials struct{ Username, Password string }
 type ClientConfig struct {
-	NeckoBundle string // Verified Necko distribution; Engine must be necko.
+	NeckoBundle string // Verified Necko distribution; Engine may be necko or auto.
 	// RequireProtocolNegotiation opts into strict draft/capability confirmation.
 	// False preserves legacy interoperability. Configure both ends explicitly.
 	RequireProtocolNegotiation bool
@@ -51,7 +51,7 @@ type ClientConfig struct {
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
-	Engine               string // Empty/legacy preserves old selection; mozilla selects NSS/Neqo; necko owns a full verified Necko process.
+	Engine               string // Empty/legacy preserves old selection; auto uses Necko when compatible, otherwise NSS/Neqo or Go; mozilla and necko force a backend.
 	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for default H3); Neqo uses NSS.
 	Transport            string // Empty selects h2-connect.
 	QUICBackend          string // Empty/quic-go preserves the default; neqo is an opt-in build.
@@ -108,6 +108,10 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}()
 	plan, err := transportengine.Resolve(transportengine.Config{
 		Engine: config.Engine, Transport: config.Transport, NeckoBundle: config.NeckoBundle,
+		AutoNeckoExcluded: config.RequireProtocolNegotiation || config.Padding || config.EnableUDP ||
+			config.UDPStreaming || len(config.FallbackServers) > 0 || config.XHTTPPath != "" ||
+			config.XHTTPHost != "" || config.ServerName != "" || config.SPKIPin != "" ||
+			(config.Balance != "" && config.Balance != "failover"),
 		TLSBackend: config.TLSBackend, QUICBackend: config.QUICBackend,
 		H3Fallback: config.H3Fallback, QUICHandshakeTimeout: config.QUICHandshakeTimeout,
 		TLSClientProfile: config.TLSClientProfile, HTTP2ReceiveProfile: config.HTTP2ReceiveProfile,

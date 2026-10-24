@@ -5,6 +5,7 @@ package transportengine
 import (
 	"errors"
 	"fmt"
+	"os"
 	firefox "github.com/SawaMEN/FoxTunnel/experiments/firefox-necko"
 	"path/filepath"
 	"runtime"
@@ -17,9 +18,12 @@ import (
 )
 
 // Config is local client policy. It is not serialized into connection links.
-// Engine is legacy (default), mozilla (NSS/Neqo) or necko (owned runtime).
+// Engine is legacy (default), auto, mozilla (NSS/Neqo) or necko (owned runtime).
 type Config struct {
 	NeckoBundle          string
+	// AutoNeckoExcluded prevents selecting Necko for features that its runtime cannot enforce.
+	// Explicit necko mode still rejects unsupported policy at its existing validation boundary.
+	AutoNeckoExcluded    bool
 	Engine               string
 	Transport            string
 	TLSBackend           string
@@ -37,12 +41,59 @@ type Plan struct{ Config }
 // Resolve keeps the historical CLI/SDK defaults for legacy mode. Mozilla
 // mode selects Neqo/H3 when available, otherwise NSS/H2 for an automatic
 // transport. It never substitutes Go TLS or quic-go for Mozilla explicitly.
+// DefaultNeckoBundle discovers a colocated runtime without trusting its contents.
+// The full manifest and hashes are verified by Apply before using the runtime.
+func DefaultNeckoBundle() string {
+	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+		return ""
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	dir := filepath.Dir(exe)
+	info, err := os.Stat(filepath.Join(dir, "manifest.json"))
+	if err != nil || !info.Mode().IsRegular() {
+		return ""
+	}
+	return dir
+}
+
 func Resolve(cfg Config) (Plan, error) {
-	if cfg.NeckoBundle != "" && cfg.Engine != "necko" {
-		return Plan{}, errors.New("Necko bundle requires engine necko")
+	if cfg.NeckoBundle != "" && cfg.Engine != "necko" && cfg.Engine != "auto" {
+		return Plan{}, errors.New("Necko bundle requires engine necko or auto")
 	}
 	switch cfg.Engine {
 	case "", "legacy":
+		cfg.Engine = "legacy"
+		return Plan{Config: cfg}, nil
+	case "auto":
+		if cfg.NeckoBundle == "" {
+			cfg.NeckoBundle = DefaultNeckoBundle()
+		}
+		compatible := !cfg.AutoNeckoExcluded &&
+			(cfg.Transport == "" || cfg.Transport == "auto" || cfg.Transport == "h2-connect" || cfg.Transport == "h3-connect") &&
+			(cfg.TLSBackend == "" || cfg.TLSBackend == "auto") &&
+			(cfg.QUICBackend == "" || cfg.QUICBackend == "auto") &&
+			(cfg.H3Fallback == "" || cfg.H3Fallback == "none") &&
+			cfg.QUICHandshakeTimeout == 0 &&
+			(cfg.TLSClientProfile == "" || cfg.TLSClientProfile == "default") &&
+			(cfg.HTTP2ReceiveProfile == "" || cfg.HTTP2ReceiveProfile == "default")
+		if cfg.NeckoBundle != "" && compatible {
+			cfg.Engine = "necko"
+			// An explicitly selected, damaged bundle must fail verification, not
+			// silently downgrade to a different TLS or HTTP implementation.
+			return Resolve(cfg)
+		}
+		cfg.NeckoBundle = ""
+		// If Mozilla's H3 bridge is unavailable, use the existing Go H3
+		// implementation. Never silently downgrade the requested transport.
+		h3 := cfg.Transport == "h3-post" || cfg.Transport == "h3-connect"
+		if buildinfo.NSSAvailable && cfg.TLSBackend != "go" &&
+			(!h3 || neqo.Available && (cfg.QUICBackend == "" || cfg.QUICBackend == "auto" || cfg.QUICBackend == "neqo")) {
+			cfg.Engine = "mozilla"
+			return resolveMozilla(cfg)
+		}
 		cfg.Engine = "legacy"
 		return Plan{Config: cfg}, nil
 	case "necko":
@@ -62,7 +113,7 @@ func Resolve(cfg Config) (Plan, error) {
 	case "mozilla":
 		return resolveMozilla(cfg)
 	default:
-		return Plan{}, fmt.Errorf("unknown transport engine %q (choose legacy, mozilla or necko)", cfg.Engine)
+		return Plan{}, fmt.Errorf("unknown transport engine %q (choose legacy, auto, mozilla or necko)", cfg.Engine)
 	}
 }
 
