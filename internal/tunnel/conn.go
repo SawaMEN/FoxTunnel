@@ -30,7 +30,7 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 	if e != nil || n < 1 || n > 65535 || host == "" || strings.ContainsAny(host, "/\\\r\n\t @?#") {
 		return nil, errors.New("invalid TCP destination")
 	}
-	if c.managed != nil {
+	if c.managed != nil && !c.fullManagedHTTP() {
 		return c.dialManaged(ctx, address)
 	}
 	lifetime, cancel := context.WithCancel(context.Background())

@@ -533,11 +533,8 @@ func main() {
 		failClient := func(v ...any) { client.Close(); log.Fatal(v...) }
 		intent := transportengine.Config{
 			Engine: *engine, Transport: *nativeTransport, NeckoBundle: *neckoBundle,
-			AutoNeckoExcluded: wirePolicy == contract.ProtocolStrict || (*enableUDP &&
-				(*udpStream || *udpMultiNode || (*nativeTransport != "h2-connect" && *nativeTransport != "auto"))) || *padding ||
-				*bonded || *discover || len(fallbacks) > 0 || *xhttpPath != "" ||
-				*xhttpHost != "" || *sni != "" || *pin != "" || *nodePinsFile != "" ||
-				(*balance != "" && *balance != "failover"),
+			AutoNeckoExcluded: ((wirePolicy == contract.ProtocolStrict || *padding) && !transportengine.NativeHTTPHeaders(*nativeTransport)) ||
+				(*enableUDP && *nativeTransport == "h3-connect") || *sni != "" || *pin != "" || *nodePinsFile != "",
 			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,
 			H3Fallback: *h3Fallback, QUICHandshakeTimeout: *quicTimeout,
 			TLSClientProfile: *tlsProfile, HTTP2ReceiveProfile: *h2Profile,
@@ -548,7 +545,7 @@ func main() {
 			if !explicit["quic-backend"] {
 				intent.QUICBackend = ""
 			}
-			for _, name := range []string{"xhttp-path", "xhttp-host", "node-pins-file"} {
+			for _, name := range []string{"node-pins-file"} {
 				if explicit[name] {
 					failClient("Necko does not support " + name)
 				}

@@ -50,7 +50,7 @@ func TestBondedLanesSOCKSGo(t *testing.T) {
 func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discover bool, mode string, lanes bool, traffic ...string) {
 	var destinations atomic.Int64
 	target := testDestination(t, func(c net.Conn) { destinations.Add(1); _, _ = io.Copy(c, c) })
-	client, addr, stopClient := testClientWithStop(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
+	client, addr, startClient, stopClient := testClientWithDeferredStart(t, &Server{Username: "alice", Password: "secret", AllowPrivate: true})
 	// Join relay workers before endpoint cleanups retire their idle transports.
 	// Otherwise a final lane retry may open a carrier after that idle snapshot.
 	defer stopClient()
@@ -125,11 +125,15 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 	if err := client.SetFallbackServers([]string{b.URL}); err != nil {
 		t.Fatal(err)
 	}
-	if err := client.SetTLSBackend(backend); err != nil {
-		t.Fatal(err)
-	}
-	if err := client.SetTransport(mode); err != nil {
-		t.Fatal(err)
+	if backend == "managed" {
+		installManagedHTTPFixture(t, client, mode)
+	} else {
+		if err := client.SetTLSBackend(backend); err != nil {
+			t.Fatal(err)
+		}
+		if err := client.SetTransport(mode); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if xhttp.IsMode(mode) {
 		if err := client.SetXHTTPSettings(route.Path, route.Host); err != nil {
@@ -176,6 +180,7 @@ func testBondedSOCKSNativeLanes(t *testing.T, backend string, depth int, discove
 			t.Fatal(err)
 		}
 	}
+	startClient()
 	conn, code := connectSOCKS(t, addr, target)
 	if code != 0 {
 		t.Fatal(code)

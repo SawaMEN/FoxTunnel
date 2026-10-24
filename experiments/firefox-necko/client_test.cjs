@@ -257,3 +257,44 @@ test('private UDP-v2 command is exact and rejects pipelined bytes', () => {
     else assert.throws(() => parser.request());
   }
 });
+
+test('private HTTP metadata rejects origin injection and header controls', () => {
+ const {validateHTTPMetadata} = require('./client.js');
+ const valid = {method:'POST',origin:'https://example.test:443',path:'/api?q=1',host:'route.example',headers:[['Content-Type','application/octet-stream']],body:true};
+ validateHTTPMetadata(valid);
+ for (const change of [
+  {origin:'http://example.test'}, {origin:'https://example.test@evil.test'},
+  {origin:'https://example.test/path'}, {path:'//evil.test/'}, {path:'/\\evil'},
+  {path:'/api#fragment'}, {path:'/api\r\nX:a'}, {headers:[['Cookie','private']]},
+  {headers:[['Host','evil.test']]}, {headers:[['X-Test','x\r\ny']]},
+  {headers:Array(65).fill(['X-Test','yes'])}, {body:true,method:'GET'},
+ ]) assert.throws(()=>validateHTTPMetadata({...valid,...change}));
+});
+
+test('private HTTP parser accepts fragmented metadata and preserves early upload', () => {
+ const p = new SocksParser();p.push([5,1,2]);p.greeting(2);
+ const metadata = Buffer.from(JSON.stringify({method:'POST',origin:'https://example.test',path:'/',host:'example.test',headers:[],body:true}));
+ const wire=Buffer.concat([Buffer.from([5,0xf2,0,0,metadata.length>>8,metadata.length&255]),metadata]);
+ for(const b of wire.subarray(0,-1)){p.push([b]);assert.equal(p.request(),null);}
+ p.push([wire.at(-1),0,0,0,1,255]);const req=p.request();assert.equal(req.http.method,'POST');assert.deepEqual([...req.early],[0,0,0,1,255]);
+});
+
+test('HTTP IPC upload honors framing and backpressure, rejects truncated streams', async () => {
+ const {pumpHTTPUpload,httpChunkHeader} = require('./client.js');
+ const payload=Buffer.from([0,255,128,42]);
+ const wire=Buffer.concat([httpChunkHeader(payload.length),payload,httpChunkHeader(0)]);
+ let offset=0,active=false,closed=false;const writes=[];
+ const source={async read(){assert.equal(active,false);return offset<wire.length?wire.subarray(offset,++offset):null;}};
+ const dest={output:{close(){closed=true;}},async write(bytes){active=true;await new Promise(r=>setTimeout(r,1));writes.push(Buffer.from(bytes));active=false;}};
+ await pumpHTTPUpload(source,dest);assert.deepEqual(Buffer.concat(writes),payload);assert.equal(closed,true);
+ for(const bytes of [wire.subarray(0,4),wire.subarray(0,-1),Buffer.concat([httpChunkHeader(0),Buffer.from([1])]),httpChunkHeader(32769)]){
+  let sent=false;await assert.rejects(()=>pumpHTTPUpload({async read(){if(sent)return null;sent=true;return bytes;}},dest));
+ }
+});
+
+test('HTTP IPC download reports native failure explicitly', async () => {
+ const {pumpHTTPDownload} = require('./client.js');
+ const writes=[];const source={failed:true,async read(){return null;}};
+ await pumpHTTPDownload(source,{async write(b){writes.push(Buffer.from(b));}});
+ assert.deepEqual([...writes[0]],[255,255,255,255]);
+});

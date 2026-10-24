@@ -15,6 +15,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/neqo"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
 // Config is local client policy. It is not serialized into connection links.
@@ -72,7 +73,7 @@ func Resolve(cfg Config) (Plan, error) {
 			cfg.NeckoBundle = DefaultNeckoBundle()
 		}
 		compatible := !cfg.AutoNeckoExcluded &&
-			(cfg.Transport == "" || cfg.Transport == "auto" || cfg.Transport == "h2-connect" || cfg.Transport == "h3-connect") &&
+			(cfg.Transport == "" || cfg.Transport == "auto" || cfg.Transport == "h2-connect" || cfg.Transport == "h3-connect" || cfg.Transport == "h2-post" || xhttp.IsMode(cfg.Transport)) &&
 			(cfg.TLSBackend == "" || cfg.TLSBackend == "auto") &&
 			(cfg.QUICBackend == "" || cfg.QUICBackend == "auto") &&
 			(cfg.H3Fallback == "" || cfg.H3Fallback == "none") &&
@@ -103,8 +104,8 @@ func Resolve(cfg Config) (Plan, error) {
 		if cfg.Transport == "" || cfg.Transport == "auto" {
 			cfg.Transport = "h2-connect"
 		}
-		if cfg.Transport != "h2-connect" && cfg.Transport != "h3-connect" {
-			return Plan{}, errors.New("Necko requires h2-connect or h3-connect")
+		if cfg.Transport != "h2-connect" && cfg.Transport != "h3-connect" && cfg.Transport != "h2-post" && !xhttp.IsMode(cfg.Transport) {
+			return Plan{}, errors.New("Necko requires H2/H3 CONNECT, H2 POST or an XHTTP transport")
 		}
 		if (cfg.TLSBackend != "" && cfg.TLSBackend != "auto") || cfg.QUICBackend != "" || (cfg.H3Fallback != "" && cfg.H3Fallback != "none") || cfg.QUICHandshakeTimeout != 0 || (cfg.TLSClientProfile != "" && cfg.TLSClientProfile != "default") || (cfg.HTTP2ReceiveProfile != "" && cfg.HTTP2ReceiveProfile != "default") {
 			return Plan{}, errors.New("Necko owns TLS, QUIC and HTTP settings; backend/profile overrides and fallback are unsupported")
@@ -202,8 +203,12 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 			return err
 		}
 		bundle := filepath.Dir(filepath.Dir(verified))
-		c.SetManagedTransport(p.Transport, func() (tunnel.ManagedTransport, error) {
-			return firefox.NewManaged(bundle, firefox.Config{Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: p.Transport, MaxConnections: c.MaxConnections, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
+		c.SetManagedHTTPTransport(p.Transport, func() (tunnel.ManagedTransport, error) {
+			nativeMode := p.Transport
+			if nativeMode != "h3-connect" {
+				nativeMode = "h2-connect"
+			}
+			return firefox.NewManaged(bundle, firefox.Config{Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: nativeMode, MaxConnections: c.MaxConnections, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
 		})
 		c.SetEngineStatus("necko", p.Transport, "nss", "necko", "none")
 		return nil
@@ -245,3 +250,7 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 	c.SetEngineStatus(p.Engine, p.Transport, p.TLSBackend, p.QUICBackend, p.H3Fallback)
 	return nil
 }
+
+// NativeHTTPHeaders reports carriers whose application requests can carry
+// padding and protocol negotiation headers through the native HTTP adapter.
+func NativeHTTPHeaders(mode string) bool { return mode == "h2-post" || xhttp.IsMode(mode) }

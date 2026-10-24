@@ -19,23 +19,30 @@ import (
 func TestNativeTransports(t *testing.T) { testNativeTransports(t, "go") }
 func testNativeTransports(t *testing.T, backend string, clientProfiles ...string) {
 	for _, mode := range []string{"h2-post", "wss", "h3-post", "h3-connect", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+		if backend == "managed" && mode != "h2-post" && !xhttp.IsMode(mode) {
+			continue
+		}
 		if backend == "nss" && isH3Transport(mode) {
 			continue
 		}
 		t.Run(mode, func(t *testing.T) {
 			target := testDestination(t, func(c net.Conn) { data, _ := io.ReadAll(c); _, _ = c.Write(data) })
 			server := &Server{RequireProtocolNegotiation: true, Username: "alice", Password: "secret", AllowPrivate: true, Padding: true}
-			client, addr := testClient(t, server)
+			client, addr, start, _ := testClientWithDeferredStart(t, server)
 			if isH3Transport(mode) {
 				node := setupEndpoint(t, client, server)
 				startNativeH3(t, node, server)
 				usePrimary(t, client, node.URL)
 			}
-			if err := client.SetTLSBackend(backend); err != nil {
-				t.Fatal(err)
-			}
-			if err := client.SetTransport(mode); err != nil {
-				t.Fatal(err)
+			if backend == "managed" {
+				installManagedHTTPFixture(t, client, mode)
+			} else {
+				if err := client.SetTLSBackend(backend); err != nil {
+					t.Fatal(err)
+				}
+				if err := client.SetTransport(mode); err != nil {
+					t.Fatal(err)
+				}
 			}
 			if len(clientProfiles) > 0 {
 				if err := client.SetTLSClientProfile(clientProfiles[0]); err != nil {
@@ -45,6 +52,7 @@ func testNativeTransports(t *testing.T, backend string, clientProfiles ...string
 			client.RequireProtocolNegotiation = true
 			client.Padding = true
 			client.ConnectTimeout = 200 * time.Millisecond
+			start()
 			stream, setupErr := client.openTunnel(context.Background(), target)
 			if setupErr != nil {
 				t.Fatal(setupErr)

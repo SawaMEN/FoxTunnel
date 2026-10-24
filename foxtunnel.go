@@ -63,6 +63,7 @@ type ClientConfig struct {
 	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
 	Padding              bool
 	EnableUDP            bool // Experimental datagram API and SOCKS5 UDP; off by default.
+	UDPMultiNode         bool // Pin destination flows to configured UDP exits.
 	UDPStreaming         bool // Opt-in v2 persistent UDP stream; requires EnableUDP.
 	ConnectTimeout       time.Duration
 	MaxConnections       int // Combined TCP/UDP connections and pending operations; 0 uses 256.
@@ -88,11 +89,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if config.MaxConnections < 0 || config.ConnectTimeout < 0 {
 		return nil, errors.New("negative client limit or timeout")
 	}
+	if config.UDPMultiNode && (!config.UDPStreaming || !config.EnableUDP || len(config.FallbackServers) == 0) {
+		return nil, errors.New("UDP multi-node requires streaming UDP and fallback servers")
+	}
 	if config.UDPStreaming && !config.EnableUDP {
 		return nil, errors.New("UDP streaming requires UDP to be enabled")
-	}
-	if config.Engine == "necko" && (config.XHTTPPath != "" || config.XHTTPHost != "") {
-		return nil, errors.New("Necko does not support XHTTP settings")
 	}
 	core, err := tunnel.NewClient(config.ServerURL, config.Credentials.Username, config.Credentials.Password, config.CACertFile)
 	if err != nil {
@@ -108,12 +109,8 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}()
 	plan, err := transportengine.Resolve(transportengine.Config{
 		Engine: config.Engine, Transport: config.Transport, NeckoBundle: config.NeckoBundle,
-		AutoNeckoExcluded: config.RequireProtocolNegotiation || config.Padding ||
-			(config.EnableUDP && (config.UDPStreaming || (config.Transport != "" &&
-				config.Transport != "h2-connect" && config.Transport != "auto"))) ||
-			config.UDPStreaming || len(config.FallbackServers) > 0 || config.XHTTPPath != "" ||
-			config.XHTTPHost != "" || config.ServerName != "" || config.SPKIPin != "" ||
-			(config.Balance != "" && config.Balance != "failover"),
+		AutoNeckoExcluded: ((config.RequireProtocolNegotiation || config.Padding) && !transportengine.NativeHTTPHeaders(config.Transport)) ||
+			(config.EnableUDP && config.Transport == "h3-connect") || config.ServerName != "" || config.SPKIPin != "",
 		TLSBackend: config.TLSBackend, QUICBackend: config.QUICBackend,
 		H3Fallback: config.H3Fallback, QUICHandshakeTimeout: config.QUICHandshakeTimeout,
 		TLSClientProfile: config.TLSClientProfile, HTTP2ReceiveProfile: config.HTTP2ReceiveProfile,
@@ -146,6 +143,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	core.Padding = config.Padding
 	core.EnableUDP = config.EnableUDP
 	core.UDPStreaming = config.UDPStreaming
+	core.UDPMultiNode = config.UDPMultiNode
 	if err := core.Prepare(context.Background()); err != nil {
 		return nil, err
 	}

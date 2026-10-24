@@ -19,6 +19,7 @@ import (
 type Managed struct {
 	mu          sync.Mutex
 	cancel      context.CancelFunc
+	lifetime    context.Context
 	ready, done chan struct{}
 	listen      string
 	profileTag  string
@@ -32,6 +33,13 @@ func NewManaged(bundle string, config Config) (*Managed, error) {
 	if err != nil {
 		return nil, err
 	}
+	return newManagedRuntime(runtimePath, config)
+}
+
+// newManagedRuntime is internal. Production callers must verify the bundle;
+// native research tests may explicitly supply FOXTUNNEL_XPCSHELL as Run does.
+func newManagedRuntime(runtimePath string, config Config) (*Managed, error) {
+	var err error
 	var token [16]byte
 	if _, err = rand.Read(token[:]); err != nil {
 		return nil, errors.New("cannot create Necko IPC credentials")
@@ -43,7 +51,7 @@ func NewManaged(bundle string, config Config) (*Managed, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	m := &Managed{cancel: cancel, ready: make(chan struct{}), done: make(chan struct{}), timeout: time.Duration(config.ConnectTimeoutMS) * time.Millisecond, token: config.SOCKSToken}
+	m := &Managed{lifetime: ctx, cancel: cancel, ready: make(chan struct{}), done: make(chan struct{}), timeout: time.Duration(config.ConnectTimeoutMS) * time.Millisecond, token: config.SOCKSToken}
 	r, w := io.Pipe()
 	go func() {
 		defer r.Close()

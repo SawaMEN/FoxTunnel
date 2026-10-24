@@ -37,7 +37,7 @@ func TestAutoEngineSelection(t *testing.T) {
 }
 
 func TestExplicitNeckoNeverDowngrades(t *testing.T) {
-	_, err := Resolve(Config{Engine: "necko", Transport: "xhttp-stream-one"})
+	_, err := Resolve(Config{Engine: "necko", Transport: "wss"})
 	if err == nil {
 		t.Fatal("explicit necko must reject unsupported transport")
 	}

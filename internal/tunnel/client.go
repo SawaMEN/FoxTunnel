@@ -189,6 +189,14 @@ func (c *Client) SetEngineStatus(engine, transport, tlsBackend, quicBackend, fal
 // supported TCP transports when compiled in, but Go QUIC for HTTP/3 unless Neqo is explicitly configured.
 // Explicit "nss" never silently falls back to Go.
 func (c *Client) SetTLSBackend(name string) error {
+	if c.fullManagedHTTP() {
+		if name != "auto" && name != "" {
+			return errors.New("Necko owns TLS settings")
+		}
+		c.configureManagedHTTP()
+		return nil
+	}
+
 	if c.bondClient != nil || c.bondDiscovery != nil {
 		return i18n.Error("configure TLS before enabling bond")
 	}
@@ -328,7 +336,7 @@ func (c *Client) handleContext(ctx context.Context, conn net.Conn) {
 		return
 	}
 
-	if c.managed != nil {
+	if c.managed != nil && !c.fullManagedHTTP() {
 		c.relayManaged(ctx, conn, target)
 		return
 	}

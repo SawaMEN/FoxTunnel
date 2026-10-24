@@ -75,7 +75,7 @@ func dialWithWindow(ctx context.Context, rt http.RoundTripper, origin, mode, aut
 		h := hex.EncodeToString(id[:])
 		u.Path += h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
 	}
-	life, cancel := context.WithCancel(context.Background())
+	life, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	local, peer := net.Pipe()
 	c := &carrier{Conn: local, peer: peer, cancel: cancel}
 	stop := context.AfterFunc(ctx, func() { _ = c.Close() })

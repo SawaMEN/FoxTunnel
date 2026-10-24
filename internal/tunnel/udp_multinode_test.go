@@ -100,7 +100,14 @@ func udpMultiNodeFixture(t *testing.T, secondaryEnabled bool) (*Client, *[2]atom
 }
 
 func TestUDPMultiNodeHTTP2FlowShardingAndReplies(t *testing.T) {
+	testUDPMultiNodeHTTP2FlowShardingAndReplies(t, false)
+}
+func TestManagedHTTPUDPMultiNode(t *testing.T) { testUDPMultiNodeHTTP2FlowShardingAndReplies(t, true) }
+func testUDPMultiNodeHTTP2FlowShardingAndReplies(t *testing.T, managed bool) {
 	c, opened := udpMultiNodeFixture(t, true)
+	if managed {
+		installManagedHTTPFixture(t, c, "h2-connect")
+	}
 	targets := make([]*net.UDPConn, 0, 2)
 	picked := map[int]bool{}
 	for i := 0; i < 32 && len(picked) < 2; i++ {

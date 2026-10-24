@@ -21,6 +21,7 @@ type managedTransport struct {
 	factory   func() (ManagedTransport, error)
 	transport ManagedTransport
 	closed    bool
+	http      bool
 }
 
 // SetManagedTransport installs an owned native engine before concurrent use.
@@ -35,6 +36,16 @@ func (c *Client) validateManaged() error {
 	}
 	if c.ConnectTimeout > 0 && c.ConnectTimeout < 100*time.Millisecond {
 		return errors.New("Necko setup timeout must be at least 100ms")
+	}
+	if c.fullManagedHTTP() {
+		connect := c.nativeTransport == "h2-connect" || c.nativeTransport == "h3-connect"
+		if connect && (c.Padding || c.RequireProtocolNegotiation) {
+			return errors.New("Necko CONNECT does not forward extension headers; use h2-post or XHTTP for padding/strict negotiation")
+		}
+		if c.nativeTransport == "h3-connect" && (c.EnableUDP || c.bondClient != nil || c.bondDiscovery != nil) {
+			return errors.New("Necko H3 HTTP operations are not yet implemented")
+		}
+		return nil
 	}
 	if c.Padding || c.UDPStreaming || c.UDPMultiNode || c.RequireProtocolNegotiation || len(c.fallbackServers) > 0 || c.bondClient != nil || c.bondDiscovery != nil || (c.balance != "" && c.balance != "failover") {
 		return errors.New("Necko supports TCP CONNECT and bounded UDP v1 without padding, UDP streaming, bond, balancing, fallback servers or draft negotiation")

@@ -25,6 +25,11 @@ func testClient(t testing.TB, handler http.Handler) (*Client, string) {
 }
 
 func testClientWithStop(t testing.TB, handler http.Handler) (*Client, string, func()) {
+	c, addr, start, stop := testClientWithDeferredStart(t, handler)
+	start()
+	return c, addr, stop
+}
+func testClientWithDeferredStart(t testing.TB, handler http.Handler) (*Client, string, func(), func()) {
 	t.Helper()
 	upstream := httptest.NewUnstartedServer(handler)
 	upstream.EnableHTTP2 = true
@@ -56,8 +61,19 @@ func testClientWithStop(t testing.TB, handler http.Handler) (*Client, string, fu
 		}
 	}
 	t.Cleanup(stop)
-	go func() { defer close(done); _ = client.ServeContext(ctx, listener) }()
-	return client, listener.Addr().String(), stop
+	ready := make(chan struct{})
+	var once sync.Once
+	start := func() { once.Do(func() { close(ready) }) }
+	go func() {
+		defer close(done)
+		select {
+		case <-ctx.Done():
+			return
+		case <-ready:
+		}
+		_ = client.ServeContext(ctx, listener)
+	}()
+	return client, listener.Addr().String(), start, stop
 }
 
 func connectSOCKS(t testing.TB, addr, target string) (net.Conn, byte) {

@@ -39,6 +39,17 @@ class SocksParser {
     // Reserved command 0xf0 is internal, authenticated IPC, never public SOCKS.
     // It carries exactly one bounded UDP-v1 packet. The native Gecko HTTP
     // stack performs the HTTPS POST, not a Go TLS/HTTP fallback.
+    if (b[1] === 0xf2) {
+      if (b[3] !== 0) throw new Error("invalid private HTTP operation");
+      if (b.length < 6) return null;
+      const length = (b[4] << 8) | b[5];
+      if (length < 2 || length > 16384) throw new Error("HTTP metadata limit");
+      if (b.length < 6 + length) return null;
+      const metadata = JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(Uint8Array.from(b.slice(6, 6 + length))));
+      validateHTTPMetadata(metadata);
+      b.splice(0, 6 + length);
+      return {http: metadata, early: Uint8Array.from(b.splice(0))};
+    }
     if (b[1] === 0xf1) {
       if (b[3] !== 0 || b.length !== 4) throw new Error("invalid private UDP stream operation");
       b.splice(0, 4);
@@ -82,6 +93,57 @@ class SocksParser {
     if (!port) throw new Error("invalid SOCKS port");
     b.splice(0, size);
     return { authority: `${host}:${port}`, early: Uint8Array.from(b.splice(0)) };
+  }
+}
+
+// Metadata never contains an origin or credentials. Every public request is
+// constrained to the helper's configured HTTPS origin and authorization.
+function validateHTTPMetadata(meta) {
+  if (!meta || !["GET", "POST", "HEAD", "CONNECT"].includes(meta.method) ||
+      typeof meta.origin !== "string" || !/^https:\/\/([A-Za-z0-9_.-]+|\[[0-9A-Fa-f:]+\])(:[0-9]{1,5})?$/.test(meta.origin) ||
+      typeof meta.path !== "string" || !meta.path.startsWith("/") ||
+      meta.path.startsWith("//") || /[\\#\x00-\x20\x7f-\uffff]/.test(meta.path) ||
+      typeof meta.body !== "boolean" || (meta.body && meta.method !== "POST" && meta.method !== "CONNECT") ||
+      typeof meta.host !== "string" || /[^A-Za-z0-9_.:\[\]-]/.test(meta.host) ||
+      !Array.isArray(meta.headers) || meta.headers.length > 64)
+    throw new Error("invalid native HTTP metadata");
+  for (const h of meta.headers) {
+    if (!Array.isArray(h) || h.length !== 2 || typeof h[0] !== "string" ||
+        typeof h[1] !== "string" || !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(h[0]) ||
+        /[\x00-\x08\x0a-\x1f\x7f-\uffff]/.test(h[1]) ||
+        /^(connection|transfer-encoding|upgrade|host|cookie|authorization|proxy-connection|te|trailer)$/i.test(h[0]))
+      throw new Error("invalid native HTTP header");
+  }
+}
+function httpChunkHeader(length) {
+  const data = new Uint8Array(4); new DataView(data.buffer).setUint32(0, length); return data;
+}
+// Pull one bounded IPC frame at a time. EOF without the explicit terminator is
+// always an error, including EOF exactly between frame boundaries.
+async function pumpHTTPUpload(source, destination, early = new Uint8Array(), progress = () => {}) {
+  let buffered = early;
+  const readExact = async count => {
+    const result = new Uint8Array(count); let offset = 0;
+    while (offset < count) {
+      if (!buffered.length) {buffered = await source.read(); if (buffered === null) throw new Error("truncated HTTP upload");}
+      const take = Math.min(count - offset, buffered.length);
+      result.set(buffered.subarray(0, take), offset); offset += take; buffered = buffered.subarray(take);
+    }
+    return result;
+  };
+  for (;;) {
+    const header = await readExact(4), length = new DataView(header.buffer).getUint32(0);
+    if (!length) {if (buffered.length) throw new Error("HTTP bytes after terminator"); destination.output.close(); return;}
+    if (length > 32768) throw new Error("HTTP upload chunk limit");
+    const chunk = await readExact(length); await destination.write(chunk); progress(length);
+  }
+}
+async function pumpHTTPDownload(source, destination, progress = () => {}) {
+  const scratch = new Uint8Array(32768);
+  for (;;) {
+    const chunk = await source.read(scratch);
+    if (chunk === null) {await destination.write(httpChunkHeader(source.failed ? 0xffffffff : 0)); return;}
+    await destination.write(httpChunkHeader(chunk.length)); await destination.write(chunk); progress(chunk.length);
   }
 }
 
@@ -265,6 +327,7 @@ function sessionStatus(sessions, now) {
 
 if (typeof module !== "undefined") module.exports = {
   SocksParser, socksReply, firefoxUserAgent, pumpBuffered,
+  validateHTTPMetadata, httpChunkHeader, pumpHTTPUpload, pumpHTTPDownload,
   writeAllWithBackpressure, sessionStatus, udpIPCReply,
   validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder, pumpNativeUDPFrames,
 };
@@ -273,6 +336,7 @@ if (typeof Components !== "undefined") {
   const { classes: Cc, interfaces: Ci, results: Cr } = Components;
   const { NetUtil } = ChromeUtils.importESModule("resource://gre/modules/NetUtil.sys.mjs");
   const { setTimeout, clearTimeout, setInterval, clearInterval } = ChromeUtils.importESModule("resource://gre/modules/Timer.sys.mjs");
+  Components.utils.importGlobalProperties(["TextEncoder", "TextDecoder"]);
   const thread = Services.tm.mainThread;
   const localFile = path => {
     const f = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
@@ -341,21 +405,22 @@ if (typeof Components !== "undefined") {
     ? pps.newMASQUEProxyInfo(cfg.proxy_host, cfg.proxy_port,
         "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null)
     : pps.newProxyInfo("https", cfg.proxy_host, cfg.proxy_port, cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null);
+  const channelProxies = new WeakMap();
   const filter = {
-    applyFilter(uri, previous, callback) {
-      // Internal UDP-v1 POST requests address the authenticated HTTPS proxy
-      // origin directly. They must never CONNECT recursively through itself,
-      // nor inherit a system proxy. The only such URL is constructed below.
-      if (uri.scheme === "https" && uri.host === cfg.proxy_host &&
-          (uri.port === -1 ? 443 : uri.port) === cfg.proxy_port &&
-          ["/.well-known/foxtunnel-udp-v1", "/.well-known/foxtunnel-udp-stream-v2"].includes(uri.pathQueryRef)) {
+    applyFilter(channel, previous, callback) {
+      if (channelProxies.has(channel)) {callback.onProxyFilterResult(channelProxies.get(channel)); return;}
+      const uri = channel.URI;
+      // Authenticated native HTTP IPC addresses its verified origin directly.
+      // CONNECT handoff uses an HTTP URI and a per-channel proxy override.
+      // Never inherit a system proxy or recursively tunnel a carrier POST.
+      if (uri.scheme === "https" && cfg.socks_token) {
         callback.onProxyFilterResult(null); return;
       }
       callback.onProxyFilterResult(proxy);
     },
-    QueryInterface: ChromeUtils.generateQI(["nsIProtocolProxyFilter"]),
+    QueryInterface: ChromeUtils.generateQI(["nsIProtocolProxyChannelFilter"]),
   };
-  pps.registerFilter(filter, 0);
+  pps.registerChannelFilter(filter, 0);
 
   class AsyncIO {
     constructor(input, output) {
@@ -453,15 +518,20 @@ if (typeof Components !== "undefined") {
   // independent, concurrent pumps on the native multiplexed connection.
   // The session limit and each session's setup timer also bound this queue.
   let setupTail = Promise.resolve();
-  function openTunnel(authority, session) {
+  function openTunnel(authority, session, origin = null) {
     const pending = setupTail.then(() => {
       if (session.closed) throw new Error("Firefox setup cancelled");
-      return connect(authority, session);
+      return connect(authority, session, origin);
     });
     setupTail = pending.then(() => {}, () => {});
     return pending;
   }
-  function connect(authority, session) {
+  function nativeHTTPFailure(status) {
+    const error = new Error("native HTTP setup failed");
+    error.nativeHTTPReason = [Cr.NS_ERROR_CONNECTION_REFUSED, Cr.NS_ERROR_NET_TIMEOUT, Cr.NS_ERROR_NET_RESET, Cr.NS_ERROR_OFFLINE, Cr.NS_ERROR_UNKNOWN_HOST].includes(status) ? 2 : 1;
+    return error;
+  }
+  function connect(authority, session, origin) {
     return new Promise((resolve, reject) => {
       session.cancelConnect = () => reject(new Error("Firefox setup cancelled"));
       const channel = NetUtil.newChannel({
@@ -469,6 +539,14 @@ if (typeof Components !== "undefined") {
         securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |
           Ci.nsILoadInfo.SEC_DONT_FOLLOW_REDIRECTS | Ci.nsILoadInfo.SEC_COOKIES_OMIT,
       }).QueryInterface(Ci.nsIHttpChannel);
+      if (origin) {
+        const endpoint = Services.io.newURI(origin);
+        const port = endpoint.port === -1 ? 443 : endpoint.port;
+        const selectedProxy = cfg.transport === "h3-connect"
+          ? pps.newMASQUEProxyInfo(endpoint.host, port, "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null)
+          : pps.newProxyInfo("https", endpoint.host, port, cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null);
+        channelProxies.set(channel, selectedProxy);
+      }
       const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
       internal.blockAuthPrompt = true;
       let handedOff = false;
@@ -493,7 +571,7 @@ if (typeof Components !== "undefined") {
           resolve(io);
           } catch { reject(new Error("Firefox native handoff failed")); }
         },
-        onUpgradeFailed() { reject(new Error("Firefox CONNECT failed")); },
+        onUpgradeFailed(status) { reject(nativeHTTPFailure(status)); },
         QueryInterface: ChromeUtils.generateQI(["nsIHttpUpgradeListener"]),
       });
       internal.setConnectOnly(false);
@@ -501,7 +579,7 @@ if (typeof Components !== "undefined") {
         onStartRequest() {},
         onDataAvailable() { channel.cancel(Cr.NS_BINDING_ABORTED); reject(new Error("unexpected CONNECT body")); },
         onStopRequest(request, status) {
-          if (!Components.isSuccessCode(status) && !handedOff) reject(new Error("Firefox CONNECT failed"));
+          if (!Components.isSuccessCode(status) && !handedOff) reject(nativeHTTPFailure(status));
         },
         QueryInterface: ChromeUtils.generateQI(["nsIStreamListener", "nsIRequestObserver"]),
       });
@@ -692,6 +770,72 @@ if (typeof Components !== "undefined") {
     });
   }
 
+  function openHTTPThroughNecko(session, metadata) {
+    if (!cfg.socks_token) return Promise.reject(new Error("native HTTP requires private IPC"));
+    if (metadata.method === "CONNECT") {
+      if (!metadata.host || !metadata.body || metadata.headers.some(([name]) => !/^proxy-authorization$/i.test(name)))
+        return Promise.reject(new Error("native CONNECT request policy unsupported"));
+      return openTunnel(metadata.host, session, metadata.origin).then(remote => ({remote, encoded: new TextEncoder().encode(JSON.stringify({status: 200, proto: cfg.transport === "h3-connect" ? 3 : 2, headers: []}))}));
+    }
+    if (cfg.transport !== "h2-connect") return Promise.reject(new Error("native HTTP requires H2"));
+    return new Promise((resolve, reject) => {
+      const channel = NetUtil.newChannel({
+        uri: `${metadata.origin}${metadata.path}`, loadUsingSystemPrincipal: true,
+        securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |
+          Ci.nsILoadInfo.SEC_DONT_FOLLOW_REDIRECTS | Ci.nsILoadInfo.SEC_COOKIES_OMIT,
+      }).QueryInterface(Ci.nsIHttpChannel);
+      session.channel = channel;
+      const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
+      internal.blockAuthPrompt = true; internal.allowHttp3 = false;
+      channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
+      channel.QueryInterface(Ci.nsIEncodedChannel).applyConversion = false;
+      channel.setRequestHeader("Accept-Encoding", "identity", false);
+      const makePipe = () => {const p = Cc["@mozilla.org/pipe;1"].createInstance(Ci.nsIPipe); p.init(true, true, 32768, 2); return p;};
+      const upload = makePipe(), download = makePipe();
+      const remote = new AsyncIO(download.inputStream.QueryInterface(Ci.nsIAsyncInputStream), upload.outputStream.QueryInterface(Ci.nsIAsyncOutputStream));
+      const sink = new AsyncIO(upload.inputStream.QueryInterface(Ci.nsIAsyncInputStream), download.outputStream.QueryInterface(Ci.nsIAsyncOutputStream));
+      const close = remote.close.bind(remote); remote.close = () => {close(); sink.close();};
+      session.remote = remote;
+      if (metadata.body) {
+        internal.enableStreamingUpload();
+        channel.QueryInterface(Ci.nsIUploadChannel2).explicitSetUploadStream(upload.inputStream, "application/octet-stream", -1, metadata.method);
+      } else {channel.requestMethod = metadata.method; upload.outputStream.close();}
+      for (const [name, value] of metadata.headers) {
+        if (!/^(proxy-authorization|content-length)$/i.test(name)) channel.setRequestHeader(name, value, true);
+      }
+      if (metadata.host) channel.setRequestHeader("Host", metadata.host, false);
+      channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);
+      let started = false, pending = Promise.resolve();
+      channel.asyncOpen({
+        onStartRequest() {
+          try {
+            if (channel.protocolVersion !== "h2") throw new Error("unexpected native HTTP protocol");
+            const headers = [];
+            channel.visitResponseHeaders({visitHeader(name, value) {if (headers.length >= 128) throw new Error("HTTP header limit"); headers.push([name, value]);}});
+            const encoded = new TextEncoder().encode(JSON.stringify({status: channel.responseStatus, proto: 2, headers}));
+            if (encoded.length > 16384) throw new Error("HTTP response metadata limit");
+            started = true; resolve({remote, encoded});
+          } catch {reject(nativeHTTPFailure(Cr.NS_ERROR_FAILURE)); channel.cancel(Cr.NS_BINDING_ABORTED);}
+        },
+        onDataAvailable(request, input, offset, count) {
+          try {
+            if (!started || count > 32768) throw new Error("native HTTP chunk limit");
+            const binary = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream); binary.setInputStream(input);
+            const bytes = new Uint8Array(count);
+            if (binary.readArrayBuffer(count, bytes.buffer) !== count) throw new Error("truncated HTTP response");
+            channel.suspend(); pending = sink.write(bytes).then(() => {if (!session.closed) channel.resume();}).catch(() => session.close());
+          } catch {session.close();}
+        },
+        onStopRequest(request, status) {
+          if (!started) {reject(nativeHTTPFailure(status)); return;}
+          remote.failed = !Components.isSuccessCode(status);
+          void pending.then(() => {try {sink.output.close();} catch {}});
+        },
+        QueryInterface: ChromeUtils.generateQI(["nsIStreamListener", "nsIRequestObserver"]),
+      });
+    });
+  }
+
   async function pump(source, destination, session, direction) {
     return pumpBuffered(source, destination,
       () => { session.lastProgress = Math.floor(ChromeUtils.now()); },
@@ -739,6 +883,7 @@ if (typeof Components !== "undefined") {
     const timer = setTimeout(session.close, cfg.connect_timeout_ms);
     let established = false;
     let completed = false;
+    let privateHTTP = false;
     try {
       const parser = new SocksParser();
       let greeting = null;
@@ -763,6 +908,30 @@ if (typeof Components !== "undefined") {
       while (request === null) {
         const chunk = await local.read(); if (chunk === null) return;
         parser.push(chunk); request = parser.request();
+      }
+      if (request.http) {
+        privateHTTP = true;
+        // Start pumping upload immediately, before waiting for response headers.
+        // openHTTPThroughNecko synchronously owns session.remote's bounded pipe.
+        const opening = openHTTPThroughNecko(session, request.http);
+        let upload = null;
+        if (request.http.body && session.remote) {
+          upload = pumpHTTPUpload(local, session.remote, request.early, count => {session.lastProgress = Math.floor(ChromeUtils.now()); counters.upload_bytes += count;});
+          upload.catch(() => session.close());
+        } else if (!request.http.body && request.early.length) throw new Error("unexpected HTTP upload");
+        const {remote, encoded} = await opening;
+        if (request.http.body && upload === null) {
+          upload = pumpHTTPUpload(local, remote, request.early, count => {session.lastProgress = Math.floor(ChromeUtils.now()); counters.upload_bytes += count;});
+        }
+        clearTimeout(timer);
+        await local.write(Uint8Array.of(5, 0, encoded.length >>> 8, encoded.length & 255)); await local.write(encoded);
+        established = true; session.established = true;
+        await Promise.all([upload, pumpHTTPDownload(remote, local, count => {session.lastProgress = Math.floor(ChromeUtils.now()); counters.download_bytes += count;})]);
+        local.output.close();
+        // The peer closes its IPC socket when the response body is released.
+        // Wait for that acknowledgement before retiring native channel owners.
+        if (await local.read() !== null) throw new Error("bytes after HTTP upload");
+        return;
       }
       if (request.udpStream) {
         const remote = await openUDPStreamThroughNecko(session);
@@ -806,9 +975,17 @@ if (typeof Components !== "undefined") {
       // that direction; the other can deliver the remaining response bytes.
       await Promise.all([pump(local, remote, session, "upload_bytes"), pump(remote, local, session, "download_bytes")]);
       completed = true;
-    } catch {
+    } catch (error) {
       if (!established && !session.closed) {
-        try { await local.write(socksReply(1)); } catch {}
+        try {
+          await local.write(privateHTTP ? Uint8Array.of(5, error?.nativeHTTPReason === 2 ? 2 : 1, 0, 0) : socksReply(1));
+          if (privateHTTP) {
+            local.output.close();
+            // Flush the fixed failure category before retiring the socket.
+            // Otherwise a certificate denial could look like retryable EOF.
+            while (await local.read() !== null) {}
+          }
+        } catch {}
       }
       // Do not serialize exception text: Gecko errors may contain targets.
     } finally { clearTimeout(timer); session.close(completed); sessions.delete(session); }
@@ -830,5 +1007,5 @@ if (typeof Components !== "undefined") {
   for (const session of sessions) session.close();
   for (const session of draining) session.close();
   clearInterval(sweep); if (stats !== null) clearInterval(stats);
-  pps.unregisterFilter(filter);
+  pps.unregisterChannelFilter(filter);
 }

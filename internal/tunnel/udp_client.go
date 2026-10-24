@@ -163,7 +163,7 @@ func (c *Client) exchangeUDP(ctx context.Context, wire []byte) (reply []byte, er
 		}
 		c.status.FinishOperation(ticket, reason)
 	}()
-	if c.managed != nil {
+	if c.managed != nil && !c.fullManagedHTTP() {
 		reply, err = c.exchangeManagedUDP(ctx, wire)
 		if err != nil || len(reply) == 0 {
 			return reply, err

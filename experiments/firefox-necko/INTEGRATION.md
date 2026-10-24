@@ -143,3 +143,43 @@ This changes libxul and its XPCOM interface, so the old binary is incompatible
 with UDP v2. Source builds now run on xfd as well as firefox, and runtime selection
 searches matching source locks across branches. The native duplex gate must pass
 against the newly compiled runtime before UDPStreaming is enabled in CLI/SDK.
+
+### Authenticated native HTTP adapter in xfd
+
+The private command `0xf2` carries bounded JSON request metadata (16 KiB) and
+independently framed upload/response bodies (32 KiB maximum chunks, explicit EOF
+and native-error termination). It is available only with the helper's random IPC
+secret. HTTPS origins are checked against explicit client configuration or an
+authenticated discovery snapshot before dispatch. TLS, certificate verification,
+public HTTP framing and sockets remain owned by Gecko. No Go HTTP fallback is
+installed if the native adapter is missing or fails. One helper serves all trusted
+origins; each CONNECT channel receives its own selected proxy, without a global
+proxy-switch race. Ordinary POST/GET requests bypass the system proxy.
+
+The adapter is wired into H2 POST, all three XHTTP carriers, UDP stream-v2,
+UDP multi-node, static/adaptive Bond (RPC and persistent lanes), discovery and
+new-connection balancing. XHTTP's inner FoxTunnel HTTP/2 envelope is still an
+application protocol implemented in Go; its outer HTTPS carrier uses Mozilla.
+Padding and strict draft negotiation can use H2 POST or XHTTP; the existing raw
+CONNECT handoff cannot forward their extension headers and rejects those options.
+H3 CONNECT can use the new adapter for TCP; H3 POST/UDP HTTP channels, manual
+SNI/SPKI overrides, per-node pins and native ARM64 packaging remain unsupported.
+
+Validation is split deliberately:
+
+- Local Go IPC and routing tests cover response-before-upload, binary framing,
+  truncation, explicit native errors, cancellation, owned shutdown, all three
+  XHTTP modes with padding/strict negotiation, adaptive Bond and UDP multi-node.
+  The routing fixtures use Go peers and do not qualify Mozilla networking.
+- Native research tests against source-build artifact `12501945687` passed H2/H3
+  CONNECT transfer/half-close through command `0xf2`, standalone handoff and trust
+  rejection. That older runtime does not contain the new streaming upload API.
+- The runtime workflow now includes `TestGeckoManagedHTTP`,
+  `TestGeckoManagedBond` (RPC/lanes, discovery, adaptive scheduling and path loss),
+  UDP v1/v2 through the public SDK, all three XHTTP modes and H2 POST through the
+  packaged CLI/SDK, and padding/strict negotiation. These require the new source
+  build and must pass before any native POST/XHTTP/Bond support is qualified.
+
+Source build `40111523804` was still compiling when this implementation block
+was prepared. No native POST qualification or complete parity claim is made by
+unit-test success alone.

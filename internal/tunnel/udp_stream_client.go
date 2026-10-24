@@ -49,7 +49,7 @@ func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (str
 	if err := parent.Err(); err != nil {
 		return nil, err
 	}
-	if c.managed != nil {
+	if c.managed != nil && !c.fullManagedHTTP() {
 		return c.openManagedUDPStream(parent, endpoint)
 	}
 	ctx, abort := context.WithCancelCause(parent)
