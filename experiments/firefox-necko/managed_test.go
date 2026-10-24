@@ -20,9 +20,17 @@ func TestGeckoManagedIPC(t *testing.T) {
 	if bundle == "" {
 		t.Skip("verified integration bundle required")
 	}
-	var requests atomic.Int32
+	var requests, nativePOST, nativeH2, nativeAuth atomic.Int32
 	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: true}
-	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests.Add(1); server.ServeHTTP(w, r) }))
+	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		if r.URL.Path == "/.well-known/foxtunnel-udp-v1" {
+			nativePOST.Add(1)
+			if r.ProtoMajor == 2 { nativeH2.Add(1) }
+			if r.Header.Get("Proxy-Authorization") != "" { nativeAuth.Add(1) }
+		}
+		server.ServeHTTP(w, r)
+	}))
 	m, err := NewManaged(bundle, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +128,7 @@ func TestGeckoManagedIPC(t *testing.T) {
 	defer stopUDP()
 	result, e := m.ExchangeUDP(dgctx, wire)
 	if e != nil {
-		t.Fatalf("native Gecko UDP v1 relay: %v", e)
+		t.Fatalf("native Gecko UDP v1 relay: %v; UDP HTTP observed=%d H2=%d proxy-auth-present=%d", e, nativePOST.Load(), nativeH2.Load(), nativeAuth.Load())
 	}
 	response, e := udpproto.Parse(result)
 	if e != nil || string(response.Data) != string(payload) || response.Port != uint16(datagramTarget.LocalAddr().(*net.UDPAddr).Port) {

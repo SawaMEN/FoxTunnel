@@ -86,8 +86,27 @@ func (m *Managed) ExchangeUDP(ctx context.Context, wire []byte) ([]byte, error) 
 		return nil, err
 	}
 	size := int(binary.BigEndian.Uint16(reply[2:]))
-	if reply[0] != 5 || reply[1] != 0 || size > udpproto.MaxDatagram {
-		return nil, errors.New("Necko UDP HTTPS relay rejected")
+	if reply[0] != 5 || size > udpproto.MaxDatagram {
+		return nil, errors.New("Necko UDP IPC response invalid")
+	}
+	if reply[1] != 0 {
+		// Fixed internal categories; no secret or remote response is exposed.
+		switch reply[1] {
+		case 2:
+			return nil, errors.New("Necko UDP native HTTP request setup failed")
+		case 3:
+			return nil, errors.New("Necko UDP remote HTTP status rejected")
+		case 4:
+			return nil, errors.New("Necko UDP native HTTP version was not H2")
+		case 5:
+			return nil, errors.New("Necko UDP native HTTP network failed")
+		case 6:
+			return nil, errors.New("Necko UDP native HTTP response invalid")
+		case 7:
+			return nil, errors.New("Necko UDP native HTTP response timed out")
+		default:
+			return nil, errors.New("Necko UDP HTTPS relay rejected")
+		}
 	}
 	if size == 0 { // HTTPS 204: destination supplied no response.
 		if err := op.Err(); err != nil {

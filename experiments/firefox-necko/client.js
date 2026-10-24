@@ -96,8 +96,13 @@ function socksReply(code) { return Uint8Array.from([5, code, 0, 1, 0, 0, 0, 0, 0
 
 // Fixed-width reply to authenticated private UDP IPC: status and bounded
 // payload. A status 0 with an empty payload means the exit timed out (HTTP 204).
-function udpIPCReply(data, failed = false) {
-  if (failed) return Uint8Array.of(5, 1, 0, 0);
+function udpIPCReply(data, failed = false, reason = 1) {
+  // Only internal fixed status categories cross IPC, not server URLs,
+  // certificate details, errors or response payloads.
+  if (failed) {
+    if (!Number.isInteger(reason) || reason < 1 || reason > 7) throw new Error("invalid UDP failure reason");
+    return Uint8Array.of(5, reason, 0, 0);
+  }
   if (!(data instanceof Uint8Array) || data.length > 1232) throw new Error("invalid UDP reply");
   return Uint8Array.from([5, 0, data.length >> 8, data.length & 255, ...data]);
 }
@@ -399,6 +404,11 @@ if (typeof Components !== "undefined") {
   // application UDP datagram is sent over Go TLS, a Go RoundTripper or H3
   // MASQUE. This first native stage supports H2 only; stream-v2 and H3 are
   // rejected until their distinct wire contracts have native adapters.
+  function udpFailure(reason) {
+    const err = new Error("native UDP transport failure");
+    err.reason = reason;
+    return err;
+  }
   function exchangeUDPThroughNecko(packet, session) {
     if (!cfg.socks_token || cfg.transport !== "h2-connect" || packet.length < 8 || packet.length > 1232) {
       return Promise.reject(new Error("unsupported native UDP operation"));
@@ -430,16 +440,24 @@ if (typeof Components !== "undefined") {
       };
       const timeout = setTimeout(() => {
         channel.cancel(Cr.NS_BINDING_ABORTED);
-        complete(new Error("native UDP response timeout"));
+        complete(udpFailure(7));
       }, cfg.connect_timeout_ms);
       const close = (error, bytes) => { clearTimeout(timeout); complete(error, bytes); };
       channel.asyncOpen({
         onStartRequest(request) {
           // Require native H2, a fixed endpoint and a no-redirect status.
-          if (channel.protocolVersion !== "h2" ||
-              (channel.responseStatus !== 200 && channel.responseStatus !== 204)) {
+          try {
+            if (channel.protocolVersion !== "h2") {
+              channel.cancel(Cr.NS_BINDING_ABORTED);
+              close(udpFailure(4)); return;
+            }
+            if (channel.responseStatus !== 200 && channel.responseStatus !== 204) {
+              channel.cancel(Cr.NS_BINDING_ABORTED);
+              close(udpFailure(3));
+            }
+          } catch {
             channel.cancel(Cr.NS_BINDING_ABORTED);
-            close(new Error("invalid native UDP HTTPS response"));
+            close(udpFailure(2));
           }
         },
         onDataAvailable(request, input, offset, count) {
@@ -454,22 +472,22 @@ if (typeof Components !== "undefined") {
             received.push(...bytes);
           } catch {
             channel.cancel(Cr.NS_BINDING_ABORTED);
-            close(new Error("invalid UDP HTTPS body"));
+            close(udpFailure(6));
           }
         },
         onStopRequest(request, status) {
           if (finished) return;
           if (!Components.isSuccessCode(status)) {
-            close(new Error("native UDP HTTPS transport failed")); return;
+            close(udpFailure(5)); return;
           }
           if (channel.protocolVersion !== "h2") {
-            close(new Error("native UDP used unexpected HTTP protocol")); return;
+            close(udpFailure(4)); return;
           }
           if (channel.responseStatus === 204 && received.length === 0) {
             close(null, Uint8Array.of()); return;
           }
           if (channel.responseStatus !== 200 || received.length < 8) {
-            close(new Error("invalid UDP HTTP response")); return;
+            close(udpFailure(6)); return;
           }
           close(null, Uint8Array.from(received));
         },
@@ -557,9 +575,10 @@ if (typeof Components !== "undefined") {
         try {
           const answer = await exchangeUDPThroughNecko(request.udp, session);
           if (!session.closed) await local.write(udpIPCReply(answer));
-        } catch {
+        } catch (error) {
           if (!session.closed) {
-            try { await local.write(udpIPCReply(null, true)); } catch {}
+            const reason = Number.isInteger(error?.reason) ? error.reason : 2;
+            try { await local.write(udpIPCReply(null, true, reason)); } catch {}
           }
         }
         return;

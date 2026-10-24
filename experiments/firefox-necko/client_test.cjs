@@ -159,6 +159,8 @@ test('authenticated UDP-v1 IPC framing accepts only bounded complete packets', (
     [5, 0, 0, input.length, ...input]);
   assert.deepEqual([...udpIPCReply(new Uint8Array())], [5, 0, 0, 0]);
   assert.deepEqual([...udpIPCReply(null, true)], [5, 1, 0, 0]);
+  assert.deepEqual([...udpIPCReply(null, true, 3)], [5, 3, 0, 0]);
+  assert.throws(() => udpIPCReply(null, true, 255), /invalid UDP failure/);
   assert.throws(() => udpIPCReply(new Uint8Array(1233)), /invalid UDP/);
 });
 
