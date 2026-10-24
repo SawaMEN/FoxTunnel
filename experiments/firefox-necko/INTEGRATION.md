@@ -309,3 +309,33 @@ with the race detector (600-second suite deadline). This includes the native
 HTTP headers-only/duplex cases, 4096-frame UDP stress, both Multi-Node teardown
 triggers, Bond RPC/lanes/discovery/outage, and every integrated XHTTP mode. A
 single successful transfer does not close stage 1.
+
+### Native finite POST replay policy
+
+A native regression primed an H2 connection with GET, consumed a finite POST
+on the server, then closed the actual TCP connection before any response headers.
+Gecko's default reused-connection recovery replayed the POST ten times. A nil
+Go GetBody does not prevent replay inside Gecko's cloneable native body stream.
+Finite POST/UDP bodies now use Gecko's existing streaming-body replay guard,
+even when the actual input is an owned fixed ArrayBuffer. The helper supplies
+the exact validated Content-Length explicitly, so these bodies retain their
+finite wire framing. Once any request bytes were consumed, native Restart
+fails instead of rewinding and replaying the body. Unknown-length uploads
+already use the same guard. Safe GET recovery and CONNECT setup retain their
+existing native behavior.
+
+The regression then passed three times with exactly one consumed POST and one
+TCP accept; the native fixed-upload test also retained the exact length and
+binary payload. This isolated before/after check used the verified source
+runtime from 40118209336 and a matching research helper. It does not qualify
+the pending early-response-header C++ API. TestGeckoManagedHTTPNoReplay also
+runs in the packaged three-pass native gate.
+
+The UDP-v1 IPC response now half-closes its output and waits for the caller's
+socket close before retiring the transport. An async native write can complete
+while response bytes are still queued; immediate transport abort occasionally
+lost a valid reply. The native no-replay gate warms the same operation type
+(HTTP or UDP-v1), then cuts the TCP connection after consuming its next POST.
+Both cases passed ten times (20/20 checks), with one consumed POST and no retry
+connection. CONNECT, certificate rejection, H2/H3 outage recovery and the
+packaged CONNECT/packet-up CLI/SDK matrix also passed with the per-body policy.

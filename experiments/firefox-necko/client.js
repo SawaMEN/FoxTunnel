@@ -637,8 +637,12 @@ if (typeof Components !== "undefined") {
       session.udpSetupPhase = 12;
       upload.setData(binary.buffer, binary.byteOffset, binary.byteLength);
       session.udpSetupPhase = 13;
+      // Finite carrier bodies must also opt into the native non-replayable
+      // path. Preserve their exact length on the wire from this owned buffer.
+      internal.enableStreamingUpload();
       channel.QueryInterface(Ci.nsIUploadChannel2)
         .explicitSetUploadStream(upload, "application/octet-stream", packet.length, "POST");
+      channel.setRequestHeader("Content-Length", String(packet.length), false);
       session.udpSetupPhase = 14;
       channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);
       let finished = false;
@@ -819,7 +823,11 @@ if (typeof Components !== "undefined") {
       if (fixedBody !== null) {
         const stream = Cc["@mozilla.org/io/arraybuffer-input-stream;1"].createInstance(Ci.nsIArrayBufferInputStream);
         stream.setData(fixedBody.buffer, fixedBody.byteOffset, fixedBody.byteLength);
+        // Gecko's streaming-body guard prevents replay after any request
+        // bytes were consumed, even when the owned finite stream is cloneable.
+        internal.enableStreamingUpload();
         channel.QueryInterface(Ci.nsIUploadChannel2).explicitSetUploadStream(stream, "application/octet-stream", fixedBody.length, metadata.method);
+        channel.setRequestHeader("Content-Length", String(fixedBody.length), false);
         upload.outputStream.close();
       } else if (metadata.body) {
         internal.enableStreamingUpload();
@@ -990,14 +998,22 @@ if (typeof Components !== "undefined") {
         // Fail closed for an unauthenticated/public SOCKS socket and for
         // transports without a native H2 request bridge.
         established = true;
+        let replied = false;
         try {
           const answer = await exchangeUDPThroughNecko(request.udp, session);
-          if (!session.closed) await local.write(udpIPCReply(answer));
+          if (!session.closed) { await local.write(udpIPCReply(answer)); replied = true; }
         } catch (error) {
           if (!session.closed) {
             const reason = Number.isInteger(error?.reason) ? error.reason : (session.udpSetupPhase || 2);
-            try { await local.write(udpIPCReply(null, true, reason)); } catch {}
+            try { await local.write(udpIPCReply(null, true, reason)); replied = true; } catch {}
           }
+        }
+        if (replied && !session.closed) {
+          // write() transfers bytes to the native socket buffer. An immediate
+          // transport abort can still discard them. FIN and the peer's close
+          // acknowledge delivery of this one-response IPC operation.
+          local.output.close();
+          if (await local.read() !== null) throw new Error("bytes after UDP operation");
         }
         return;
       }

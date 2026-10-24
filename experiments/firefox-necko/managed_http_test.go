@@ -6,10 +6,10 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/http/httptrace"
 	"os"
 	"path/filepath"
@@ -17,6 +17,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 )
 
 func httpIPCFixture(t *testing.T, serve func(net.Conn) error) *Managed {
@@ -291,6 +294,111 @@ func TestGeckoManagedHTTP(t *testing.T) {
 }
 
 type flushingWriter struct{ http.ResponseWriter }
+
+// A reused HTTP/2 connection may die after the peer consumed a POST but before
+// any response headers. Gecko must not replay the finite body on a fresh TCP
+// connection: the protocol layer owns acknowledgement and safe retry policy.
+func TestGeckoManagedHTTPNoReplay(t *testing.T) {
+	bundle, runtime := os.Getenv("FOXTUNNEL_NECKO_BUNDLE"), os.Getenv("FOXTUNNEL_XPCSHELL")
+	if bundle == "" && runtime == "" {
+		t.Skip("explicit native runtime required")
+	}
+	for _, operation := range []string{"finite-http", "udp-v1"} {
+		t.Run(operation, func(t *testing.T) { testGeckoManagedHTTPNoReplay(t, bundle, runtime, operation) })
+	}
+}
+
+func testGeckoManagedHTTPNoReplay(t *testing.T, bundle, runtime, operation string) {
+	t.Helper()
+	type connectionKey struct{}
+	var posts, accepted atomic.Int32
+	payload := bytes.Repeat([]byte{0, 255, 128, 42}, 16<<10)
+	if operation == "udp-v1" {
+		var err error
+		payload, err = udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: 53, Data: []byte{0, 255, 128, 42}})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	warmPayload := append([]byte(nil), payload...)
+	warmPayload[len(warmPayload)-1] ^= 1
+	cfg := nativeProxyConfigured(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			w.Write([]byte("warm"))
+			return
+		}
+		body, err := io.ReadAll(r.Body)
+		if operation == "udp-v1" && err == nil && bytes.Equal(body, warmPayload) {
+			w.Write(warmPayload)
+			return
+		}
+		if err != nil || !bytes.Equal(body, payload) {
+			http.Error(w, "invalid upload", 400)
+			return
+		}
+		posts.Add(1)
+		// Close the real connection, not only the HTTP/2 stream. The first
+		// request primed native connection reuse, which permits Gecko retries
+		// by default even for POST when no response bytes have been received.
+		r.Context().Value(connectionKey{}).(net.Conn).Close()
+	}), func(server *httptest.Server) {
+		server.Config.ConnContext = func(ctx context.Context, conn net.Conn) context.Context {
+			return context.WithValue(ctx, connectionKey{}, conn)
+		}
+		server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+			if state == http.StateNew {
+				accepted.Add(1)
+			}
+		}
+	})
+	var m *Managed
+	var err error
+	if bundle != "" {
+		m, err = NewManaged(bundle, cfg)
+	} else {
+		m, err = newManagedRuntime(runtime, cfg)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var resp *http.Response
+	if operation == "udp-v1" {
+		got, e := m.ExchangeUDP(ctx, warmPayload)
+		if e != nil || !bytes.Equal(got, warmPayload) {
+			t.Fatal("could not prime native UDP HTTP connection", e)
+		}
+	} else {
+		warm, _ := http.NewRequestWithContext(ctx, "GET", cfg.Server+"/warm", nil)
+		resp, err = m.RoundTrip(warm)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, e := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if e != nil || string(got) != "warm" || resp.ProtoMajor != 2 {
+			t.Fatal("could not prime native H2 connection", e)
+		}
+	}
+	if operation == "udp-v1" {
+		_, err = m.ExchangeUDP(ctx, payload)
+	} else {
+		req, _ := http.NewRequestWithContext(ctx, "POST", cfg.Server+"/ambiguous", bytes.NewReader(payload))
+		resp, err = m.RoundTrip(req)
+		if resp != nil {
+			resp.Body.Close()
+			t.Fatal("closed connection unexpectedly produced response headers")
+		}
+	}
+	if err == nil {
+		t.Fatal("ambiguous POST was reported successful")
+	}
+	if posts.Load() != 1 || accepted.Load() != 1 {
+		t.Fatalf("native POST replay: uploads=%d TCP accepts=%d", posts.Load(), accepted.Load())
+	}
+}
 
 // Response headers must be observable while an empty native response pipe is
 // still open. Neither that wakeup nor a later cancellation may synthesize EOF.
