@@ -74,7 +74,12 @@ func TestUpdateNeqoSessionResumptionTrustAndNoEarlyRequests(t *testing.T) {
 				if reason == "disabled" {
 					return
 				}
-				deadline := time.Now().Add(2 * time.Second)
+				// Session tickets are post-handshake QUIC events. CI runs
+				// parallel race-enabled native suites, so a two-second
+				// scheduler/window budget can expire before delivery.
+				// Keep this a hard failure rather than silently skipping
+				// resumption or reducing trust verification coverage.
+				deadline := time.Now().Add(5 * time.Second)
 				for time.Now().Before(deadline) {
 					client.mu.Lock()
 					n := len(client.sessions)
