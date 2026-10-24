@@ -429,10 +429,14 @@ if (typeof Components !== "undefined") {
       session.udpSetupPhase = 10;
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
       session.udpSetupPhase = 11;
-      const upload = Cc["@mozilla.org/io/string-input-stream;1"].createInstance(Ci.nsIStringInputStream);
-      const binary = String.fromCharCode(...packet);
+      // The pinned Gecko revision removed nsIStringInputStream.setData().
+      // Use the scriptable ArrayBuffer stream so arbitrary 0x00 / 0xff UDP
+      // bytes are uploaded exactly, with no UTF-8 conversion or URI encoding.
+      const upload = Cc["@mozilla.org/io/arraybuffer-input-stream;1"]
+        .createInstance(Ci.nsIArrayBufferInputStream);
+      const binary = Uint8Array.from(packet);
       session.udpSetupPhase = 12;
-      upload.setData(binary, binary.length);
+      upload.setData(binary.buffer, binary.byteOffset, binary.byteLength);
       session.udpSetupPhase = 13;
       channel.QueryInterface(Ci.nsIUploadChannel2)
         .explicitSetUploadStream(upload, "application/octet-stream", packet.length, "POST");
