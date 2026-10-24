@@ -166,3 +166,13 @@ compiled but exposed the 65,535-byte H2 and intermittent H3 stalls. Run
 supplied the corrected native runtime; restricted-window tests then identified
 the JS cleanup race fixed in helper `0fc7192`. The acceptance record explicitly
 identifies that runtime/helper combination rather than crediting an older binary.
+
+
+## xfd development: native UDP v1 via H2
+
+The first extension to the native Necko engine is an authenticated, bounded
+single-datagram IPC operation that posts the existing `udp-v1` wire packet
+through Gecko's own H2/TLS stack. The local UDP ASSOCIATE socket and reply
+source checks remain owned by FoxTunnel Go. It is deliberately not QUIC
+DATAGRAM or UDP stream-v2. Necko H3 UDP, streaming, Bond, balancing and XHTTP
+remain unimplemented. Do not enable those options with forced Necko.

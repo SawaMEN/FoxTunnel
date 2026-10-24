@@ -34,8 +34,11 @@ Mozilla NSS для TCP; `--engine mozilla` выбирает NSS и Neqo при �
 
 В объединённом Linux amd64 архиве `--engine auto` выбирается по умолчанию:
 полный Necko обслуживает совместимые `h2-connect` и `h3-connect`.
-При использовании UDP, Bond, padding, strict-policy, дополнительных нод,
-профилей XHTTP, pinning или ручных сетевых параметров выбирается
+Для обычного SOCKS5 UDP ASSOCIATE (UDP v1) поверх `h2-connect` Necko
+выполняет HTTPS POST через нативный HTTP/2 Mozilla. Локальным UDP-сокетом
+управляет Go, но удалённый TLS/HTTP запрос не использует Go transport.
+Для UDP Streaming v2, UDP Multi-Node, H3+UDP, Bond, padding, strict-policy,
+дополнительных нод, XHTTP, pinning или ручных сетевых параметров выбирается
 поддерживаемый NSS/Go-движок. Заданный вручную `--engine necko`
 никогда не переключается молча, а отвергает неподдерживаемый режим.
 Смена движка не повторяет прерванное соединение и не ослабляет TLS-проверку.
@@ -45,6 +48,21 @@ NSS/Neqo согласно выбранному транспорту, `--engine n
 проверенный runtime Linux amd64. В Go SDK режим `Engine: "auto"` включается
 явно; пустое значение сохраняет историческую совместимость API.
 NSS — TLS, Neqo — QUIC/HTTP3, Necko — полный сетевой стек Mozilla.
+
+
+## Native UDP v1 — начальный этап xfd
+
+- Реализован аутентифицированный IPC (SOCKS5 private cmd 0xF0) с проверкой размера до 1232 байт.
+- Gecko выполняет POST строго на `/.well-known/foxtunnel-udp-v1` прямым TLS/H2
+  соединением к настроенному HTTPS-выходу. Серверный протокол UDP v1 не меняется.
+- TCP SOCKS5 остаётся на Necko, локальный UDP ASSOCIATE обслуживает общий Go
+  код с ограничением количества запросов, адреса клиента и таймаутами.
+- Запускается `--engine auto --transport h2-connect --enable-udp` либо
+  `--engine necko --transport h2-connect --enable-udp`.
+- Пока не реализованы: UDP Streaming v2, UDP Multi-Node, native H3 UDP,
+  Bond/Discovery, XHTTP, pinning, padding. Они не включаются молча.
+- Нативный UDP-v1 POST не является QUIC DATAGRAM/MASQUE CONNECT-UDP.
+  Реальная поддержка этого этапа зависит от прохождения интеграционных CI-тестов.
 
 ## UDP
 
