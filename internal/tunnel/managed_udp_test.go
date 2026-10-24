@@ -11,9 +11,9 @@ import (
 )
 
 type udpManagedFixture struct {
-	seen [][]byte
+	seen  [][]byte
 	reply []byte
-	err error
+	err   error
 }
 
 func (m *udpManagedFixture) Ready(context.Context) error { return nil }
@@ -28,10 +28,14 @@ func (m *udpManagedFixture) ExchangeUDP(_ context.Context, p []byte) ([]byte, er
 
 func TestManagedUDPUsesNativeAdapterInsteadOfGo(t *testing.T) {
 	packet, err := udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: 53, Data: []byte("hello")})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	m := &udpManagedFixture{reply: packet}
 	c, err := NewClient("https://127.0.0.1:8443", "user", "password", "")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer c.Close()
 	c.SetManagedTransport("h2-connect", func() (ManagedTransport, error) { return m, nil })
 	c.EnableUDP = true
@@ -40,7 +44,7 @@ func TestManagedUDPUsesNativeAdapterInsteadOfGo(t *testing.T) {
 		!bytes.Equal(m.seen[0], packet) {
 		t.Fatalf("native UDP adapter not selected: got %x, error %v", actual, err)
 	}
-	m.reply = []byte{1,2,3}
+	m.reply = []byte{1, 2, 3}
 	if _, err := c.exchangeUDP(context.Background(), packet); err == nil {
 		t.Fatal("malformed Necko UDP response must not be accepted")
 	}
@@ -48,13 +52,15 @@ func TestManagedUDPUsesNativeAdapterInsteadOfGo(t *testing.T) {
 
 func TestManagedUDPFailClosedOnUnsupportedModes(t *testing.T) {
 	for _, tt := range []struct {
-		mode string
+		mode   string
 		stream bool
 	}{
 		{"h3-connect", false}, {"h2-connect", true},
 	} {
 		c, err := NewClient("https://127.0.0.1:8443", "user", "password", "")
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+		t.Fatal(err)
+	}
 		c.SetManagedTransport(tt.mode, func() (ManagedTransport, error) { return &udpManagedFixture{}, nil })
 		c.EnableUDP = true
 		c.UDPStreaming = tt.stream
