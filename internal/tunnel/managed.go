@@ -130,9 +130,9 @@ func (c *Client) relayManaged(ctx context.Context, local net.Conn, target string
 	<-done
 }
 
- // exchangeManagedUDP requires an authenticated Mozilla HTTP/2 IPC adapter.
- // Absence of the feature is an error; never send credentials or packets
- // through the legacy Go transport as an implicit fallback.
+// exchangeManagedUDP requires an authenticated Mozilla HTTP/2 IPC adapter.
+// Absence of the feature is an error; never send credentials or packets
+// through the legacy Go transport as an implicit fallback.
 func (c *Client) exchangeManagedUDP(ctx context.Context, wire []byte) ([]byte, error) {
 	if err := c.Prepare(ctx); err != nil {
 		return nil, err
