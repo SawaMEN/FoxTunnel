@@ -746,7 +746,7 @@ if (typeof Components !== "undefined") {
         },
         onDataAvailable(request, input, offset, count) {
           try {
-            if (!started || count > 32768) throw new Error("invalid native UDP response chunk");
+            if (!started || count > 1048576) throw new Error("invalid native UDP response chunk");
             const binary = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream);
             binary.setInputStream(input);
             const bytes = new Uint8Array(count);
@@ -819,7 +819,10 @@ if (typeof Components !== "undefined") {
         },
         onDataAvailable(request, input, offset, count) {
           try {
-            if (!started || count > 32768) throw new Error("native HTTP chunk limit");
+            // Native delivery may coalesce several 32-KiB segments in one
+            // callback. Consume it synchronously as Gecko requires, then
+            // suspend while the bounded pipe drains. IPC reads remain 32 KiB.
+            if (!started || count > 1048576) throw new Error("native HTTP chunk limit");
             const binary = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream); binary.setInputStream(input);
             const bytes = new Uint8Array(count);
             if (binary.readArrayBuffer(count, bytes.buffer) !== count) throw new Error("truncated HTTP response");

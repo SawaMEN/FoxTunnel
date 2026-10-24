@@ -401,3 +401,53 @@ func (b *observedHTTPBody) Close() error {
 	b.once.Do(func() { err = b.ReadCloser.Close(); close(b.closed) })
 	return err
 }
+
+func TestGeckoManagedHTTPGetAndTrust(t *testing.T) {
+	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	if runtime == "" {
+		t.Skip("explicit native research runtime required")
+	}
+	payload := bytes.Repeat([]byte{0, 128, 255, 42}, 256<<10)
+	var served atomic.Int32
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor != 2 || r.Header.Get("Proxy-Authorization") == "" {
+			http.Error(w, "native auth required", 400)
+			return
+		}
+		served.Add(1)
+		w.Header().Set("X-Native-Test", "yes")
+		w.Write(payload)
+	})
+	a, b := nativeProxy(t, "h2-connect", handler), nativeProxy(t, "h2-connect", handler)
+	m, err := newManagedRuntime(runtime, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", a.Server+"/native-get", nil)
+	resp, err := m.RoundTrip(req)
+	if err != nil {
+		t.Fatal("native GET:", err)
+	}
+	got, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil || !bytes.Equal(got, payload) || resp.Header.Get("X-Native-Test") != "yes" {
+		t.Fatalf("native GET payload/header: %d, %v", len(got), err)
+	}
+	// The second origin uses an independent CA. The shared helper must still
+	// verify that origin before transmitting proxy credentials or a GET.
+	req, _ = http.NewRequestWithContext(ctx, "GET", b.Server+"/untrusted", nil)
+	resp, err = m.RoundTrip(req)
+	if resp != nil {
+		resp.Body.Close()
+	}
+	if err == nil || served.Load() != 1 {
+		t.Fatal("untrusted alternate origin received authenticated request")
+	}
+	var network net.Error
+	if errors.As(err, &network) {
+		t.Fatal("certificate failure was classified as a retryable network outage", err)
+	}
+}

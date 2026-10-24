@@ -183,3 +183,13 @@ Validation is split deliberately:
 Source build `40111523804` was still compiling when this implementation block
 was prepared. No native POST qualification or complete parity claim is made by
 unit-test success alone.
+
+
+Native HTTP GET regression: the older verified research runtime also exercises
+1 MiB GET download and alternate-origin CA rejection through command `0xf2`.
+Gecko may coalesce more than 32 KiB into one onDataAvailable callback. Both native
+stream listeners now accept at most 1 MiB for that callback, consume it before
+returning, and suspend delivery while the 64-KiB pipe drains. IPC readers and
+writes still use 32-KiB frames. An oversized callback fails closed rather than
+allocating an unbounded buffer. This fixes the native-only GET abort exposed by
+the larger-response gate; unit peers did not reproduce that delivery shape.
