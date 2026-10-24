@@ -1,0 +1,21 @@
+--- a/netwerk/base/nsInputStreamPump.h
++++ b/netwerk/base/nsInputStreamPump.h
+@@ -66,6 +66,10 @@
+    */
+   nsresult CallOnStateStop();
+ 
++  // Native HTTP duplex callers may start after final response headers while
++  // the response pipe is still empty. Body availability/EOF remain pipe-owned.
++  nsresult StartOnHeadersAvailable();
++
+   /**
+    * Used by nsPipe to dispatch events with increased priority.
+    */
+@@ -118,6 +122,7 @@
+   bool mProcessingCallbacks MOZ_GUARDED_BY(mMutex){false};
+   // True if waiting on the "input stream ready" callback.
+   bool mWaitingForInputStreamReady MOZ_GUARDED_BY(mMutex){false};
++  bool mStartOnHeadersAvailable MOZ_GUARDED_BY(mMutex){false};
+   bool mCloseWhenDone MOZ_GUARDED_BY(mMutex){false};
+   bool mRetargeting MOZ_GUARDED_BY(mMutex){false};
+   bool mAsyncStreamIsBuffered MOZ_GUARDED_BY(mMutex){false};

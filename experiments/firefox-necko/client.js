@@ -723,7 +723,9 @@ if (typeof Components !== "undefined") {
       }).QueryInterface(Ci.nsIHttpChannel);
       session.channel = channel;
       channel.contentType = "application/octet-stream";
-      channel.QueryInterface(Ci.nsIHttpChannelInternal).blockAuthPrompt = true;
+      const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
+      internal.blockAuthPrompt = true;
+      internal.deliverResponseHeadersEarly = true;
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
       const makePipe = () => {
         const pipe = Cc["@mozilla.org/pipe;1"].createInstance(Ci.nsIPipe);
@@ -804,6 +806,7 @@ if (typeof Components !== "undefined") {
       // response body when the peer flushes headers before reading upload.
       channel.contentType = "application/octet-stream";
       internal.blockAuthPrompt = true; internal.allowHttp3 = false;
+      internal.deliverResponseHeadersEarly = true;
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
       channel.QueryInterface(Ci.nsIEncodedChannel).applyConversion = false;
       channel.setRequestHeader("Accept-Encoding", "identity", false);

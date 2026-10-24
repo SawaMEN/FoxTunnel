@@ -1,0 +1,20 @@
+--- a/netwerk/protocol/http/nsHttpChannel.cpp
++++ b/netwerk/protocol/http/nsHttpChannel.cpp
+@@ -11078,6 +11078,17 @@
+ nsHttpChannel::OnTransportStatus(nsITransport* trans, nsresult status,
+                                  int64_t progress, int64_t progressMax) {
+   MOZ_ASSERT(NS_IsMainThread(), "Should be on main thread only");
++  if (status == NS_NET_STATUS_RECEIVING_FROM &&
++      LoadDeliverResponseHeadersEarly() && mTransactionPump &&
++      NS_SUCCEEDED(mStatus)) {
++    RefPtr<nsInputStreamPump> pump = do_QueryObject(mTransactionPump);
++    if (pump) {
++      nsresult rv = pump->StartOnHeadersAvailable();
++      if (NS_FAILED(rv)) {
++        return Cancel(rv);
++      }
++    }
++  }
+   // cache the progress sink so we don't have to query for it each time.
+   if (!mProgressSink) GetCallback(mProgressSink);
+ 

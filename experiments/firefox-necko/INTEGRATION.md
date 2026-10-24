@@ -227,3 +227,47 @@ The HTTP channel also sets a binary Content-Type hint before opening. An untyped
 peer that flushes headers before the first body byte must not wait for Gecko's
 MIME sniffer. A native interactive GET regression verifies immediate delivery
 without a response Content-Type; typed server responses keep their own MIME type.
+
+### xfd completion plan and response-header deadlock
+
+Overall completion: **0 of 6 remaining stages complete**.
+
+1. Fix native streaming: duplex HTTP, UDP v2/multi-node, Bond lanes, XHTTP.
+2. Pass the full CLI/SDK matrix and sustained resource gates.
+3. Qualify H3 POST/UDP, including no-TCP-fallback tests (draft in xfd-h3).
+4. Build and qualify native Necko on ARM64.
+5. Implement the remaining native SNI/SPKI/profile settings.
+6. Verify and package the unified NSS + Necko distributions.
+
+Stage 1 progress: **2 of 6 steps implemented; native validation pending**:
+
+- Done: reproduce and trace the headers-before-body deadlock on the compiled
+  source artifact from run 40118209336 (archive SHA256
+  864d7e3f7540437852fbfa23714750b363dd3d2e2292ad9c9f762e377ee7dfa2).
+- Done: implement opt-in early final-response-header delivery, with exact pinned
+  source patches, source hashes, helper wiring and a native regression.
+- Pending: duplex HTTP and header-only response/EOF/cancellation qualification.
+- Pending: UDP v2 and Multi-Node native stress/transfer qualification.
+- Pending: Bond persistent lanes and discovery/path-loss qualification.
+- Pending: all XHTTP modes and the integrated CLI/SDK matrix.
+
+The compiled streaming-upload API bypasses upload normalization correctly:
+the native log shows request HEADERS transmitted and HTTP/2 200 response headers
+parsed immediately. However, nsHttpTransaction's response pipe contains body
+bytes only. Its nsInputStreamPump does not start until body data or closure, so
+the JS listener never observes a headers-only response while both endpoints
+wait for upload data. A Content-Type hint alone cannot fix this pipe wakeup.
+
+The new parent-process `deliverResponseHeadersEarly` opt-in publishes final
+headers through the existing serial transport-sink proxy after native HTTP
+reset/retry decisions. The channel wakes its pump's start state without writing
+synthetic payload bytes. An empty, open response pipe remains readable later;
+only actual pipe closure ends the body. Suspension, cancellation and the normal
+single OnStartRequest state transition remain owned by the pump. Ordinary
+channels do not enable the option. This is a source change awaiting compilation
+and native regression results, not a completed streaming qualification.
+
+Run 40119674183 confirmed native CONNECT/half-close/trust, launcher transfer,
+Bond RPC/discovery and standalone XHTTP packet-up/stream-one, but failed duplex
+HTTP, UDP v2/multi-node, Bond lanes and stream-up. Its integrated packet-up SDK
+case also failed and remains an independent regression to investigate.

@@ -1,0 +1,10 @@
+--- a/netwerk/protocol/http/nsHttpTransaction.h
++++ b/netwerk/protocol/http/nsHttpTransaction.h
+@@ -546,6 +546,7 @@
+   bool mStatusEventPending{false};
+   bool mHasRequestBody{false};
+   bool mRequestBodyIsStreaming{false};
++  bool mDeliverResponseHeadersEarly{false};
+   Atomic<bool, Relaxed> mProxyConnectFailed{false};
+   bool mHttpResponseMatched{false};
+   bool mPreserveStream{false};

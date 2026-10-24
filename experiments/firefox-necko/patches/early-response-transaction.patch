@@ -1,0 +1,37 @@
+--- a/netwerk/protocol/http/nsHttpTransaction.cpp
++++ b/netwerk/protocol/http/nsHttpTransaction.cpp
+@@ -47,6 +47,7 @@
+ #include "nsIEventTarget.h"
+ #include "nsIHttpActivityObserver.h"
+ #include "nsIHttpAuthenticator.h"
++#include "nsIHttpChannelInternal.h"
+ #include "nsIInputStream.h"
+ #include "nsIInputStreamPriority.h"
+ #include "nsIMultiplexInputStream.h"
+@@ -257,6 +258,12 @@
+   MOZ_POP_THREAD_SAFETY
+   mConsumerTarget = target;
+   mCaps = caps;
++  // Only parent-process channels explicitly opting into duplex delivery use
++  // this notification. No new socket-process or ordinary browser behavior.
++  nsCOMPtr<nsIHttpChannelInternal> internal = do_QueryInterface(eventsink);
++  if (internal) {
++    (void)internal->GetDeliverResponseHeadersEarly(&mDeliverResponseHeadersEarly);
++  }
+ 
+   mParentIPAddressSpace = aParentIpAddressSpace;
+   mLnaPermissionStatus = aLnaPermissionStatus;
+@@ -2773,6 +2780,13 @@
+   }
+ 
+   mDidContentStart = true;
++  // Headers are fully parsed and native HTTP retry/reset decisions have run.
++  // The response pipe may still be empty, so its normal AsyncWait cannot wake
++  // the consumer. The serial transport-sink proxy publishes the header state
++  // to the channel's thread without sending any synthetic payload bytes.
++  if (mDeliverResponseHeadersEarly && mTransportSink) {
++    mTransportSink->OnTransportStatus(nullptr, NS_NET_STATUS_RECEIVING_FROM, 0, 0);
++  }
+   return NS_OK;
+ }
+ 

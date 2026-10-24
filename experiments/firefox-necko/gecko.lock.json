@@ -104,24 +104,59 @@
     },
     {
       "path": "experiments/firefox-necko/patches/streaming-upload-xpcom-api.patch",
-      "sha256": "2e27fb7ed1ab864fa2d59ebdfa66925951e040a984e6bedaced8cdcf9a22ac3d",
+      "sha256": "f228e98da96d88c3cc028b082976ed153025d6d1bccc21f18fae9f259d18ed43",
       "source_path": "netwerk/protocol/http/nsIHttpChannelInternal.idl",
       "before_sha256": "6835efbdceb7bbfd2cca523ffdd98a2366e5501383864f33737c1300b6affc5c",
-      "after_sha256": "08cc4343cc856e8d52d01153bc46d1f54e709988c4546cd8ae2d0e0d499372f2"
+      "after_sha256": "0ba3597b128a7e4c3afb4c4bebb19f94a694583f77487223c24dfd3d361957c5"
     },
     {
       "path": "experiments/firefox-necko/patches/streaming-upload-channel.patch",
-      "sha256": "7d48b09f72860e1f94e6daea195004e8ba40097afb22ff33a7130eac3ab45c7f",
+      "sha256": "8e36d41179e1c04df00d2fa7ed593aa11f5c3a600b6a520ecdf1a5eee6b6c57b",
       "source_path": "netwerk/protocol/http/HttpBaseChannel.cpp",
       "before_sha256": "066dbb5be37775d4486896de970e4c8c7cf6095fadd03f5f00846b70d77c029a",
-      "after_sha256": "113de0eb52897c1aea08268f03982eec473c3ad5d18c6111f8f45edb6f6c8271"
+      "after_sha256": "37d5ae9271c205d33065bd465eff218465ab1e6dafd602b4032e9be968cec86b"
     },
     {
       "path": "experiments/firefox-necko/patches/streaming-upload-channel-api.patch",
-      "sha256": "6b851e025673cd720853382be03c4c74df1aaa04947160bf7c6c806d674f7cd7",
+      "sha256": "311a04a26922d3cc284b3f04be5675ad79f5cbab4815c10df2c81587ae496fea",
       "source_path": "netwerk/protocol/http/HttpBaseChannel.h",
       "before_sha256": "bb3d8e464de4ef65a8f49588a1d1aac724c9d7fb8555f468c4fc4c5531515663",
-      "after_sha256": "d1747b2c6ff9fbc5da58a69daeece408c464c75e14717bfd8879b45e638d08be"
+      "after_sha256": "5c991a48f9c3d702c33a906b5b9d32be28cb942812ddee7e35ca9b0cc4662f05"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/early-response-transaction-api.patch",
+      "source_path": "netwerk/protocol/http/nsHttpTransaction.h",
+      "sha256": "1063ae1d64ddb7e5e8263b745d059750a96da4ec095df5147766f73cf501483c",
+      "before_sha256": "7ab6edba2f7673c9bc379a4d7ce2632acf77046b7786a6ea34ebed76e6d0ccc9",
+      "after_sha256": "49f0963fc884e323f8930e1b1f693f8ccafafd40d5c8a4656a08f2d7b67f4171"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/early-response-transaction.patch",
+      "source_path": "netwerk/protocol/http/nsHttpTransaction.cpp",
+      "sha256": "a36fb02e1dfc34622984c88e3c2fdd789e3813a44b26adb3b6dd783761353e34",
+      "before_sha256": "1982338b39ce282ba63f98d7dcdc9d4bc754540866a5cce73093957106e95ad6",
+      "after_sha256": "3ae519f0c28bb905052392ea0b9c792df6ee47a625da47b1062503c64ce1f982"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/early-response-channel.patch",
+      "source_path": "netwerk/protocol/http/nsHttpChannel.cpp",
+      "sha256": "bf1e564543e44aa5124c43c1ae514ad333f1aaffa174a0b811c380845312277c",
+      "before_sha256": "83503124e64ff48ee2210150a3c010817d1266e6cbd8e5e1406e6fc707784510",
+      "after_sha256": "69f4825f2d37093c365da073d7ee4808435501996b4a76b68769f3582bcc906a"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/early-response-pump-api.patch",
+      "source_path": "netwerk/base/nsInputStreamPump.h",
+      "sha256": "039e0f3001e864809174b84a9babb9ddff7ce8061dc05ecea229d90064f5daf2",
+      "before_sha256": "fc20597cfa2e21f6b51370891b4ba3fae0c61fe0655248ea6c2986f815dbd925",
+      "after_sha256": "1d7b2a7308e65b664eb5957155cc4eb5b1f2488acb08bdfaf8d6ed1b12e9ceeb"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/early-response-pump.patch",
+      "source_path": "netwerk/base/nsInputStreamPump.cpp",
+      "sha256": "bd93b76efec1a90db97effd4a8291421d906584c40a634fae43cd435246deba6",
+      "before_sha256": "7bf9c0cec93dc741d5bcd64243c5df81c1d198df39a90ef6d1ef77e186678482",
+      "after_sha256": "2a8ab0706d9bfb82f5a86d548f9456ba2713da3946920fb87a8d2a283316f83e"
     }
   ]
 }
