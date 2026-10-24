@@ -122,3 +122,24 @@ This gate requires `FOXTUNNEL_NECKO_BUNDLE`; Node codec/pump tests alone do not
 establish that the pinned Gecko streams unknown-length uploads. Long-session,
 load and runtime compatibility validation are still required before enabling
 this path. Native H3 UDP, XHTTP and Bonding remain pending.
+
+
+### Native streaming upload normalization fix
+
+The first mandatory UDP-v2 native gate failed at response-before-upload setup
+in runtime CI run 40110073711 (commit 6316640). The pinned Gecko revision has a
+Fetch streaming-upload path, but `explicitSetUploadStream(..., -1, ...)` alone
+normalizes an async pipe into a StorageStream and waits for EOF before sending
+the request. A live session cannot reach EOF before receiving its setup ACK.
+
+The source lock now includes `enableStreamingUpload()` on the privileged
+`nsIHttpChannelInternal` interface. It must be called on the main thread before
+opening the channel or attaching its upload stream. It opts into Gecko's existing
+Fetch streaming path; ordinary uploads still use normalization. The helper calls
+it before attaching the bounded async upload pipe and still disables redirects
+and interactive authentication. Missing API support fails closed.
+
+This changes libxul and its XPCOM interface, so the old binary is incompatible
+with UDP v2. Source builds now run on xfd as well as firefox, and runtime selection
+searches matching source locks across branches. The native duplex gate must pass
+against the newly compiled runtime before UDPStreaming is enabled in CLI/SDK.

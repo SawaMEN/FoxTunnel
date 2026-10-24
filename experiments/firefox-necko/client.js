@@ -647,6 +647,10 @@ if (typeof Components !== "undefined") {
       const closeRemote = remote.close.bind(remote);
       remote.close = () => { closeRemote(); sink.close(); };
       session.remote = remote;
+      // -1 alone requests length discovery and buffers the pipe until EOF.
+      // The pinned API opts into Gecko's Fetch streaming path before attaching
+      // the pipe. Older runtimes must fail, never silently buffer or use Go.
+      channel.QueryInterface(Ci.nsIHttpChannelInternal).enableStreamingUpload();
       channel.QueryInterface(Ci.nsIUploadChannel2).explicitSetUploadStream(
         upload.inputStream, "application/octet-stream", -1, "POST");
       channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);

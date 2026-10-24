@@ -1,0 +1,19 @@
+--- a/netwerk/protocol/http/HttpBaseChannel.cpp
++++ b/netwerk/protocol/http/HttpBaseChannel.cpp
+@@ -1236,6 +1236,16 @@
+ //-----------------------------------------------------------------------------
+ // HttpBaseChannel::nsIUploadChannel2
+ //-----------------------------------------------------------------------------
++
++NS_IMETHODIMP
++HttpBaseChannel::EnableStreamingUpload() {
++  // Async pipes must bypass NormalizeUploadStream, which waits for EOF before
++  // opening the request. Reuse the native Fetch streaming path instead.
++  NS_ENSURE_TRUE(NS_IsMainThread(), NS_ERROR_NOT_SAME_THREAD);
++  NS_ENSURE_TRUE(!LoadWasOpened() && !mUploadStream, NS_ERROR_IN_PROGRESS);
++  StoreUploadStreamIsStreaming(true);
++  return NS_OK;
++}
+ 
+ NS_IMETHODIMP
+ HttpBaseChannel::ExplicitSetUploadStream(nsIInputStream* aStream,

@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--repo', default=os.environ.get('GITHUB_REPOSITORY'))
     parser.add_argument('--lock', type=Path, default=Path('experiments/firefox-necko/gecko.lock.json'))
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--wait-seconds', type=int, default=3600)
+    parser.add_argument('--wait-seconds', type=int, default=10800)
     args = parser.parse_args()
     if not args.repo or len(args.repo.split('/')) != 2:
         parser.error('repository must be owner/name')
@@ -54,8 +54,11 @@ def main():
         return cache[sha]
 
     deadline = time.monotonic() + args.wait_seconds
+    # Push workflows may become visible in different orders. Give the source
+    # workflow time to register before deciding no matching build exists.
+    discovery_deadline = min(deadline, time.monotonic() + 120)
     while True:
-        runs = api('actions/workflows/necko-experiment.yml/runs?branch=firefox&per_page=20')['workflow_runs']
+        runs = api('actions/workflows/necko-experiment.yml/runs?per_page=100')['workflow_runs']
         run, waiting = matching_run(runs, expected, source,
                                    lambda run_id: api(f'actions/runs/{run_id}/artifacts')['artifacts'])
         if run is not None:
@@ -63,7 +66,7 @@ def main():
                 output.write(f'run_id={run}\n')
             print('Selected compiled runtime run', run)
             return
-        if not waiting or time.monotonic() >= deadline:
+        if time.monotonic() >= deadline or (not waiting and time.monotonic() >= discovery_deadline):
             raise SystemExit('No compiled runtime matches the source lock; inspect the source build.')
         print('Waiting for compilation of the matching native source lock', flush=True)
         time.sleep(30)

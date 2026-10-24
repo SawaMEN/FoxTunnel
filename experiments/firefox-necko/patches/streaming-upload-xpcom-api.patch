@@ -1,0 +1,23 @@
+--- a/netwerk/protocol/http/nsIHttpChannelInternal.idl
++++ b/netwerk/protocol/http/nsIHttpChannelInternal.idl
+@@ -64,7 +64,7 @@
+  * using any feature exposed by this interface, be aware that this interface
+  * will change and you will be broken.  You have been warned.
+  */
+-[builtinclass, scriptable, uuid(4e28263d-1e03-46f4-aa5c-9512f91957f9)]
++[builtinclass, scriptable, uuid(a6a3f6df-8965-4916-918d-77089f2b1a93)]
+ interface nsIHttpChannelInternal : nsISupports
+ {
+     /**
+@@ -547,4 +547,11 @@
+      * For testing purposes only.
+      */
+     readonly attribute unsigned long caps;
++
++    /**
++     * Opt in to an unknown-length async upload before setting the upload stream.
++     * Privileged callers must disable redirects and auth retries: this stream
++     * cannot be cloned or replayed. Ordinary uploads retain normalization.
++     */
++    [must_use] void enableStreamingUpload();
+ };
