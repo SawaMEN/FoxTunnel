@@ -208,7 +208,12 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 			if nativeMode != "h3-connect" {
 				nativeMode = "h2-connect"
 			}
-			return firefox.NewManaged(bundle, firefox.Config{Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: nativeMode, MaxConnections: c.MaxConnections, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
+			// MaxConnections admits logical SDK/SOCKS connections. One XHTTP
+			// carrier or Bond session can own several native HTTP operations, so
+			// applying that same limit here can reject a flow's own GET/POST pair.
+			// The helper keeps its separate bounded default of 256 operations;
+			// SDK/SOCKS admission continues to enforce the user's logical limit.
+			return firefox.NewManaged(bundle, firefox.Config{Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: nativeMode, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
 		})
 		c.SetEngineStatus("necko", p.Transport, "nss", "necko", "none")
 		return nil

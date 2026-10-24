@@ -271,3 +271,12 @@ Run 40119674183 confirmed native CONNECT/half-close/trust, launcher transfer,
 Bond RPC/discovery and standalone XHTTP packet-up/stream-one, but failed duplex
 HTTP, UDP v2/multi-node, Bond lanes and stream-up. Its integrated packet-up SDK
 case also failed and remains an independent regression to investigate.
+
+The packet-up SDK failure has a separate admission cause: the integrated SDK
+sets MaxConnections=1 to test the logical tunnel limit, but Plan.Apply forwarded
+it as the helper's native-operation limit as well. Packet-up needs a long-lived
+GET plus POST operations, so its own upload was rejected. The factory now keeps
+the helper's independent bounded default (256 native operations), while the
+existing SDK/SOCKS admission gate still rejects a second logical connection.
+The integrated `xhttp-packet-up/SDK` case remains the native regression gate;
+its pass is required before considering this fix qualified.
