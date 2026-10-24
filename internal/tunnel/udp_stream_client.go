@@ -22,7 +22,7 @@ type udpStream struct {
 	response io.ReadCloser
 	reader   *io.PipeReader
 	once     sync.Once
-	writer   *io.PipeWriter
+	writer   io.WriteCloser
 	cancel   context.CancelFunc
 }
 
@@ -48,6 +48,9 @@ func (c *Client) openUDPStreamTo(parent context.Context, endpoint *url.URL) (str
 	defer func() { c.status.FinishOperation(ticket, operationReason(err)) }()
 	if err := parent.Err(); err != nil {
 		return nil, err
+	}
+	if c.managed != nil {
+		return c.openManagedUDPStream(parent, endpoint)
 	}
 	ctx, abort := context.WithCancelCause(parent)
 	cancel := func() { abort(context.Canceled) }

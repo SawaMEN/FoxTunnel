@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -150,4 +151,47 @@ func (c *Client) exchangeManagedUDP(ctx context.Context, wire []byte) ([]byte, e
 		return nil, errors.New("managed Necko transport cannot exchange UDP")
 	}
 	return exchange.ExchangeUDP(ctx, wire)
+}
+
+// managedUDPStream is the future Gecko streaming extension boundary.
+// It does not introduce a Go HTTP fallback, and is intentionally inaccessible
+// through normal UDPStreaming configuration until native Gecko implements it.
+type managedUDPStream interface {
+	OpenUDPStream(context.Context) (io.ReadWriteCloser, error)
+}
+
+func (c *Client) openManagedUDPStream(ctx context.Context, endpoint *url.URL) (*udpStream, error) {
+	if c.managed == nil || endpoint == nil || endpoint.Scheme != "https" ||
+		endpoint.Host != c.ServerURL.Host || c.nativeTransport != "h2-connect" {
+		return nil, errors.New("Necko native UDP stream requires the configured H2 HTTPS origin")
+	}
+	if err := c.Prepare(ctx); err != nil {
+		return nil, err
+	}
+	c.managed.Lock()
+	tr, closed := c.managed.transport, c.managed.closed
+	c.managed.Unlock()
+	if closed {
+		return nil, net.ErrClosed
+	}
+	bridge, ok := tr.(managedUDPStream)
+	if !ok {
+		return nil, errors.New("Necko does not yet provide a native UDP streaming channel")
+	}
+	stream, err := bridge.OpenUDPStream(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if stream == nil {
+		return nil, errors.New("native Necko UDP streaming channel is absent")
+	}
+	stop := context.AfterFunc(ctx, func() { _ = stream.Close() })
+	return &udpStream{
+		response: stream,
+		writer: stream,
+		cancel: func() {
+			stop()
+			_ = stream.Close()
+		},
+	}, nil
 }

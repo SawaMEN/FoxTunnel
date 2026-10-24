@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net"
+	"net/url"
 	"testing"
 
 	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
@@ -68,5 +70,76 @@ func TestManagedUDPFailClosedOnUnsupportedModes(t *testing.T) {
 			t.Fatalf("%s streaming=%v unexpectedly permitted", tt.mode, tt.stream)
 		}
 		c.Close()
+	}
+}
+
+type mockManagedStream struct {
+	udpManagedFixture
+	stream io.ReadWriteCloser
+}
+
+func (m *mockManagedStream) OpenUDPStream(context.Context) (io.ReadWriteCloser, error) {
+	return m.stream, nil
+}
+
+func TestManagedUDPStreamingBridgeNoGoFallback(t *testing.T) {
+	c, err := NewClient("https://127.0.0.1:8443", "u", "p", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	local, remote := net.Pipe()
+	defer remote.Close()
+	bridge := &mockManagedStream{stream: local}
+	c.SetManagedTransport("h2-connect", func() (ManagedTransport, error) { return bridge, nil })
+	// The interface is independently testable; enabling real managed UDP
+	// streaming remains rejected until native Gecko implements this channel.
+	stream, err := c.openManagedUDPStream(context.Background(), c.ServerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stream.close()
+	wire, err := udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: 53, Data: []byte{0, 255}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		got, err := udpproto.ReadFrame(remote)
+		if err != nil {
+			done <- err
+			return
+		}
+		if !bytes.Equal(wire, got) {
+			done <- errors.New("wrong framed request")
+			return
+		}
+		done <- udpproto.WriteFrame(remote, got)
+	}()
+	if err := udpproto.WriteFrame(stream.writer, wire); err != nil {
+		t.Fatal(err)
+	}
+	got, err := udpproto.ReadFrame(stream.response)
+	if err != nil || !bytes.Equal(got, wire) {
+		t.Fatalf("managed framed streaming: %v", err)
+	}
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	other, _ := url.Parse("https://other.invalid")
+	if _, err := c.openManagedUDPStream(context.Background(), other); err == nil {
+		t.Fatal("managed UDP may not switch HTTPS exit")
+	}
+}
+
+func TestManagedUDPStreamingWithoutNativeChannelFailsClosed(t *testing.T) {
+	c, err := NewClient("https://127.0.0.1:8443", "u", "p", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	c.SetManagedTransport("h2-connect", func() (ManagedTransport, error) { return &udpManagedFixture{}, nil })
+	if _, err := c.openManagedUDPStream(context.Background(), c.ServerURL); err == nil {
+		t.Fatal("unsupported Necko streaming must fail, not use Go transport")
 	}
 }
