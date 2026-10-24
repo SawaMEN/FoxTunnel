@@ -135,7 +135,7 @@ jobs:
     uses: ./.github/workflows/necko-runtime-test.yml
     with:
       release_version: ${{ needs.request.outputs.version }}
-index:
+  index:
     needs: [request, quality, nss, neqo, necko]
     runs-on: ubuntu-24.04
     steps:
@@ -217,7 +217,7 @@ index:
         with:
           name: release-assets
           path: dist
-- name: Verify the two published archives again before signing
+      - name: Verify the two published archives again before signing
         env:
           RELEASE_TAG: ${{ needs.request.outputs.version }}
         shell: bash
