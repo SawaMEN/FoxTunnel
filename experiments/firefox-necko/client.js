@@ -419,7 +419,7 @@ if (typeof Components !== "undefined") {
       const binary = String.fromCharCode(...packet);
       upload.setData(binary, binary.length);
       channel.QueryInterface(Ci.nsIUploadChannel2)
-        .explicitSetUploadStream(upload, "application/octet-stream", packet.length, "POST", false);
+        .explicitSetUploadStream(upload, "application/octet-stream", packet.length, "POST");
       channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);
       let finished = false;
       const received = [];
