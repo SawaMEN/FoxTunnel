@@ -1,12 +1,22 @@
 --- a/netwerk/protocol/http/HttpBaseChannel.h
 +++ b/netwerk/protocol/http/HttpBaseChannel.h
-@@ -360,6 +360,9 @@
+@@ -360,6 +360,11 @@
  
    NS_IMETHOD GetLastTransportStatus(nsresult* aLastTransportStatus) override;
  
 +  NS_IMETHOD EnableStreamingUpload() override;
++  NS_IMETHOD GetDeliverResponseHeadersEarly(bool* aValue) override;
++  NS_IMETHOD SetDeliverResponseHeadersEarly(bool aValue) override;
 +  NS_IMETHOD ForceHTTP3() override;
 +
    NS_IMETHOD GetCaps(uint32_t* aCaps) override {
      if (!aCaps) {
        return NS_ERROR_INVALID_ARG;
+@@ -980,6 +985,7 @@
+     (uint32_t, ResponseCouldBeSynthesized, 1),
+ 
+     (uint32_t, BlockAuthPrompt, 1),
++    (uint32_t, DeliverResponseHeadersEarly, 1),
+ 
+     // If true, we behave as if the LOAD_FROM_CACHE flag has been set.
+     // Used to enforce that flag's behavior but not expose it externally.

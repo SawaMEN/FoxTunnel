@@ -23,11 +23,20 @@ func TestGeckoManagedUDPMultiNode(t *testing.T) {
 		t.Skip("new verified native streaming-upload bundle required")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
-		t.Run(mode, func(t *testing.T) { testGeckoManagedUDPMultiNode(t, bundle, mode) })
+		t.Run(mode, func(t *testing.T) {
+			for _, ending := range []string{"control-close", "node-loss"} {
+				t.Run(ending, func(t *testing.T) { testGeckoManagedUDPMultiNode(t, bundle, mode, ending) })
+			}
+		})
 	}
 }
-func testGeckoManagedUDPMultiNode(t *testing.T, bundle, mode string) {
+
+func testGeckoManagedUDPMultiNode(t *testing.T, bundle, mode, ending string) {
+	t.Helper()
 	var streams [2]atomic.Int32
+	ended := [2]chan struct{}{make(chan struct{}, 1), make(chan struct{}, 1)}
+	nodeLife, loseNode := context.WithCancel(context.Background())
+	defer loseNode()
 	makeEndpoint := func(index int) Config {
 		server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: true}
 		return nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +50,19 @@ func testGeckoManagedUDPMultiNode(t *testing.T, bundle, mode string) {
 					return
 				}
 				streams[index].Add(1)
+				defer func() {
+					select {
+					case ended[index] <- struct{}{}:
+					default:
+					}
+				}()
+				if index == 0 {
+					ctx, cancel := context.WithCancel(r.Context())
+					stop := context.AfterFunc(nodeLife, cancel)
+					defer stop()
+					defer cancel()
+					r = r.WithContext(ctx)
+				}
 			}
 			server.ServeHTTP(w, r)
 		}))
@@ -136,6 +158,32 @@ func testGeckoManagedUDPMultiNode(t *testing.T, bundle, mode string) {
 	}
 	if streams[0].Load() != 1 || streams[1].Load() != 1 {
 		t.Fatalf("expected one native stream per trusted origin: %d %d", streams[0].Load(), streams[1].Load())
+	}
+	if ending == "node-loss" {
+		loseNode()
+		// Losing an exit must close the association, preserving UDP flow/NAT
+		// identity rather than retrying an established flow through another exit.
+		control.SetReadDeadline(time.Now().Add(5 * time.Second))
+		var b [1]byte
+		if n, err := control.Read(b[:]); n != 0 || err != io.EOF {
+			t.Fatalf("lost exit did not close SOCKS control: %d bytes, %v", n, err)
+		}
+	} else {
+		control.Close()
+	}
+	// Check association teardown while the client/helper are still alive;
+	// closing the whole client first would hide leaked native HTTP owners.
+	deadline := time.NewTimer(5 * time.Second)
+	defer deadline.Stop()
+	for index := range ended {
+		select {
+		case <-ended[index]:
+		case <-deadline.C:
+			t.Fatalf("native UDP stream %d survived %s", index, ending)
+		}
+		if streams[index].Load() != 1 {
+			t.Fatalf("native UDP stream %d reopened after %s", index, ending)
+		}
 	}
 }
 func managedUDPEcho(t *testing.T) *net.UDPConn {

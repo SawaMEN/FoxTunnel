@@ -242,3 +242,83 @@ The source patches and Go routing tests are prepared, but this source lock has
 not been compiled or natively tested. Do not describe H3 POST/UDP as supported
 until its verified bundle passes the added gates. This isolated draft must not
 interrupt the ongoing xfd source build that validates streaming upload first.
+
+### xfd completion plan and response-header deadlock
+
+Overall completion: **0 of 6 remaining stages complete**.
+
+1. Fix native streaming: duplex HTTP, UDP v2/multi-node, Bond lanes, XHTTP.
+2. Pass the full CLI/SDK matrix and sustained resource gates.
+3. Qualify H3 POST/UDP, including no-TCP-fallback tests (draft in xfd-h3).
+4. Build and qualify native Necko on ARM64.
+5. Implement the remaining native SNI/SPKI/profile settings.
+6. Verify and package the unified NSS + Necko distributions.
+
+Stage 1 progress: **2 of 6 steps implemented; native validation pending**:
+
+- Done: reproduce and trace the headers-before-body deadlock on the compiled
+  source artifact from run 40118209336 (archive SHA256
+  864d7e3f7540437852fbfa23714750b363dd3d2e2292ad9c9f762e377ee7dfa2).
+- Done: implement opt-in early final-response-header delivery, with exact pinned
+  source patches, source hashes, helper wiring and a native regression.
+- Pending: duplex HTTP and header-only response/EOF/cancellation qualification.
+- Pending: UDP v2 and Multi-Node native stress/transfer qualification.
+- Pending: Bond persistent lanes and discovery/path-loss qualification.
+- Pending: all XHTTP modes and the integrated CLI/SDK matrix.
+
+The compiled streaming-upload API bypasses upload normalization correctly:
+the native log shows request HEADERS transmitted and HTTP/2 200 response headers
+parsed immediately. However, nsHttpTransaction's response pipe contains body
+bytes only. Its nsInputStreamPump does not start until body data or closure, so
+the JS listener never observes a headers-only response while both endpoints
+wait for upload data. A Content-Type hint alone cannot fix this pipe wakeup.
+
+The new parent-process `deliverResponseHeadersEarly` opt-in publishes final
+headers through the existing serial transport-sink proxy after native HTTP
+reset/retry decisions. The channel wakes its pump's start state without writing
+synthetic payload bytes. An empty, open response pipe remains readable later;
+only actual pipe closure ends the body. Suspension, cancellation and the normal
+single OnStartRequest state transition remain owned by the pump. Ordinary
+channels do not enable the option. This is a source change awaiting compilation
+and native regression results, not a completed streaming qualification.
+
+Run 40119674183 confirmed native CONNECT/half-close/trust, launcher transfer,
+Bond RPC/discovery and standalone XHTTP packet-up/stream-one, but failed duplex
+HTTP, UDP v2/multi-node, Bond lanes and stream-up. Its integrated packet-up SDK
+case also failed and remains an independent regression to investigate.
+
+The packet-up SDK failure has a separate admission cause: the integrated SDK
+sets MaxConnections=1 to test the logical tunnel limit, but Plan.Apply forwarded
+it as the helper's native-operation limit as well. Packet-up needs a long-lived
+GET plus POST operations, so its own upload was rejected. The factory now keeps
+the helper's independent bounded default (256 native operations), while the
+existing SDK/SOCKS admission gate still rejects a second logical connection.
+Native admission regression result: the integrated packet-up matrix passed
+three consecutive times with the factory correction (12/12 subtests: SDK,
+SDK-auto, SDK-padding-strict and packaged CLI). The SDK case uses a logical
+limit of one, transfers a binary payload and still rejects a second logical
+connection. This isolated qualification used a checkout of be2ea71 plus only
+the factory correction, packaged against the verified source runtime from
+40118209336 and its original matching source lock/provenance. No old runtime
+was relabeled as containing the early-response-header API. The complete matrix
+must still pass again on the new source build.
+
+The native Multi-Node gate now runs both SOCKS-control closure and single-exit
+loss after binary UDP transfer. Each case requires both remote stream handlers
+to finish while the client/helper remain alive, so whole-client shutdown cannot
+hide a leaked association. Exit loss must also close the SOCKS control socket,
+with no stream reopening or silent migration of existing UDP flows. These new
+native lifecycle cases await the early-response-header source build; passing
+ordinary routing fixtures does not qualify them.
+
+The isolated H3 draft is synchronized with xfd 2fcdb34: it includes the native
+early-response-header opt-in, independent helper admission limit, and both UDP
+association teardown cases. Its combined nsHttpChannel/nsHttpTransaction
+patches preserve the HTTP/3-only policy and early header notification together;
+each pinned source file still has exactly one hash-checked patch. All 22 source
+patches applied to the pinned originals with matching before/after hashes.
+The general Go race suite and JS regressions passed after synchronization.
+Native qualification remains pending: neither patch application nor Go tests
+prove that the new C++ APIs compile or that native H3 works. The native Bond
+matrix now covers H2/H3 RPC, persistent lanes, discovery and first-path loss;
+the Multi-Node matrix covers both protocols and both teardown triggers.

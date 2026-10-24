@@ -292,6 +292,81 @@ func TestGeckoManagedHTTP(t *testing.T) {
 
 type flushingWriter struct{ http.ResponseWriter }
 
+// Response headers must be observable while an empty native response pipe is
+// still open. Neither that wakeup nor a later cancellation may synthesize EOF.
+func TestGeckoManagedHTTPHeadersOnly(t *testing.T) {
+	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	if bundle == "" {
+		t.Skip("verified early-response-header runtime required")
+	}
+	for _, mode := range []string{"delayed-body", "empty-body", "cancel"} {
+		t.Run(mode, func(t *testing.T) {
+			release := make(chan struct{})
+			cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/octet-stream")
+				w.Header().Set("X-Headers-Only", "yes")
+				w.WriteHeader(http.StatusOK)
+				w.(http.Flusher).Flush()
+				select {
+				case <-release:
+					if mode == "delayed-body" {
+						w.Write([]byte{0, 255, 128, 42})
+					}
+				case <-r.Context().Done():
+				}
+			}))
+			m, err := NewManaged(bundle, cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer m.Close()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			req, _ := http.NewRequestWithContext(ctx, "GET", cfg.Server+"/headers-only", nil)
+			resp, err := m.RoundTrip(req)
+			if err != nil {
+				t.Fatal("headers delayed until response data:", err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != 200 || resp.Header.Get("X-Headers-Only") != "yes" {
+				t.Fatal("response metadata lost")
+			}
+			type result struct {
+				data []byte
+				err  error
+			}
+			read := make(chan result, 1)
+			go func() { b, e := io.ReadAll(resp.Body); read <- result{b, e} }()
+			select {
+			case r := <-read:
+				t.Fatalf("open response pipe produced premature EOF: %d bytes, %v", len(r.data), r.err)
+			case <-time.After(100 * time.Millisecond):
+			}
+			if mode == "cancel" {
+				cancel()
+			} else {
+				close(release)
+			}
+			select {
+			case r := <-read:
+				if mode == "cancel" {
+					if r.err == nil {
+						t.Fatal("cancellation became clean EOF")
+					}
+				} else if r.err != nil {
+					t.Fatal(r.err)
+				} else if mode == "delayed-body" && !bytes.Equal(r.data, []byte{0, 255, 128, 42}) {
+					t.Fatal("response data lost after header delivery")
+				} else if mode == "empty-body" && len(r.data) != 0 {
+					t.Fatal("header notification inserted payload bytes")
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("response pipe did not finish")
+			}
+		})
+	}
+}
+
 func (w flushingWriter) Write(b []byte) (int, error) {
 	n, err := w.ResponseWriter.Write(b)
 	w.ResponseWriter.(http.Flusher).Flush()

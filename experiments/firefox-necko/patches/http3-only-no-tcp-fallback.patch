@@ -1,6 +1,27 @@
 --- a/netwerk/protocol/http/nsHttpTransaction.cpp
 +++ b/netwerk/protocol/http/nsHttpTransaction.cpp
-@@ -1305,7 +1305,7 @@
+@@ -47,6 +47,7 @@
+ #include "nsIEventTarget.h"
+ #include "nsIHttpActivityObserver.h"
+ #include "nsIHttpAuthenticator.h"
++#include "nsIHttpChannelInternal.h"
+ #include "nsIInputStream.h"
+ #include "nsIInputStreamPriority.h"
+ #include "nsIMultiplexInputStream.h"
+@@ -257,6 +258,12 @@
+   MOZ_POP_THREAD_SAFETY
+   mConsumerTarget = target;
+   mCaps = caps;
++  // Only parent-process channels explicitly opting into duplex delivery use
++  // this notification. No new socket-process or ordinary browser behavior.
++  nsCOMPtr<nsIHttpChannelInternal> internal = do_QueryInterface(eventsink);
++  if (internal) {
++    (void)internal->GetDeliverResponseHeadersEarly(&mDeliverResponseHeadersEarly);
++  }
+ 
+   mParentIPAddressSpace = aParentIpAddressSpace;
+   mLnaPermissionStatus = aLnaPermissionStatus;
+@@ -1305,7 +1312,7 @@
        MutexAutoLock lock(mLock);
        mOrigConnInfo.swap(mConnInfo);
      }
@@ -9,7 +30,7 @@
          ((mCaps & NS_HTTP_DISALLOW_HTTP3) ||
           gHttpHandler->IsHttp3Excluded(mConnInfo->GetRoutedHost().IsEmpty()
                                             ? mConnInfo->GetOrigin()
-@@ -2066,6 +2066,11 @@
+@@ -2066,6 +2073,11 @@
      }
    }
  
@@ -21,7 +42,21 @@
    // limit the number of restart attempts - bug 92224
    if (++mRestartCount >= gHttpHandler->MaxRequestAttempts()) {
      LOG(("reached max request attempts, failing transaction @%p\n", this));
-@@ -3033,6 +3038,9 @@
+@@ -2773,6 +2785,13 @@
+   }
+ 
+   mDidContentStart = true;
++  // Headers are fully parsed and native HTTP retry/reset decisions have run.
++  // The response pipe may still be empty, so its normal AsyncWait cannot wake
++  // the consumer. The serial transport-sink proxy publishes the header state
++  // to the channel's thread without sending any synthetic payload bytes.
++  if (mDeliverResponseHeadersEarly && mTransportSink) {
++    mTransportSink->OnTransportStatus(nullptr, NS_NET_STATUS_RECEIVING_FROM, 0, 0);
++  }
+   return NS_OK;
+ }
+ 
+@@ -3033,6 +3052,9 @@
  
  void nsHttpTransaction::DisableHttp3(bool aAllowRetryHTTPSRR) {
    MOZ_ASSERT(OnSocketThread(), "not on socket thread");
@@ -31,7 +66,7 @@
  
    // mOrigConnInfo is an indicator that HTTPS RR is used, so don't mess up the
    // connection info.
-@@ -3067,6 +3075,9 @@
+@@ -3067,6 +3089,9 @@
  
  void nsHttpTransaction::DisableHttp3ForRestart() {
    MOZ_ASSERT(OnSocketThread(), "not on socket thread");
@@ -41,7 +76,7 @@
  
    mCaps |= NS_HTTP_DISALLOW_HTTP3;
  
-@@ -4008,6 +4019,9 @@
+@@ -4008,6 +4033,9 @@
    MOZ_ASSERT(mConnInfo->IsHttp3() || mConnInfo->IsHttp3ProxyConnection());
  
    mHttp3BackupTimer = nullptr;
@@ -51,7 +86,7 @@
  
    if (mConnInfo->IsHttp3ProxyConnection()) {
      mBackupConnInfo = mConnInfo->CreateConnectUDPFallbackConnInfo();
-@@ -4068,6 +4082,9 @@
+@@ -4068,6 +4096,9 @@
         mConnected));
  
    mFastFallbackTimer = nullptr;

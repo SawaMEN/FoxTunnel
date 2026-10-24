@@ -8,10 +8,26 @@
  #include "nsICacheInfoChannel.h"
  #include "nsICachingChannel.h"
  #include "nsIChannelEventSink.h"
-@@ -1236,6 +1237,49 @@
+@@ -1236,6 +1237,65 @@
  //-----------------------------------------------------------------------------
  // HttpBaseChannel::nsIUploadChannel2
  //-----------------------------------------------------------------------------
++
++NS_IMETHODIMP
++HttpBaseChannel::GetDeliverResponseHeadersEarly(bool* aValue) {
++  NS_ENSURE_ARG_POINTER(aValue);
++  *aValue = LoadDeliverResponseHeadersEarly();
++  return NS_OK;
++}
++
++NS_IMETHODIMP
++HttpBaseChannel::SetDeliverResponseHeadersEarly(bool aValue) {
++  NS_ENSURE_TRUE(NS_IsMainThread(), NS_ERROR_NOT_SAME_THREAD);
++  NS_ENSURE_TRUE(XRE_IsParentProcess(), NS_ERROR_NOT_IMPLEMENTED);
++  NS_ENSURE_TRUE(!LoadWasOpened(), NS_ERROR_IN_PROGRESS);
++  StoreDeliverResponseHeadersEarly(aValue);
++  return NS_OK;
++}
 +
 +NS_IMETHODIMP
 +HttpBaseChannel::EnableStreamingUpload() {

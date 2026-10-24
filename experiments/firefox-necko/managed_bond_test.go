@@ -23,6 +23,18 @@ func TestGeckoManagedBond(t *testing.T) {
 	if bundle == "" && runtime == "" {
 		t.Skip("verified native bundle required")
 	}
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) {
+			if mode == "h3-connect" && bundle == "" {
+				t.Skip("verified native HTTP/3 bundle required")
+			}
+			testGeckoManagedBond(t, bundle, runtime, mode)
+		})
+	}
+}
+
+func testGeckoManagedBond(t *testing.T, bundle, runtime, mode string) {
+	t.Helper()
 	for _, lanes := range []bool{false, true} {
 		for _, discovery := range []bool{false, true} {
 			name := "rpc"
@@ -46,15 +58,19 @@ func TestGeckoManagedBond(t *testing.T) {
 				var manifest cluster.Manifest
 				ready := make(chan struct{})
 				endpoint := func(index int) Config {
-					return nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					return nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						<-ready
 						if r.URL.Path == cluster.Path {
 							w.Header().Set("Content-Type", "application/json")
 							json.NewEncoder(w).Encode(manifest)
 							return
 						}
-						if r.ProtoMajor != 2 {
-							http.Error(w, "native H2 required", 400)
+						expected := 2
+						if mode == "h3-connect" {
+							expected = 3
+						}
+						if r.ProtoMajor != expected {
+							http.Error(w, "native carrier protocol required", 400)
 							return
 						}
 						calls[index].Add(1)
@@ -89,7 +105,7 @@ func TestGeckoManagedBond(t *testing.T) {
 					t.Fatal(err)
 				}
 				defer c.Close()
-				c.SetManagedHTTPTransport("h2-connect", func() (tunnel.ManagedTransport, error) {
+				c.SetManagedHTTPTransport(mode, func() (tunnel.ManagedTransport, error) {
 					if bundle != "" {
 						return NewManaged(bundle, a)
 					}
