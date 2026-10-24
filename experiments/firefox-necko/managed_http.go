@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,6 +25,7 @@ type httpIPCRequest struct {
 	Host    string      `json:"host"`
 	Headers [][2]string `json:"headers"`
 	Body    bool        `json:"body"`
+	Length  int64       `json:"length"`
 }
 type httpIPCResponse struct {
 	Status  int         `json:"status"`
@@ -108,14 +110,28 @@ func writeHTTPChunk(w io.Writer, b []byte) error {
 	return writeHTTPBytes(w, b)
 }
 
-// RoundTrip sends one bounded-metadata HTTP operation through a fixed-origin
-// Gecko helper. Its owner must select the helper using a trusted origin pool.
+// RoundTrip sends one bounded-metadata HTTP operation through an owned Gecko
+// helper. Its owner must restrict request origins with a trusted origin pool.
 // The IPC upload and download are independently framed so EOF and native errors
 // cannot be confused, and a response may precede the first upload byte.
-func (m *Managed) RoundTrip(req *http.Request) (*http.Response, error) {
+func (m *Managed) RoundTrip(req *http.Request) (result *http.Response, resultErr error) {
 	if req == nil || req.URL == nil {
 		return nil, errors.New("native HTTP request missing URL")
 	}
+	var writeOnce sync.Once
+	trace := httptrace.ContextClientTrace(req.Context())
+	notifyWrite := func(err error) {
+		writeOnce.Do(func() {
+			if trace != nil && trace.WroteRequest != nil {
+				trace.WroteRequest(httptrace.WroteRequestInfo{Err: err})
+			}
+		})
+	}
+	defer func() {
+		if resultErr != nil {
+			notifyWrite(resultErr)
+		}
+	}()
 	owned := false
 	defer func() {
 		if !owned && req.Body != nil {
@@ -126,6 +142,12 @@ func (m *Managed) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, errors.New("unsupported native HTTP request")
 	}
 	meta := httpIPCRequest{Origin: "https://" + req.URL.Host, Headers: make([][2]string, 0), Method: req.Method, Path: req.URL.RequestURI(), Host: req.Host, Body: req.Body != nil && req.Body != http.NoBody}
+	if meta.Body {
+		meta.Length = -1
+		if req.ContentLength > 0 && req.ContentLength <= 1<<20 {
+			meta.Length = req.ContentLength
+		}
+	}
 	for name, values := range req.Header {
 		for _, v := range values {
 			meta.Headers = append(meta.Headers, [2]string{name, v})
@@ -187,23 +209,29 @@ func (m *Managed) RoundTrip(req *http.Request) (*http.Response, error) {
 			for {
 				n, e := req.Body.Read(buf)
 				if n > 0 {
-					if writeHTTPChunk(c, buf[:n]) != nil {
+					if writeErr := writeHTTPChunk(c, buf[:n]); writeErr != nil {
+						notifyWrite(writeErr)
 						c.Close()
 						return
 					}
 				}
 				if e != nil {
 					if e == io.EOF {
-						if writeHTTPChunk(c, nil) != nil {
+						writeErr := writeHTTPChunk(c, nil)
+						notifyWrite(writeErr)
+						if writeErr != nil {
 							c.Close()
 						}
 					} else {
+						notifyWrite(e)
 						c.Close()
 					}
 					return
 				}
 			}
 		}()
+	} else {
+		notifyWrite(nil)
 	}
 	var header [4]byte
 	if _, err = io.ReadFull(c, header[:]); err != nil {

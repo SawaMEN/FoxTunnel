@@ -193,3 +193,37 @@ returning, and suspend delivery while the 64-KiB pipe drains. IPC readers and
 writes still use 32-KiB frames. An oversized callback fails closed rather than
 allocating an unbounded buffer. This fixes the native-only GET abort exposed by
 the larger-response gate; unit peers did not reproduce that delivery shape.
+
+
+### Native finite uploads and packet-up qualification
+
+Known HTTP bodies up to 1 MiB are collected from bounded IPC frames, checked
+against their declared length and uploaded using `nsIArrayBufferInputStream`.
+They do not need the streaming-upload API; unbounded bodies still require it.
+The first explicit request-header value replaces Gecko's default header; further
+values merge. This preserves XHTTP's exact Content-Type rather than appending it
+to the default upload MIME type. The adapter invokes `httptrace.WroteRequest`
+once the complete body has been copied into IPC transport ownership (or with its
+copy error). XHTTP uses that boundary before releasing/reusing packet storage.
+It is not a measurement of remote receipt or an application ACK.
+
+Research gates on source artifact `12501945687` now passed native finite POST
+binary upload/headers, 1-MiB GET, interactive small GET delivery, alternate-origin
+selection with separate CA roots, terminal CA rejection versus retryable network
+outage, adaptive Bond RPC with discovery and first-path loss, and XHTTP packet-up
+with a custom Path/Host, padding, strict negotiation, detached setup context and
+binary half-close. These native tests run with `FOXTUNNEL_XPCSHELL`; persistent
+lanes, UDP v2/multi-node, H2 POST and XHTTP streaming still require the rebuilt
+API and packaged-bundle gates. Ordinary fixtures never stand in for those gates.
+
+Source build `40111523804` failed because the new XPCOM method lacked an explicit
+HttpBaseChannel.h override declaration. Commit 79b7e08 adds that declaration and
+its pinned source hash; the replacement source build is required for streaming
+qualification. Multi-root test certificates also use unique issuer/serial
+identities, so loading two independent roots into NSS does not fail before the
+multi-node test reaches the network.
+
+The HTTP channel also sets a binary Content-Type hint before opening. An untyped
+peer that flushes headers before the first body byte must not wait for Gecko's
+MIME sniffer. A native interactive GET regression verifies immediate delivery
+without a response Content-Type; typed server responses keep their own MIME type.

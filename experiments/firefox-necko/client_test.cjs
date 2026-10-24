@@ -298,3 +298,14 @@ test('HTTP IPC download reports native failure explicitly', async () => {
  await pumpHTTPDownload(source,{async write(b){writes.push(Buffer.from(b));}});
  assert.deepEqual([...writes[0]],[255,255,255,255]);
 });
+
+test('bounded fixed HTTP bodies preserve bytes and enforce declared length', async () => {
+ const {collectHTTPUpload,httpChunkHeader} = require('./client.js');
+ const payload=Buffer.from([0,255,128,42]);
+ const wire=Buffer.concat([httpChunkHeader(4),payload,httpChunkHeader(0)]);
+ const sourceFor=()=>{let n=0;return {async read(){return n<wire.length?wire.subarray(n,++n):null;}};};
+ assert.deepEqual([...await collectHTTPUpload(sourceFor(),new Uint8Array(),4)],[...payload]);
+ await assert.rejects(()=>collectHTTPUpload(sourceFor(),new Uint8Array(),3));
+ await assert.rejects(()=>collectHTTPUpload(sourceFor(),new Uint8Array(),5));
+ await assert.rejects(()=>collectHTTPUpload(sourceFor(),new Uint8Array(),1048577));
+});

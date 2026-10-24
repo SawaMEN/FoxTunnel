@@ -19,7 +19,8 @@ import (
 
 func TestGeckoManagedBond(t *testing.T) {
 	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
-	if bundle == "" {
+	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	if bundle == "" && runtime == "" {
 		t.Skip("verified native bundle required")
 	}
 	for _, lanes := range []bool{false, true} {
@@ -32,6 +33,9 @@ func TestGeckoManagedBond(t *testing.T) {
 				name += "-discovery"
 			}
 			t.Run(name, func(t *testing.T) {
+				if bundle == "" && lanes {
+					t.Skip("verified new streaming-upload bundle required for persistent lanes")
+				}
 				target := nativeEcho(t)
 				server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true}
 				hub := server.NewBondHub()
@@ -85,7 +89,12 @@ func TestGeckoManagedBond(t *testing.T) {
 					t.Fatal(err)
 				}
 				defer c.Close()
-				c.SetManagedHTTPTransport("h2-connect", func() (tunnel.ManagedTransport, error) { return NewManaged(bundle, a) })
+				c.SetManagedHTTPTransport("h2-connect", func() (tunnel.ManagedTransport, error) {
+					if bundle != "" {
+						return NewManaged(bundle, a)
+					}
+					return newManagedRuntime(runtime, a)
+				})
 				c.BondAdaptive = true
 				c.BondAutoTune = true
 				c.BondTraffic = "auto"

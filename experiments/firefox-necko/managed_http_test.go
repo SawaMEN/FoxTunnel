@@ -10,7 +10,9 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -140,7 +142,9 @@ func TestManagedHTTPResponseBeforeUploadAndFramedEOF(t *testing.T) {
 	reader, writer := io.Pipe()
 	defer reader.Close()
 	defer writer.Close()
-	req, _ := http.NewRequest("POST", "https://example.test/echo?q=1", reader)
+	written := make(chan error, 2)
+	traceContext := httptrace.WithClientTrace(context.Background(), &httptrace.ClientTrace{WroteRequest: func(info httptrace.WroteRequestInfo) { written <- info.Err }})
+	req, _ := http.NewRequestWithContext(traceContext, "POST", "https://example.test/echo?q=1", reader)
 	resp, err := m.RoundTrip(req)
 	if err != nil {
 		t.Fatal("headers must not wait for upload:", err)
@@ -154,6 +158,19 @@ func TestManagedHTTPResponseBeforeUploadAndFramedEOF(t *testing.T) {
 	}
 	if err := <-sent; err != nil {
 		t.Fatal(err)
+	}
+	select {
+	case err := <-written:
+		if err != nil {
+			t.Fatal("body copy trace:", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("missing WroteRequest releases XHTTP packet window")
+	}
+	select {
+	case <-written:
+		t.Fatal("duplicate WroteRequest callback")
+	default:
 	}
 	if resp.Header.Get("X-Native-Test") != "yes" {
 		t.Fatal("lost response headers")
@@ -229,7 +246,7 @@ func TestGeckoManagedHTTP(t *testing.T) {
 	}
 	var requests atomic.Int32
 	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor != 2 || r.Header.Get("Proxy-Authorization") == "" {
+		if r.ProtoMajor != 2 || r.Header.Get("Proxy-Authorization") == "" || r.Header.Get("Content-Type") != "application/grpc" {
 			http.Error(w, "protocol/auth", 400)
 			return
 		}
@@ -252,6 +269,7 @@ func TestGeckoManagedHTTP(t *testing.T) {
 	defer reader.Close()
 	defer writer.Close()
 	req, _ := http.NewRequestWithContext(ctx, "POST", cfg.Server+"/native-http", reader)
+	req.Header.Set("Content-Type", "application/grpc")
 	resp, err := m.RoundTrip(req)
 	if err != nil {
 		t.Fatal("native headers before upload:", err)
@@ -449,5 +467,130 @@ func TestGeckoManagedHTTPGetAndTrust(t *testing.T) {
 	var network net.Error
 	if errors.As(err, &network) {
 		t.Fatal("certificate failure was classified as a retryable network outage", err)
+	}
+}
+
+func TestGeckoManagedHTTPAlternateOriginAndOutage(t *testing.T) {
+	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	if runtime == "" {
+		t.Skip("explicit native research runtime required")
+	}
+	var first, second atomic.Int32
+	a := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { first.Add(1); w.Write([]byte("primary")) }))
+	b := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { second.Add(1); w.Write([]byte("alternate")) }))
+	roots, err := os.ReadFile(a.CACert)
+	if err != nil {
+		t.Fatal(err)
+	}
+	more, err := os.ReadFile(b.CACert)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ca := filepath.Join(t.TempDir(), "roots.pem")
+	if err = os.WriteFile(ca, append(roots, more...), 0600); err != nil {
+		t.Fatal(err)
+	}
+	a.CACert = ca
+	m, err := newManagedRuntime(runtime, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", b.Server+"/alt", nil)
+	resp, err := m.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil || string(got) != "alternate" || first.Load() != 0 || second.Load() != 1 {
+		t.Fatal("helper used configured primary instead of selected origin", string(got), err)
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dead := listener.Addr().String()
+	listener.Close()
+	req, _ = http.NewRequestWithContext(ctx, "GET", "https://"+dead+"/outage", nil)
+	resp, err = m.RoundTrip(req)
+	if resp != nil {
+		resp.Body.Close()
+	}
+	var network net.Error
+	if err == nil || !errors.As(err, &network) {
+		t.Fatal("native connection refusal is not retryable", err)
+	}
+}
+
+func TestGeckoManagedHTTPFixedUpload(t *testing.T) {
+	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	if runtime == "" {
+		t.Skip("explicit native research runtime required")
+	}
+	payload := bytes.Repeat([]byte{0, 128, 255, 42}, 64<<10)
+	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor != 2 || r.ContentLength != int64(len(payload)) || r.Header.Get("Content-Type") != "application/grpc" {
+			http.Error(w, "fixed body metadata", 400)
+			return
+		}
+		data, err := io.ReadAll(r.Body)
+		if err != nil || !bytes.Equal(data, payload) {
+			http.Error(w, "fixed upload corruption", 400)
+			return
+		}
+		w.Write(data)
+	}))
+	m, err := newManagedRuntime(runtime, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "POST", cfg.Server+"/fixed-upload", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/grpc")
+	resp, err := m.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil || resp.StatusCode != 200 || !bytes.Equal(data, payload) {
+		t.Fatal("native fixed upload/headers", resp.StatusCode, len(data), err)
+	}
+}
+
+func TestGeckoManagedHTTPInteractiveDownload(t *testing.T) {
+	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	if runtime == "" {
+		t.Skip("explicit native research runtime required")
+	}
+	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Intentionally omit Content-Type: headers must not await sniffed body bytes.
+		w.WriteHeader(200)
+		w.(http.Flusher).Flush()
+		w.Write([]byte{42})
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	m, err := newManagedRuntime(runtime, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", cfg.Server+"/interactive", nil)
+	resp, err := m.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var b [1]byte
+	if _, err = io.ReadFull(resp.Body, b[:]); err != nil || b[0] != 42 {
+		t.Fatal("small response was buffered until EOF", err)
 	}
 }

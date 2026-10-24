@@ -107,6 +107,9 @@ function validateHTTPMetadata(meta) {
       typeof meta.host !== "string" || /[^A-Za-z0-9_.:\[\]-]/.test(meta.host) ||
       !Array.isArray(meta.headers) || meta.headers.length > 64)
     throw new Error("invalid native HTTP metadata");
+  if (meta.length === undefined) meta.length = -1;
+  if (!Number.isInteger(meta.length) || meta.length < -1 || meta.length > 1048576 || (!meta.body && meta.length > 0))
+    throw new Error("invalid native HTTP upload length");
   for (const h of meta.headers) {
     if (!Array.isArray(h) || h.length !== 2 || typeof h[0] !== "string" ||
         typeof h[1] !== "string" || !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(h[0]) ||
@@ -137,6 +140,16 @@ async function pumpHTTPUpload(source, destination, early = new Uint8Array(), pro
     if (length > 32768) throw new Error("HTTP upload chunk limit");
     const chunk = await readExact(length); await destination.write(chunk); progress(length);
   }
+}
+async function collectHTTPUpload(source, early, length) {
+  if (!Number.isInteger(length) || length < 0 || length > 1048576) throw new Error("fixed HTTP upload limit");
+  const body = new Uint8Array(length);let offset = 0;
+  await pumpHTTPUpload(source, {output:{close(){}}, async write(chunk){
+    if (chunk.length > length-offset) throw new Error("fixed HTTP upload overflow");
+    body.set(chunk,offset);offset += chunk.length;
+  }}, early);
+  if (offset!==length) throw new Error("fixed HTTP upload truncated");
+  return body;
 }
 async function pumpHTTPDownload(source, destination, progress = () => {}) {
   const scratch = new Uint8Array(32768);
@@ -327,7 +340,7 @@ function sessionStatus(sessions, now) {
 
 if (typeof module !== "undefined") module.exports = {
   SocksParser, socksReply, firefoxUserAgent, pumpBuffered,
-  validateHTTPMetadata, httpChunkHeader, pumpHTTPUpload, pumpHTTPDownload,
+  validateHTTPMetadata, httpChunkHeader, pumpHTTPUpload, pumpHTTPDownload, collectHTTPUpload,
   writeAllWithBackpressure, sessionStatus, udpIPCReply,
   validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder, pumpNativeUDPFrames,
 };
@@ -709,6 +722,7 @@ if (typeof Components !== "undefined") {
           Ci.nsILoadInfo.SEC_DONT_FOLLOW_REDIRECTS | Ci.nsILoadInfo.SEC_COOKIES_OMIT,
       }).QueryInterface(Ci.nsIHttpChannel);
       session.channel = channel;
+      channel.contentType = "application/octet-stream";
       channel.QueryInterface(Ci.nsIHttpChannelInternal).blockAuthPrompt = true;
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
       const makePipe = () => {
@@ -770,7 +784,7 @@ if (typeof Components !== "undefined") {
     });
   }
 
-  function openHTTPThroughNecko(session, metadata) {
+  function openHTTPThroughNecko(session, metadata, fixedBody) {
     if (!cfg.socks_token) return Promise.reject(new Error("native HTTP requires private IPC"));
     if (metadata.method === "CONNECT") {
       if (!metadata.host || !metadata.body || metadata.headers.some(([name]) => !/^proxy-authorization$/i.test(name)))
@@ -786,6 +800,9 @@ if (typeof Components !== "undefined") {
       }).QueryInterface(Ci.nsIHttpChannel);
       session.channel = channel;
       const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
+      // Binary carrier setup must not wait for MIME sniffing to accumulate a
+      // response body when the peer flushes headers before reading upload.
+      channel.contentType = "application/octet-stream";
       internal.blockAuthPrompt = true; internal.allowHttp3 = false;
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
       channel.QueryInterface(Ci.nsIEncodedChannel).applyConversion = false;
@@ -796,18 +813,30 @@ if (typeof Components !== "undefined") {
       const sink = new AsyncIO(upload.inputStream.QueryInterface(Ci.nsIAsyncInputStream), download.outputStream.QueryInterface(Ci.nsIAsyncOutputStream));
       const close = remote.close.bind(remote); remote.close = () => {close(); sink.close();};
       session.remote = remote;
-      if (metadata.body) {
+      if (fixedBody !== null) {
+        const stream = Cc["@mozilla.org/io/arraybuffer-input-stream;1"].createInstance(Ci.nsIArrayBufferInputStream);
+        stream.setData(fixedBody.buffer, fixedBody.byteOffset, fixedBody.byteLength);
+        channel.QueryInterface(Ci.nsIUploadChannel2).explicitSetUploadStream(stream, "application/octet-stream", fixedBody.length, metadata.method);
+        upload.outputStream.close();
+      } else if (metadata.body) {
         internal.enableStreamingUpload();
         channel.QueryInterface(Ci.nsIUploadChannel2).explicitSetUploadStream(upload.inputStream, "application/octet-stream", -1, metadata.method);
       } else {channel.requestMethod = metadata.method; upload.outputStream.close();}
+      const requestHeaders = new Set();
       for (const [name, value] of metadata.headers) {
-        if (!/^(proxy-authorization|content-length)$/i.test(name)) channel.setRequestHeader(name, value, true);
+        if (/^(proxy-authorization|content-length)$/i.test(name)) continue;
+        const key = name.toLowerCase();
+        // The first explicit value replaces Gecko's default (notably the
+        // upload Content-Type). Only subsequent values are merged.
+        channel.setRequestHeader(name, value, requestHeaders.has(key));
+        requestHeaders.add(key);
       }
       if (metadata.host) channel.setRequestHeader("Host", metadata.host, false);
       channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);
       let started = false, pending = Promise.resolve();
       channel.asyncOpen({
         onStartRequest() {
+          if (!Components.isSuccessCode(channel.status)) {reject(nativeHTTPFailure(channel.status)); return;}
           try {
             if (channel.protocolVersion !== "h2") throw new Error("unexpected native HTTP protocol");
             const headers = [];
@@ -916,14 +945,17 @@ if (typeof Components !== "undefined") {
         privateHTTP = true;
         // Start pumping upload immediately, before waiting for response headers.
         // openHTTPThroughNecko synchronously owns session.remote's bounded pipe.
-        const opening = openHTTPThroughNecko(session, request.http);
-        let upload = null;
-        if (request.http.body && session.remote) {
+        const fixedBody = request.http.method !== "CONNECT" && request.http.body && request.http.length >= 0
+          ? await collectHTTPUpload(local, request.early, request.http.length) : null;
+        if (fixedBody !== null) request.early = new Uint8Array();
+        const opening = openHTTPThroughNecko(session, request.http, fixedBody);
+        let upload = fixedBody !== null ? Promise.resolve() : null;
+        if (request.http.body && fixedBody === null && session.remote) {
           upload = pumpHTTPUpload(local, session.remote, request.early, count => {session.lastProgress = Math.floor(ChromeUtils.now()); counters.upload_bytes += count;});
           upload.catch(() => session.close());
         } else if (!request.http.body && request.early.length) throw new Error("unexpected HTTP upload");
         const {remote, encoded} = await opening;
-        if (request.http.body && upload === null) {
+        if (request.http.body && fixedBody === null && upload === null) {
           upload = pumpHTTPUpload(local, remote, request.early, count => {session.lastProgress = Math.floor(ChromeUtils.now()); counters.upload_bytes += count;});
         }
         clearTimeout(timer);
