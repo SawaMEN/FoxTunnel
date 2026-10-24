@@ -104,6 +104,22 @@ func (m *Managed) ExchangeUDP(ctx context.Context, wire []byte) ([]byte, error) 
 			return nil, errors.New("Necko UDP native HTTP response invalid")
 		case 7:
 			return nil, errors.New("Necko UDP native HTTP response timed out")
+		case 8:
+			return nil, errors.New("Necko UDP native channel initialization failed")
+		case 9:
+			return nil, errors.New("Necko UDP native channel interface initialization failed")
+		case 10:
+			return nil, errors.New("Necko UDP native HTTP flags initialization failed")
+		case 11:
+			return nil, errors.New("Necko UDP native upload stream creation failed")
+		case 12:
+			return nil, errors.New("Necko UDP native upload stream data setup failed")
+		case 13:
+			return nil, errors.New("Necko UDP native upload channel setup failed")
+		case 14:
+			return nil, errors.New("Necko UDP native authorization header setup failed")
+		case 15:
+			return nil, errors.New("Necko UDP native HTTP async-open failed")
 		default:
 			return nil, errors.New("Necko UDP HTTPS relay rejected")
 		}

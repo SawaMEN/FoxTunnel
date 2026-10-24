@@ -100,7 +100,7 @@ function udpIPCReply(data, failed = false, reason = 1) {
   // Only internal fixed status categories cross IPC, not server URLs,
   // certificate details, errors or response payloads.
   if (failed) {
-    if (!Number.isInteger(reason) || reason < 1 || reason > 7) throw new Error("invalid UDP failure reason");
+    if (!Number.isInteger(reason) || reason < 1 || reason > 15) throw new Error("invalid UDP failure reason");
     return Uint8Array.of(5, reason, 0, 0);
   }
   if (!(data instanceof Uint8Array) || data.length > 1232) throw new Error("invalid UDP reply");
@@ -414,6 +414,7 @@ if (typeof Components !== "undefined") {
       return Promise.reject(new Error("unsupported native UDP operation"));
     }
     return new Promise((resolve, reject) => {
+      session.udpSetupPhase = 8; // fixed numeric diagnostics only; no URLs/secrets
       const host = cfg.proxy_host.includes(":") ? `[${cfg.proxy_host}]` : cfg.proxy_host;
       const target = `https://${host}:${cfg.proxy_port}/.well-known/foxtunnel-udp-v1`;
       const channel = NetUtil.newChannel({
@@ -422,14 +423,20 @@ if (typeof Components !== "undefined") {
           Ci.nsILoadInfo.SEC_DONT_FOLLOW_REDIRECTS | Ci.nsILoadInfo.SEC_COOKIES_OMIT,
       }).QueryInterface(Ci.nsIHttpChannel);
       session.channel = channel;
+      session.udpSetupPhase = 9;
       const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
       internal.blockAuthPrompt = true;
+      session.udpSetupPhase = 10;
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
+      session.udpSetupPhase = 11;
       const upload = Cc["@mozilla.org/io/string-input-stream;1"].createInstance(Ci.nsIStringInputStream);
       const binary = String.fromCharCode(...packet);
+      session.udpSetupPhase = 12;
       upload.setData(binary, binary.length);
+      session.udpSetupPhase = 13;
       channel.QueryInterface(Ci.nsIUploadChannel2)
         .explicitSetUploadStream(upload, "application/octet-stream", packet.length, "POST");
+      session.udpSetupPhase = 14;
       channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);
       let finished = false;
       const received = [];
@@ -443,6 +450,7 @@ if (typeof Components !== "undefined") {
         complete(udpFailure(7));
       }, cfg.connect_timeout_ms);
       const close = (error, bytes) => { clearTimeout(timeout); complete(error, bytes); };
+      session.udpSetupPhase = 15;
       channel.asyncOpen({
         onStartRequest(request) {
           // Require native H2, a fixed endpoint and a no-redirect status.
@@ -493,6 +501,7 @@ if (typeof Components !== "undefined") {
         },
         QueryInterface: ChromeUtils.generateQI(["nsIStreamListener", "nsIRequestObserver"]),
       });
+      session.udpSetupPhase = 0;
     });
   }
 
@@ -577,7 +586,7 @@ if (typeof Components !== "undefined") {
           if (!session.closed) await local.write(udpIPCReply(answer));
         } catch (error) {
           if (!session.closed) {
-            const reason = Number.isInteger(error?.reason) ? error.reason : 2;
+            const reason = Number.isInteger(error?.reason) ? error.reason : (session.udpSetupPhase || 2);
             try { await local.write(udpIPCReply(null, true, reason)); } catch {}
           }
         }
