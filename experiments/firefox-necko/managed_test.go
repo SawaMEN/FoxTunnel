@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 	"io"
 	"net"
 	"net/http"
@@ -20,7 +21,7 @@ func TestGeckoManagedIPC(t *testing.T) {
 		t.Skip("verified integration bundle required")
 	}
 	var requests atomic.Int32
-	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true}
+	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: true}
 	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests.Add(1); server.ServeHTTP(w, r) }))
 	m, err := NewManaged(bundle, cfg)
 	if err != nil {
@@ -89,6 +90,44 @@ func TestGeckoManagedIPC(t *testing.T) {
 	c.Close()
 	if err != nil || string(got) != "binary\x00\xff" {
 		t.Fatal("authenticated IPC transfer failed", err)
+	}
+	// Exercise the real native Necko HTTP POST path, not an in-process
+	// Go RoundTripper. An authenticated loopback IPC command must reach
+	// the existing UDP-v1 endpoint over verified Mozilla HTTP/2.
+	datagramTarget, e := net.ListenPacket("udp4", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer datagramTarget.Close()
+	go func() {
+		var buf [2048]byte
+		for {
+			n, peer, err := datagramTarget.ReadFrom(buf[:])
+			if err != nil {
+				return
+			}
+			_, _ = datagramTarget.WriteTo(buf[:n], peer)
+		}
+	}()
+	payload := []byte{0, 1, 2, 0xff, 0, 0x80, 0x42}
+	wire, e := udpproto.Encode(udpproto.Packet{
+		Host: "127.0.0.1", Port: uint16(datagramTarget.LocalAddr().(*net.UDPAddr).Port), Data: payload,
+	})
+	if e != nil {
+		t.Fatal(e)
+	}
+	dgctx, stopUDP := context.WithTimeout(context.Background(), 10*time.Second)
+	defer stopUDP()
+	result, e := m.ExchangeUDP(dgctx, wire)
+	if e != nil {
+		t.Fatalf("native Gecko UDP v1 relay: %v", e)
+	}
+	response, e := udpproto.Parse(result)
+	if e != nil || string(response.Data) != string(payload) || response.Port != uint16(datagramTarget.LocalAddr().(*net.UDPAddr).Port) {
+		t.Fatalf("native UDP reply invalid: %v", e)
+	}
+	if requests.Load() < 2 {
+		t.Fatal("native UDP POST did not reach the HTTPS proxy")
 	}
 	if err = m.Close(); err != nil {
 		t.Fatal(err)
