@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/binary"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -24,6 +25,7 @@ import (
 	"time"
 
 	ft "github.com/SawaMEN/FoxTunnel"
+	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -34,7 +36,7 @@ func TestIntegratedNecko(t *testing.T) {
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
-			handler, err := ft.NewServer(ft.ServerConfig{Credentials: ft.Credentials{Username: "u", Password: "p"}, AllowPrivateDestinations: true})
+			handler, err := ft.NewServer(ft.ServerConfig{Credentials: ft.Credentials{Username: "u", Password: "p"}, AllowPrivateDestinations: true, EnableUDP: true})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -133,6 +135,93 @@ func TestIntegratedNecko(t *testing.T) {
 					t.Fatalf("auto failed to select full Necko: %+v", status)
 				}
 			})
+
+			if mode == "h2-connect" {
+				t.Run("SDK-native-UDP-v1", func(t *testing.T) {
+					// End-to-end: local SOCKS UDP -> shared Go packet limits ->
+					// authenticated Necko IPC -> native Gecko HTTP/2 POST ->
+					// FoxTunnel server UDP relay -> destination echo.
+					target, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer target.Close()
+					go func() {
+						var data [2048]byte
+						for {
+							n, from, err := target.ReadFromUDP(data[:])
+							if err != nil {
+								return
+							}
+							target.WriteToUDP(data[:n], from)
+						}
+					}()
+					c, err := ft.NewClient(ft.ClientConfig{
+						Engine: "necko", NeckoBundle: bundle, ServerURL: proxy.URL,
+						CACertFile: ca, Transport: mode, EnableUDP: true,
+						Credentials: ft.Credentials{Username: "u", Password: "p"},
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer c.Close()
+					listener, err := net.Listen("tcp", "127.0.0.1:0")
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer listener.Close()
+					go c.ServeSOCKS(listener)
+					control, err := net.DialTimeout("tcp", listener.Addr().String(), 3*time.Second)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer control.Close()
+					control.SetDeadline(time.Now().Add(10 * time.Second))
+					if _, err := control.Write([]byte{5, 1, 0}); err != nil {
+						t.Fatal(err)
+					}
+					var greeting [2]byte
+					if _, err := io.ReadFull(control, greeting[:]); err != nil || greeting != [2]byte{5, 0} {
+						t.Fatalf("native UDP SOCKS greeting: %v %v", greeting, err)
+					}
+					if _, err := control.Write([]byte{5, 3, 0, 1, 0, 0, 0, 0, 0, 0}); err != nil {
+						t.Fatal(err)
+					}
+					var associate [10]byte
+					if _, err := io.ReadFull(control, associate[:]); err != nil || associate[0] != 5 || associate[1] != 0 || associate[3] != 1 {
+						t.Fatalf("native UDP ASSOCIATE: %v %v", associate, err)
+					}
+					port := int(binary.BigEndian.Uint16(associate[8:10]))
+					if port < 1 {
+						t.Fatal("empty SOCKS UDP port")
+					}
+					udp, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.IP(associate[4:8]), Port: port})
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer udp.Close()
+					udp.SetDeadline(time.Now().Add(10 * time.Second))
+					payload := []byte{0, 1, 2, 255, 0, 128, 42}
+					packet, err := udpproto.Encode(udpproto.Packet{
+						Host: "127.0.0.1", Port: uint16(target.LocalAddr().(*net.UDPAddr).Port), Data: payload,
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					if _, err := udp.Write(packet); err != nil {
+						t.Fatal(err)
+					}
+					var buf [udpproto.MaxDatagram + 1]byte
+					n, err := udp.Read(buf[:])
+					if err != nil {
+						t.Fatalf("native Necko H2 UDP relay: %v", err)
+					}
+					answer, err := udpproto.Parse(buf[:n])
+					if err != nil || answer.Port != uint16(target.LocalAddr().(*net.UDPAddr).Port) || !bytes.Equal(answer.Data, payload) {
+						t.Fatalf("bad Necko UDP response: %v", err)
+					}
+				})
+			}
 			t.Run("CLI", func(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 				defer cancel()
