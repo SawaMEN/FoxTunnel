@@ -71,7 +71,7 @@ func (t managedHTTPTransport) RoundTrip(r *http.Request) (*http.Response, error)
 		return reject(errors.New("native engine has no HTTP IPC adapter"))
 	}
 	route := "h2"
-	if c.nativeTransport == "h3-connect" {
+	if isH3Transport(c.nativeTransport) {
 		route = "h3"
 	}
 	c.status.Route(route, "explicit")

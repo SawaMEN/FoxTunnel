@@ -1,0 +1,17 @@
+--- a/netwerk/protocol/http/nsHttpChannel.cpp
++++ b/netwerk/protocol/http/nsHttpChannel.cpp
+@@ -1248,9 +1248,11 @@
+           .SetTRRMode(nsIRequest::GetTRRMode())
+           .SetIPv4Disabled(mCaps & NS_HTTP_DISABLE_IPV4)
+           .SetIPv6Disabled(mCaps & NS_HTTP_DISABLE_IPV6)
+-          .SetHttp3Policy((mCaps & NS_HTTP_DISALLOW_HTTP3)
+-                              ? Http3Policy::Disabled
+-                              : Http3Policy::Allowed)
++          .SetHttp3Policy(mConnectionInfo->GetHttp3Only()
++                             ? Http3Policy::Only
++                             : ((mCaps & NS_HTTP_DISALLOW_HTTP3)
++                                    ? Http3Policy::Disabled
++                                    : Http3Policy::Allowed))
+           .SetAnonymousAllowClientCert(
+               (mLoadFlags & LOAD_ANONYMOUS_ALLOW_CLIENT_CERT) != 0)
+           .Finalize();

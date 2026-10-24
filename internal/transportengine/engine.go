@@ -73,7 +73,7 @@ func Resolve(cfg Config) (Plan, error) {
 			cfg.NeckoBundle = DefaultNeckoBundle()
 		}
 		compatible := !cfg.AutoNeckoExcluded &&
-			(cfg.Transport == "" || cfg.Transport == "auto" || cfg.Transport == "h2-connect" || cfg.Transport == "h3-connect" || cfg.Transport == "h2-post" || xhttp.IsMode(cfg.Transport)) &&
+			(cfg.Transport == "" || cfg.Transport == "auto" || cfg.Transport == "h2-connect" || cfg.Transport == "h3-connect" || cfg.Transport == "h2-post" || cfg.Transport == "h3-post" || xhttp.IsMode(cfg.Transport)) &&
 			(cfg.TLSBackend == "" || cfg.TLSBackend == "auto") &&
 			(cfg.QUICBackend == "" || cfg.QUICBackend == "auto") &&
 			(cfg.H3Fallback == "" || cfg.H3Fallback == "none") &&
@@ -104,8 +104,8 @@ func Resolve(cfg Config) (Plan, error) {
 		if cfg.Transport == "" || cfg.Transport == "auto" {
 			cfg.Transport = "h2-connect"
 		}
-		if cfg.Transport != "h2-connect" && cfg.Transport != "h3-connect" && cfg.Transport != "h2-post" && !xhttp.IsMode(cfg.Transport) {
-			return Plan{}, errors.New("Necko requires H2/H3 CONNECT, H2 POST or an XHTTP transport")
+		if cfg.Transport != "h2-connect" && cfg.Transport != "h3-connect" && cfg.Transport != "h2-post" && cfg.Transport != "h3-post" && !xhttp.IsMode(cfg.Transport) {
+			return Plan{}, errors.New("Necko requires H2/H3 CONNECT, H2/H3 POST or an XHTTP transport")
 		}
 		if (cfg.TLSBackend != "" && cfg.TLSBackend != "auto") || cfg.QUICBackend != "" || (cfg.H3Fallback != "" && cfg.H3Fallback != "none") || cfg.QUICHandshakeTimeout != 0 || (cfg.TLSClientProfile != "" && cfg.TLSClientProfile != "default") || (cfg.HTTP2ReceiveProfile != "" && cfg.HTTP2ReceiveProfile != "default") {
 			return Plan{}, errors.New("Necko owns TLS, QUIC and HTTP settings; backend/profile overrides and fallback are unsupported")
@@ -205,6 +205,9 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 		bundle := filepath.Dir(filepath.Dir(verified))
 		c.SetManagedHTTPTransport(p.Transport, func() (tunnel.ManagedTransport, error) {
 			nativeMode := p.Transport
+			if nativeMode == "h3-post" {
+				nativeMode = "h3-connect"
+			}
 			if nativeMode != "h3-connect" {
 				nativeMode = "h2-connect"
 			}
@@ -253,4 +256,6 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 
 // NativeHTTPHeaders reports carriers whose application requests can carry
 // padding and protocol negotiation headers through the native HTTP adapter.
-func NativeHTTPHeaders(mode string) bool { return mode == "h2-post" || xhttp.IsMode(mode) }
+func NativeHTTPHeaders(mode string) bool {
+	return mode == "h2-post" || mode == "h3-post" || xhttp.IsMode(mode)
+}

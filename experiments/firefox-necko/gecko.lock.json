@@ -104,24 +104,38 @@
     },
     {
       "path": "experiments/firefox-necko/patches/streaming-upload-xpcom-api.patch",
-      "sha256": "2e27fb7ed1ab864fa2d59ebdfa66925951e040a984e6bedaced8cdcf9a22ac3d",
+      "sha256": "e8d808160fdeceeb5765e1c504dd280e2d9742eae4c5de9155338f2b0ca2dbe9",
       "source_path": "netwerk/protocol/http/nsIHttpChannelInternal.idl",
       "before_sha256": "6835efbdceb7bbfd2cca523ffdd98a2366e5501383864f33737c1300b6affc5c",
-      "after_sha256": "08cc4343cc856e8d52d01153bc46d1f54e709988c4546cd8ae2d0e0d499372f2"
+      "after_sha256": "760f865eacea695f07042fcda8fd0eac84aa8b60d81f935103743b32ca2c3735"
     },
     {
       "path": "experiments/firefox-necko/patches/streaming-upload-channel.patch",
-      "sha256": "7d48b09f72860e1f94e6daea195004e8ba40097afb22ff33a7130eac3ab45c7f",
+      "sha256": "3f70d3455f981c36db90ae41e2f2d86ff207dbc93845689af785d8c45780374d",
       "source_path": "netwerk/protocol/http/HttpBaseChannel.cpp",
       "before_sha256": "066dbb5be37775d4486896de970e4c8c7cf6095fadd03f5f00846b70d77c029a",
-      "after_sha256": "113de0eb52897c1aea08268f03982eec473c3ad5d18c6111f8f45edb6f6c8271"
+      "after_sha256": "ea8ec1f7bf8a40c4a814499461c14b81ddd04eb0137a3240926f14b6833ddcea"
     },
     {
       "path": "experiments/firefox-necko/patches/streaming-upload-channel-api.patch",
-      "sha256": "6b851e025673cd720853382be03c4c74df1aaa04947160bf7c6c806d674f7cd7",
+      "sha256": "3f7dc1b7d695a0851a8769395d38e7f4571c8c4783bfd1a53a610de5529411c1",
       "source_path": "netwerk/protocol/http/HttpBaseChannel.h",
       "before_sha256": "bb3d8e464de4ef65a8f49588a1d1aac724c9d7fb8555f468c4fc4c5531515663",
-      "after_sha256": "d1747b2c6ff9fbc5da58a69daeece408c464c75e14717bfd8879b45e638d08be"
+      "after_sha256": "41197a9c03b4c64e010ba5fc8424fd7d885a830dd5e54702ff396dc3576b728e"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/http3-only-channel-policy.patch",
+      "source_path": "netwerk/protocol/http/nsHttpChannel.cpp",
+      "sha256": "1f83e47e5a0a702c8f6edc736407f699a4084911955089afd2c88149d782c83b",
+      "before_sha256": "83503124e64ff48ee2210150a3c010817d1266e6cbd8e5e1406e6fc707784510",
+      "after_sha256": "110921533f09552c6a360dcd18bf36ac5fd328c057f6fe85974ce9b51cb1f5bd"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/http3-only-no-tcp-fallback.patch",
+      "source_path": "netwerk/protocol/http/nsHttpTransaction.cpp",
+      "sha256": "970b6c0728a9cf1162e3fdb170761db196403aba6849529287dfbdb20ef8466d",
+      "before_sha256": "1982338b39ce282ba63f98d7dcdc9d4bc754540866a5cce73093957106e95ad6",
+      "after_sha256": "935de3820bb14634fa4a0168456db034c99e577332468f2d7df88f855c590fa5"
     }
   ]
 }

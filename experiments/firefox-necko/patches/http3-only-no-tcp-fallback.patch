@@ -1,0 +1,63 @@
+--- a/netwerk/protocol/http/nsHttpTransaction.cpp
++++ b/netwerk/protocol/http/nsHttpTransaction.cpp
+@@ -1305,7 +1305,7 @@
+       MutexAutoLock lock(mLock);
+       mOrigConnInfo.swap(mConnInfo);
+     }
+-    if (mConnInfo->IsHttp3() &&
++    if (!mConnInfo->GetHttp3Only() && mConnInfo->IsHttp3() &&
+         ((mCaps & NS_HTTP_DISALLOW_HTTP3) ||
+          gHttpHandler->IsHttp3Excluded(mConnInfo->GetRoutedHost().IsEmpty()
+                                            ? mConnInfo->GetOrigin()
+@@ -2066,6 +2066,11 @@
+     }
+   }
+ 
++  if (mConnInfo && mConnInfo->GetHttp3Only()) {
++    // A retry may keep the same HTTP/3 route; it must never clone a TCP route.
++    mDontRetryWithDirectRoute = true;
++  }
++
+   // limit the number of restart attempts - bug 92224
+   if (++mRestartCount >= gHttpHandler->MaxRequestAttempts()) {
+     LOG(("reached max request attempts, failing transaction @%p\n", this));
+@@ -3033,6 +3038,9 @@
+ 
+ void nsHttpTransaction::DisableHttp3(bool aAllowRetryHTTPSRR) {
+   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
++  if (mConnInfo && mConnInfo->GetHttp3Only()) {
++    return;
++  }
+ 
+   // mOrigConnInfo is an indicator that HTTPS RR is used, so don't mess up the
+   // connection info.
+@@ -3067,6 +3075,9 @@
+ 
+ void nsHttpTransaction::DisableHttp3ForRestart() {
+   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
++  if (mConnInfo && mConnInfo->GetHttp3Only()) {
++    return;
++  }
+ 
+   mCaps |= NS_HTTP_DISALLOW_HTTP3;
+ 
+@@ -4008,6 +4019,9 @@
+   MOZ_ASSERT(mConnInfo->IsHttp3() || mConnInfo->IsHttp3ProxyConnection());
+ 
+   mHttp3BackupTimer = nullptr;
++  if (mConnInfo && mConnInfo->GetHttp3Only()) {
++    return;
++  }
+ 
+   if (mConnInfo->IsHttp3ProxyConnection()) {
+     mBackupConnInfo = mConnInfo->CreateConnectUDPFallbackConnInfo();
+@@ -4068,6 +4082,9 @@
+        mConnected));
+ 
+   mFastFallbackTimer = nullptr;
++  if (mConnInfo && mConnInfo->GetHttp3Only()) {
++    return;
++  }
+ 
+   MOZ_ASSERT(mHTTPSSVCRecord && mOrigConnInfo);
+   if (!mHTTPSSVCRecord || !mOrigConnInfo) {

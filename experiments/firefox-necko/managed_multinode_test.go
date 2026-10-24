@@ -22,12 +22,21 @@ func TestGeckoManagedUDPMultiNode(t *testing.T) {
 	if bundle == "" {
 		t.Skip("new verified native streaming-upload bundle required")
 	}
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) { testGeckoManagedUDPMultiNode(t, bundle, mode) })
+	}
+}
+func testGeckoManagedUDPMultiNode(t *testing.T, bundle, mode string) {
 	var streams [2]atomic.Int32
 	makeEndpoint := func(index int) Config {
 		server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: true}
-		return nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		return nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/.well-known/foxtunnel-udp-stream-v2" {
-				if r.ProtoMajor != 2 {
+				expected := 2
+				if mode == "h3-connect" {
+					expected = 3
+				}
+				if r.ProtoMajor != expected {
 					http.Error(w, "native H2 required", 400)
 					return
 				}
@@ -54,7 +63,7 @@ func TestGeckoManagedUDPMultiNode(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Close()
-	c.SetManagedHTTPTransport("h2-connect", func() (tunnel.ManagedTransport, error) { return NewManaged(bundle, a) })
+	c.SetManagedHTTPTransport(mode, func() (tunnel.ManagedTransport, error) { return NewManaged(bundle, a) })
 	c.EnableUDP = true
 	c.UDPStreaming = true
 	c.UDPMultiNode = true

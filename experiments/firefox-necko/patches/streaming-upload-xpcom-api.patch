@@ -5,11 +5,11 @@
   * will change and you will be broken.  You have been warned.
   */
 -[builtinclass, scriptable, uuid(4e28263d-1e03-46f4-aa5c-9512f91957f9)]
-+[builtinclass, scriptable, uuid(a6a3f6df-8965-4916-918d-77089f2b1a93)]
++[builtinclass, scriptable, uuid(8f320721-a9c1-4b07-9ba7-7d9941d61d7a)]
  interface nsIHttpChannelInternal : nsISupports
  {
      /**
-@@ -547,4 +547,11 @@
+@@ -547,4 +547,18 @@
       * For testing purposes only.
       */
      readonly attribute unsigned long caps;
@@ -20,4 +20,11 @@
 +     * cannot be cloned or replayed. Ordinary uploads retain normalization.
 +     */
 +    [must_use] void enableStreamingUpload();
++
++    /**
++     * Privileged parent-process HTTPS channel: require HTTP/3 directly for the
++     * URI origin, without Alt-Svc discovery or an HTTP/1/2 fallback race.
++     * Call before asyncOpen; normal NSS certificate verification is mandatory.
++     */
++    [must_use] void forceHTTP3();
  };

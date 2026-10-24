@@ -791,7 +791,6 @@ if (typeof Components !== "undefined") {
         return Promise.reject(new Error("native CONNECT request policy unsupported"));
       return openTunnel(metadata.host, session, metadata.origin).then(remote => ({remote, encoded: new TextEncoder().encode(JSON.stringify({status: 200, proto: cfg.transport === "h3-connect" ? 3 : 2, headers: []}))}));
     }
-    if (cfg.transport !== "h2-connect") return Promise.reject(new Error("native HTTP requires H2"));
     return new Promise((resolve, reject) => {
       const channel = NetUtil.newChannel({
         uri: `${metadata.origin}${metadata.path}`, loadUsingSystemPrincipal: true,
@@ -803,7 +802,9 @@ if (typeof Components !== "undefined") {
       // Binary carrier setup must not wait for MIME sniffing to accumulate a
       // response body when the peer flushes headers before reading upload.
       channel.contentType = "application/octet-stream";
-      internal.blockAuthPrompt = true; internal.allowHttp3 = false;
+      internal.blockAuthPrompt = true;
+      if (cfg.transport === "h3-connect") {internal.allowHttp3 = true; internal.forceHTTP3();}
+      else {internal.allowHttp3 = false;}
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
       channel.QueryInterface(Ci.nsIEncodedChannel).applyConversion = false;
       channel.setRequestHeader("Accept-Encoding", "identity", false);
@@ -838,10 +839,11 @@ if (typeof Components !== "undefined") {
         onStartRequest() {
           if (!Components.isSuccessCode(channel.status)) {reject(nativeHTTPFailure(channel.status)); return;}
           try {
-            if (channel.protocolVersion !== "h2") throw new Error("unexpected native HTTP protocol");
+            const expected = cfg.transport === "h3-connect" ? "h3" : "h2";
+            if (channel.protocolVersion !== expected) throw new Error("unexpected native HTTP protocol");
             const headers = [];
             channel.visitResponseHeaders({visitHeader(name, value) {if (headers.length >= 128) throw new Error("HTTP header limit"); headers.push([name, value]);}});
-            const encoded = new TextEncoder().encode(JSON.stringify({status: channel.responseStatus, proto: 2, headers}));
+            const encoded = new TextEncoder().encode(JSON.stringify({status: channel.responseStatus, proto: cfg.transport === "h3-connect" ? 3 : 2, headers}));
             if (encoded.length > 16384) throw new Error("HTTP response metadata limit");
             started = true; resolve({remote, encoded});
           } catch {reject(nativeHTTPFailure(Cr.NS_ERROR_FAILURE)); channel.cancel(Cr.NS_BINDING_ABORTED);}

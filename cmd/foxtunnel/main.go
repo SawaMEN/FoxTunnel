@@ -534,7 +534,7 @@ func main() {
 		intent := transportengine.Config{
 			Engine: *engine, Transport: *nativeTransport, NeckoBundle: *neckoBundle,
 			AutoNeckoExcluded: ((wirePolicy == contract.ProtocolStrict || *padding) && !transportengine.NativeHTTPHeaders(*nativeTransport)) ||
-				(*enableUDP && *nativeTransport == "h3-connect") || *sni != "" || *pin != "" || *nodePinsFile != "",
+				*sni != "" || *pin != "" || *nodePinsFile != "",
 			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,
 			H3Fallback: *h3Fallback, QUICHandshakeTimeout: *quicTimeout,
 			TLSClientProfile: *tlsProfile, HTTP2ReceiveProfile: *h2Profile,

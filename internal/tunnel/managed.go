@@ -42,9 +42,6 @@ func (c *Client) validateManaged() error {
 		if connect && (c.Padding || c.RequireProtocolNegotiation) {
 			return errors.New("Necko CONNECT does not forward extension headers; use h2-post or XHTTP for padding/strict negotiation")
 		}
-		if c.nativeTransport == "h3-connect" && (c.EnableUDP || c.bondClient != nil || c.bondDiscovery != nil) {
-			return errors.New("Necko H3 HTTP operations are not yet implemented")
-		}
 		return nil
 	}
 	if c.Padding || c.UDPStreaming || c.UDPMultiNode || c.RequireProtocolNegotiation || len(c.fallbackServers) > 0 || c.bondClient != nil || c.bondDiscovery != nil || (c.balance != "" && c.balance != "failover") {

@@ -110,7 +110,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	plan, err := transportengine.Resolve(transportengine.Config{
 		Engine: config.Engine, Transport: config.Transport, NeckoBundle: config.NeckoBundle,
 		AutoNeckoExcluded: ((config.RequireProtocolNegotiation || config.Padding) && !transportengine.NativeHTTPHeaders(config.Transport)) ||
-			(config.EnableUDP && config.Transport == "h3-connect") || config.ServerName != "" || config.SPKIPin != "",
+			config.ServerName != "" || config.SPKIPin != "",
 		TLSBackend: config.TLSBackend, QUICBackend: config.QUICBackend,
 		H3Fallback: config.H3Fallback, QUICHandshakeTimeout: config.QUICHandshakeTimeout,
 		TLSClientProfile: config.TLSClientProfile, HTTP2ReceiveProfile: config.HTTP2ReceiveProfile,

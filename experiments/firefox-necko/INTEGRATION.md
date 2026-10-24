@@ -227,3 +227,18 @@ The HTTP channel also sets a binary Content-Type hint before opening. An untyped
 peer that flushes headers before the first body byte must not wait for Gecko's
 MIME sniffer. A native interactive GET regression verifies immediate delivery
 without a response Content-Type; typed server responses keep their own MIME type.
+
+### Isolated H3 HTTP draft (not qualified)
+
+The xfd-h3 draft adds a privileged parent-process `forceHTTP3()` channel API.
+It constructs HTTP/3-only connection intent for the URI's exact HTTPS origin,
+retains normal NSS certificate verification, and carries the `Only` policy through
+channel setup. Transaction retry and backup timer guards prevent that intent from
+being converted into a TCP route. It does not use testing Alt-Svc preferences or
+Go QUIC. H3 POST, streaming UDP and multi-node dispatch are wired to the generic
+native HTTP IPC adapter, with positive duplex and negative TCP-dial-count gates.
+
+The source patches and Go routing tests are prepared, but this source lock has
+not been compiled or natively tested. Do not describe H3 POST/UDP as supported
+until its verified bundle passes the added gates. This isolated draft must not
+interrupt the ongoing xfd source build that validates streaming upload first.

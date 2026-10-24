@@ -34,7 +34,7 @@ func TestIntegratedNecko(t *testing.T) {
 	if bundle == "" {
 		t.Skip("set FOXTUNNEL_NECKO_BUNDLE to a verified bundle with the main CLI")
 	}
-	for _, mode := range []string{"h2-connect", "h3-connect", "h2-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
+	for _, mode := range []string{"h2-connect", "h3-connect", "h2-post", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			handler, err := ft.NewServer(ft.ServerConfig{Credentials: ft.Credentials{Username: "u", Password: "p"}, AllowPrivateDestinations: true, EnableUDP: true, Padding: true})
 			if err != nil {
@@ -63,7 +63,7 @@ func TestIntegratedNecko(t *testing.T) {
 			if err = os.WriteFile(ca, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER}), 0600); err != nil {
 				t.Fatal(err)
 			}
-			if mode == "h3-connect" {
+			if mode == "h3-connect" || mode == "h3-post" {
 				pc, e := net.ListenPacket("udp", proxy.Listener.Addr().String())
 				if e != nil {
 					t.Fatal(e)
@@ -136,7 +136,7 @@ func TestIntegratedNecko(t *testing.T) {
 				}
 			})
 
-			if mode == "h2-connect" {
+			if mode == "h2-connect" || mode == "h3-connect" || mode == "h3-post" {
 				for _, streaming := range []bool{false, true} {
 					name := "SDK-native-UDP-v1"
 					if streaming {
@@ -228,7 +228,7 @@ func TestIntegratedNecko(t *testing.T) {
 					})
 				}
 			}
-			if mode == "h2-post" || mode == "xhttp-stream-one" || mode == "xhttp-stream-up" || mode == "xhttp-packet-up" {
+			if mode == "h2-post" || mode == "h3-post" || mode == "xhttp-stream-one" || mode == "xhttp-stream-up" || mode == "xhttp-packet-up" {
 				t.Run("SDK-padding-strict", func(t *testing.T) {
 					c, e := ft.NewClient(ft.ClientConfig{Engine: "necko", NeckoBundle: bundle, ServerURL: proxy.URL, CACertFile: ca, Transport: mode, Credentials: ft.Credentials{Username: "u", Password: "p"}, Padding: true, RequireProtocolNegotiation: true})
 					if e != nil {
