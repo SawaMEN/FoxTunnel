@@ -278,5 +278,12 @@ it as the helper's native-operation limit as well. Packet-up needs a long-lived
 GET plus POST operations, so its own upload was rejected. The factory now keeps
 the helper's independent bounded default (256 native operations), while the
 existing SDK/SOCKS admission gate still rejects a second logical connection.
-The integrated `xhttp-packet-up/SDK` case remains the native regression gate;
-its pass is required before considering this fix qualified.
+Native admission regression result: the integrated packet-up matrix passed
+three consecutive times with the factory correction (12/12 subtests: SDK,
+SDK-auto, SDK-padding-strict and packaged CLI). The SDK case uses a logical
+limit of one, transfers a binary payload and still rejects a second logical
+connection. This isolated qualification used a checkout of be2ea71 plus only
+the factory correction, packaged against the verified source runtime from
+40118209336 and its original matching source lock/provenance. No old runtime
+was relabeled as containing the early-response-header API. The complete matrix
+must still pass again on the new source build.
