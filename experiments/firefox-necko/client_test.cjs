@@ -141,3 +141,37 @@ test('diagnostic session snapshot avoids allocation-heavy spreads', () => {
   const many = new Set(Array.from({ length: 90000 }, (_, i) => ({ remote: null, lastProgress: i })));
   assert.deepEqual(sessionStatus(many, 100000), { connected: 0, oldest_ms: 100000 });
 });
+
+
+test('authenticated UDP-v1 IPC framing accepts only bounded complete packets', () => {
+  const { udpIPCReply } = require('./client.js');
+  const p = new SocksParser();
+  p.push([5, 1, 2]); assert.equal(p.greeting(2), true);
+  const input = [0, 0, 0, 1, 127, 0, 0, 1, 0, 53, 0, 255];
+  const frame = [5, 0xf0, 0, 0, 0, input.length, ...input];
+  for (const b of frame.slice(0, -1)) {
+    p.push([b]);
+    assert.equal(p.request(), null);
+  }
+  p.push([frame.at(-1)]);
+  assert.deepEqual([...p.request().udp], input);
+  assert.deepEqual([...udpIPCReply(Uint8Array.from(input))],
+    [5, 0, 0, input.length, ...input]);
+  assert.deepEqual([...udpIPCReply(new Uint8Array())], [5, 0, 0, 0]);
+  assert.deepEqual([...udpIPCReply(null, true)], [5, 1, 0, 0]);
+  assert.throws(() => udpIPCReply(new Uint8Array(1233)), /invalid UDP/);
+});
+
+test('UDP IPC rejects unauthorized commands, excessive frames and trailing bytes', () => {
+  for (const raw of [
+    [5, 0xf0, 0, 1, 0, 8, ...Array(8).fill(0)],
+    [5, 0xf0, 0, 0, 0, 7, ...Array(7).fill(0)],
+    [5, 0xf0, 0, 0, 4, 209],
+    [5, 0xf0, 0, 0, 0, 8, ...Array(9).fill(0)],
+  ]) {
+    const p = new SocksParser();
+    p.push([5, 1, 2]); p.greeting(2);
+    p.push(raw);
+    assert.throws(() => p.request());
+  }
+});
