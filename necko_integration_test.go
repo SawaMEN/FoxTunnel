@@ -112,6 +112,27 @@ func TestIntegratedNecko(t *testing.T) {
 					t.Fatalf("closed client: %v", e)
 				}
 			})
+			t.Run("SDK-auto", func(t *testing.T) {
+				c, e := ft.NewClient(ft.ClientConfig{
+					Engine: "auto", NeckoBundle: bundle, ServerURL: proxy.URL,
+					CACertFile: ca, Transport: mode,
+					Credentials: ft.Credentials{Username: "u", Password: "p"},
+				})
+				if e != nil {
+					t.Fatal(e)
+				}
+				defer c.Close()
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				conn, e := c.DialContext(ctx, "tcp", echo.Addr().String())
+				if e != nil {
+					t.Fatal(e)
+				}
+				integratedNeckoTransfer(t, conn)
+				if status := c.Status(); status.Engine != "necko" || status.Transport != mode {
+					t.Fatalf("auto failed to select full Necko: %+v", status)
+				}
+			})
 			t.Run("CLI", func(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 				defer cancel()
