@@ -217,41 +217,32 @@ index:
         with:
           name: release-assets
           path: dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: foxtunnel-necko-linux-amd64
-          path: necko-release
-      - name: Verify and version the qualified Necko archive
+- name: Verify the two published archives again before signing
         env:
           RELEASE_TAG: ${{ needs.request.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          (cd necko-release && sha256sum --check SHA256SUMS)
-          archive="foxtunnel_${RELEASE_TAG#v}_linux_amd64_necko.tar.gz"
-          mv necko-release/foxtunnel-necko-linux-amd64.tar.gz "necko-release/$archive"
-          work="$(mktemp -d)"
-          trap 'rm -rf "$work"' EXIT
-          tar -xzf "necko-release/$archive" -C "$work"
-          "$work/foxtunnel-necko/foxtunnel-necko" --bundle "$work/foxtunnel-necko" --verify
-          "$work/foxtunnel-necko/foxtunnel" version --json > "$work/version.json"
-          python3 - "$work/version.json" "$RELEASE_TAG" "$GITHUB_SHA" <<'PYVERIFY'
+          test "$(find dist -maxdepth 1 -name '*.tar.gz' -type f | wc -l)" -eq 2
+          python3 scripts/release.py verify --input dist --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --target linux/arm64/nss
+          archive="dist/foxtunnel_${RELEASE_TAG#v}_linux_amd64.tar.gz"
+          test -f "$archive"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          tar -xzf "$archive" -C "$tmp"
+          "$tmp/foxtunnel-necko/foxtunnel-necko" --bundle "$tmp/foxtunnel-necko" --verify
+          "$tmp/foxtunnel-necko/foxtunnel" version --json > "$tmp/version.json"
+          python3 - "$tmp/version.json" "$RELEASE_TAG" "$GITHUB_SHA" <<'PYVERIFY'
           import json, sys
           info = json.load(open(sys.argv[1]))
-          assert info['version'] == sys.argv[2] and info['commit'] == sys.argv[3], info
-          assert 'necko' in info['transport_engines'], info
+          assert info['version'] == sys.argv[2] and info['commit'] == sys.argv[3]
+          assert info['build_flavor'] == 'nss' and 'necko' in info['transport_engines']
           PYVERIFY
-          (cd necko-release && sha256sum "$archive" > NECKO_SHA256SUMS)
-      - name: Revalidate downloaded archives before signing
-        env:
-          RELEASE_TAG: ${{ needs.request.outputs.version }}
-        run: python3 scripts/release.py verify --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
       - name: Sign provenance for the exact release archives
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: |
             dist/*.tar.gz
-            necko-release/*.tar.gz
           create-storage-record: false
       - name: Verify signed provenance before publishing
         env:
@@ -260,7 +251,7 @@ index:
         shell: bash
         run: |
           set -euo pipefail
-          for archive in dist/*.tar.gz necko-release/*.tar.gz; do
+          for archive in dist/*.tar.gz; do
             gh attestation verify "$archive" --repo "$GH_REPO" \
               --signer-workflow "$GH_REPO/.github/workflows/release.yml" \
               --source-digest "$GITHUB_SHA" --source-ref "$GITHUB_REF" \
@@ -287,6 +278,6 @@ index:
             fi
             tag_flags=(--target "$GITHUB_SHA")
           fi
-          python3 scripts/release_notes.py --input dist --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/verified-release-notes.md"
+          python3 scripts/unified_release_notes.py --input dist --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/verified-release-notes.md"
           cat docs/releases/necko-usage.md >> "$RUNNER_TEMP/verified-release-notes.md"
-          gh release create "$RELEASE_TAG" dist/*.tar.gz necko-release/*.tar.gz necko-release/NECKO_SHA256SUMS "${tag_flags[@]}" --prerelease --title "FoxTunnel $RELEASE_TAG" --notes-file "$RUNNER_TEMP/verified-release-notes.md"
+          gh release create "$RELEASE_TAG" dist/*.tar.gz "${tag_flags[@]}" --prerelease --title "FoxTunnel $RELEASE_TAG" --notes-file "$RUNNER_TEMP/verified-release-notes.md"
