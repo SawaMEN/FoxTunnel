@@ -191,7 +191,7 @@ class Deployment:
             unified = archive and goos == 'linux' and arch == 'amd64' and source.name == (
                 f'foxtunnel_{version[1:]}_linux_amd64.tar.gz')
             if unified:
-                unified_archive.unpack(snapshot, package, version, commit)
+                unified_archive.unpack(snapshot, package, version, commit, archive_name=source.name)
             elif archive:
                 metadata = contract.embedded_metadata(snapshot)
                 # embedded_metadata includes the snapshot filename. Restore the
