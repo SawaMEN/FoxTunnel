@@ -114,7 +114,10 @@ socket and aborts the native channel; remote errors never select Go HTTP.
 
 `UDPStreaming` remains rejected by normal Necko client configuration pending
 native validation. `TestGeckoManagedUDPStream` checks response headers before
-any upload, 64 binary request/reply frames on one H2 request, and cancellation.
+any upload, 4096 maximum-size binary frames on one H2 request with concurrent
+upload/download and a delayed reader to exercise bounded-pipe backpressure,
+and cancellation. The runtime workflow explicitly includes this test in its
+packaged native gates; ordinary Go tests skip it without the verified bundle.
 This gate requires `FOXTUNNEL_NECKO_BUNDLE`; Node codec/pump tests alone do not
 establish that the pinned Gecko streams unknown-length uploads. Long-session,
 load and runtime compatibility validation are still required before enabling

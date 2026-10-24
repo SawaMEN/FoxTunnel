@@ -1,7 +1,9 @@
 package firefox
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
@@ -185,25 +187,49 @@ func TestGeckoManagedUDPStream(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 	stream, err := m.OpenUDPStream(ctx)
 	if err != nil {
 		t.Fatal("native response-before-upload handshake:", err)
 	}
 	defer stream.Close()
-	wire, err := udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: 53, Data: []byte{0, 255, 128, 0}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for i := 0; i < 64; i++ {
-		if err := udpproto.WriteFrame(stream, wire); err != nil {
-			t.Fatal(err)
+	// Transfer several MiB through the two 64-KiB native pipes. Upload and
+	// download run independently: a request/reply loop cannot expose a deadlock
+	// caused by blocked response delivery while Gecko is still uploading.
+	const frames = 4096
+	packet := func(sequence int) []byte {
+		data := make([]byte, udpproto.MaxDatagram-10)
+		for i := range data {
+			data[i] = byte(i + sequence)
 		}
+		binary.BigEndian.PutUint32(data, uint32(sequence))
+		wire, err := udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: 53, Data: data})
+		if err != nil {
+			panic(err)
+		}
+		return wire
+	}
+	sent := make(chan error, 1)
+	go func() {
+		for i := 0; i < frames; i++ {
+			if err := udpproto.WriteFrame(stream, packet(i)); err != nil {
+				sent <- err
+				return
+			}
+		}
+		sent <- nil
+	}()
+	// Let the echo fill the download pipe before starting the reader.
+	time.Sleep(100 * time.Millisecond)
+	for i := 0; i < frames; i++ {
 		got, err := udpproto.ReadFrame(stream)
-		if err != nil || string(got) != string(wire) {
+		if err != nil || !bytes.Equal(got, packet(i)) {
 			t.Fatalf("native duplex frame %d: %v", i, err)
 		}
+	}
+	if err := <-sent; err != nil {
+		t.Fatal("native upload:", err)
 	}
 	if posts.Load() != 1 {
 		t.Fatal("stream reopened the HTTP request")
