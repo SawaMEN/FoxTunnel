@@ -35,7 +35,23 @@ class SocksParser {
     const b = this.bytes;
     if (!this.greeted) throw new Error("SOCKS greeting required");
     if (b.length < 4) return null;
-    if (b[0] !== 5 || b[1] !== 1 || b[2] !== 0) throw new Error("only SOCKS5 CONNECT is supported");
+    if (b[0] !== 5 || b[2] !== 0) throw new Error("invalid private SOCKS request");
+    // Reserved command 0xf0 is internal, authenticated IPC, never public SOCKS.
+    // It carries exactly one bounded UDP-v1 packet. The native Gecko HTTP
+    // stack performs the HTTPS POST, not a Go TLS/HTTP fallback.
+    if (b[1] === 0xf0) {
+      if (b[3] !== 0 || b.length < 6) {
+        if (b[3] !== 0) throw new Error("invalid private UDP operation");
+        return null;
+      }
+      const n = (b[4] << 8) | b[5];
+      if (n < 8 || n > 1232 || b.length > 6 + n) throw new Error("invalid private UDP packet");
+      if (b.length < 6 + n) return null;
+      const packet = Uint8Array.from(b.splice(6, n));
+      b.splice(0, 6);
+      return { udp: packet };
+    }
+    if (b[1] !== 1) throw new Error("only SOCKS5 CONNECT is supported");
     let size, host, offset;
     if (b[3] === 1) {
       size = 10; offset = 8;
@@ -77,6 +93,14 @@ function firefoxUserAgent(nativeUA) {
 }
 
 function socksReply(code) { return Uint8Array.from([5, code, 0, 1, 0, 0, 0, 0, 0, 0]); }
+
+// Fixed-width reply to authenticated private UDP IPC: status and bounded
+// payload. A status 0 with an empty payload means the exit timed out (HTTP 204).
+function udpIPCReply(data, failed = false) {
+  if (failed) return Uint8Array.of(5, 1, 0, 0);
+  if (!(data instanceof Uint8Array) || data.length > 1232) throw new Error("invalid UDP reply");
+  return Uint8Array.from([5, 0, data.length >> 8, data.length & 255, ...data]);
+}
 
 // One scratch buffer per active direction, not one ArrayBuffer allocation for
 // every 32 KiB of payload. A read's slice must be fully written before the next
@@ -129,7 +153,7 @@ function sessionStatus(sessions, now) {
 
 if (typeof module !== "undefined") module.exports = {
   SocksParser, socksReply, firefoxUserAgent, pumpBuffered,
-  writeAllWithBackpressure, sessionStatus,
+  writeAllWithBackpressure, sessionStatus, udpIPCReply,
 };
 
 if (typeof Components !== "undefined") {
@@ -205,7 +229,17 @@ if (typeof Components !== "undefined") {
         "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null)
     : pps.newProxyInfo("https", cfg.proxy_host, cfg.proxy_port, cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null);
   const filter = {
-    applyFilter(uri, previous, callback) { callback.onProxyFilterResult(proxy); },
+    applyFilter(uri, previous, callback) {
+      // Internal UDP-v1 POST requests address the authenticated HTTPS proxy
+      // origin directly. They must never CONNECT recursively through itself,
+      // nor inherit a system proxy. The only such URL is constructed below.
+      if (uri.scheme === "https" && uri.host === cfg.proxy_host &&
+          (uri.port === -1 ? 443 : uri.port) === cfg.proxy_port &&
+          uri.pathQueryRef === "/.well-known/foxtunnel-udp-v1") {
+        callback.onProxyFilterResult(null); return;
+      }
+      callback.onProxyFilterResult(proxy);
+    },
     QueryInterface: ChromeUtils.generateQI(["nsIProtocolProxyFilter"]),
   };
   pps.registerFilter(filter, 0);
@@ -361,6 +395,88 @@ if (typeof Components !== "undefined") {
     });
   }
 
+  // Single-datagram HTTPS relay through Gecko's own nsIHttpChannel. No
+  // application UDP datagram is sent over Go TLS, a Go RoundTripper or H3
+  // MASQUE. This first native stage supports H2 only; stream-v2 and H3 are
+  // rejected until their distinct wire contracts have native adapters.
+  function exchangeUDPThroughNecko(packet, session) {
+    if (!cfg.socks_token || cfg.transport !== "h2-connect" || packet.length < 8 || packet.length > 1232) {
+      return Promise.reject(new Error("unsupported native UDP operation"));
+    }
+    return new Promise((resolve, reject) => {
+      const target = `https://${cfg.proxy_host}:${cfg.proxy_port}/.well-known/foxtunnel-udp-v1`;
+      const channel = NetUtil.newChannel({
+        uri: target, loadUsingSystemPrincipal: true,
+        securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |
+          Ci.nsILoadInfo.SEC_DONT_FOLLOW_REDIRECTS | Ci.nsILoadInfo.SEC_COOKIES_OMIT,
+      }).QueryInterface(Ci.nsIHttpChannel);
+      session.channel = channel;
+      const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
+      internal.blockAuthPrompt = true;
+      channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
+      const upload = Cc["@mozilla.org/io/string-input-stream;1"].createInstance(Ci.nsIStringInputStream);
+      const binary = String.fromCharCode(...packet);
+      upload.setData(binary, binary.length);
+      channel.QueryInterface(Ci.nsIUploadChannel2)
+        .explicitSetUploadStream(upload, "application/octet-stream", packet.length, "POST", false);
+      channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);
+      let finished = false;
+      const received = [];
+      const complete = (err, data) => {
+        if (finished) return;
+        finished = true;
+        if (err) reject(err); else resolve(data);
+      };
+      const timeout = setTimeout(() => {
+        channel.cancel(Cr.NS_BINDING_ABORTED);
+        complete(new Error("native UDP response timeout"));
+      }, cfg.connect_timeout_ms);
+      const close = (error, bytes) => { clearTimeout(timeout); complete(error, bytes); };
+      channel.asyncOpen({
+        onStartRequest(request) {
+          // Require native H2, a fixed endpoint and a no-redirect status.
+          if (channel.protocolVersion !== "h2" ||
+              (channel.responseStatus !== 200 && channel.responseStatus !== 204)) {
+            channel.cancel(Cr.NS_BINDING_ABORTED);
+            close(new Error("invalid native UDP HTTPS response"));
+          }
+        },
+        onDataAvailable(request, input, offset, count) {
+          try {
+            if (finished || count > 1232 - received.length) {
+              throw new Error("oversized UDP HTTPS response");
+            }
+            const stream = Cc["@mozilla.org/binaryinputstream;1"].createInstance(Ci.nsIBinaryInputStream);
+            stream.setInputStream(input);
+            const bytes = new Uint8Array(count);
+            if (stream.readArrayBuffer(count, bytes.buffer) !== count) throw new Error("truncated UDP HTTPS response");
+            received.push(...bytes);
+          } catch {
+            channel.cancel(Cr.NS_BINDING_ABORTED);
+            close(new Error("invalid UDP HTTPS body"));
+          }
+        },
+        onStopRequest(request, status) {
+          if (finished) return;
+          if (!Components.isSuccessCode(status)) {
+            close(new Error("native UDP HTTPS transport failed")); return;
+          }
+          if (channel.protocolVersion !== "h2") {
+            close(new Error("native UDP used unexpected HTTP protocol")); return;
+          }
+          if (channel.responseStatus === 204 && received.length === 0) {
+            close(null, Uint8Array.of()); return;
+          }
+          if (channel.responseStatus !== 200 || received.length < 8) {
+            close(new Error("invalid UDP HTTP response")); return;
+          }
+          close(null, Uint8Array.from(received));
+        },
+        QueryInterface: ChromeUtils.generateQI(["nsIStreamListener", "nsIRequestObserver"]),
+      });
+    });
+  }
+
   async function pump(source, destination, session, direction) {
     return pumpBuffered(source, destination,
       () => { session.lastProgress = Math.floor(ChromeUtils.now()); },
@@ -432,6 +548,20 @@ if (typeof Components !== "undefined") {
       while (request === null) {
         const chunk = await local.read(); if (chunk === null) return;
         parser.push(chunk); request = parser.request();
+      }
+      if (request.udp) {
+        // Fail closed for an unauthenticated/public SOCKS socket and for
+        // transports without a native H2 request bridge.
+        established = true;
+        try {
+          const answer = await exchangeUDPThroughNecko(request.udp, session);
+          if (!session.closed) await local.write(udpIPCReply(answer));
+        } catch {
+          if (!session.closed) {
+            try { await local.write(udpIPCReply(null, true)); } catch {}
+          }
+        }
+        return;
       }
       const remote = await openTunnel(request.authority, session);
       clearTimeout(timer);
