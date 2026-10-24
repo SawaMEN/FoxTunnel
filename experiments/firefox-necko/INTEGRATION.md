@@ -303,3 +303,9 @@ returning 503 only for new requests would not test persistent-path loss. The
 RPC cases retain first-origin rejection. Both explicit topology and discovery
 must preserve the same connection's binary data through the outage. Native
 qualification of this stronger lane gate remains pending.
+
+The packaged CLI/SDK/native streaming gate requires three consecutive passes
+with the race detector (600-second suite deadline). This includes the native
+HTTP headers-only/duplex cases, 4096-frame UDP stress, both Multi-Node teardown
+triggers, Bond RPC/lanes/discovery/outage, and every integrated XHTTP mode. A
+single successful transfer does not close stage 1.

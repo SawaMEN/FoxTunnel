@@ -175,7 +175,7 @@ jobs:
       - name: Integrated main CLI and SDK native gates
         env:
           FOXTUNNEL_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
-        run: go test -race . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManaged(IPC|UDP|HTTP|Bond|XHTTP))'  -v -count=1 -timeout=300s
+        run: go test -race . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManaged(IPC|UDP|HTTP|Bond|XHTTP))' -v -count=3 -timeout=600s
       - name: Managed engine Firefox wire comparison
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
