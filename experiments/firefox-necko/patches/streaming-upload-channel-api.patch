@@ -1,0 +1,11 @@
+--- a/netwerk/protocol/http/HttpBaseChannel.h
++++ b/netwerk/protocol/http/HttpBaseChannel.h
+@@ -360,6 +360,8 @@
+ 
+   NS_IMETHOD GetLastTransportStatus(nsresult* aLastTransportStatus) override;
+ 
++  NS_IMETHOD EnableStreamingUpload() override;
++
+   NS_IMETHOD GetCaps(uint32_t* aCaps) override {
+     if (!aCaps) {
+       return NS_ERROR_INVALID_ARG;
