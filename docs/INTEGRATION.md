@@ -6,10 +6,13 @@ API schema 1, process schema 1 and wire `foxtunnel-draft-0` are separate version
 
 ## Distribution
 
-Standard bundles target Linux amd64 and arm64 with NSS. They contain
-`foxtunnel`, `lib/`, `build.json`, `integration.json`, this guide and licenses.
-Keep the bundle intact. The runtime baseline is Ubuntu 24.04 glibc/libgcc.
-Mozilla/Neqo has a separate Linux amd64 bundle.
+The xfd release distributes one artifact per Linux architecture. Linux AMD64
+contains an NSS-enabled `foxtunnel` CLI together with the verified Necko
+`runtime/`, helper and `lib/` in one archive. Linux ARM64 still ships NSS
+without the full Necko runtime. Keep the extracted bundle intact and use the
+executable inside `foxtunnel-necko/` on AMD64. Runtime baseline: Ubuntu 24.04
+glibc/libgcc. Automatic engine selection is available with `Engine: "auto"`
+(Go SDK opt-in); empty Engine preserves prior SDK semantics.
 
 Verify archive hashes and provenance before running it. `version --json` reports
 the actual compiled backends and `product: protocol-core`, integration/SDK/process
