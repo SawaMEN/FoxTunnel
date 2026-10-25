@@ -394,27 +394,40 @@ and its Necko runtime job, but unified-archive indexing failed with
 assembly remains stage 6; no unified release is claimed by stage-1 completion.
 
 
-### Stage 3 candidate: native H3 HTTP and UDP
+### Stage 3 qualified: native H3 HTTP and UDP
 
-The `xfd-h3` draft is rebased onto the fully qualified stage-2 `xfd` tree.
-Stage 3 progress: **1 of 4 steps complete**; overall completion remains
-**2 of 6 stages**. The new source lock has not yet passed a native build or H3
-qualification. Existing stage-1/2 records identify their older qualified runtime
-and do not qualify this new draft.
+Stage 3 is complete: **4 of 4 steps**, **3 of 6 stages overall**.
+Qualified code is `7d4eee64c0acd83daefdaa4c3bd8ab87558bb247` on top of the
+stage-2 baseline. The native C++ build at `bee2e2d` passed in source run
+[40234429164](https://github.com/SawaMEN/FoxTunnel/actions/runs/40234429164).
+Runtime run [40234867279](https://github.com/SawaMEN/FoxTunnel/actions/runs/40234867279)
+verified that exact source lock and binary hashes before running the packaged
+CLI and SDK. The retained [acceptance record](validation/h3/acceptance.json)
+binds these runs to source/helper hashes and artifact digests.
 
-1. Done: preserve all stage-2 ownership, replay, failure-category and GC fixes;
-   validate all 22 combined patches against the exact pinned source.
-2. In progress: native HTTP3-only API and H3 POST/UDP/Bond integration.
-3. Pending: compiled native H3 positive, trust, duplex, failure and zero-TCP gates,
-   plus the complete H2 regression matrix.
-4. Pending: sustained H3 resources and final CLI/SDK qualification.
+1. Preserved all stage-2 ownership, replay, failure-category and GC fixes;
+   validated all 22 combined patches against the pinned Gecko source.
+2. Compiled the native HTTP3-only API and integrated H3 POST, UDP v1/v2,
+   Multi-Node and Bond in the helper, CLI and SDK.
+3. Passed 13 mandatory native groups three times each, including H3 duplex,
+   certificate trust and zero-TCP tests, plus H2 replay, truncation, headers,
+   XHTTP and ownership regressions. Five supplementary research-runtime groups
+   passed in their research step and intentionally skip in the bundle-only step.
+4. Passed all 12 managed workload modes for 60 seconds plus 6 seconds settling,
+   H2/H3 CONNECT for 300 seconds each, wire measurements and paired controls.
+   Every H3 managed mode selected protocol 3 and counted zero TCP origin accepts.
+   All resource bounds and process/profile cleanup checks passed.
 
 The privileged parent-process API selects the HTTPS origin's native H3 route
-without Alt-Svc discovery. Its transaction and channel policies prohibit TCP
-fallback and preserve NSS trust and hostname checks. GET/POST and both private
-UDP bridges require the selected native protocol on their responses. Negative
-native gates count TCP accepts at TCP-only origins; positive H3 HTTP tests also
-reject speculative TCP connects. Bond's outage fixture closes the actual TCP or
-QUIC origin connection. A successful source patch application or Go fixture is
-not native networking qualification; promotion to `xfd` waits for the rebuilt
-runtime and its mandatory gates.
+without Alt-Svc discovery. Channel/transaction policy prohibits TCP fallback and
+preserves NSS trust and hostname checks. Negative tests use TCP-only origins and
+cover GET, POST and both UDP versions; positive HTTP and sustained H3 workloads
+also reject speculative TCP connections. Bond outage tests close the actual TCP
+or QUIC origin connection.
+
+Evidence and limits are described in [the H3 qualification record](validation/h3/README.md).
+Resource figures cover the helper on loopback; they do not establish WAN speed,
+whole-client memory, statistical improvement or DPI equivalence. The wire
+comparison covers native CONNECT, not a new POST/UDP-specific fingerprint claim.
+ARM64 Necko, remaining identity/profile settings and unified release archives
+remain stages 4 through 6. `main` is unchanged.
