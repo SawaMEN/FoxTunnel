@@ -205,12 +205,71 @@ func TestManagedHTTPTruncationIsNotEOF(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer resp.Body.Close()
-			if _, err := io.ReadAll(resp.Body); err == nil {
+			_, err = io.ReadAll(resp.Body)
+			if err == nil {
 				t.Fatal("native error treated as clean EOF")
+			}
+			// Bond retries truncated records on another lane using the same
+			// sequence. A malformed length must remain a protocol failure.
+			if errors.Is(err, io.ErrUnexpectedEOF) != (mode != "oversized") {
+				t.Fatal("interrupted response and invalid framing must remain distinct:", err)
 			}
 		})
 	}
 }
+
+// An H2 reset after response bytes must propagate as an interrupted stream.
+// Bond can replay its sequence-numbered record; malformed IPC is still fatal.
+func TestGeckoManagedHTTPInterruptedBody(t *testing.T) {
+	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	if bundle == "" {
+		t.Skip("verified native bundle required")
+	}
+	abort := make(chan struct{})
+	var abortOnce sync.Once
+	interrupt := func() { abortOnce.Do(func() { close(abort) }) }
+	defer interrupt()
+	prefix := []byte{0, 255, 128, 42}
+	var calls atomic.Int32
+	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.Write(prefix)
+		if err := http.NewResponseController(w).Flush(); err != nil {
+			return
+		}
+		select {
+		case <-abort:
+			panic(http.ErrAbortHandler)
+		case <-r.Context().Done():
+		}
+	}))
+	m, err := NewManaged(bundle, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, "GET", cfg.Server+"/interrupted", nil)
+	resp, err := m.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	got := make([]byte, len(prefix))
+	if _, err = io.ReadFull(resp.Body, got); err != nil || !bytes.Equal(got, prefix) {
+		t.Fatal("response prefix", got, err)
+	}
+	interrupt()
+	tail, err := io.ReadAll(resp.Body)
+	if len(tail) != 0 || !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatal("native reset lost interruption category", len(tail), err)
+	}
+	if calls.Load() != 1 {
+		t.Fatal("interrupted response was replayed by the HTTP adapter", calls.Load())
+	}
+}
+
 func TestManagedHTTPParentCancellation(t *testing.T) {
 	m := httpIPCFixture(t, func(c net.Conn) error {
 		if _, err := readHTTPRequestIPC(c); err != nil {
