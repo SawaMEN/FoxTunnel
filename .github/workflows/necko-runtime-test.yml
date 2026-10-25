@@ -184,12 +184,12 @@ jobs:
         run: |
           go test -race ./experiments/firefox-necko -run '^TestGeckoBrowserFingerprint$' -v -count=3 -timeout=180s
           python3 scripts/compare_necko_firefox.py --observations necko-integrated-fingerprint/observations --out necko-integrated-fingerprint/comparison.json
-      - name: Sustained managed HTTP, Bond and UDP resources
+      - name: Sustained managed H2/H3 HTTP, Bond and UDP resources
         env:
           FOXTUNNEL_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
           FOXTUNNEL_MANAGED_SOAK_SECONDS: '60'
           FOXTUNNEL_MANAGED_SOAK_OUT: ${{ github.workspace }}/necko-managed-operations
-        run: go test -race ./experiments/firefox-necko -run '^TestGeckoManagedSoak$' -v -count=1 -timeout=720s
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoManagedSoak$' -v -count=1 -timeout=1200s
       - uses: actions/upload-artifact@v4
         if: always()
         with:

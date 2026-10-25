@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,27 +37,48 @@ func TestGeckoManagedSoak(t *testing.T) {
 	if err != nil || seconds < 10 || seconds > 3600 {
 		t.Fatal("managed soak duration must be 10..3600 seconds")
 	}
-	for _, mode := range []string{"h2-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up", "bond-lanes", "udp-v2", "udp-multi-node"} {
+	for _, mode := range []string{"h2-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up", "bond-lanes", "udp-v2", "udp-multi-node", "h3-post", "h3-bond-lanes", "h3-udp-v1", "h3-udp-v2", "h3-udp-multi-node"} {
 		t.Run(mode, func(t *testing.T) {
-			udp := strings.HasPrefix(mode, "udp-")
+			nativeMode, protocol, kind := "h2-connect", 2, mode
+			if strings.HasPrefix(mode, "h3-") {
+				nativeMode, protocol = "h3-connect", 3
+				kind = strings.TrimPrefix(mode, "h3-")
+				if kind == "post" {
+					kind = "h2-post"
+				}
+			}
+			udp := strings.HasPrefix(kind, "udp-")
 			server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: udp}
-			if mode == "bond-lanes" {
+			if kind == "bond-lanes" {
 				hub := server.NewBondHub()
 				defer hub.Close()
 				server.Bond = hub
 			}
-			server.Padding = mode == "h2-post" || xhttp.IsMode(mode)
-			var laneRequests atomic.Int32
+			server.Padding = kind == "h2-post" || xhttp.IsMode(kind)
+			var laneRequests, tcpAccepts atomic.Int32
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.ProtoMajor != protocol {
+					http.Error(w, "wrong native carrier protocol", 400)
+					return
+				}
 				if r.Header.Get("X-FoxTunnel-Bond-Lane") != "" {
 					laneRequests.Add(1)
 				}
 				server.ServeHTTP(w, r)
 			})
-			cfg := nativeProxy(t, "h2-connect", handler)
+			endpoint := func() Config {
+				return nativeProxyConfigured(t, nativeMode, handler, func(server *httptest.Server) {
+					server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+						if state == http.StateNew {
+							tcpAccepts.Add(1)
+						}
+					}
+				})
+			}
+			cfg := endpoint()
 			var secondary string
-			if mode == "bond-lanes" || mode == "udp-multi-node" {
-				other := nativeProxy(t, "h2-connect", handler)
+			if kind == "bond-lanes" || kind == "udp-multi-node" {
+				other := endpoint()
 				first, e := os.ReadFile(cfg.CACert)
 				if e != nil {
 					t.Fatal(e)
@@ -77,8 +99,8 @@ func TestGeckoManagedSoak(t *testing.T) {
 			}
 			defer c.Close()
 			transport := mode
-			if mode == "bond-lanes" || udp {
-				transport = "h2-connect"
+			if kind == "bond-lanes" || udp {
+				transport = nativeMode
 			}
 			var managed *Managed
 			c.SetManagedHTTPTransport(transport, func() (tunnel.ManagedTransport, error) {
@@ -93,13 +115,13 @@ func TestGeckoManagedSoak(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if mode == "bond-lanes" {
+			if kind == "bond-lanes" {
 				c.BondAdaptive, c.BondAutoTune, c.BondLanes = true, true, true
 				if err = c.EnableBond(); err != nil {
 					t.Fatal(err)
 				}
 			}
-			c.EnableUDP, c.UDPStreaming, c.UDPMultiNode = udp, udp, mode == "udp-multi-node"
+			c.EnableUDP, c.UDPStreaming, c.UDPMultiNode = udp, udp && kind != "udp-v1", kind == "udp-multi-node"
 			if err = c.Prepare(context.Background()); err != nil {
 				t.Fatal(err)
 			}
@@ -117,18 +139,18 @@ func TestGeckoManagedSoak(t *testing.T) {
 				return c.DialContext(ctx, "tcp", target)
 			}
 			finishTraffic := func() {}
-			if mode == "bond-lanes" {
+			if kind == "bond-lanes" {
 				listen, stop := managedSoakListener(t, c)
 				finishTraffic = stop
 				dial = func(target string) (net.Conn, error) { return nativeSOCKS(listen, target) }
 			}
 			var round func(int) error
-			if !udp && mode != "bond-lanes" {
+			if !udp && kind != "bond-lanes" {
 				target := nativeEcho(t)
 				round = func(seed int) error { return managedSoakTCPRound(dial, target, seed) }
 			}
 			parallel, payloadBytes := 4, 128<<10
-			if mode == "bond-lanes" {
+			if kind == "bond-lanes" {
 				round, finishTraffic = managedSoakPersistent(t, dial, nativeEcho(t), parallel, finishTraffic)
 			}
 			if udp {
@@ -194,8 +216,11 @@ func TestGeckoManagedSoak(t *testing.T) {
 				// fails; otherwise CI discards the workload that needs diagnosis.
 				t.Errorf("managed resource growth: first=%+v last=%+v", first, last)
 			}
-			if mode == "bond-lanes" && laneRequests.Load() == 0 {
+			if kind == "bond-lanes" && laneRequests.Load() == 0 {
 				t.Fatal("soak did not use native Bond lanes")
+			}
+			if protocol == 3 && tcpAccepts.Load() != 0 {
+				t.Error("H3 workload opened TCP origin connections:", tcpAccepts.Load())
 			}
 			c.Close()
 			if _, e := os.Stat(filepath.Join(os.TempDir(), tag)); !os.IsNotExist(e) {
@@ -216,7 +241,7 @@ func TestGeckoManagedSoak(t *testing.T) {
 				if err = os.MkdirAll(out, 0700); err != nil {
 					t.Fatal(err)
 				}
-				report := map[string]any{"schema": 1, "kind": "managed-necko-soak", "transport": mode, "duration_seconds": seconds, "settle_seconds": settleSeconds, "observed_seconds": float64(last.AtMS) / 1000, "rounds": rounds, "parallel_streams": parallel, "payload_bytes_per_round": payloadBytes, "verified_app_bytes": 2 * int64(rounds) * int64(payloadBytes), "samples": samples, "idle_fds": idle.FDs, "resource_bounds_passed": resourceBoundsPassed, "fd_growth_limit": 16, "rss_growth_limit_kib": 192 * 1024, "cpu_ticks_per_second": rate, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / rate, "profile_removed": true, "process_joined": true, "client_js_sha256": digestBytes(clientScript), "source_lock_sha256": digestBytes(sourceLock), "ci_run_id": os.Getenv("GITHUB_RUN_ID"), "scope": "helper-only process resources on loopback; not whole-client or WAN throughput"}
+				report := map[string]any{"schema": 1, "kind": "managed-necko-soak", "transport": mode, "native_protocol": protocol, "tcp_origin_accepts": tcpAccepts.Load(), "duration_seconds": seconds, "settle_seconds": settleSeconds, "observed_seconds": float64(last.AtMS) / 1000, "rounds": rounds, "parallel_streams": parallel, "payload_bytes_per_round": payloadBytes, "verified_app_bytes": 2 * int64(rounds) * int64(payloadBytes), "samples": samples, "idle_fds": idle.FDs, "resource_bounds_passed": resourceBoundsPassed, "fd_growth_limit": 16, "rss_growth_limit_kib": 192 * 1024, "cpu_ticks_per_second": rate, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / rate, "profile_removed": true, "process_joined": true, "client_js_sha256": digestBytes(clientScript), "source_lock_sha256": digestBytes(sourceLock), "ci_run_id": os.Getenv("GITHUB_RUN_ID"), "scope": "helper-only process resources on loopback; not whole-client or WAN throughput"}
 				data, e := json.MarshalIndent(report, "", "  ")
 				if e != nil {
 					t.Fatal(e)
