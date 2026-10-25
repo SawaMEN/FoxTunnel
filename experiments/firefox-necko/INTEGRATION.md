@@ -239,12 +239,14 @@ without a response Content-Type; typed server responses keep their own MIME type
 
 ### xfd completion plan and response-header deadlock
 
-Overall completion: **1 of 6 stages complete** (stage 1).
+Overall completion: **2 of 6 stages complete** (stages 1 and 2).
 
-Stage 2: **3 of 4 checks confirmed**; native resource qualification is pending
-the upload pipe ownership fix and a new source build. See the
-[sustained-resource record](validation/endurance/README.md) for the reproduced
-failures, diagnostic evidence and remaining gates.
+Stage 2: **4 of 4 checks complete**, qualified at helper commit `b5d86cc` in
+[native runtime run 40224778052](https://github.com/SawaMEN/FoxTunnel/actions/runs/40224778052)
+using compiled source run `40199106358`. CLI/SDK gates passed three times,
+all seven managed resource modes passed, and both 300-second CONNECT and paired
+baseline/current gates passed. The [sustained-resource record](validation/endurance/README.md)
+retains raw samples, source hashes, limits and qualification details.
 
 1. Fix native streaming: duplex HTTP, UDP v2/multi-node, Bond lanes, XHTTP.
 2. Pass the full CLI/SDK matrix and sustained resource gates.

@@ -1,0 +1,210 @@
+{
+  "schema": 1,
+  "runtime_run": 40224778052,
+  "standalone_audit": {
+    "kind": "fx-firefox-regression-audit",
+    "limitations": [
+      "Firefox-to-Firefox variation is inconclusive, not proof of similarity.",
+      "Three or more lab observations cannot establish distributional equivalence.",
+      "An isolated H2 frame or HPACK mismatch is recorded as sporadic; at least two-thirds repeated non-control mismatches are required to block CI.",
+      "No claims about ordinary browsing, traffic timing, payload shapes or DPI."
+    ],
+    "results": {
+      "h2-connect": {
+        "candidate_repetitions": 3,
+        "control_repetitions": 3,
+        "control_variable_fields": [
+          "connection_1.hpack_blocks",
+          "connection_2.hpack_blocks"
+        ],
+        "inconclusive_fields": [],
+        "mismatch_frequencies": [],
+        "persistent_mismatch_threshold": 2,
+        "persistent_under_variable_control": [],
+        "sporadic_fields": [],
+        "unexpected_fields": []
+      },
+      "h3-connect": {
+        "candidate_repetitions": 3,
+        "control_repetitions": 3,
+        "control_variable_fields": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ],
+        "inconclusive_fields": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ],
+        "mismatch_frequencies": [
+          {
+            "candidate": 3,
+            "candidate_total": 3,
+            "field": "connection_1.hello.extensions",
+            "firefox_self": 3,
+            "firefox_self_total": 3
+          },
+          {
+            "candidate": 3,
+            "candidate_total": 3,
+            "field": "connection_1.hello.ja3",
+            "firefox_self": 3,
+            "firefox_self_total": 3
+          },
+          {
+            "candidate": 3,
+            "candidate_total": 3,
+            "field": "connection_1.hello.ja3_md5",
+            "firefox_self": 3,
+            "firefox_self_total": 3
+          },
+          {
+            "candidate": 3,
+            "candidate_total": 3,
+            "field": "connection_2.hello.extensions",
+            "firefox_self": 3,
+            "firefox_self_total": 3
+          },
+          {
+            "candidate": 3,
+            "candidate_total": 3,
+            "field": "connection_2.hello.ja3",
+            "firefox_self": 3,
+            "firefox_self_total": 3
+          },
+          {
+            "candidate": 3,
+            "candidate_total": 3,
+            "field": "connection_2.hello.ja3_md5",
+            "firefox_self": 3,
+            "firefox_self_total": 3
+          }
+        ],
+        "persistent_mismatch_threshold": 2,
+        "persistent_under_variable_control": [],
+        "sporadic_fields": [],
+        "unexpected_fields": []
+      }
+    },
+    "runtime_sha256": {
+      "firefox": "68248f2d9064f9763a965fb47acb00a8090eb64eee3e8d93a43b5af9d6c3a52e",
+      "libnss3.so": "bf54f4def4f3a4e78aeab00d3dfaf95afb9a5ca8437781fdcea39008d23cede4",
+      "libxul.so": "390181da445a3f893eb1e902d786ace676a6e829f263ecade8ab8fe267fb82ee",
+      "platform.ini": "8833934275587d5905909a4ac1430ec875761108b3ff5c954e08246a7df55758",
+      "xpcshell": "42a27755b95c79efb64d52e1590295c9ababb80cf893305d4bf69dc0a227c3cf"
+    },
+    "schema": 1,
+    "scope": "Raw CONNECT on one pinned Gecko runtime; not ordinary Firefox navigation",
+    "source_sha256": {
+      "client.js": "a4ce780f4f9cb3d95109a26f07df20eb50c13b64f8561ea5fa04daf3ea2c0748",
+      "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+      "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+      "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+      "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+      "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+      "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+      "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+      "gecko.lock.json": "edcf3061ef774cc0abaf42c6a0971b021fa0ec2a1c953ed52881394467b645e5"
+    },
+    "sporadic_differences": 0,
+    "status": "inconclusive",
+    "unexpected_differences": 0,
+    "variable_differences": 6
+  },
+  "managed": {
+    "source_sha256": {
+      "client.js": "a4ce780f4f9cb3d95109a26f07df20eb50c13b64f8561ea5fa04daf3ea2c0748",
+      "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+      "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+      "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+      "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+      "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+      "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+      "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+      "gecko.lock.json": "edcf3061ef774cc0abaf42c6a0971b021fa0ec2a1c953ed52881394467b645e5"
+    },
+    "runtime_sha256": {
+      "firefox": "68248f2d9064f9763a965fb47acb00a8090eb64eee3e8d93a43b5af9d6c3a52e",
+      "libnss3.so": "bf54f4def4f3a4e78aeab00d3dfaf95afb9a5ca8437781fdcea39008d23cede4",
+      "libxul.so": "390181da445a3f893eb1e902d786ace676a6e829f263ecade8ab8fe267fb82ee",
+      "platform.ini": "8833934275587d5905909a4ac1430ec875761108b3ff5c954e08246a7df55758",
+      "xpcshell": "42a27755b95c79efb64d52e1590295c9ababb80cf893305d4bf69dc0a227c3cf"
+    },
+    "observations": [
+      {
+        "file": "h2-connect-1792955986051093133.json",
+        "sha256": "79af6a66be7ca693bf657c0d832c302385913f5249a0aeaba2bb9f5874660ecd",
+        "transport": "h2-connect",
+        "equal_fields": 46,
+        "different_fields": []
+      },
+      {
+        "file": "h2-connect-1792955999483471301.json",
+        "sha256": "dce53c4eaeeaa6323157f51ebee52f41eaeff6a5a9c73cc45ad9b5185afb08fa",
+        "transport": "h2-connect",
+        "equal_fields": 46,
+        "different_fields": []
+      },
+      {
+        "file": "h2-connect-1792956012845166109.json",
+        "sha256": "0c053c600589b6962af127d840c6309343e25663d6da9dfa8d8dc1f24661d912",
+        "transport": "h2-connect",
+        "equal_fields": 46,
+        "different_fields": []
+      },
+      {
+        "file": "h3-connect-1792955992572646232.json",
+        "sha256": "de222d3d36643ce32e38b69e29879d32309256973bc52af747a770692a445c83",
+        "transport": "h3-connect",
+        "equal_fields": 40,
+        "different_fields": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ]
+      },
+      {
+        "file": "h3-connect-1792956006006372569.json",
+        "sha256": "a80be3d76d25c69d6480e5c5f18ca9f78e2ceafea54993405d74438da3149a6c",
+        "transport": "h3-connect",
+        "equal_fields": 40,
+        "different_fields": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ]
+      },
+      {
+        "file": "h3-connect-1792956019440875820.json",
+        "sha256": "bc84abf2184d5c174cf75278dc0e90144197dbb1db573e781f9248fff39653b6",
+        "transport": "h3-connect",
+        "equal_fields": 40,
+        "different_fields": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ]
+      }
+    ]
+  },
+  "limits": [
+    "Three samples per transport and an independent Firefox-self control do not establish distributional equivalence or DPI indistinguishability.",
+    "H3 extension-order/JA3 differences occur in Firefox-self controls as well."
+  ]
+}

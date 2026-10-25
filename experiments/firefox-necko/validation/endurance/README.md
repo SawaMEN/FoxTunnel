@@ -1,11 +1,11 @@
 # Stage 2: CLI/SDK and sustained native resources
 
-Status: **3 of 4 checks confirmed; independent CI resource qualification running**.
-Overall plan: **1 of 6 stages complete**. Linux amd64 only.
+Status: **qualified — 4 of 4 checks complete**.
+Overall plan: **2 of 6 stages complete**. Linux amd64 only.
 
-Candidate helper/SDK code: `b5d86cc2928a0e82066a6b401a9fd83449cca5c9`.
+Qualified helper/SDK code: `b5d86cc2928a0e82066a6b401a9fd83449cca5c9`.
 Compiled source: [40199106358](https://github.com/SawaMEN/FoxTunnel/actions/runs/40199106358).
-Final runtime verification: [40224778052](https://github.com/SawaMEN/FoxTunnel/actions/runs/40224778052).
+Successful final runtime verification: [40224778052](https://github.com/SawaMEN/FoxTunnel/actions/runs/40224778052).
 The machine-readable [acceptance record](acceptance.json) binds measurements to
 both the embedded helper and the exact source lock.
 
@@ -52,16 +52,19 @@ requires uninterrupted binary delivery through the surviving origin.
 1. CLI/SDK: locally all 12 selected groups passed three times, including
    lifecycle, capacity, setup-context cancellation, half-close, private IPC,
    HTTP no-replay, duplex UDP, multi-node failures, Bond and all XHTTP modes.
+   In CI each of the 10 mandatory native groups passed three times; none was
+   skipped. Five supplemental raw-runtime research groups are listed as optional
+   skips in the acceptance record, separate from the mandatory bundle gates.
 2. Network failure: the final native Bond origin-loss test passed 60 consecutive
    repetitions. Invalid-trust, no-replay and malformed-frame checks remain in
-   the matrix. Native CI also covers outage and QUIC rebinding.
+   the matrix. Native CI passed outage and QUIC rebinding.
 3. Control comparison: standalone/managed Firefox observations and independent
-   Firefox-self variation are retained by CI. The remaining sequential paired
+   Firefox-self variation are retained by CI. The successful sequential paired
    resource samples use the same host and runtime, with separate baseline and
    current helper hashes. A single pair does not establish a performance gain.
 4. Resources: the final code passed all seven local 60-second workloads;
-   independent CI repeats them, then runs 300-second H2/H3 CONNECT and paired
-   60-second baseline/current workloads before acceptance.
+   independent CI also passed all seven, both 300-second H2/H3 CONNECT gates,
+   and the paired 60-second baseline/current workloads.
 
 Local raw managed samples are retained under [local/managed](local/managed).
 Each helper remains alive for the final measurement. The six-second settle
@@ -76,3 +79,53 @@ These are finite loopback, helper-process tests. They do not establish WAN or
 whole-client performance, indefinite stability, statistical speedups or DPI
 indistinguishability. H3 POST/UDP/Bond, ARM64, native SNI/SPKI/profile overrides
 and unified NSS + Necko release packaging remain later stages.
+
+## Final-code CI managed measurements
+
+Raw samples: [ci/managed](ci/managed). Workload: 60 seconds, followed by the
+explicit six-second settle budget, with the helper still alive. RSS starts
+after warmup; FD idle values precede traffic. These numbers apply to this CI
+host and synthetic workload.
+
+| Mode | Verified rounds | RSS warm/final, MiB | FD idle/final |
+| --- | ---: | ---: | ---: |
+| bond-lanes | 2128 | 144.8 → 247.0 | 37 → 46 |
+| h2-post | 2028 | 144.3 → 200.6 | 43 → 45 |
+| udp-multi-node | 2746 | 97.6 → 101.7 | 37 → 46 |
+| udp-v2 | 2733 | 97.0 → 103.3 | 34 → 45 |
+| xhttp-packet-up | 988 | 165.8 → 136.9 | 36 → 46 |
+| xhttp-stream-one | 1648 | 137.6 → 179.4 | 34 → 46 |
+| xhttp-stream-up | 1692 | 132.5 → 173.4 | 38 → 47 |
+
+The [wire summary](wire-summary.json) retains the exact source/runtime hashes,
+per-observation differences and the independent Firefox-self audit. All three
+managed H2 samples had equal captured fields. H3 ordered extension/JA3 fields
+varied in all three managed samples and in the Firefox-self control; extension
+sets and decoded values matched. This remains a limited CONNECT comparison,
+not a claim of DPI equivalence.
+
+## Long CONNECT and paired control
+
+Both protocols passed 300 seconds with eight concurrent streams. These raw
+[CONNECT samples](ci/connect) retain CPU, all sampled RSS/FD values, exact byte
+counters and helper/source hashes.
+
+| Mode | Verified rounds | Upload + download, GiB | RSS warm/final, MiB | Sampled RSS peak, MiB |
+| --- | ---: | ---: | ---: | ---: |
+| h3-connect | 9944 | 2.4277 | 123.7 → 163.3 | 291.9 |
+| h2-connect | 11192 | 2.7324 | 119.6 → 189.7 | 307.0 |
+
+The [paired raw samples](ci/paired) contain baseline and current measurements
+from the same CI host/runtime, 60 seconds per protocol and variant. The paired
+report was independently regenerated from these files and matched CI exactly.
+The observed current-versus-baseline deltas were:
+
+| Mode | Throughput | CPU seconds/GiB | Sampled RSS peak |
+| --- | ---: | ---: | ---: |
+| h2-connect | +2.96% | -6.09% | -6492 KiB |
+| h3-connect | +3.78% | -7.09% | -2556 KiB |
+
+This is one sequential pair, not a statistically established speedup. Historical
+samples from a different host remain labelled as non-comparable. Completion
+qualifies the CLI/SDK and bounded lab workloads on Linux amd64; it does not
+publish or qualify the unified release archives, which remain stage 6.
