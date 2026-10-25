@@ -338,8 +338,17 @@ function sessionStatus(sessions, now) {
   return { connected, oldest_ms: oldest };
 }
 
+// The pinned native runtime reports this status but does not expose its name
+// in Components.results. Its value is fixed by xpcom/base/ErrorList.py.
+function nativeHTTPFailureReason(status, results) {
+  const uncleanShutdown = results.NS_ERROR_NET_UNCLEAN_SHUTDOWN ?? 0x804b0065;
+  return [results.NS_ERROR_CONNECTION_REFUSED, results.NS_ERROR_NET_TIMEOUT,
+    results.NS_ERROR_NET_RESET, results.NS_ERROR_OFFLINE, results.NS_ERROR_UNKNOWN_HOST,
+    uncleanShutdown].includes(status) ? 2 : 1;
+}
+
 if (typeof module !== "undefined") module.exports = {
-  SocksParser, socksReply, firefoxUserAgent, pumpBuffered,
+  SocksParser, socksReply, firefoxUserAgent, pumpBuffered, nativeHTTPFailureReason,
   validateHTTPMetadata, httpChunkHeader, pumpHTTPUpload, pumpHTTPDownload, collectHTTPUpload,
   writeAllWithBackpressure, sessionStatus, udpIPCReply,
   validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder, pumpNativeUDPFrames,
@@ -551,7 +560,7 @@ if (typeof Components !== "undefined") {
     // A multiplexed connection can disappear before response headers without
     // GOAWAY. Gecko reports a distinct network status for that case; keep TLS
     // and protocol errors terminal while sequence-based carriers recover.
-    error.nativeHTTPReason = [Cr.NS_ERROR_CONNECTION_REFUSED, Cr.NS_ERROR_NET_TIMEOUT, Cr.NS_ERROR_NET_RESET, Cr.NS_ERROR_OFFLINE, Cr.NS_ERROR_UNKNOWN_HOST, Cr.NS_ERROR_NET_UNCLEAN_SHUTDOWN].includes(status) ? 2 : 1;
+    error.nativeHTTPReason = nativeHTTPFailureReason(status, Cr);
     return error;
   }
   function connect(authority, session, origin) {
