@@ -5,6 +5,12 @@ the distribution, start one owned xpcshell process, wait for readiness and join
 it on shutdown. A separate manual launcher is no longer required. TLS, HTTP/2,
 HTTP/3 and QUIC remain in Mozilla; the Go adapter handles local IPC only.
 
+Stage 1 is qualified on Linux amd64 at helper commit `290923c` using source
+build [40129737449](https://github.com/SawaMEN/FoxTunnel/actions/runs/40129737449).
+The packaged native gate passed three consecutive runs in
+[40133136426](https://github.com/SawaMEN/FoxTunnel/actions/runs/40133136426).
+The six-step qualification record below defines the supported scope.
+
 ## Main CLI
 
 The runtime CI package includes both `foxtunnel` and the standalone
@@ -53,10 +59,15 @@ The private helper listener uses a fresh 128-bit random password in the owner's
 Its password is never placed in argv, process events or status. This keeps the
 helper port from bypassing main-CLI local SOCKS authentication.
 
-Unsupported policy is rejected: UDP, padding, Bond/discovery, fallback servers,
-balancing, XHTTP, SPKI/SNI overrides, strict FoxTunnel draft negotiation and
-manual TLS/QUIC/HTTP profile overrides. Hostname and certificate-chain checks
-remain in NSS. Additional CA files are supported. Setup time is 100 ms through
+Qualified native carriers are H2/H3 TCP CONNECT, H2 POST and all three XHTTP
+modes. H2 UDP v1/v2, Multi-Node, Bond RPC/persistent lanes, authenticated discovery,
+configured fallback origins and new-connection balancing use the native HTTP
+adapter. Padding and strict FoxTunnel negotiation are supported on H2 POST and
+XHTTP; raw CONNECT rejects them because it cannot carry their extension headers.
+
+H3 POST/UDP/Bond, SPKI/SNI overrides, per-node pins, native ARM64 and manual
+TLS/QUIC/HTTP profiles remain outside this qualification and are rejected where
+applicable. Hostname and certificate-chain checks remain in NSS. Additional CA files are supported. Setup time is 100 ms through
 120 seconds; the default is 15 seconds. Native idle/drain limits still apply.
 Legacy and NSS/Neqo `mozilla` selections remain explicit independent engines;
 `necko` requires the verified Linux amd64 runtime, without native Go build tags.
@@ -99,10 +110,10 @@ The first extension to the native Necko engine is an authenticated, bounded
 single-datagram IPC operation that posts the existing `udp-v1` wire packet
 through Gecko's own H2/TLS stack. The local UDP ASSOCIATE socket and reply
 source checks remain owned by FoxTunnel Go. It is deliberately not QUIC
-DATAGRAM or UDP stream-v2. Necko H3 UDP, streaming, Bond, balancing and XHTTP
-remain unimplemented. Do not enable those options with forced Necko.
+DATAGRAM. UDP stream-v2 is provided by the separate adapter below. Native H2
+streaming, Bond and XHTTP are now qualified; H3 UDP remains a later stage.
 
-### Experimental UDP v2 bridge (not enabled in client configuration)
+### Qualified native H2 UDP v2 bridge
 
 The private `OpenUDPStream` adapter now requests a single native H2 POST to
 `/.well-known/foxtunnel-udp-stream-v2`. Authenticated IPC command `0xf1` receives
@@ -112,17 +123,13 @@ reading while downstream writes are pending. Async upload/download pipes are
 bounded to two 32 KiB segments. Closing or canceling the flow closes its IPC
 socket and aborts the native channel; remote errors never select Go HTTP.
 
-`UDPStreaming` remains rejected by normal Necko client configuration pending
-native validation. `TestGeckoManagedUDPStream` checks response headers before
-any upload, 4096 maximum-size binary frames on one H2 request with concurrent
-upload/download and a delayed reader to exercise bounded-pipe backpressure,
-and cancellation. The runtime workflow explicitly includes this test in its
-packaged native gates; ordinary Go tests skip it without the verified bundle.
-This gate requires `FOXTUNNEL_NECKO_BUNDLE`; Node codec/pump tests alone do not
-establish that the pinned Gecko streams unknown-length uploads. Long-session,
-load and runtime compatibility validation are still required before enabling
-this path. Native H3 UDP, XHTTP and Bonding remain pending.
-
+`UDPStreaming` and `UDPMultiNode` are enabled for the qualified native H2 path.
+`TestGeckoManagedUDPStream` passed three times with headers before any upload,
+4096 maximum-size binary frames on one request, concurrent upload/download,
+a delayed reader and cancellation. `TestGeckoManagedUDPMultiNode` passed both
+control-close and node-loss cases three times. Ordinary tests still skip native
+gates without the verified bundle; Node codecs and Go routing fixtures do not
+stand in for Mozilla networking. H3 UDP remains outside this qualification.
 
 ### Native streaming upload normalization fix
 
@@ -199,7 +206,9 @@ the larger-response gate; unit peers did not reproduce that delivery shape.
 
 Known HTTP bodies up to 1 MiB are collected from bounded IPC frames, checked
 against their declared length and uploaded using `nsIArrayBufferInputStream`.
-They do not need the streaming-upload API; unbounded bodies still require it.
+Finite and unbounded bodies both use the native streaming-body replay guard.
+Finite buffers retain an explicit validated Content-Length; this prevents native
+POST replay after an ambiguous connection loss without changing wire length.
 The first explicit request-header value replaces Gecko's default header; further
 values merge. This preserves XHTTP's exact Content-Type rather than appending it
 to the default upload MIME type. The adapter invokes `httptrace.WroteRequest`
@@ -230,7 +239,7 @@ without a response Content-Type; typed server responses keep their own MIME type
 
 ### xfd completion plan and response-header deadlock
 
-Overall completion: **0 of 6 remaining stages complete**.
+Overall completion: **1 of 6 stages complete** (stage 1).
 
 1. Fix native streaming: duplex HTTP, UDP v2/multi-node, Bond lanes, XHTTP.
 2. Pass the full CLI/SDK matrix and sustained resource gates.
@@ -239,17 +248,17 @@ Overall completion: **0 of 6 remaining stages complete**.
 5. Implement the remaining native SNI/SPKI/profile settings.
 6. Verify and package the unified NSS + Necko distributions.
 
-Stage 1 progress: **2 of 6 steps implemented; native validation pending**:
+Stage 1 progress: **6 of 6 steps complete and natively qualified**:
 
 - Done: reproduce and trace the headers-before-body deadlock on the compiled
   source artifact from run 40118209336 (archive SHA256
   864d7e3f7540437852fbfa23714750b363dd3d2e2292ad9c9f762e377ee7dfa2).
 - Done: implement opt-in early final-response-header delivery, with exact pinned
   source patches, source hashes, helper wiring and a native regression.
-- Pending: duplex HTTP and header-only response/EOF/cancellation qualification.
-- Pending: UDP v2 and Multi-Node native stress/transfer qualification.
-- Pending: Bond persistent lanes and discovery/path-loss qualification.
-- Pending: all XHTTP modes and the integrated CLI/SDK matrix.
+- Done: duplex HTTP and header-only response/EOF/cancellation qualification (3 passes).
+- Done: UDP v2 and Multi-Node native stress/transfer/teardown qualification (3 passes).
+- Done: Bond persistent lanes and discovery/active-path-loss qualification (3 passes).
+- Done: all XHTTP modes and the integrated CLI/SDK matrix (3 passes).
 
 The compiled streaming-upload API bypasses upload normalization correctly:
 the native log shows request HEADERS transmitted and HTTP/2 200 response headers
@@ -264,13 +273,13 @@ reset/retry decisions. The channel wakes its pump's start state without writing
 synthetic payload bytes. An empty, open response pipe remains readable later;
 only actual pipe closure ends the body. Suspension, cancellation and the normal
 single OnStartRequest state transition remain owned by the pump. Ordinary
-channels do not enable the option. This is a source change awaiting compilation
-and native regression results, not a completed streaming qualification.
+channels do not enable the option. The API compiled in source run 40129737449
+and passed the packaged native regressions in run 40133136426.
 
 Run 40119674183 confirmed native CONNECT/half-close/trust, launcher transfer,
 Bond RPC/discovery and standalone XHTTP packet-up/stream-one, but failed duplex
 HTTP, UDP v2/multi-node, Bond lanes and stream-up. Its integrated packet-up SDK
-case also failed and remains an independent regression to investigate.
+case also failed at that checkpoint; the qualified build fixes that regression.
 
 The packet-up SDK failure has a separate admission cause: the integrated SDK
 sets MaxConnections=1 to test the logical tunnel limit, but Plan.Apply forwarded
@@ -286,15 +295,15 @@ connection. This isolated qualification used a checkout of be2ea71 plus only
 the factory correction, packaged against the verified source runtime from
 40118209336 and its original matching source lock/provenance. No old runtime
 was relabeled as containing the early-response-header API. The complete matrix
-must still pass again on the new source build.
+subsequently passed three times on the new source build in run 40133136426.
 
 The native Multi-Node gate now runs both SOCKS-control closure and single-exit
 loss after binary UDP transfer. Each case requires both remote stream handlers
 to finish while the client/helper remain alive, so whole-client shutdown cannot
 hide a leaked association. Exit loss must also close the SOCKS control socket,
 with no stream reopening or silent migration of existing UDP flows. These new
-native lifecycle cases await the early-response-header source build; passing
-ordinary routing fixtures does not qualify them.
+native lifecycle cases passed three times on the early-response-header build.
+Ordinary routing fixtures alone do not qualify them.
 
 The native Bond outage gate now cancels a body on an actually established lane
 before the second binary transfer, and rejects subsequent requests to that
@@ -302,7 +311,7 @@ exit. It records active lanes and requires at least one real lane interruption;
 returning 503 only for new requests would not test persistent-path loss. The
 RPC cases retain first-origin rejection. Both explicit topology and discovery
 must preserve the same connection's binary data through the outage. Native
-qualification of this stronger lane gate remains pending.
+qualification of this stronger lane gate passed three times in run 40133136426.
 
 The packaged CLI/SDK/native streaming gate requires three consecutive passes
 with the race detector (600-second suite deadline). This includes the native
@@ -339,3 +348,40 @@ lost a valid reply. The native no-replay gate warms the same operation type
 Both cases passed ten times (20/20 checks), with one consumed POST and no retry
 connection. CONNECT, certificate rejection, H2/H3 outage recovery and the
 packaged CONNECT/packet-up CLI/SDK matrix also passed with the per-body policy.
+
+
+### Stage 1 final native qualification
+
+The final helper/CLI/SDK code is commit `290923c3686fca93e384941e5da77ee1a0604647`.
+Source run `40129737449` compiled the exact pinned Gecko revision and patches
+from commit `1e2544743825d485e972fd5248039cc328184b32`; runtime artifact
+`12576165741` has archive SHA256
+`7bb3bfd3f090eaaf030563f2c9c7a482d7b76847ea44418a32bc975c2f30a253`.
+The runtime workflow verified its source lock/provenance and binary hashes before
+packaging and executing the main CLI and SDK.
+
+The mandatory native gate ran `go test -race . ./experiments/firefox-necko`
+with the IntegratedNecko/GeckoManaged IPC/UDP/HTTP/Bond/XHTTP filter,
+`-count=3 -timeout=600s`. All three runs passed for each required stage-1 group:
+
+| Step | Confirmed result |
+| --- | --- |
+| 1. Diagnose | Native headers-before-body deadlock reproduced and traced. |
+| 2. Fix | Early-header C++ API compiled; bounded native upload/download bridge wired. |
+| 3. HTTP | Duplex, delayed/empty response body, cancellation, and no POST/UDP-v1 replay. |
+| 4. UDP | 4096 frames per run, Multi-Node transfer, control close and exit loss. |
+| 5. Bond | RPC/lanes, explicit/discovered topology, adaptive routing and an interrupted active lane. |
+| 6. XHTTP/CLI/SDK | stream-one, stream-up, packet-up; H2 POST; padding/strict, capacity and ownership. |
+
+Supplementary native GET/trust, alternate-origin/outage, fixed-length upload,
+small interactive response and HTTP CONNECT tests passed in the workflow's
+research-runtime step. They intentionally skip in the later bundle-only step;
+none of the mandatory stage-1 groups above was skipped. The workflow also passed
+Firefox wire comparisons, launcher H2/H3 transfer/SIGTERM and resource gates.
+These results do not establish DPI indistinguishability or qualify H3 POST/UDP,
+ARM64 Necko, or the remaining identity/profile options.
+
+The separate distribution pipeline `40133136488` passed NSS amd64/ARM64, Neqo
+and its Necko runtime job, but unified-archive indexing failed with
+`ValueError: unsafe archive member` in `merge_necko_nss.py`. Release archive
+assembly remains stage 6; no unified release is claimed by stage-1 completion.
