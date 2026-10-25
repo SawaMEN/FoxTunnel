@@ -241,6 +241,11 @@ without a response Content-Type; typed server responses keep their own MIME type
 
 Overall completion: **1 of 6 stages complete** (stage 1).
 
+Stage 2: **3 of 4 checks confirmed**; native resource qualification is pending
+the upload pipe ownership fix and a new source build. See the
+[sustained-resource record](validation/endurance/README.md) for the reproduced
+failures, diagnostic evidence and remaining gates.
+
 1. Fix native streaming: duplex HTTP, UDP v2/multi-node, Bond lanes, XHTTP.
 2. Pass the full CLI/SDK matrix and sustained resource gates.
 3. Qualify H3 POST/UDP, including no-TCP-fallback tests (draft in xfd-h3).

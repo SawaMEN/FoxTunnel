@@ -186,8 +186,11 @@ func TestGeckoManagedSoak(t *testing.T) {
 				t.Fatal(err)
 			}
 			samples = append(samples, last)
-			if last.FDs > idle.FDs+16 || last.RSSKB > first.RSSKB+192*1024 {
-				t.Fatalf("managed resource growth: first=%+v last=%+v", first, last)
+			resourceBoundsPassed := last.FDs <= idle.FDs+16 && last.RSSKB <= first.RSSKB+192*1024
+			if !resourceBoundsPassed {
+				// Retain samples and shutdown evidence even when the resource gate
+				// fails; otherwise CI discards the workload that needs diagnosis.
+				t.Errorf("managed resource growth: first=%+v last=%+v", first, last)
 			}
 			if mode == "bond-lanes" && laneRequests.Load() == 0 {
 				t.Fatal("soak did not use native Bond lanes")
@@ -211,7 +214,7 @@ func TestGeckoManagedSoak(t *testing.T) {
 				if err = os.MkdirAll(out, 0700); err != nil {
 					t.Fatal(err)
 				}
-				report := map[string]any{"schema": 1, "kind": "managed-necko-soak", "transport": mode, "duration_seconds": seconds, "observed_seconds": float64(last.AtMS) / 1000, "rounds": rounds, "parallel_streams": parallel, "payload_bytes_per_round": payloadBytes, "verified_app_bytes": 2 * int64(rounds) * int64(payloadBytes), "samples": samples, "idle_fds": idle.FDs, "fd_growth_limit": 16, "rss_growth_limit_kib": 192 * 1024, "cpu_ticks_per_second": rate, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / rate, "profile_removed": true, "process_joined": true, "client_js_sha256": digestBytes(clientScript), "source_lock_sha256": digestBytes(sourceLock), "ci_run_id": os.Getenv("GITHUB_RUN_ID"), "scope": "helper-only process resources on loopback; not whole-client or WAN throughput"}
+				report := map[string]any{"schema": 1, "kind": "managed-necko-soak", "transport": mode, "duration_seconds": seconds, "observed_seconds": float64(last.AtMS) / 1000, "rounds": rounds, "parallel_streams": parallel, "payload_bytes_per_round": payloadBytes, "verified_app_bytes": 2 * int64(rounds) * int64(payloadBytes), "samples": samples, "idle_fds": idle.FDs, "resource_bounds_passed": resourceBoundsPassed, "fd_growth_limit": 16, "rss_growth_limit_kib": 192 * 1024, "cpu_ticks_per_second": rate, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / rate, "profile_removed": true, "process_joined": true, "client_js_sha256": digestBytes(clientScript), "source_lock_sha256": digestBytes(sourceLock), "ci_run_id": os.Getenv("GITHUB_RUN_ID"), "scope": "helper-only process resources on loopback; not whole-client or WAN throughput"}
 				data, e := json.MarshalIndent(report, "", "  ")
 				if e != nil {
 					t.Fatal(e)
