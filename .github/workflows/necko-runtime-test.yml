@@ -184,6 +184,19 @@ jobs:
         run: |
           go test -race ./experiments/firefox-necko -run '^TestGeckoBrowserFingerprint$' -v -count=3 -timeout=180s
           python3 scripts/compare_necko_firefox.py --observations necko-integrated-fingerprint/observations --out necko-integrated-fingerprint/comparison.json
+      - name: Sustained managed HTTP, Bond and UDP resources
+        env:
+          FOXTUNNEL_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
+          FOXTUNNEL_MANAGED_SOAK_SECONDS: '60'
+          FOXTUNNEL_MANAGED_SOAK_OUT: ${{ github.workspace }}/necko-managed-operations
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoManagedSoak$' -v -count=1 -timeout=720s
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: necko-managed-operations
+          path: necko-managed-operations/
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -215,6 +228,15 @@ jobs:
         run: |
           python3 scripts/report_fx_operations.py --current necko-operations --reference experiments/firefox-necko/validation/stage4/ci-300s --out necko-operations/fx-resource-report.json
           python3 scripts/report_fx_operations.py --current necko-operations-paired-current --paired-baseline necko-operations-paired-baseline --out necko-operations/paired-fx-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: necko-paired-operations
+          path: |
+            necko-operations-paired-baseline/
+            necko-operations-paired-current/
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
           name: foxtunnel-necko-linux-amd64
