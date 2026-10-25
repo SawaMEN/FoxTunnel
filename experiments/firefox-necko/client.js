@@ -497,6 +497,7 @@ if (typeof Components !== "undefined") {
   const counters = { accepted: 0, completed: 0, rejected: 0, idle_expired: 0,
     drain_expired: 0, upload_bytes: 0, download_bytes: 0, gc_collections: 0, gc_ms: 0 };
   let retiredSinceCollection = 0;
+  let bytesAtCollection = 0;
   let lastCollection = Math.floor(ChromeUtils.now());
   const sweep = setInterval(() => {
     const now = Math.floor(ChromeUtils.now());
@@ -510,15 +511,21 @@ if (typeof Components !== "undefined") {
     }
     // Bound reclamation of native wrappers and callback cycles in the
     // embedded shell without relying on browser idle GC/CC scheduling.
-    // Collect retired work at a bounded cadence; keep live objects rooted
-    // and leave HTTP/TLS
-    // caches alone (no global memory-pressure notification).
-    if (retiredSinceCollection >= 64 && now - lastCollection >= 5000) {
+    // Persistent HTTP/Bond channels allocate temporary wrappers and buffers
+    // without retiring sessions. Collect by traffic as well as retired work,
+    // at the same bounded cadence. Live objects and HTTP/TLS caches stay rooted;
+    // do not send a global memory-pressure notification.
+    const transferred = counters.upload_bytes + counters.download_bytes;
+    const idleGarbage = sessions.size === 0 && draining.size === 0 &&
+      (retiredSinceCollection > 0 || transferred > bytesAtCollection);
+    if ((idleGarbage || retiredSinceCollection >= 64 || transferred - bytesAtCollection >= 16 * 1024 * 1024) &&
+        now - lastCollection >= 5000) {
       const start = ChromeUtils.now();
       Cu.forceGC(); Cu.forceCC(); Cu.forceGC();
       counters.gc_collections++;
       counters.gc_ms += Math.ceil(ChromeUtils.now() - start);
       retiredSinceCollection = 0;
+      bytesAtCollection = transferred;
       lastCollection = Math.floor(ChromeUtils.now());
     }
   }, Math.max(50, Math.min(1000, cfg.idle_timeout_ms / 2, cfg.drain_timeout_ms / 2)));
@@ -541,7 +548,10 @@ if (typeof Components !== "undefined") {
   }
   function nativeHTTPFailure(status) {
     const error = new Error("native HTTP setup failed");
-    error.nativeHTTPReason = [Cr.NS_ERROR_CONNECTION_REFUSED, Cr.NS_ERROR_NET_TIMEOUT, Cr.NS_ERROR_NET_RESET, Cr.NS_ERROR_OFFLINE, Cr.NS_ERROR_UNKNOWN_HOST].includes(status) ? 2 : 1;
+    // A multiplexed connection can disappear before response headers without
+    // GOAWAY. Gecko reports a distinct network status for that case; keep TLS
+    // and protocol errors terminal while sequence-based carriers recover.
+    error.nativeHTTPReason = [Cr.NS_ERROR_CONNECTION_REFUSED, Cr.NS_ERROR_NET_TIMEOUT, Cr.NS_ERROR_NET_RESET, Cr.NS_ERROR_OFFLINE, Cr.NS_ERROR_UNKNOWN_HOST, Cr.NS_ERROR_NET_UNCLEAN_SHUTDOWN].includes(status) ? 2 : 1;
     return error;
   }
   function connect(authority, session, origin) {

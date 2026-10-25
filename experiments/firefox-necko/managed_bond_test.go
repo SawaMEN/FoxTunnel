@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -19,6 +20,7 @@ import (
 )
 
 func TestGeckoManagedBond(t *testing.T) {
+	type originConnectionKey struct{}
 	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
 	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
 	if bundle == "" && runtime == "" {
@@ -56,7 +58,7 @@ func TestGeckoManagedBond(t *testing.T) {
 				var manifest cluster.Manifest
 				ready := make(chan struct{})
 				endpoint := func(index int) Config {
-					return nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					return nativeProxyConfigured(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						<-ready
 						if r.URL.Path == cluster.Path {
 							w.Header().Set("Content-Type", "application/json")
@@ -75,16 +77,21 @@ func TestGeckoManagedBond(t *testing.T) {
 						if r.Header.Get(bond.LaneHeader) != "" {
 							activeLanes[index].Add(1)
 							defer activeLanes[index].Add(-1)
-							// A new-request rejection alone leaves an existing lane
-							// alive. Cut its upload body to actually lose that path.
+							// Drop the origin connection, including lanes still binding.
+							// Closing only a request body can manufacture an HTTP 400
+							// binding rejection instead of a real network failure.
 							stop := context.AfterFunc(paths[index], func() {
 								cutLanes.Add(1)
-								r.Body.Close()
+								r.Context().Value(originConnectionKey{}).(net.Conn).Close()
 							})
 							defer stop()
 						}
 						server.ServeHTTP(w, r)
-					}))
+					}), func(server *httptest.Server) {
+						server.Config.ConnContext = func(ctx context.Context, conn net.Conn) context.Context {
+							return context.WithValue(ctx, originConnectionKey{}, conn)
+						}
+					})
 				}
 				a, b := endpoint(0), endpoint(1)
 				first, err := os.ReadFile(a.CACert)
