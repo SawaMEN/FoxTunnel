@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "stage": 1,
+  "steps_complete": 6,
+  "steps_total": 6,
+  "overall_stages_complete": 1,
+  "overall_stages_total": 6,
+  "platform": "linux-amd64",
+  "tested_commit": "290923c3686fca93e384941e5da77ee1a0604647",
+  "source": {
+    "workflow_run": 40129737449,
+    "commit": "1e2544743825d485e972fd5248039cc328184b32",
+    "gecko_revision": "0f76fed7aea1f77db85afbf5a895754d8ad971d7",
+    "runtime_artifact": 12576165741,
+    "runtime_archive_sha256": "7bb3bfd3f090eaaf030563f2c9c7a482d7b76847ea44418a32bc975c2f30a253",
+    "provenance_artifact": 12576135808
+  },
+  "qualification": {
+    "workflow_run": 40133136426,
+    "job": 120989021068,
+    "conclusion": "success",
+    "race_detector": true,
+    "repetitions": 3,
+    "timeout_seconds": 600,
+    "required_group_passes": {
+      "TestIntegratedNecko": 3,
+      "TestGeckoManagedBond": 3,
+      "TestGeckoManagedHTTP": 3,
+      "TestGeckoManagedHTTPNoReplay": 3,
+      "TestGeckoManagedHTTPHeadersOnly": 3,
+      "TestGeckoManagedUDPMultiNode": 3,
+      "TestGeckoManagedIPC": 3,
+      "TestGeckoManagedUDPStream": 3,
+      "TestGeckoManagedXHTTP": 3
+    }
+  },
+  "remaining_scope": [
+    "H3 POST/UDP and Bond",
+    "ARM64 Necko",
+    "SNI/SPKI and manual profiles",
+    "unified release archive assembly"
+  ],
+  "distribution": {
+    "workflow_run": 40133136488,
+    "index_job": 120993709060,
+    "conclusion": "failure",
+    "error": "ValueError: unsafe archive member",
+    "stage": 6
+  }
+}

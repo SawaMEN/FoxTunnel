@@ -309,3 +309,18 @@ test('bounded fixed HTTP bodies preserve bytes and enforce declared length', asy
  await assert.rejects(()=>collectHTTPUpload(sourceFor(),new Uint8Array(),5));
  await assert.rejects(()=>collectHTTPUpload(sourceFor(),new Uint8Array(),1048577));
 });
+
+// The actual pinned xpcshell returns undefined for the new result name while
+// reporting 0x804b0065 when a multiplexed origin connection disappears.
+test('unclean native shutdown recovers without broadening TLS/protocol retries', () => {
+  const { nativeHTTPFailureReason } = require('./client.js');
+  const results = { NS_ERROR_CONNECTION_REFUSED: 0x804b000d,
+    NS_ERROR_NET_TIMEOUT: 0x804b000e, NS_ERROR_NET_RESET: 0x804b0014,
+    NS_ERROR_OFFLINE: 0x804b0010, NS_ERROR_UNKNOWN_HOST: 0x804b001e };
+  assert.equal(nativeHTTPFailureReason(0x804b0065, results), 2);
+  assert.equal(nativeHTTPFailureReason(0x804b0065,
+    {...results, NS_ERROR_NET_UNCLEAN_SHUTDOWN: 0x804b0065}), 2);
+  for (const failure of [0x805a1ff3, 0x804b0052, 0x80004005]) {
+    assert.equal(nativeHTTPFailureReason(failure, results), 1);
+  }
+});

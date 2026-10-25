@@ -21,6 +21,22 @@
  
    mParentIPAddressSpace = aParentIpAddressSpace;
    mLnaPermissionStatus = aLnaPermissionStatus;
+@@ -317,5 +324,13 @@
+   // (see HttpBaseChannel's NormalizeUploadStream).
++  // A privileged duplex streaming upload is consumed once, with native
++  // replay protection. Do not clone its pipe: the channel's unread original
++  // cursor would retain every segment consumed by the transaction's clone,
++  // defeating the pipe's bounded buffering for the lifetime of the request.
++  // Ordinary browser uploads retain their independent transaction reader.
++  const bool singleReaderDuplex =
++      mRequestBodyIsStreaming && mDeliverResponseHeadersEarly;
+   nsCOMPtr<nsIInputStream> requestBodyClone;
+-  if (mHasRequestBody && NS_SUCCEEDED(NS_CloneInputStream(
+-                             requestBody, getter_AddRefs(requestBodyClone)))) {
++  if (mHasRequestBody && !singleReaderDuplex &&
++      NS_SUCCEEDED(NS_CloneInputStream(
++          requestBody, getter_AddRefs(requestBodyClone)))) {
+     requestBody = requestBodyClone;
 @@ -1305,7 +1312,7 @@
        MutexAutoLock lock(mLock);
        mOrigConnInfo.swap(mConnInfo);

@@ -338,8 +338,17 @@ function sessionStatus(sessions, now) {
   return { connected, oldest_ms: oldest };
 }
 
+// The pinned native runtime reports this status but does not expose its name
+// in Components.results. Its value is fixed by xpcom/base/ErrorList.py.
+function nativeHTTPFailureReason(status, results) {
+  const uncleanShutdown = results.NS_ERROR_NET_UNCLEAN_SHUTDOWN ?? 0x804b0065;
+  return [results.NS_ERROR_CONNECTION_REFUSED, results.NS_ERROR_NET_TIMEOUT,
+    results.NS_ERROR_NET_RESET, results.NS_ERROR_OFFLINE, results.NS_ERROR_UNKNOWN_HOST,
+    uncleanShutdown].includes(status) ? 2 : 1;
+}
+
 if (typeof module !== "undefined") module.exports = {
-  SocksParser, socksReply, firefoxUserAgent, pumpBuffered,
+  SocksParser, socksReply, firefoxUserAgent, pumpBuffered, nativeHTTPFailureReason,
   validateHTTPMetadata, httpChunkHeader, pumpHTTPUpload, pumpHTTPDownload, collectHTTPUpload,
   writeAllWithBackpressure, sessionStatus, udpIPCReply,
   validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder, pumpNativeUDPFrames,
@@ -497,6 +506,7 @@ if (typeof Components !== "undefined") {
   const counters = { accepted: 0, completed: 0, rejected: 0, idle_expired: 0,
     drain_expired: 0, upload_bytes: 0, download_bytes: 0, gc_collections: 0, gc_ms: 0 };
   let retiredSinceCollection = 0;
+  let bytesAtCollection = 0;
   let lastCollection = Math.floor(ChromeUtils.now());
   const sweep = setInterval(() => {
     const now = Math.floor(ChromeUtils.now());
@@ -510,15 +520,21 @@ if (typeof Components !== "undefined") {
     }
     // Bound reclamation of native wrappers and callback cycles in the
     // embedded shell without relying on browser idle GC/CC scheduling.
-    // Collect retired work at a bounded cadence; keep live objects rooted
-    // and leave HTTP/TLS
-    // caches alone (no global memory-pressure notification).
-    if (retiredSinceCollection >= 64 && now - lastCollection >= 5000) {
+    // Persistent HTTP/Bond channels allocate temporary wrappers and buffers
+    // without retiring sessions. Collect by traffic as well as retired work,
+    // at the same bounded cadence. Live objects and HTTP/TLS caches stay rooted;
+    // do not send a global memory-pressure notification.
+    const transferred = counters.upload_bytes + counters.download_bytes;
+    const idleGarbage = sessions.size === 0 && draining.size === 0 &&
+      (retiredSinceCollection > 0 || transferred > bytesAtCollection);
+    if ((idleGarbage || retiredSinceCollection >= 64 || transferred - bytesAtCollection >= 16 * 1024 * 1024) &&
+        now - lastCollection >= 5000) {
       const start = ChromeUtils.now();
       Cu.forceGC(); Cu.forceCC(); Cu.forceGC();
       counters.gc_collections++;
       counters.gc_ms += Math.ceil(ChromeUtils.now() - start);
       retiredSinceCollection = 0;
+      bytesAtCollection = transferred;
       lastCollection = Math.floor(ChromeUtils.now());
     }
   }, Math.max(50, Math.min(1000, cfg.idle_timeout_ms / 2, cfg.drain_timeout_ms / 2)));
@@ -541,7 +557,10 @@ if (typeof Components !== "undefined") {
   }
   function nativeHTTPFailure(status) {
     const error = new Error("native HTTP setup failed");
-    error.nativeHTTPReason = [Cr.NS_ERROR_CONNECTION_REFUSED, Cr.NS_ERROR_NET_TIMEOUT, Cr.NS_ERROR_NET_RESET, Cr.NS_ERROR_OFFLINE, Cr.NS_ERROR_UNKNOWN_HOST].includes(status) ? 2 : 1;
+    // A multiplexed connection can disappear before response headers without
+    // GOAWAY. Gecko reports a distinct network status for that case; keep TLS
+    // and protocol errors terminal while sequence-based carriers recover.
+    error.nativeHTTPReason = nativeHTTPFailureReason(status, Cr);
     return error;
   }
   function connect(authority, session, origin) {
@@ -601,15 +620,14 @@ if (typeof Components !== "undefined") {
 
   // Single-datagram HTTPS relay through Gecko's own nsIHttpChannel. No
   // application UDP datagram is sent over Go TLS, a Go RoundTripper or H3
-  // MASQUE. This first native stage supports H2 only; stream-v2 and H3 are
-  // rejected until their distinct wire contracts have native adapters.
+  // MASQUE. H3 requires the pinned native HTTP3-only API and never races TCP.
   function udpFailure(reason) {
     const err = new Error("native UDP transport failure");
     err.reason = reason;
     return err;
   }
   function exchangeUDPThroughNecko(packet, session) {
-    if (!cfg.socks_token || cfg.transport !== "h2-connect" || packet.length < 8 || packet.length > 1232) {
+    if (!cfg.socks_token || !["h2-connect", "h3-connect"].includes(cfg.transport) || packet.length < 8 || packet.length > 1232) {
       return Promise.reject(new Error("unsupported native UDP operation"));
     }
     return new Promise((resolve, reject) => {
@@ -625,6 +643,8 @@ if (typeof Components !== "undefined") {
       session.udpSetupPhase = 9;
       const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
       internal.blockAuthPrompt = true;
+      if (cfg.transport === "h3-connect") {internal.allowHttp3 = true; internal.forceHTTP3();}
+      else {internal.allowHttp3 = false;}
       session.udpSetupPhase = 10;
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
       session.udpSetupPhase = 11;
@@ -637,8 +657,12 @@ if (typeof Components !== "undefined") {
       session.udpSetupPhase = 12;
       upload.setData(binary.buffer, binary.byteOffset, binary.byteLength);
       session.udpSetupPhase = 13;
+      // Finite carrier bodies must also opt into the native non-replayable
+      // path. Preserve their exact length on the wire from this owned buffer.
+      internal.enableStreamingUpload();
       channel.QueryInterface(Ci.nsIUploadChannel2)
         .explicitSetUploadStream(upload, "application/octet-stream", packet.length, "POST");
+      channel.setRequestHeader("Content-Length", String(packet.length), false);
       session.udpSetupPhase = 14;
       channel.setRequestHeader("Proxy-Authorization", cfg.authorization, false);
       let finished = false;
@@ -656,9 +680,9 @@ if (typeof Components !== "undefined") {
       session.udpSetupPhase = 15;
       channel.asyncOpen({
         onStartRequest(request) {
-          // Require native H2, a fixed endpoint and a no-redirect status.
+          // Require the selected native protocol, a fixed endpoint and no redirects.
           try {
-            if (channel.protocolVersion !== "h2") {
+            if (channel.protocolVersion !== (cfg.transport === "h3-connect" ? "h3" : "h2")) {
               channel.cancel(Cr.NS_BINDING_ABORTED);
               close(udpFailure(4)); return;
             }
@@ -691,7 +715,7 @@ if (typeof Components !== "undefined") {
           if (!Components.isSuccessCode(status)) {
             close(udpFailure(5)); return;
           }
-          if (channel.protocolVersion !== "h2") {
+          if (channel.protocolVersion !== (cfg.transport === "h3-connect" ? "h3" : "h2")) {
             close(udpFailure(4)); return;
           }
           if (channel.responseStatus === 204 && received.length === 0) {
@@ -711,7 +735,7 @@ if (typeof Components !== "undefined") {
   // Experimental UDP-v2 bridge. Production configuration remains gated until
   // the pinned runtime passes native full-duplex and long-session validation.
   function openUDPStreamThroughNecko(session) {
-    if (!cfg.socks_token || cfg.transport !== "h2-connect")
+    if (!cfg.socks_token || !["h2-connect", "h3-connect"].includes(cfg.transport))
       return Promise.reject(new Error("unsupported native UDP stream"));
     return new Promise((resolve, reject) => {
       const host = cfg.proxy_host.includes(":") ? `[${cfg.proxy_host}]` : cfg.proxy_host;
@@ -725,6 +749,8 @@ if (typeof Components !== "undefined") {
       channel.contentType = "application/octet-stream";
       const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
       internal.blockAuthPrompt = true;
+      if (cfg.transport === "h3-connect") {internal.allowHttp3 = true; internal.forceHTTP3();}
+      else {internal.allowHttp3 = false;}
       internal.deliverResponseHeadersEarly = true;
       channel.loadFlags |= Ci.nsIRequest.LOAD_BYPASS_CACHE | Ci.nsIRequest.INHIBIT_CACHING;
       const makePipe = () => {
@@ -752,7 +778,7 @@ if (typeof Components !== "undefined") {
       channel.asyncOpen({
         onStartRequest() {
           try {
-            if (channel.protocolVersion !== "h2" || channel.responseStatus !== 200)
+            if (channel.protocolVersion !== (cfg.transport === "h3-connect" ? "h3" : "h2") || channel.responseStatus !== 200)
               throw new Error("native UDP stream rejected");
             started = true;
             resolve(remote);
@@ -820,7 +846,11 @@ if (typeof Components !== "undefined") {
       if (fixedBody !== null) {
         const stream = Cc["@mozilla.org/io/arraybuffer-input-stream;1"].createInstance(Ci.nsIArrayBufferInputStream);
         stream.setData(fixedBody.buffer, fixedBody.byteOffset, fixedBody.byteLength);
+        // Gecko's streaming-body guard prevents replay after any request
+        // bytes were consumed, even when the owned finite stream is cloneable.
+        internal.enableStreamingUpload();
         channel.QueryInterface(Ci.nsIUploadChannel2).explicitSetUploadStream(stream, "application/octet-stream", fixedBody.length, metadata.method);
+        channel.setRequestHeader("Content-Length", String(fixedBody.length), false);
         upload.outputStream.close();
       } else if (metadata.body) {
         internal.enableStreamingUpload();
@@ -992,14 +1022,22 @@ if (typeof Components !== "undefined") {
         // Fail closed for an unauthenticated/public SOCKS socket and for
         // transports without a native H2 request bridge.
         established = true;
+        let replied = false;
         try {
           const answer = await exchangeUDPThroughNecko(request.udp, session);
-          if (!session.closed) await local.write(udpIPCReply(answer));
+          if (!session.closed) { await local.write(udpIPCReply(answer)); replied = true; }
         } catch (error) {
           if (!session.closed) {
             const reason = Number.isInteger(error?.reason) ? error.reason : (session.udpSetupPhase || 2);
-            try { await local.write(udpIPCReply(null, true, reason)); } catch {}
+            try { await local.write(udpIPCReply(null, true, reason)); replied = true; } catch {}
           }
+        }
+        if (replied && !session.closed) {
+          // write() transfers bytes to the native socket buffer. An immediate
+          // transport abort can still discard them. FIN and the peer's close
+          // acknowledge delivery of this one-response IPC operation.
+          local.output.close();
+          if (await local.read() !== null) throw new Error("bytes after UDP operation");
         }
         return;
       }

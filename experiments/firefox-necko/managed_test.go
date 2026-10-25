@@ -22,14 +22,25 @@ func TestGeckoManagedIPC(t *testing.T) {
 	if bundle == "" {
 		t.Skip("verified integration bundle required")
 	}
-	var requests, nativePOST, nativeH2, nativeAuth atomic.Int32
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) { testGeckoManagedIPC(t, bundle, mode) })
+	}
+}
+
+func testGeckoManagedIPC(t *testing.T, bundle, mode string) {
+	t.Helper()
+	var requests, nativePOST, nativeProtocol, nativeAuth atomic.Int32
+	expectedProtocol := 2
+	if mode == "h3-connect" {
+		expectedProtocol = 3
+	}
 	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: true}
-	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	cfg := nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
 		if r.URL.Path == "/.well-known/foxtunnel-udp-v1" {
 			nativePOST.Add(1)
-			if r.ProtoMajor == 2 {
-				nativeH2.Add(1)
+			if r.ProtoMajor == expectedProtocol {
+				nativeProtocol.Add(1)
 			}
 			if r.Header.Get("Proxy-Authorization") != "" {
 				nativeAuth.Add(1)
@@ -134,7 +145,7 @@ func TestGeckoManagedIPC(t *testing.T) {
 	defer stopUDP()
 	result, e := m.ExchangeUDP(dgctx, wire)
 	if e != nil {
-		t.Fatalf("native Gecko UDP v1 relay: %v; UDP HTTP observed=%d H2=%d proxy-auth-present=%d", e, nativePOST.Load(), nativeH2.Load(), nativeAuth.Load())
+		t.Fatalf("native Gecko UDP v1 relay: %v; UDP HTTP observed=%d H2=%d proxy-auth-present=%d", e, nativePOST.Load(), nativeProtocol.Load(), nativeAuth.Load())
 	}
 	response, e := udpproto.Parse(result)
 	if e != nil || string(response.Data) != string(payload) || response.Port != uint16(datagramTarget.LocalAddr().(*net.UDPAddr).Port) {
@@ -162,9 +173,20 @@ func TestGeckoManagedUDPStream(t *testing.T) {
 	if bundle == "" {
 		t.Skip("verified integration bundle required")
 	}
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) { testGeckoManagedUDPStream(t, bundle, mode) })
+	}
+}
+
+func testGeckoManagedUDPStream(t *testing.T, bundle, mode string) {
+	t.Helper()
 	var posts atomic.Int32
-	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/.well-known/foxtunnel-udp-stream-v2" || r.Method != "POST" || r.ProtoMajor != 2 || r.Header.Get("Proxy-Authorization") == "" {
+	expectedProtocol := 2
+	if mode == "h3-connect" {
+		expectedProtocol = 3
+	}
+	cfg := nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/.well-known/foxtunnel-udp-stream-v2" || r.Method != "POST" || r.ProtoMajor != expectedProtocol || r.Header.Get("Proxy-Authorization") == "" {
 			http.Error(w, "invalid stream", http.StatusBadRequest)
 			return
 		}

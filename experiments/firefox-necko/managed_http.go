@@ -304,8 +304,14 @@ func (b *httpIPCBody) Read(p []byte) (int, error) {
 			b.done = true
 			return 0, io.EOF
 		}
+		if b.remaining == 0xffffffff {
+			// Gecko terminated an established response. Preserve the same
+			// interruption category as a truncated IPC body so sequence-based
+			// carriers can recover without treating it as an application EOF.
+			return 0, io.ErrUnexpectedEOF
+		}
 		if b.remaining > maxHTTPChunk {
-			return 0, errors.New("native HTTP body aborted or oversized")
+			return 0, errors.New("oversized native HTTP body frame")
 		}
 	}
 	n, err := b.conn.Read(p[:min(len(p), int(b.remaining))])

@@ -10,8 +10,14 @@ import (
 	"github.com/quic-go/quic-go/http3"
 )
 
+type nativeH3ConnectionKey struct{}
+
 func serveTestH3(ctx context.Context, socket net.PacketConn, config *tls.Config, handler http.Handler, quicConfig ...*quic.Config) error {
-	server := &http3.Server{TLSConfig: config.Clone(), Handler: handler}
+	server := &http3.Server{TLSConfig: config.Clone(), Handler: handler,
+		ConnContext: func(ctx context.Context, conn *quic.Conn) context.Context {
+			return context.WithValue(ctx, nativeH3ConnectionKey{}, conn)
+		},
+	}
 	if len(quicConfig) > 0 {
 		server.QUICConfig = quicConfig[0]
 	}

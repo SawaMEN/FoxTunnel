@@ -7,14 +7,17 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/quic-go/quic-go"
 )
 
 func TestGeckoManagedBond(t *testing.T) {
@@ -26,7 +29,7 @@ func TestGeckoManagedBond(t *testing.T) {
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
 			if mode == "h3-connect" && bundle == "" {
-				t.Skip("verified native HTTP/3 bundle required")
+				t.Skip("verified H3 native bundle required")
 			}
 			testGeckoManagedBond(t, bundle, runtime, mode)
 		})
@@ -35,6 +38,7 @@ func TestGeckoManagedBond(t *testing.T) {
 
 func testGeckoManagedBond(t *testing.T, bundle, runtime, mode string) {
 	t.Helper()
+	type originConnectionKey struct{}
 	for _, lanes := range []bool{false, true} {
 		for _, discovery := range []bool{false, true} {
 			name := "rpc"
@@ -53,12 +57,21 @@ func testGeckoManagedBond(t *testing.T, bundle, runtime, mode string) {
 				hub := server.NewBondHub()
 				defer hub.Close()
 				server.Bond = hub
-				var failed atomic.Bool
+				var failed atomic.Int32
+				failed.Store(-1)
 				var calls [2]atomic.Int32
+				var activeLanes [2]atomic.Int32
+				var cutLanes atomic.Int32
+				var paths [2]context.Context
+				var losePath [2]context.CancelFunc
+				for index := range paths {
+					paths[index], losePath[index] = context.WithCancel(context.Background())
+					defer losePath[index]()
+				}
 				var manifest cluster.Manifest
 				ready := make(chan struct{})
 				endpoint := func(index int) Config {
-					return nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					return nativeProxyConfigured(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						<-ready
 						if r.URL.Path == cluster.Path {
 							w.Header().Set("Content-Type", "application/json")
@@ -74,12 +87,32 @@ func testGeckoManagedBond(t *testing.T, bundle, runtime, mode string) {
 							return
 						}
 						calls[index].Add(1)
-						if index == 0 && failed.Load() {
+						if int32(index) == failed.Load() {
 							http.Error(w, "outage", 503)
 							return
 						}
+						if r.Header.Get(bond.LaneHeader) != "" {
+							activeLanes[index].Add(1)
+							defer activeLanes[index].Add(-1)
+							// Drop the origin connection, including lanes still binding.
+							// Closing only a request body can manufacture an HTTP 400
+							// binding rejection instead of a real network failure.
+							stop := context.AfterFunc(paths[index], func() {
+								cutLanes.Add(1)
+								if mode == "h3-connect" {
+									r.Context().Value(nativeH3ConnectionKey{}).(*quic.Conn).CloseWithError(0x100, "test origin outage")
+								} else {
+									r.Context().Value(originConnectionKey{}).(net.Conn).Close()
+								}
+							})
+							defer stop()
+						}
 						server.ServeHTTP(w, r)
-					}))
+					}), func(server *httptest.Server) {
+						server.Config.ConnContext = func(ctx context.Context, conn net.Conn) context.Context {
+							return context.WithValue(ctx, originConnectionKey{}, conn)
+						}
+					})
 				}
 				a, b := endpoint(0), endpoint(1)
 				first, err := os.ReadFile(a.CACert)
@@ -155,7 +188,17 @@ func testGeckoManagedBond(t *testing.T, bundle, runtime, mode string) {
 				payload := bytes.Repeat([]byte{0, 255, 128, 42}, 32<<10)
 				for i := 0; i < 2; i++ {
 					if i == 1 {
-						failed.Store(true)
+						index := 0
+						if lanes {
+							if activeLanes[index].Load() == 0 {
+								index = 1
+							}
+							if activeLanes[index].Load() == 0 {
+								t.Fatal("no active native lane available for path-loss test")
+							}
+						}
+						failed.Store(int32(index))
+						losePath[index]()
 					}
 					written := make(chan error, 1)
 					go func() { _, e := conn.Write(payload); written <- e }()
@@ -169,6 +212,9 @@ func testGeckoManagedBond(t *testing.T, bundle, runtime, mode string) {
 				}
 				if calls[1].Load() == 0 {
 					t.Fatal("secondary HTTPS origin was not used")
+				}
+				if lanes && cutLanes.Load() == 0 {
+					t.Fatal("path loss did not interrupt an established native lane")
 				}
 			})
 		}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/pem"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -23,8 +24,8 @@ func TestGeckoManagedHTTP3(t *testing.T) {
 	if bundle == "" {
 		t.Skip("verified H3-only native API bundle required")
 	}
-	var requests atomic.Int32
-	cfg := nativeProxy(t, "h3-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	var requests, tcp atomic.Int32
+	cfg := nativeProxyConfigured(t, "h3-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.ProtoMajor != 3 || r.Header.Get("Proxy-Authorization") == "" {
 			http.Error(w, "native H3 required", 400)
 			return
@@ -38,7 +39,13 @@ func TestGeckoManagedHTTP3(t *testing.T) {
 			return
 		}
 		io.Copy(flushingWriter{w}, r.Body)
-	}))
+	}), func(server *httptest.Server) {
+		server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+			if state == http.StateNew {
+				tcp.Add(1)
+			}
+		}
+	})
 	m, err := NewManaged(bundle, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -75,6 +82,9 @@ func TestGeckoManagedHTTP3(t *testing.T) {
 	if err := <-sent; err != nil {
 		t.Fatal(err)
 	}
+	if tcp.Load() != 0 {
+		t.Fatal("H3 success raced a TCP connection", tcp.Load())
+	}
 	if requests.Load() != 2 {
 		t.Fatal("native H3 request replayed")
 	}
@@ -106,17 +116,83 @@ func TestGeckoManagedHTTP3NoTCPFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	for _, operation := range []string{"GET", "POST", "UDP-v1", "UDP-v2"} {
+		t.Run(operation, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			var err error
+			switch operation {
+			case "UDP-v1":
+				_, err = m.ExchangeUDP(ctx, []byte{0, 0, 0, 1, 127, 0, 0, 1, 0, 53, 0xff})
+			case "UDP-v2":
+				var stream io.ReadWriteCloser
+				stream, err = m.OpenUDPStream(ctx)
+				if stream != nil {
+					stream.Close()
+				}
+			default:
+				var body io.Reader
+				if operation == "POST" {
+					body = bytes.NewReader([]byte{0, 255, 128, 42})
+				}
+				req, _ := http.NewRequestWithContext(ctx, operation, server.URL+"/h3-only", body)
+				var resp *http.Response
+				resp, err = m.RoundTrip(req)
+				if resp != nil {
+					resp.Body.Close()
+				}
+			}
+			if err == nil {
+				t.Fatal("H3 succeeded against a TCP-only origin")
+			}
+		})
+	}
+	if tcp.Load() != 0 || requests.Load() != 0 {
+		t.Fatalf("H3-only operation raced/replayed TCP: accepts=%d requests=%d", tcp.Load(), requests.Load())
+	}
+}
+
+func TestGeckoManagedHTTP3Trust(t *testing.T) {
+	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	if bundle == "" {
+		t.Skip("verified H3-only native API bundle required")
+	}
+	var tcp, requests atomic.Int32
+	cfg := nativeProxyConfigured(t, "h3-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(200)
+	}), func(server *httptest.Server) {
+		server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+			if state == http.StateNew {
+				tcp.Add(1)
+			}
+		}
+	})
+	_, wrongCA := testCertificate(t)
+	cfg.CACert = filepath.Join(t.TempDir(), "untrusted-root.pem")
+	if err := os.WriteFile(cfg.CACert, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: wrongCA}), 0600); err != nil {
+		t.Fatal(err)
+	}
+	m, err := NewManaged(bundle, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	req, _ := http.NewRequestWithContext(ctx, "GET", server.URL+"/h3-only", nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", cfg.Server+"/untrusted", nil)
 	resp, err := m.RoundTrip(req)
 	if resp != nil {
 		resp.Body.Close()
 	}
 	if err == nil {
-		t.Fatal("H3 succeeded against a TCP-only origin")
+		t.Fatal("native H3 accepted an untrusted origin")
+	}
+	var network net.Error
+	if errors.As(err, &network) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatal("native H3 trust denial became retryable transport loss", err)
 	}
 	if tcp.Load() != 0 || requests.Load() != 0 {
-		t.Fatalf("H3-only operation raced/replayed TCP: accepts=%d requests=%d", tcp.Load(), requests.Load())
+		t.Fatal("untrusted H3 sent TCP or application bytes", tcp.Load(), requests.Load())
 	}
 }
