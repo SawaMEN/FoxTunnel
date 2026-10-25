@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "status": "awaiting-independent-CI-resource-qualification",
+  "stage": 2,
+  "stage_checks_complete": 3,
+  "stage_checks_total": 4,
+  "overall_stages_complete": 1,
+  "overall_stages_total": 6,
+  "qualified_code_commit": null,
+  "candidate_code_commit": "b5d86cc2928a0e82066a6b401a9fd83449cca5c9",
+  "source_build_run": 40199106358,
+  "runtime_candidate_run": 40224778052,
+  "runtime_candidate_job": 121263787434,
+  "local": {
+    "native_group_passes": {
+      "TestGeckoManagedBond": 3,
+      "TestManagedHTTPTruncationIsNotEOF": 3,
+      "TestGeckoManagedHTTPInterruptedBody": 3,
+      "TestGeckoManagedHTTP": 3,
+      "TestGeckoManagedHTTPNoReplay": 3,
+      "TestGeckoManagedHTTPHeadersOnly": 3,
+      "TestManagedHTTPSetupFailureCategories": 3,
+      "TestGeckoManagedUDPMultiNode": 3,
+      "TestGeckoManagedIPC": 3,
+      "TestGeckoManagedUDPStream": 3,
+      "TestGeckoManagedXHTTP": 3,
+      "TestIntegratedNecko": 3
+    },
+    "native_failures": 0,
+    "native_bond_origin_loss_repetitions": 60,
+    "native_bond_origin_loss_failures": 0,
+    "managed_modes_passed": 7,
+    "managed_workload_seconds_per_mode": 60,
+    "managed_settle_seconds": 6,
+    "js_tests_passed": 24
+  },
+  "client_js_sha256": "a4ce780f4f9cb3d95109a26f07df20eb50c13b64f8561ea5fa04daf3ea2c0748",
+  "source_lock_sha256": "edcf3061ef774cc0abaf42c6a0971b021fa0ec2a1c953ed52881394467b645e5",
+  "scope": [
+    "Linux amd64; helper process resources on loopback",
+    "Final managed RSS growth limit 192 MiB after a six-second idle reclamation budget; sampled peaks retained",
+    "No WAN throughput, whole-client memory, statistical speedup or DPI equivalence claim",
+    "H3 POST/UDP/Bond, ARM64, native profile overrides and unified release packaging remain later stages"
+  ]
+}

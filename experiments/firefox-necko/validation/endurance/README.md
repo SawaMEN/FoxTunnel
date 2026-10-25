@@ -1,61 +1,78 @@
-# Stage 2: sustained managed transports
+# Stage 2: CLI/SDK and sustained native resources
 
-Status: **3 of 4 checks confirmed; resource qualification pending native rebuild**.
+Status: **3 of 4 checks confirmed; independent CI resource qualification running**.
 Overall plan: **1 of 6 stages complete**. Linux amd64 only.
 
-1. Main CLI/SDK, lifecycle, cancellation, binary transfer and half-close:
-   passed mandatory native gates three times in run 40173889862.
-2. Network failure, trust, outage and QUIC rebinding: passed in that run.
-3. Control comparison: retained observations and resource reports from run
-   40133136426. A single sequential paired comparison is not a statistical
-   performance claim; new CI also retains both raw paired sample directories.
-4. Sustained resources: blocked by the native upload pipe retention below.
-   The updated source lock requires a newly compiled runtime and full native
-   gates before this check can be accepted.
+Candidate helper/SDK code: `b5d86cc2928a0e82066a6b401a9fd83449cca5c9`.
+Compiled source: [40199106358](https://github.com/SawaMEN/FoxTunnel/actions/runs/40199106358).
+Final runtime verification: [40224778052](https://github.com/SawaMEN/FoxTunnel/actions/runs/40224778052).
+The machine-readable [acceptance record](acceptance.json) binds measurements to
+both the embedded helper and the exact source lock.
 
-## Reproduction and diagnosis
+## Changes and regression coverage
 
-[Runtime run 40173889862](https://github.com/SawaMEN/FoxTunnel/actions/runs/40173889862)
-used helper commit d141424 and compiled source run 40129737449. The seven
-managed modes ran for 60 seconds each, with one live helper per mode. H2 POST,
-XHTTP packet-up, UDP v2 and multi-node passed. XHTTP stream-one/stream-up and
-persistent Bond failed the unchanged 192 MiB final RSS growth limit. Sampled
-first/final RSS in KiB: stream-one 137336/538440, stream-up 137500/429068,
-Bond 145996/579472. FDs stayed bounded.
-
-Research collection by traffic volume, shrinking GC and response buffer reuse
-were insufficient and are **not included in the fix**. The attached diagnostic
-samples show a stable 5 MiB JS GC heap while native allocated memory grows from
-15 MiB to 101 MiB with traffic. This isolates native retention rather than a JS
-heap scheduling problem.
-
-The pinned `nsHttpTransaction::Init` clones upload input streams. `nsPipe`
-retains segments until *all* input cursors consume them, while the upload
-channel retains the original unread cursor. Thus a live request accumulates
-previously uploaded data even though each reader has a bounded pipe budget.
-
-A diagnostic-only helper released the original pipe cursor after response
-headers on the old runtime. The attached `research-released-cursor-bond.json`
-records 1084 binary echo rounds in 60 seconds, RSS 149040 -> 141540 KiB and FDs
-82 -> 41, with profile removal and process joining. This is causal research,
-**not qualification of the new C++ patch**; that helper is not shipped.
-
-The production source patch avoids the extra transaction reader only when both
-streaming upload and the privileged early-response flag are set. Ordinary
+The native transaction now keeps a single reader for privileged duplex
+streaming uploads. Previously `nsHttpTransaction::Init` cloned the upload pipe,
+while the channel retained its original unread cursor. `nsPipe` consequently
+retained every transmitted segment for the lifetime of the request. Ordinary
 browser uploads keep their private clone. Existing consumed-body replay
-protection, protocol/trust checks and bounded upload pipes remain in place.
-The helper JS is unchanged. The combined transaction patch and exact post-patch
-source hash are updated in `gecko.lock.json`.
+protection, certificate validation and bounded pipes are preserved.
 
-## Acceptance required after compilation
+The standalone shell now collects temporary wrappers and callback cycles after
+16 MiB of traffic, as well as after 64 retired sessions, at the same five-second
+minimum cadence. It also reclaims a smaller remainder when all sessions are
+idle. This complements the native ownership fix; collecting JS alone did not
+remove the unread native pipe cursor. No global memory-pressure notification or
+network cache purge is used. Shrinking GC and response-buffer experiments were
+discarded. Diagnostic-only cursor-release and memory samples remain attached;
+those research helpers are not shipped.
 
-- Native main CLI/SDK and managed streaming matrix: three passes, no mandatory
-  skipped groups, using the newly compiled source lock.
-- All seven managed resource modes: 60 seconds each, unchanged FD/RSS limits,
-  exact binary transfers, owned profile/process cleanup. Raw reports are kept
-  even when a resource assertion fails and include `resource_bounds_passed`.
-- Original 300-second CONNECT and paired baseline/current resource gates plus
-  the Firefox wire comparison, against the same verified runtime.
-- Review the retained sample trends before declaring stage 2 complete. These
-  loopback helper process measurements do not establish WAN or whole-client
-  performance, nor do finite tests prove indefinite stability.
+An explicit native response-abort frame now returns `io.ErrUnexpectedEOF`, so
+Bond can retry the same sequence-numbered record on another lane. Oversized
+frames remain protocol failures. The native regression first reads a real H2
+response prefix, resets that stream and checks both the interruption category
+and absence of HTTP-adapter replay. The ordinary POST and UDP-v1 no-replay gates
+remain mandatory.
+
+Before response headers, Gecko can instead return
+`NS_ERROR_NET_UNCLEAN_SHUTDOWN` (`0x804b0065`). The pinned xpcshell reports this
+value but does not expose its symbolic name in `Components.results`; the helper
+therefore uses the exact value from the pinned `xpcom/base/ErrorList.py` when the
+name is absent. Only that network category was added. TLS, authorization and
+protocol denials remain terminal. A JS regression covers the missing-name case
+and rejects the security/protocol cases.
+
+The Bond outage gate now closes the actual origin TCP connection, including
+streams still binding. Closing only a request body had manufactured a terminal
+HTTP 400 binding rejection rather than a network loss. The stronger test still
+requires uninterrupted binary delivery through the surviving origin.
+
+## Validation
+
+1. CLI/SDK: locally all 12 selected groups passed three times, including
+   lifecycle, capacity, setup-context cancellation, half-close, private IPC,
+   HTTP no-replay, duplex UDP, multi-node failures, Bond and all XHTTP modes.
+2. Network failure: the final native Bond origin-loss test passed 60 consecutive
+   repetitions. Invalid-trust, no-replay and malformed-frame checks remain in
+   the matrix. Native CI also covers outage and QUIC rebinding.
+3. Control comparison: standalone/managed Firefox observations and independent
+   Firefox-self variation are retained by CI. The remaining sequential paired
+   resource samples use the same host and runtime, with separate baseline and
+   current helper hashes. A single pair does not establish a performance gain.
+4. Resources: the final code passed all seven local 60-second workloads;
+   independent CI repeats them, then runs 300-second H2/H3 CONNECT and paired
+   60-second baseline/current workloads before acceptance.
+
+Local raw managed samples are retained under [local/managed](local/managed).
+Each helper remains alive for the final measurement. The six-second settle
+budget allows the five-second GC/CC cadence plus its sweep interval to release
+idle owners; it is recorded explicitly in every report. The original limits
+remain **192 MiB final RSS growth** and **16 FDs above the idle baseline**.
+Sampled peaks are retained and are not an instantaneous-peak limit. Profile
+removal and process joining are checked after sampling, so killing the helper
+cannot satisfy the resource bound. Failed resource assertions retain raw samples.
+
+These are finite loopback, helper-process tests. They do not establish WAN or
+whole-client performance, indefinite stability, statistical speedups or DPI
+indistinguishability. H3 POST/UDP/Bond, ARM64, native SNI/SPKI/profile overrides
+and unified NSS + Necko release packaging remain later stages.
