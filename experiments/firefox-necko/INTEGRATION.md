@@ -528,3 +528,15 @@ node pin files cannot be combined with dynamic discovery, matching the existing
 file contract. These tests require the new verified
 bundle; their skips without it are not native qualification. Local Go race and
 JS/parser checks and exact patch application are preparatory evidence only.
+
+Current candidate: `ba7aeb809afcb803eaf1fe0c9968125592071ad7`.
+[Source build 40286512326](https://github.com/SawaMEN/FoxTunnel/actions/runs/40286512326)
+compiles the exact 28-patch native lock on amd64 and ARM64. The per-node Go/JS
+follow-up leaves that lock unchanged, so it does not cancel or replace the C++
+build. [Runtime qualification 40287901623](https://github.com/SawaMEN/FoxTunnel/actions/runs/40287901623)
+waits for the matching architecture artifacts and will package the updated helper
+and main CLI. The original candidate's general, NSS and Neqo CI passed; the
+follow-up's general CI is still running. Local full Go race checks and all 26 JS
+tests passed, including immutable native policy snapshots and nested duplicate
+JSON rejection. Native identity/profile tests remain unqualified until the new
+compiled bundle is available and those gates pass.
