@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -415,5 +416,55 @@ func TestGeckoManagedHTTPNodePins(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+// Call the native API directly so Go validation cannot hide errors in native
+// DNS validation, bounds or immutable-policy checks.
+func TestGeckoManagedHTTPIdentityPolicyAPI(t *testing.T) {
+	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	if bundle == "" {
+		t.Skip("rebuilt verified identity API bundle required")
+	}
+	runtime, err := VerifyBundle(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("FOXTUNNEL_XPCSHELL", runtime)
+	marker := "  registerEndpoint(cfg.proxy_host, cfg.proxy_port);"
+	if strings.Count(string(clientScript), marker) != 1 {
+		t.Fatal("native policy injection point changed")
+	}
+	script := strings.Replace(string(clientScript), marker, marker+`
+  {
+    const mustReject = args => {
+      let rejected = false;
+      try {nativeCertDB.registerFoxTunnelPolicy(...args);} catch {rejected = true;}
+      if (!rejected) throw new Error("native identity API accepted invalid policy");
+    };
+    const pin = "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    for (const name of ["-bad.invalid", "bad-.invalid", "a..invalid", "127.0.0.1", "a".repeat(254)]) {
+      mustReject(["policy.invalid", 443, name, pin, ""]);
+    }
+    for (const port of [0, -1, 65536]) {
+      mustReject(["policy.invalid", port, "identity.invalid", pin, ""]);
+    }
+    for (const wrong of ["sha256/bad", "sha1/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "sha256/"+"A".repeat(44)]) {
+      mustReject(["policy.invalid", 443, "identity.invalid", wrong, ""]);
+    }
+    mustReject(["policy.invalid",443,"identity.invalid",pin,"unknown-profile"]);
+    mustReject(["policy.invalid",443,"","",""]);
+    nativeCertDB.registerFoxTunnelPolicy("policy.invalid",443,"identity.invalid",pin,"");
+    nativeCertDB.registerFoxTunnelPolicy("POLICY.INVALID",443,"identity.invalid",pin,"");
+    mustReject(["policy.invalid",443,"other.invalid",pin,""]);
+    mustReject(["policy.invalid",443,"identity.invalid","sha256/AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",""]);
+    mustReject(["policy.invalid",443,"identity.invalid",pin,"firefox-158"]);
+  }
+`, 1)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	helper := startOperationalHelperWithClient(t, ctx, Config{Server: "https://primary.invalid", Username: "u", Password: "p", Listen: "127.0.0.1:0"}, []byte(script))
+	if helper.listen == "" {
+		t.Fatal("native identity API gates did not reach readiness")
 	}
 }
