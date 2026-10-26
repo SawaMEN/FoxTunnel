@@ -432,50 +432,53 @@ comparison covers native CONNECT, not a new POST/UDP-specific fingerprint claim.
 ARM64 Necko, remaining identity/profile settings and unified release archives
 remain stages 4 through 6. `main` is unchanged.
 
-### Stage 4 candidate: native Linux ARM64
+### Stage 4 qualified: native Linux ARM64
 
-Stage 4 progress: **2 of 4 native qualification steps**; overall completion
-remains **3 of 6 stages**. Work is isolated on `xfd-arm64`, based on the qualified
-stage-3 `xfd` tree; no promotion is claimed before real ARM64 runs pass.
-
-1. Build the same pinned Gecko source and 22 reviewed patches on a native
-   `ubuntu-24.04-arm` runner, independently of the amd64 build.
-2. Verify architecture-specific provenance and ELF headers, package the native
-   launcher/CLI and verify the immutable bundle on its matching host.
-3. Run H2/H3 CONNECT, POST, UDP v1/v2, Multi-Node, Bond, XHTTP, no-TCP-fallback,
-   trust, replay, half-close and CLI/SDK checks on ARM64, with amd64 regressions.
-4. Qualify all 12 managed resource modes, sustained CONNECT, paired controls,
-   cleanup and same-architecture Firefox wire observations; retain evidence.
-
-The source lock lists both supported platforms. Build provenance identifies
-its actual native target. The artifact selector requires the matching runtime
-and provenance names for that architecture; an amd64 artifact cannot satisfy an
-ARM64 selection. Both Python packaging and Go bundle verification reject mixed
-ELF machines even if the manifest/hash is relabeled. CLI/SDK selection and build
-metadata recognize native ARM64 Necko. This does not extend the separate Neqo
-Rust bridge or unify release archives, which remain outside this stage.
-
-ARM64 observations are compared with Firefox on the same native runner/runtime.
-The amd64 historical resource record is not used as an ARM64 performance baseline.
-The existing 192 MiB final RSS-growth and idle-plus-16 descriptor limits remain
-unchanged. Fixture tests and cross-compilation do not qualify native networking.
-
-Candidate implementation: `24d74d081f209ba931b70500d8ba407c54fe83cf`.
-[Source build 40264186586](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186586)
-runs independent native amd64 and ARM64 jobs.
-[Runtime gates 40264186589](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186589)
-wait for each architecture's exact rebuilt source lock.
+Stage 4 is complete: **4 of 4 steps**, **4 of 6 stages overall**.
+Qualified implementation: `24d74d081f209ba931b70500d8ba407c54fe83cf`.
+Both native source jobs passed in
+[run 40264186586](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186586),
+and both full runtime qualification jobs passed in
+[run 40264186589](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186589).
 [General CI 40264186549](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186549)
-passed. Local checks passed 211 Python tests (2 skips), 24 JavaScript tests,
-focused race-enabled bundle/engine tests and vet; launcher and CLI also
-cross-compiled to validated ARM64 ELF files. Cross-compilation does not count
-as native ARM64 qualification.
+also passed. The [acceptance record](validation/arm64/acceptance.json) binds the
+exact source/helper hashes, platforms, tests and resource reports; see the
+[qualification evidence](validation/arm64/README.md).
 
-The local full Go race run hit `TestNativeSetupTimeout` (setup request leaked).
-The same failure reproduced in both a full race run and a 20-repeat focused run
-on the unmodified stage-3 commit `3537bcf`; the candidate's general CI passed.
-This existing intermittent test is recorded rather than claimed fixed by the
-architecture changes. The native ARM64 source build, provenance/ELF verification,
-packaged launcher and integrated CLI/SDK gates have now passed. The 12-mode
-resource suite and amd64 runtime regressions remain pending; no final ARM64
-qualification or promotion is claimed. See the [retained checkpoint](validation/arm64/README.md).
+1. Built the pinned Gecko revision and all 22 combined patches independently
+   on native Linux amd64 and ARM64 runners.
+2. Verified architecture-specific provenance, source/runtime hashes and actual
+   ELF machines; packaged and executed the native launcher and main CLI.
+3. Passed 13 mandatory native groups three times on each architecture, with
+   no mandatory skips: H2/H3 CONNECT and POST, UDP v1/v2, Multi-Node, Bond,
+   XHTTP, CLI/SDK, trust, no-TCP fallback, replay, truncation and half-close.
+4. Passed all 12 managed modes on each architecture (60 seconds plus 6 seconds
+   settling), H2/H3 CONNECT (300 seconds per protocol), paired baseline/current
+   controls and same-runtime Firefox observations. Raw resource and cleanup
+   reports were independently verified; both paired reports reproduced exactly.
+
+The source lock lists both platforms. Provenance records the actual build
+architecture, artifact selection requires its matching runtime/provenance pair,
+and bundle verification rejects mixed ELF machines even after rehashing. The
+entire ARM64 package was independently checked: 8267 manifest files and 122
+ARM64 ELF binaries. The source runtime archive's 119 ELF files were also audited.
+CLI/SDK auto-selection and build metadata recognize native ARM64 Necko.
+
+All 24 managed reports passed final RSS-growth (192 MiB after idle settling),
+descriptor (idle plus 16), process join and profile removal checks. All five
+managed H3 modes on each architecture recorded protocol 3 and zero TCP accepts.
+Sampled RSS peaks are retained. These are helper-only loopback measurements,
+not whole-client memory, WAN throughput or statistically significant speedups.
+The controlled CONNECT wire audit retains inconclusive randomized TLS extension
+order/JA3 differences; it does not establish DPI equivalence or a POST/UDP
+fingerprint match.
+
+A local `TestNativeSetupTimeout` failure was also reproduced on the unchanged
+stage-3 baseline; the candidate's general CI and both native qualification jobs
+passed. This stage does not claim to fix that pre-existing intermittent test.
+The complete prior 2/4 checkpoint is retained under
+[checkpoint-2of4](validation/arm64/checkpoint-2of4/README.md).
+
+SNI/SPKI/profile overrides and unified NSS + Necko release archives remain
+stages 5 and 6. Linux ARM64 Necko does not qualify the separate Neqo Rust FFI
+bridge or Android/macOS Necko. `main` is unchanged.
