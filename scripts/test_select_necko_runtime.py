@@ -12,6 +12,16 @@ class SelectorTests(unittest.TestCase):
         artifacts[2] = artifacts[1]
         self.assertEqual(matching_run(runs, {'revision': 2}, sources.get, artifacts.get)[0], 2)
 
+    def test_architectures_cannot_select_each_others_artifacts(self):
+        runs = [dict(id=2, head_sha='new', status='in_progress')]
+        amd64 = [dict(name='necko-linux-amd64-runtime'), dict(name='necko-source-provenance')]
+        arm64 = [dict(name='necko-linux-arm64-runtime'), dict(name='necko-source-provenance-arm64')]
+        self.assertEqual(matching_run(runs, {}, lambda _: {}, lambda _: amd64, 'arm64'), (None, True))
+        self.assertEqual(matching_run(runs, {}, lambda _: {}, lambda _: arm64, 'amd64'), (None, True))
+        self.assertEqual(matching_run(runs, {}, lambda _: {}, lambda _: arm64, 'arm64')[0], 2)
+        with self.assertRaises(ValueError):
+            matching_run(runs, {}, lambda _: {}, lambda _: [], '386')
+
     def test_missing_or_expired_artifacts_do_not_count(self):
         runs = [dict(id=2, head_sha='new', status='completed')]
         for artifacts in ([], [dict(name='necko-linux-amd64-runtime', expired=True),

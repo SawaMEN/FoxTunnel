@@ -1,10 +1,12 @@
 name: Mozilla Necko source experiment
 on:
   push:
-    branches: [firefox, xfd, xfd-h3]
+    branches: [firefox, xfd, xfd-h3, xfd-arm64]
     paths:
       - 'experiments/firefox-necko/patches/**'
       - 'experiments/firefox-necko/gecko.lock.json'
+      - 'scripts/necko_platform.py'
+      - 'scripts/test_necko_platform.py'
       - 'scripts/build_necko.py'
       - 'scripts/test_build_necko.py'
       - '.github/workflows/necko-experiment.yml'
@@ -16,7 +18,18 @@ concurrency:
   cancel-in-progress: true
 jobs:
   native:
-    runs-on: ubuntu-24.04
+    name: native (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            suffix: ''
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            suffix: '-arm64'
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     env:
       MOZBUILD_STATE_PATH: ${{ github.workspace }}/mozbuild
@@ -30,7 +43,10 @@ jobs:
           path: foxtunnel
       - name: Source preparation tests
         working-directory: foxtunnel
-        run: python3 -m unittest discover -s scripts -p test_build_necko.py -v
+        run: |
+          python3 -m unittest discover -s scripts -p test_build_necko.py -v
+          python3 -m unittest discover -s scripts -p test_necko_platform.py -v
+          python3 -c 'import sys; sys.path.insert(0, "scripts"); from necko_platform import host_platform; assert host_platform() == "linux-${{ matrix.arch }}"'
       - name: Read locked Gecko revision
         id: lock
         working-directory: foxtunnel
@@ -54,15 +70,15 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.MOZBUILD_STATE_PATH }}
-          key: necko-toolchains-ubuntu24-${{ steps.lock.outputs.revision }}
+          key: necko-toolchains-ubuntu24${{ matrix.suffix }}-${{ steps.lock.outputs.revision }}
       - name: Restore compiled C and C++ cache
         id: compiler-cache
         uses: actions/cache/restore@v4
         continue-on-error: true
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: necko-compiler-ubuntu24-${{ steps.lock.outputs.revision }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: necko-compiler-ubuntu24-${{ steps.lock.outputs.revision }}-
+          key: necko-compiler-ubuntu24${{ matrix.suffix }}-${{ steps.lock.outputs.revision }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: necko-compiler-ubuntu24${{ matrix.suffix }}-${{ steps.lock.outputs.revision }}-
       - name: Bootstrap Mozilla build dependencies (C++ build, no artifact substitution)
         working-directory: gecko
         run: python3 mach --no-interactive bootstrap --application-choice=browser --no-agentic-tools
@@ -116,7 +132,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: necko-firefox-fingerprint
+          name: necko-firefox-fingerprint${{ matrix.suffix }}
           path: necko-fingerprint/
           if-no-files-found: ignore
           retention-days: 14
@@ -132,7 +148,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: necko-operations
+          name: necko-operations${{ matrix.suffix }}
           path: necko-operations/
           if-no-files-found: ignore
           retention-days: 14
@@ -144,7 +160,7 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
-          name: necko-linux-amd64-runtime
+          name: necko-linux-${{ matrix.arch }}-runtime
           path: necko-build/runtime.tar.zst
           if-no-files-found: error
           retention-days: 7
@@ -152,7 +168,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: necko-source-provenance
+          name: necko-source-provenance${{ matrix.suffix }}
           path: |
             foxtunnel/experiments/firefox-necko/gecko.lock.json
             foxtunnel/experiments/firefox-necko/patches/

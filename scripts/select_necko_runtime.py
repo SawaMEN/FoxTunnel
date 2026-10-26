@@ -14,14 +14,17 @@ import subprocess
 import time
 
 
-def matching_run(runs, expected, source_for_sha, artifacts_for_run):
+def matching_run(runs, expected, source_for_sha, artifacts_for_run, arch='amd64'):
+    if arch not in ('amd64', 'arm64'):
+        raise ValueError('unsupported runtime architecture')
+    suffix = '' if arch == 'amd64' else '-arm64'
     waiting = False
     for run in runs:
         if source_for_sha(run['head_sha']) != expected:
             continue
         artifacts = artifacts_for_run(run['id'])
         names = {a['name'] for a in artifacts if not a.get('expired')}
-        if {'necko-linux-amd64-runtime', 'necko-source-provenance'} <= names:
+        if {f'necko-linux-{arch}-runtime', 'necko-source-provenance' + suffix} <= names:
             return run['id'], waiting
         if run['status'] != 'completed':
             waiting = True
@@ -30,6 +33,7 @@ def matching_run(runs, expected, source_for_sha, artifacts_for_run):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--arch', choices=('amd64', 'arm64'), default='amd64')
     parser.add_argument('--repo', default=os.environ.get('GITHUB_REPOSITORY'))
     parser.add_argument('--lock', type=Path, default=Path('experiments/firefox-necko/gecko.lock.json'))
     parser.add_argument('--output', type=Path, required=True)
@@ -60,7 +64,7 @@ def main():
     while True:
         runs = api('actions/workflows/necko-experiment.yml/runs?per_page=100')['workflow_runs']
         run, waiting = matching_run(runs, expected, source,
-                                   lambda run_id: api(f'actions/runs/{run_id}/artifacts')['artifacts'])
+                                   lambda run_id: api(f'actions/runs/{run_id}/artifacts')['artifacts'], args.arch)
         if run is not None:
             with args.output.open('a') as output:
                 output.write(f'run_id={run}\n')

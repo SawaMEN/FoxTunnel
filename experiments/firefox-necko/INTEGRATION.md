@@ -431,3 +431,31 @@ whole-client memory, statistical improvement or DPI equivalence. The wire
 comparison covers native CONNECT, not a new POST/UDP-specific fingerprint claim.
 ARM64 Necko, remaining identity/profile settings and unified release archives
 remain stages 4 through 6. `main` is unchanged.
+
+### Stage 4 candidate: native Linux ARM64
+
+Stage 4 progress: **0 of 4 native qualification steps**; overall completion
+remains **3 of 6 stages**. Work is isolated on `xfd-arm64`, based on the qualified
+stage-3 `xfd` tree; no promotion is claimed before real ARM64 runs pass.
+
+1. Build the same pinned Gecko source and 22 reviewed patches on a native
+   `ubuntu-24.04-arm` runner, independently of the amd64 build.
+2. Verify architecture-specific provenance and ELF headers, package the native
+   launcher/CLI and verify the immutable bundle on its matching host.
+3. Run H2/H3 CONNECT, POST, UDP v1/v2, Multi-Node, Bond, XHTTP, no-TCP-fallback,
+   trust, replay, half-close and CLI/SDK checks on ARM64, with amd64 regressions.
+4. Qualify all 12 managed resource modes, sustained CONNECT, paired controls,
+   cleanup and same-architecture Firefox wire observations; retain evidence.
+
+The source lock lists both supported platforms. Build provenance identifies
+its actual native target. The artifact selector requires the matching runtime
+and provenance names for that architecture; an amd64 artifact cannot satisfy an
+ARM64 selection. Both Python packaging and Go bundle verification reject mixed
+ELF machines even if the manifest/hash is relabeled. CLI/SDK selection and build
+metadata recognize native ARM64 Necko. This does not extend the separate Neqo
+Rust bridge or unify release archives, which remain outside this stage.
+
+ARM64 observations are compared with Firefox on the same native runner/runtime.
+The amd64 historical resource record is not used as an ARM64 performance baseline.
+The existing 192 MiB final RSS-growth and idle-plus-16 descriptor limits remain
+unchanged. Fixture tests and cross-compilation do not qualify native networking.

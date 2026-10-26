@@ -9,7 +9,7 @@ import (
 )
 
 func TestAutoEngineSelection(t *testing.T) {
-	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
+	if runtime.GOOS == "linux" && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64") {
 		p, err := Resolve(Config{Engine: "auto", NeckoBundle: "/nonexistent/verified-at-apply", Transport: "h3-connect"})
 		if err != nil || p.Engine != "necko" || p.Transport != "h3-connect" {
 			t.Fatalf("compatible packaged Necko: %+v, %v", p, err)

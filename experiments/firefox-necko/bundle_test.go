@@ -1,6 +1,7 @@
 package firefox
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -9,11 +10,25 @@ import (
 )
 
 func testBundle(t *testing.T) string {
+	return testBundlePlatform(t, "linux-amd64")
+}
+func testBundlePlatform(t *testing.T, platform string) string {
 	t.Helper()
 	root := t.TempDir()
-	m := bundleManifest{Schema: 1, HelperProtocol: BundleProtocol, Platform: "linux-amd64", SourceLockSHA256: digestBytes(sourceLock), ClientJSSHA256: digestBytes(clientScript), Files: map[string]string{}}
+	m := bundleManifest{Schema: 1, HelperProtocol: BundleProtocol, Platform: platform, SourceLockSHA256: digestBytes(sourceLock), ClientJSSHA256: digestBytes(clientScript), Files: map[string]string{}}
 	for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "runtime/platform.ini", "provenance.json", "source-lock.json", "foxtunnel-necko"} {
 		data := []byte("fixture " + name)
+		if name == "runtime/xpcshell" || name == "runtime/libxul.so" || name == "runtime/libnss3.so" || name == "foxtunnel-necko" {
+			data = make([]byte, 64)
+			copy(data, []byte{127, 'E', 'L', 'F', 2, 1, 1})
+			binary.LittleEndian.PutUint16(data[16:18], 3)
+			machine := uint16(62)
+			if platform == "linux-arm64" {
+				machine = 183
+			}
+			binary.LittleEndian.PutUint16(data[18:20], machine)
+			binary.LittleEndian.PutUint32(data[20:24], 1)
+		}
 		os.MkdirAll(filepath.Dir(filepath.Join(root, name)), 0700)
 		if e := os.WriteFile(filepath.Join(root, name), data, 0600); e != nil {
 			t.Fatal(e)
@@ -107,10 +122,55 @@ func TestBundleResolvesVersionPointerBeforeExecution(t *testing.T) {
 }
 
 func TestBundleExecutionPlatformGate(t *testing.T) {
-	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
+	if runtime.GOOS == "linux" && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64") {
 		return
 	}
 	if _, err := VerifyBundle(testBundle(t)); err == nil {
 		t.Fatal("unsupported host accepted executable bundle")
+	}
+}
+
+func TestBundleArchitectureCannotBeRelabeledOrMixed(t *testing.T) {
+	for _, platform := range []string{"linux-amd64", "linux-arm64"} {
+		t.Run(platform, func(t *testing.T) {
+			root := testBundlePlatform(t, platform)
+			if _, err := verifyBundlePlatform(root, platform); err != nil {
+				t.Fatal(err)
+			}
+			other := "linux-amd64"
+			if platform == other {
+				other = "linux-arm64"
+			}
+			if _, err := verifyBundlePlatform(root, other); err == nil {
+				t.Fatal("accepted other architecture")
+			}
+			for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "foxtunnel-necko", "foxtunnel"} {
+				t.Run(name, func(t *testing.T) {
+					mixed := testBundlePlatform(t, platform)
+					donor := testBundlePlatform(t, other)
+					donorName := name
+					if name == "foxtunnel" {
+						donorName = "foxtunnel-necko"
+					}
+					data, err := os.ReadFile(filepath.Join(donor, donorName))
+					if err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(filepath.Join(mixed, name), data, 0600); err != nil {
+						t.Fatal(err)
+					}
+					manifestPath := filepath.Join(mixed, "manifest.json")
+					var m bundleManifest
+					raw, _ := os.ReadFile(manifestPath)
+					json.Unmarshal(raw, &m)
+					m.Files[name] = digestBytes(data)
+					raw, _ = json.Marshal(m)
+					os.WriteFile(manifestPath, raw, 0600)
+					if _, err := verifyBundlePlatform(mixed, platform); err == nil {
+						t.Fatal("accepted rehashed mixed-architecture bundle")
+					}
+				})
+			}
+		})
 	}
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create an immutable Linux amd64 Necko helper bundle from a verified build.
+"""Create an immutable Linux amd64/ARM64 Necko helper bundle from a verified build.
 
 The output is a new directory. Updates use a new version directory, never an
 in-place overwrite of a running runtime. A manifest detects corruption and API
@@ -14,6 +14,8 @@ from pathlib import Path
 import shutil
 import tarfile
 import tempfile
+
+from necko_platform import verify_elf
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -34,6 +36,16 @@ def package(runtime, provenance, launcher, out, cli=None):
     if (record.get('status') != 'built-not-interop-tested' or
             record.get('source') != json.loads(source.read_text())):
         raise ValueError('runtime source lock differs from helper')
+    target = record.get('target_platform', 'linux-amd64')
+    if target not in record['source'].get('platforms', [record['source'].get('platform')]):
+        raise ValueError('unsupported runtime platform')
+    for name in ('xpcshell', 'libxul.so', 'libnss3.so'):
+        verify_elf(runtime / name, target)
+    if (runtime / 'firefox').exists():
+        verify_elf(runtime / 'firefox', target)
+    verify_elf(launcher, target)
+    if cli is not None:
+        verify_elf(cli, target)
     for name in ('xpcshell', 'libxul.so', 'libnss3.so', 'platform.ini'):
         if digest(runtime / name) != record['runtime'].get(name):
             raise ValueError('compiled runtime digest mismatch: ' + name)
@@ -69,10 +81,10 @@ def package(runtime, provenance, launcher, out, cli=None):
             'Mozilla runtime source: ' + lock['repository'] + '\nRevision: ' + lock['revision'] +
             '\nApply the included source-patches according to source-lock.json.\n'
             'Helper source: https://github.com/SawaMEN/FoxTunnel/tree/main/experiments/firefox-necko\n'
-            'This bundle is an opt-in experimental Linux amd64 distribution.\n')
+            'This bundle is an opt-in experimental ' + target + ' distribution.\n')
         files = {p.relative_to(staging).as_posix(): digest(p)
                  for p in sorted(staging.rglob('*')) if p.is_file()}
-        manifest = dict(schema=1, helper_protocol=1, platform='linux-amd64',
+        manifest = dict(schema=1, helper_protocol=1, platform=target,
                         source_lock_sha256=digest(source), client_js_sha256=digest(helper), files=files)
         (staging / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
         os.rename(staging, out)

@@ -45,7 +45,7 @@ type Plan struct{ Config }
 // DefaultNeckoBundle discovers a colocated runtime without trusting its contents.
 // The full manifest and hashes are verified by Apply before using the runtime.
 func DefaultNeckoBundle() string {
-	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+	if runtime.GOOS != "linux" || (runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64") {
 		return ""
 	}
 	exe, err := os.Executable()
@@ -98,8 +98,8 @@ func Resolve(cfg Config) (Plan, error) {
 		cfg.Engine = "legacy"
 		return Plan{Config: cfg}, nil
 	case "necko":
-		if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
-			return Plan{}, errors.New("Necko currently requires Linux amd64")
+		if runtime.GOOS != "linux" || (runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64") {
+			return Plan{}, errors.New("Necko requires Linux amd64 or ARM64")
 		}
 		if cfg.Transport == "" || cfg.Transport == "auto" {
 			cfg.Transport = "h2-connect"

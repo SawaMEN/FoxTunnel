@@ -2,7 +2,7 @@
   "schema": 1,
   "repository": "https://github.com/mozilla-firefox/firefox.git",
   "revision": "0f76fed7aea1f77db85afbf5a895754d8ad971d7",
-  "platform": "linux-amd64",
+  "platforms": ["linux-amd64", "linux-arm64"],
   "patches": [
     {
       "path": "experiments/firefox-necko/patches/h2-connect-cold-start.patch",
