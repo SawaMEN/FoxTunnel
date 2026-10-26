@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Combine verified Necko and NSS into one Linux/amd64 release archive.
+"""Combine verified Necko and NSS into one native Linux AMD64/ARM64 release archive.
 
 The original NSS and Necko artifacts are independently tested before merging.
 The resulting single CLI is the NSS-enabled binary. Full Necko runs in a
@@ -17,6 +17,10 @@ import tarfile
 import tempfile
 
 import release_verify
+import necko_bundle
+from necko_platform import verify_elf
+
+ROOT = Path(__file__).resolve().parents[1]
 
 MAX_FILES = 20000
 MAX_UNPACKED = 3 * 1024 * 1024 * 1024
@@ -31,9 +35,16 @@ def sha(path):
 def extract_regular(archive_path, dest, prefix=""):
     """Extract regular members only; refuse links, traversal and duplicates."""
     seen, count, total = set(), 0, 0
+    root_seen = False
     with tarfile.open(archive_path, "r:gz") as archive:
         for m in archive:
             raw = m.name.rstrip("/")
+            # Historical package_necko emitted this exact root-directory alias.
+            # No dot component elsewhere is accepted.
+            if prefix and raw == prefix + "/." and m.isdir():
+                raw = prefix
+            if m.mode & 0o7000:
+                raise ValueError("privileged archive member")
             parts = PurePosixPath(raw).parts
             if not parts or raw.startswith("/") or any(p in (".", "..") for p in raw.split("/")):
                 raise ValueError("unsafe archive member")
@@ -42,8 +53,9 @@ def extract_regular(archive_path, dest, prefix=""):
                     raise ValueError("unexpected archive root: " + parts[0])
                 parts = parts[1:]
                 if not parts:
-                    if not m.isdir():
-                        raise ValueError("archive root must be a directory")
+                    if not m.isdir() or root_seen:
+                        raise ValueError("archive root must be a unique directory")
+                    root_seen = True
                     continue
             if not parts:
                 raise ValueError("empty archive member")
@@ -58,7 +70,7 @@ def extract_regular(archive_path, dest, prefix=""):
             if m.isdir():
                 path.mkdir(parents=True, exist_ok=True)
                 continue
-            if not m.isfile() or m.mode & 0o7000 or m.size <= 0 or m.size > MAX_FILE:
+            if not m.isfile() or m.mode & 0o7000 or m.size < 0 or m.size > MAX_FILE:
                 raise ValueError("nonregular or oversized archive member: " + name)
             total += m.size
             if total > MAX_UNPACKED:
@@ -78,9 +90,13 @@ def merge_files(necko, nss):
         raise ValueError("Necko manifest missing")
     if not (nss / "foxtunnel").is_file() or not (nss / "build.json").is_file():
         raise ValueError("NSS CLI and metadata required")
-    metadata = json.loads((nss / "build.json").read_text())
-    if metadata.get("build_flavor") != "nss" or metadata.get("goarch") != "amd64":
-        raise ValueError("NSS amd64 build required")
+    metadata = release_verify.read_json(nss / "build.json")
+    arch = metadata.get("goarch")
+    if metadata.get("build_flavor") != "nss" or arch not in ("amd64", "arm64"):
+        raise ValueError("native NSS build required")
+    platform = "linux-" + arch
+    necko_bundle.verify(necko, platform)
+    verify_elf(nss / "foxtunnel", platform)
     if metadata.get("runtime", {}).get("mozilla", {}).get("libraries") is None:
         raise ValueError("NSS runtime provenance missing")
     if not (necko / "foxtunnel-necko").is_file() or not (necko / "runtime/xpcshell").is_file():
@@ -107,7 +123,7 @@ def merge_files(necko, nss):
     (necko / "foxtunnel").chmod(0o755)
 
     manifest = json.loads((necko / "manifest.json").read_text())
-    if manifest.get("schema") != 1 or manifest.get("platform") != "linux-amd64":
+    if manifest.get("schema") != 1 or manifest.get("platform") != platform:
         raise ValueError("incompatible Necko manifest")
     files = {p.relative_to(necko).as_posix(): sha(p)
              for p in sorted(necko.rglob("*")) if p.is_file() and p.name != "manifest.json"}
@@ -145,16 +161,20 @@ def make_archive(bundle, archive_path):
     return sha(archive_path)
 
 
-def merge(necko_archive, nss_archive, output, version, commit):
+def merge(necko_archive, nss_archive, output, version, commit, arch="amd64"):
+    if arch not in ("amd64", "arm64"):
+        raise ValueError("unsupported unified architecture")
     release_verify.validate_version(version)
     # This verifies source commit, pinned NSS libraries, licenses and embedded
     # build.json using the existing offline release contract before extraction.
     release_verify.verify(argparse.Namespace(
         version=version, commit=commit, input=str(nss_archive.parent),
-        target="linux/amd64/nss"))
-    expected = "foxtunnel_" + version[1:] + "_linux_amd64_nss.tar.gz"
+        target="linux/" + arch + "/nss"))
+    expected = "foxtunnel_" + version[1:] + "_linux_" + arch + "_nss.tar.gz"
     if nss_archive.name != expected:
         raise ValueError("NSS archive name/version mismatch")
+    if output.name != "foxtunnel_" + version[1:] + "_linux_" + arch + ".tar.gz":
+        raise ValueError("unified output name/version/architecture mismatch")
     if output.exists():
         raise ValueError("refusing to replace an existing unified archive")
     with tempfile.TemporaryDirectory(prefix="foxtunnel-unify-") as tmp:
@@ -164,23 +184,28 @@ def merge(necko_archive, nss_archive, output, version, commit):
         nss.mkdir()
         extract_regular(necko_archive, necko, prefix="foxtunnel-necko")
         extract_regular(nss_archive, nss)
-        meta = json.loads((nss / "build.json").read_text())
+        necko_bundle.verify(necko, "linux-" + arch,
+                            ROOT / "experiments/firefox-necko/gecko.lock.json",
+                            ROOT / "experiments/firefox-necko/client.js")
+        meta = release_verify.read_json(nss / "build.json")
         if meta["version"] != version or meta["commit"] != commit:
             raise ValueError("NSS source/version mismatch")
         merge_files(necko, nss)
+        necko_bundle.verify(necko, "linux-" + arch)
         digest = make_archive(necko, output)
     return digest
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--arch", choices=("amd64", "arm64"), default="amd64")
     parser.add_argument("--necko", type=Path, required=True)
     parser.add_argument("--nss", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--commit", required=True)
     a = parser.parse_args()
-    print("Unified SHA-256:", merge(a.necko, a.nss, a.out, a.version, a.commit))
+    print("Unified SHA-256:", merge(a.necko, a.nss, a.out, a.version, a.commit, a.arch))
 
 
 if __name__ == "__main__":

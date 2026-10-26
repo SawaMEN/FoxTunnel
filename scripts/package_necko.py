@@ -98,7 +98,7 @@ def archive(bundle, destination):
         with gzip.GzipFile(filename='', mode='wb', fileobj=output, mtime=0) as compressed:
             with tarfile.open(fileobj=compressed, mode='w|') as tar:
                 for path in [bundle, *sorted(bundle.rglob('*'))]:
-                    info = tar.gettarinfo(path, arcname='foxtunnel-necko/' + str(path.relative_to(bundle)))
+                    info = tar.gettarinfo(path, arcname='foxtunnel-necko' if path == bundle else 'foxtunnel-necko/' + path.relative_to(bundle).as_posix())
                     info.uid = info.gid = info.mtime = 0
                     info.uname = info.gname = ''
                     if path.is_file():

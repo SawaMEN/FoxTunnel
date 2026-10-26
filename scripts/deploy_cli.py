@@ -188,8 +188,8 @@ class Deployment:
             package.mkdir(mode=0o700)
             goos, arch = target()
             executable = 'foxtunnel.exe' if goos == 'windows' else 'foxtunnel'
-            unified = archive and goos == 'linux' and arch == 'amd64' and source.name == (
-                f'foxtunnel_{version[1:]}_linux_amd64.tar.gz')
+            unified = archive and goos == 'linux' and arch in ('amd64', 'arm64') and source.name == (
+                f'foxtunnel_{version[1:]}_linux_{arch}.tar.gz')
             if unified:
                 unified_archive.unpack(snapshot, package, version, commit, archive_name=source.name)
             elif archive:

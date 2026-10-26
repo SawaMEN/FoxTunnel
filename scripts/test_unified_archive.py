@@ -14,55 +14,48 @@ COMMIT = "a" * 40
 VERSION = "v0.0.0-ci"
 
 
-def prepare(root):
-    necko, nss = test_merge_necko_nss.MergeTests().fixture(root)
-    for filename in ("libxul.so", "libnss3.so"):
-        (necko / "runtime" / filename).write_bytes(filename.encode())
-    lock = {"schema": 1, "revision": "source"}
-    (necko / "source-lock.json").write_text(json.dumps(lock))
-    (necko / "provenance.json").write_text(json.dumps({"source": lock}))
-    manifest = json.loads((necko / "manifest.json").read_text())
-    manifest["source_lock_sha256"] = merge.sha(necko / "source-lock.json")
-    (necko / "manifest.json").write_text(json.dumps(manifest))
+def prepare(root, arch="amd64"):
+    necko, nss = test_merge_necko_nss.MergeTests().fixture(root,arch)
     mozilla = {"libraries": {"libnss3.so": merge.sha(nss / "lib/libnss3.so")}}
     (nss / "mozilla-runtime.json").write_text(json.dumps(mozilla))
     (nss / "build.json").write_text(json.dumps({
-        "version": VERSION, "commit": COMMIT, "target": "linux/amd64/nss",
-        "goos": "linux", "goarch": "amd64", "build_flavor": "nss",
+        "version": VERSION, "commit": COMMIT, "target": "linux/"+arch+"/nss",
+        "goos": "linux", "goarch": arch, "build_flavor": "nss",
         "dirty": False, "runtime": {"kind": "bundled-nss", "mozilla": mozilla},
     }))
     merge.merge_files(necko, nss)
-    archive = root / "foxtunnel_0.0.0-ci_linux_amd64.tar.gz"
+    archive = root / ("foxtunnel_0.0.0-ci_linux_"+arch+".tar.gz")
     merge.make_archive(necko, archive)
     return archive
 
 
 class UnifiedDeploymentTests(unittest.TestCase):
     def test_unified_archive_integrity_and_external_install_record(self):
-        with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
-            archive = prepare(root)
-            extracted = root / "extract"
-            extracted.mkdir()
-            unified_archive.unpack(archive, extracted, VERSION, COMMIT)
-            self.assertIn("nss-build.json", [p.name for p in extracted.iterdir()])
-            manager = deploy_cli.Deployment(root / "installed")
-            info = {
-                "schema": 1, "version": VERSION, "commit": COMMIT, "dirty": False,
-                "protocol_draft": deploy_cli.contract.DRAFT, "build_flavor": "nss",
-                "goos": "linux", "goarch": "amd64",
-            }
-            with patch.object(deploy_cli, "target", return_value=("linux", "amd64")), \
-                    patch.object(deploy_cli.subprocess, "check_output", return_value=json.dumps(info).encode()):
-                identity = deploy_cli.digest(archive)
-                manager.install(archive, identity, VERSION, COMMIT, archive=True)
-                executable, record = manager.bundle(identity)
-                self.assertTrue(executable.is_file())
-                self.assertTrue((executable.parent / "manifest.json").exists())
-                self.assertFalse((executable.parent / "installation.json").exists())
-                self.assertTrue((manager.releases / (identity + ".json")).exists())
-                self.assertIn("lib/libnss3.so", record["files"])
-                self.assertIn("runtime/xpcshell", record["files"])
+        for arch in ('amd64', 'arm64'):
+            with tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                archive = prepare(root, arch)
+                extracted = root / "extract"
+                extracted.mkdir()
+                unified_archive.unpack(archive, extracted, VERSION, COMMIT)
+                self.assertIn("nss-build.json", [p.name for p in extracted.iterdir()])
+                manager = deploy_cli.Deployment(root / "installed")
+                info = {
+                    "schema": 1, "version": VERSION, "commit": COMMIT, "dirty": False,
+                    "protocol_draft": deploy_cli.contract.DRAFT, "build_flavor": "nss",
+                    "goos": "linux", "goarch": arch,
+                }
+                with patch.object(deploy_cli, "target", return_value=("linux", arch)), \
+                        patch.object(deploy_cli.subprocess, "check_output", return_value=json.dumps(info).encode()):
+                    identity = deploy_cli.digest(archive)
+                    manager.install(archive, identity, VERSION, COMMIT, archive=True)
+                    executable, record = manager.bundle(identity)
+                    self.assertTrue(executable.is_file())
+                    self.assertTrue((executable.parent / "manifest.json").exists())
+                    self.assertFalse((executable.parent / "installation.json").exists())
+                    self.assertTrue((manager.releases / (identity + ".json")).exists())
+                    self.assertIn("lib/libnss3.so", record["files"])
+                    self.assertIn("runtime/xpcshell", record["files"])
 
     def test_corruption_and_wrong_commit_are_rejected(self):
         with tempfile.TemporaryDirectory() as d:

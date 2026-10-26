@@ -1,7 +1,7 @@
 name: Protocol core integration bundles
 on:
   push:
-    branches: [main, xfd]
+    branches: [main, xfd, xfd-release]
     tags: ['v[0-9]*']
   pull_request:
     paths: ['cmd/**', 'internal/**', 'foxtunnel*.go', 'scripts/**', 'LICENSE', 'go.*', '.github/workflows/release.yml', '.github/release-request.json', 'docs/releases/**', 'docs/INTEGRATION.md', 'integration/contract.json']
@@ -137,7 +137,16 @@ jobs:
       release_version: ${{ needs.request.outputs.version }}
   index:
     needs: [request, quality, nss, necko]
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -150,59 +159,53 @@ jobs:
           merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
-          name: foxtunnel-necko-linux-amd64
+          name: foxtunnel-necko-linux-${{ matrix.arch }}
           path: necko-release
-      - name: Validate native input archives
+      - name: Validate native input archives and combine matching architectures
         env:
           RELEASE_TAG: ${{ needs.request.outputs.version }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/release.py index --version "$RELEASE_TAG"
-          python3 scripts/release.py verify --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
-          (cd necko-release && sha256sum --check SHA256SUMS)
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          tar -xzf necko-release/foxtunnel-necko-linux-amd64.tar.gz -C "$tmp"
-          "$tmp/foxtunnel-necko/foxtunnel-necko" --bundle "$tmp/foxtunnel-necko" --verify
-      - name: Produce one unified archive per architecture
-        env:
-          RELEASE_TAG: ${{ needs.request.outputs.version }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p published
-          python3 scripts/merge_necko_nss.py --necko necko-release/foxtunnel-necko-linux-amd64.tar.gz --nss "dist/foxtunnel_${RELEASE_TAG#v}_linux_amd64_nss.tar.gz" --out "published/foxtunnel_${RELEASE_TAG#v}_linux_amd64.tar.gz" --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
-          cp "dist/foxtunnel_${RELEASE_TAG#v}_linux_arm64_nss.tar.gz" published/
-      - name: Integration test the actual combined NSS/Necko executable
-        env:
-          RELEASE_TAG: ${{ needs.request.outputs.version }}
+          RELEASE_ARCH: ${{ matrix.arch }}
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y libgtk-3-0t64 libdbus-glib-1-2 libasound2t64 libxt6
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          tar -xzf "published/foxtunnel_${RELEASE_TAG#v}_linux_amd64.tar.gz" -C "$tmp"
-          bundle="$tmp/foxtunnel-necko"
-          "$bundle/foxtunnel-necko" --bundle "$bundle" --verify
-          "$bundle/foxtunnel" version --json > "$tmp/version.json"
-          python3 - "$tmp/version.json" "$bundle/nss-build.json" "$RELEASE_TAG" "$GITHUB_SHA" <<'PYCHECK'
-          import json, pathlib, sys
-          info = json.loads(pathlib.Path(sys.argv[1]).read_text())
-          native = json.loads(pathlib.Path(sys.argv[2]).read_text())
-          assert info['version'] == sys.argv[3] and info['commit'] == sys.argv[4]
-          assert native['version'] == sys.argv[3] and native['commit'] == sys.argv[4]
-          assert info['build_flavor'] == 'nss' and info['nss_version']
-          assert {'necko', 'mozilla', 'legacy'} <= set(info['transport_engines'])
-          PYCHECK
-          FOXTUNNEL_NECKO_BUNDLE="$bundle" go test -race . -run '^TestIntegratedNecko$' -count=1 -timeout=180s
+          sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config binutils libgtk-3-0t64 libdbus-glib-1-2 libasound2t64 libxt6
+          python3 scripts/release.py index --version "$RELEASE_TAG"
+          python3 scripts/release.py verify --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
+          (cd necko-release && sha256sum --check SHA256SUMS)
+          mkdir -p published
+          archive="published/foxtunnel_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}.tar.gz"
+          python3 scripts/merge_necko_nss.py --arch "$RELEASE_ARCH" --necko "necko-release/foxtunnel-necko-linux-${RELEASE_ARCH}.tar.gz" --nss "dist/foxtunnel_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --out "$archive" --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
+          python3 scripts/qualify_unified.py --archive "$archive" --nss "dist/foxtunnel_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --arch "$RELEASE_ARCH" --install "$RUNNER_TEMP/unified-install" --report "published/linux-${RELEASE_ARCH}-verification.json"
+          (cd published && sha256sum *.tar.gz > "SHA256SUMS-linux-${RELEASE_ARCH}")
+      - name: Real NSS SDK transfers from the combined library directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle=$(python3 -c 'import json, pathlib; print(json.loads(pathlib.Path("published/linux-${{ matrix.arch }}-verification.json").read_text())["installed_bundle"])')
+          LD_LIBRARY_PATH="$bundle/lib" go test -race -tags nss . -run '^TestPublicNSS' -count=1 -timeout=120s
+      - name: Real unified CLI SDK identity and profile gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle=$(python3 -c 'import json, pathlib; print(json.loads(pathlib.Path("published/linux-${{ matrix.arch }}-verification.json").read_text())["installed_bundle"])')
+          FOXTUNNEL_NECKO_BUNDLE="$bundle" LD_LIBRARY_PATH="$bundle/lib" go test -race -tags nss . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManagedHTTP(Identity|NativeProfiles|NodePins))' -v -count=1 -timeout=600s
+      - name: Record successful tests of the actual installed archive
+        run: |
+          python3 - <<'PYREPORT'
+          import json, pathlib
+          p = pathlib.Path('published/linux-${{ matrix.arch }}-verification.json')
+          d = json.loads(p.read_text())
+          d['status'] = 'qualified'
+          d['checks'] += ['native-NSS-SDK-transfers', 'seven-carrier-unified-CLI-SDK', 'native-SNI-SPKI-node-pins-TLS-H2-profile-gates']
+          p.write_text(json.dumps(d, indent=2, sort_keys=True) + '\n')
+          PYREPORT
       - uses: actions/upload-artifact@v4
         with:
-          name: release-assets
-          path: published/*.tar.gz
+          name: unified-${{ matrix.arch }}-release-assets
+          path: published/*
           if-no-files-found: error
+          retention-days: 30
   publish:
     if: github.event_name == 'push' && needs.request.outputs.publish == 'true'
     needs: [request, index, neqo]
@@ -215,7 +218,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: release-assets
+          pattern: unified-*-release-assets
+          merge-multiple: true
           path: dist
       - name: Verify the two published archives again before signing
         env:
@@ -224,20 +228,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(find dist -maxdepth 1 -name '*.tar.gz' -type f | wc -l)" -eq 2
-          python3 scripts/release.py verify --input dist --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --target linux/arm64/nss
-          archive="dist/foxtunnel_${RELEASE_TAG#v}_linux_amd64.tar.gz"
-          test -f "$archive"
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          tar -xzf "$archive" -C "$tmp"
-          "$tmp/foxtunnel-necko/foxtunnel-necko" --bundle "$tmp/foxtunnel-necko" --verify
-          "$tmp/foxtunnel-necko/foxtunnel" version --json > "$tmp/version.json"
-          python3 - "$tmp/version.json" "$RELEASE_TAG" "$GITHUB_SHA" <<'PYVERIFY'
-          import json, sys
-          info = json.load(open(sys.argv[1]))
-          assert info['version'] == sys.argv[2] and info['commit'] == sys.argv[3]
-          assert info['build_flavor'] == 'nss' and 'necko' in info['transport_engines']
-          PYVERIFY
+          python3 scripts/unified_release_notes.py --input dist --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/pre-sign-verified-release-notes.md"
       - name: Sign provenance for the exact release archives
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
