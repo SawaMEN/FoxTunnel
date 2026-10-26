@@ -492,8 +492,8 @@ qualified on both native architectures. No promotion to `xfd` is claimed yet.
 
 1. Done: identify trust, origin scope, session/coalescing and profile boundaries.
 2. Candidate implementation: primary SNI/SPKI, bounded native TLS/H2 presets,
-   immutable policy registration and CLI/SDK wiring. Per-node pin-file support
-   remains explicitly rejected while its managed-policy integration is pending.
+   immutable policy registration and CLI/SDK wiring, including owner-only
+   per-node pin files with exact configured-origin membership.
 3. Pending: rebuilt native positive/negative trust gates and wire measurements.
 4. Pending: native CLI/SDK, amd64/ARM64 regressions, evidence and qualification.
 
@@ -523,6 +523,8 @@ the pinned runtime's native settings.
 Candidate tests exercise SNI without an IP SAN, HTTP authority preservation,
 correct and incorrect pins, hostname and CA failures before application requests,
 CONNECT/POST/UDP v1/v2, alternate-origin isolation, measured TLS/H2 parameters and
-main CLI/SDK automatic engine selection. These tests require the new verified
+main CLI/SDK automatic engine selection and separate per-node identities. Static
+node pin files cannot be combined with dynamic discovery, matching the existing
+file contract. These tests require the new verified
 bundle; their skips without it are not native qualification. Local Go race and
 JS/parser checks and exact patch application are preparatory evidence only.

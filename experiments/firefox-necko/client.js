@@ -350,6 +350,12 @@ function nativeHTTPFailureReason(status, results) {
 // Inputs are canonical native URI hosts. A primary policy never follows a
 // request to another host or port, including discovered/fallback nodes.
 function nativeRoutePolicy(cfg, host, port) {
+  if (cfg.node_policies && Object.keys(cfg.node_policies).length) {
+    const authority = host.includes(":") ? `[${host.toLowerCase()}]:${port}` : `${host.toLowerCase()}:${port}`;
+    if (!Object.hasOwn(cfg.node_policies, authority)) throw new Error("HTTPS route has no configured identity policy");
+    const policy = cfg.node_policies[authority];
+    return {serverName:policy.sni || "", pin:policy.pin_sha256, tlsProfile:cfg.tls_client_profile === "firefox-158" ? "firefox-158" : ""};
+  }
   const primary = host.toLowerCase() === cfg.proxy_host.toLowerCase() && port === cfg.proxy_port;
   return {serverName: primary ? (cfg.server_name || "") : "",
     pin: primary ? (cfg.pin_sha256 || "") : "",
@@ -424,7 +430,7 @@ if (typeof Components !== "undefined") {
     }
   }
   registerEndpoint(cfg.proxy_host, cfg.proxy_port);
-  if (cfg.server_name || cfg.pin_sha256 || cfg.tls_client_profile === "firefox-158") {
+  if (cfg.server_name || cfg.pin_sha256 || (cfg.node_policies && Object.keys(cfg.node_policies).length) || cfg.tls_client_profile === "firefox-158") {
     Services.prefs.setBoolPref("network.http.http2.coalesce-hostnames", false);
     // No credentials may enter QUIC early data before the pin is checked.
     Services.prefs.setBoolPref("network.http.http3.enable_0rtt", false);

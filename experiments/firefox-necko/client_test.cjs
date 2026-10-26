@@ -333,3 +333,11 @@ test('native identity is scoped to the primary origin and never inherited by alt
     assert.deepEqual(nativeRoutePolicy(cfg,host,port),{serverName:'',pin:'',tlsProfile:'firefox-158'});
   }
 });
+
+test('explicit node pins require an exact registered origin, including the port', () => {
+ const {nativeRoutePolicy}=require('./client.js');
+ const cfg={proxy_host:'a.example',proxy_port:443,node_policies:{'a.example:443':{sni:'cert-a.example',pin_sha256:'sha256/a'},'b.example:8443':{sni:'cert-b.example',pin_sha256:'sha256/b'}}};
+ assert.deepEqual(nativeRoutePolicy(cfg,'B.EXAMPLE',8443),{serverName:'cert-b.example',pin:'sha256/b',tlsProfile:''});
+ assert.throws(()=>nativeRoutePolicy(cfg,'b.example',443));
+ assert.throws(()=>nativeRoutePolicy(cfg,'unknown.example',443));
+});

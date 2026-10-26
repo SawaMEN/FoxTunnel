@@ -331,3 +331,16 @@ func testCertificate(t *testing.T, dnsName ...string) (tls.Certificate, []byte) 
 	}
 	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}, ca
 }
+
+func TestConfigRejectsNestedIdentityDuplicates(t *testing.T) {
+	for _, nodes := range []string{
+		`{"https://example.org":{"sni":"a.invalid","sni":"b.invalid","pin_sha256":"sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}}`,
+		`{"https://example.org":{"sni":"a.invalid","SNI":"b.invalid","pin_sha256":"sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}}`,
+	} {
+		path := filepath.Join(t.TempDir(), "identity.json")
+		os.WriteFile(path, []byte(`{"server":"https://example.org","username":"u","password":"p","node_policies":`+nodes+`}`), 0600)
+		if _, err := ReadConfig(path); err == nil {
+			t.Fatal("ambiguous nested identity document accepted")
+		}
+	}
+}

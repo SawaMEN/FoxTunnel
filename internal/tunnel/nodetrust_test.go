@@ -1,6 +1,7 @@
 package tunnel
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -142,5 +143,55 @@ func TestNodePinsFailClosedOnMissingOrSymlinkedFile(t *testing.T) {
 		if err := c.SetNodePinsFile(link); err == nil {
 			t.Fatal("symbolic link trust policy accepted")
 		}
+	}
+}
+
+func TestManagedNodePoliciesAreImmutableAndReachNativeFactory(t *testing.T) {
+	primary, secondary := "https://127.0.0.1:443", "https://127.0.0.1:8443"
+	c, err := NewClient(primary, "u", "p", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	var snapshot map[string]tlsidentity.Policy
+	c.SetManagedHTTPTransportWithIdentity("h2-post", func(policies map[string]tlsidentity.Policy) (ManagedTransport, error) {
+		snapshot = policies
+		return nil, nil
+	})
+	if err = c.SetFallbackServers([]string{secondary}); err != nil {
+		t.Fatal(err)
+	}
+	pin := tlsidentity.Pin(&x509.Certificate{RawSubjectPublicKeyInfo: []byte("fixture")})
+	data, _ := json.Marshal(nodePinsDocument{Version: 1, Nodes: []nodePinEntry{{URL: primary, SNI: "first.invalid", PinSHA256: pin}, {URL: secondary, SNI: "second.invalid", PinSHA256: pin}}})
+	path := filepath.Join(t.TempDir(), "nodes.json")
+	if err = os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.SetNodePinsFile(path); err != nil {
+		t.Fatal(err)
+	}
+	c.managed.Lock()
+	_, err = c.managed.factory()
+	c.managed.Unlock()
+	if err != nil || len(snapshot) != 2 || snapshot[secondary].SNI != "second.invalid" {
+		t.Fatal("lost native node policy", err)
+	}
+	snapshot[secondary] = tlsidentity.Policy{}
+	if c.managed.nodePolicies[secondary].SNI != "second.invalid" {
+		t.Fatal("native factory mutated configured policy")
+	}
+	for _, operation := range []func() error{func() error { return c.SetFallbackServers([]string{secondary}) }, func() error { return c.SetNodePinsFile(path) }, func() error { return c.EnableBondDiscovery(context.Background()) }, func() error { return c.SetServerIdentity("other.invalid", pin) }, func() error { return c.SetTLSClientProfile("firefox-158") }, func() error { return c.SetHTTP2ReceiveProfile("firefox-158") }} {
+		if err = operation(); err == nil {
+			t.Fatal("accepted mutable/ambiguous native identity policy")
+		}
+	}
+	plain, err := NewClient(primary, "u", "p", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plain.Close()
+	plain.SetManagedHTTPTransport("h2-post", func() (ManagedTransport, error) { return nil, nil })
+	if err = plain.SetNodePinsFile(path); err == nil {
+		t.Fatal("adapter without identity capability accepted pins")
 	}
 }

@@ -533,9 +533,8 @@ func main() {
 		failClient := func(v ...any) { client.Close(); log.Fatal(v...) }
 		intent := transportengine.Config{
 			Engine: *engine, Transport: *nativeTransport, NeckoBundle: *neckoBundle,
-			AutoNeckoExcluded: ((wirePolicy == contract.ProtocolStrict || *padding) && !transportengine.NativeHTTPHeaders(*nativeTransport)) ||
-				*nodePinsFile != "",
-			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,
+			AutoNeckoExcluded: ((wirePolicy == contract.ProtocolStrict || *padding) && !transportengine.NativeHTTPHeaders(*nativeTransport)),
+			TLSBackend:        *tlsBackend, QUICBackend: *quicBackend,
 			H3Fallback: *h3Fallback, QUICHandshakeTimeout: *quicTimeout,
 			TLSClientProfile: *tlsProfile, HTTP2ReceiveProfile: *h2Profile,
 		}
@@ -544,11 +543,6 @@ func main() {
 			fs.Visit(func(f *flag.Flag) { explicit[f.Name] = true })
 			if !explicit["quic-backend"] {
 				intent.QUICBackend = ""
-			}
-			for _, name := range []string{"node-pins-file"} {
-				if explicit[name] {
-					failClient("Necko does not support " + name)
-				}
 			}
 			if *neckoBundle == "" {
 				exe, e := os.Executable()

@@ -90,6 +90,9 @@ type bondDiscovery struct {
 // coordinator. Its listed origins receive the same credentials after TLS/h2.
 // Call after TLS/timeouts, before Serve. A failed initial fetch fails closed.
 func (c *Client) EnableBondDiscovery(ctx context.Context) error {
+	if c.managed != nil && len(c.managed.nodePolicies) != 0 {
+		return errors.New("cannot combine dynamic discovery and static per-node SPKI pins")
+	}
 	if c.RequireProtocolNegotiation {
 		return errors.New("strict protocol policy is not supported with bond/discovery")
 	}

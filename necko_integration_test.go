@@ -60,10 +60,17 @@ func TestIntegratedNecko(t *testing.T) {
 				t.Fatal(e)
 			}
 			identityPin := tlsidentity.Pin(parsedLeaf)
+			nodePinsPath := filepath.Join(t.TempDir(), "node-pins.json")
+
 			proxy := httptest.NewUnstartedServer(handler)
 			proxy.EnableHTTP2 = true
 			proxy.TLS = &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{{Certificate: [][]byte{der}, PrivateKey: key}}}
 			proxy.StartTLS()
+			nodeDoc, _ := json.Marshal(map[string]any{"v": 1, "nodes": []map[string]string{{"url": proxy.URL, "sni": "identity.invalid", "pin_sha256": identityPin}}})
+			if e = os.WriteFile(nodePinsPath, nodeDoc, 0600); e != nil {
+				t.Fatal(e)
+			}
+
 			defer proxy.Close()
 			ca := filepath.Join(t.TempDir(), "ca.pem")
 			if err = os.WriteFile(ca, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER}), 0600); err != nil {
@@ -117,6 +124,23 @@ func TestIntegratedNecko(t *testing.T) {
 					}
 				})
 			}
+			t.Run("SDK-node-pins", func(t *testing.T) {
+				c, e := ft.NewClient(ft.ClientConfig{Engine: "auto", NeckoBundle: bundle, ServerURL: proxy.URL, CACertFile: ca, Transport: mode, Credentials: ft.Credentials{Username: "u", Password: "p"}, NodePinsFile: nodePinsPath})
+				if e != nil {
+					t.Fatal(e)
+				}
+				defer c.Close()
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				conn, e := c.DialContext(ctx, "tcp", echo.Addr().String())
+				if e != nil {
+					t.Fatal(e)
+				}
+				integratedNeckoTransfer(t, conn)
+				if c.Status().Engine != "necko" {
+					t.Fatal("per-node pin policy downgraded engine")
+				}
+			})
 			t.Run("SDK", func(t *testing.T) {
 				c, e := ft.NewClient(ft.ClientConfig{Engine: "necko", NeckoBundle: bundle, ServerURL: proxy.URL, CACertFile: ca, Transport: mode, Credentials: ft.Credentials{Username: "u", Password: "p"}, MaxConnections: 1})
 				if e != nil {
@@ -274,10 +298,14 @@ func TestIntegratedNecko(t *testing.T) {
 					integratedNeckoTransfer(t, conn)
 				})
 			}
-			for _, useIdentity := range []bool{false, true} {
+			for _, identityMode := range []string{"default", "primary", "nodes"} {
+				useIdentity := identityMode == "primary"
 				name := "CLI"
 				if useIdentity {
 					name = "CLI-identity"
+				}
+				if identityMode == "nodes" {
+					name = "CLI-node-pins"
 				}
 				t.Run(name, func(t *testing.T) {
 					ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -288,6 +316,9 @@ func TestIntegratedNecko(t *testing.T) {
 						if mode != "h3-connect" && mode != "h3-post" {
 							cmd.Args = append(cmd.Args, "--tls-client-profile", "firefox-158", "--h2-receive-profile", "firefox-158")
 						}
+					}
+					if identityMode == "nodes" {
+						cmd.Args = append(cmd.Args, "--node-pins-file", nodePinsPath)
 					}
 					cmd.Dir = t.TempDir()
 					cmd.Env = append(os.Environ(), "FOXTUNNEL_USER=u", "FOXTUNNEL_PASSWORD=p")

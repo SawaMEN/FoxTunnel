@@ -3,6 +3,7 @@ package tunnel
 import (
 	"context"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"io"
 	"net"
 	"net/url"
@@ -18,10 +19,12 @@ type ManagedTransport interface {
 
 type managedTransport struct {
 	sync.Mutex
-	factory   func() (ManagedTransport, error)
-	transport ManagedTransport
-	closed    bool
-	http      bool
+	acceptsNodePolicies bool
+	nodePolicies        map[string]tlsidentity.Policy
+	factory             func() (ManagedTransport, error)
+	transport           ManagedTransport
+	closed              bool
+	http                bool
 }
 
 // SetManagedTransport installs an owned native engine before concurrent use.

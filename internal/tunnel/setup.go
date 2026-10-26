@@ -35,6 +35,9 @@ func parseServerURL(raw string) (*url.URL, error) {
 // Every origin receives the configured proxy credentials, but only after TLS
 // verification. No discovery, redirects, cleartext fallback or protocol change.
 func (c *Client) SetFallbackServers(rawURLs []string) error {
+	if c.managed != nil && len(c.managed.nodePolicies) != 0 {
+		return errors.New("configure fallback servers before per-node SPKI pins")
+	}
 	if pool, ok := c.transport.(*identityPool); ok && len(pool.nodePolicies) != 0 {
 		return errors.New("configure fallback servers before per-node SPKI pins")
 	}

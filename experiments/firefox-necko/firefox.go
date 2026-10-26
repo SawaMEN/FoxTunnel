@@ -10,8 +10,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/net/idna"
 	"io"
 	"net"
+	"net/netip"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +26,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/FoxTunnel/internal/safejson"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 )
 
@@ -32,23 +36,24 @@ var clientScript []byte
 // Config selects native Necko policy in the dedicated helper. Server identity
 // applies to the configured primary origin; other origins retain their own identity.
 type Config struct {
-	ServerName             string `json:"server_name,omitempty"`
-	SPKIPin                string `json:"spki_pin,omitempty"`
-	TLSClientProfile       string `json:"tls_client_profile,omitempty"`
-	HTTP2ReceiveProfile    string `json:"http2_receive_profile,omitempty"`
-	SOCKSToken             string `json:"-"` // Private authenticated IPC; not accepted in user JSON.
-	Server                 string `json:"server"`
-	Username               string `json:"username"`
-	Password               string `json:"password"`
-	Transport              string `json:"transport"`
-	Listen                 string `json:"listen"`
-	CACert                 string `json:"ca_cert,omitempty"`
-	MaxConnections         int    `json:"max_connections,omitempty"`
-	ConnectTimeoutMS       int    `json:"connect_timeout_ms,omitempty"`
-	IdleTimeoutMS          int    `json:"idle_timeout_ms,omitempty"`
-	DrainTimeoutMS         int    `json:"drain_timeout_ms,omitempty"`
-	MaxRetainedConnections int    `json:"max_retained_connections,omitempty"`
-	StatsIntervalMS        int    `json:"stats_interval_ms,omitempty"`
+	NodePolicies           map[string]tlsidentity.Policy `json:"node_policies,omitempty"`
+	ServerName             string                        `json:"server_name,omitempty"`
+	SPKIPin                string                        `json:"spki_pin,omitempty"`
+	TLSClientProfile       string                        `json:"tls_client_profile,omitempty"`
+	HTTP2ReceiveProfile    string                        `json:"http2_receive_profile,omitempty"`
+	SOCKSToken             string                        `json:"-"` // Private authenticated IPC; not accepted in user JSON.
+	Server                 string                        `json:"server"`
+	Username               string                        `json:"username"`
+	Password               string                        `json:"password"`
+	Transport              string                        `json:"transport"`
+	Listen                 string                        `json:"listen"`
+	CACert                 string                        `json:"ca_cert,omitempty"`
+	MaxConnections         int                           `json:"max_connections,omitempty"`
+	ConnectTimeoutMS       int                           `json:"connect_timeout_ms,omitempty"`
+	IdleTimeoutMS          int                           `json:"idle_timeout_ms,omitempty"`
+	DrainTimeoutMS         int                           `json:"drain_timeout_ms,omitempty"`
+	MaxRetainedConnections int                           `json:"max_retained_connections,omitempty"`
+	StatsIntervalMS        int                           `json:"stats_interval_ms,omitempty"`
 }
 
 func (c Config) normalize() (Config, error) {
@@ -62,6 +67,40 @@ func (c Config) normalize() (Config, error) {
 		return c, err
 	}
 	c.ServerName, c.SPKIPin = policy.SNI, policy.PinSHA256
+	if len(c.NodePolicies) != 0 {
+		if len(c.NodePolicies) > 8 || c.ServerName != "" || c.SPKIPin != "" {
+			return c, errors.New("per-node policies require explicit pinned origins without a primary override")
+		}
+		nodes := make(map[string]tlsidentity.Policy, len(c.NodePolicies))
+		for origin, nodePolicy := range c.NodePolicies {
+			endpoint, e := cluster.Origin(origin)
+			if e != nil {
+				return c, errors.New("invalid native node policy origin")
+			}
+			key, e := nativeOriginKey(endpoint)
+			if e != nil {
+				return c, e
+			}
+			origin = "https://" + key
+			validated, e := tlsidentity.Normalize(nodePolicy.SNI, nodePolicy.PinSHA256)
+			if e != nil || validated.PinSHA256 == "" {
+				return c, errors.New("native node policy requires a valid SPKI pin")
+			}
+			if _, duplicate := nodes[origin]; duplicate {
+				return c, errors.New("duplicate native node policy origin")
+			}
+			nodes[origin] = validated
+		}
+		primary, e := nativeOriginKey(u)
+		if e != nil {
+			return c, e
+		}
+		if _, ok := nodes["https://"+primary]; !ok {
+			return c, errors.New("missing primary native node identity")
+		}
+		c.NodePolicies = nodes
+	}
+
 	if !authheader.ValidCredentials(c.Username, c.Password) {
 		return c, errors.New("Firefox requires valid proxy credentials")
 	}
@@ -117,6 +156,24 @@ func (c Config) normalize() (Config, error) {
 	return c, nil
 }
 
+func nativeOriginKey(u *url.URL) (string, error) {
+	host := strings.ToLower(u.Hostname())
+	if ip, e := netip.ParseAddr(host); e == nil {
+		host = ip.String()
+	} else {
+		var e error
+		host, e = idna.Lookup.ToASCII(host)
+		if e != nil {
+			return "", errors.New("invalid native origin hostname")
+		}
+	}
+	port := 443
+	if u.Port() != "" {
+		port, _ = strconv.Atoi(u.Port())
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port)), nil
+}
+
 // ValidateProfiles rejects incompatible TCP-specific presets on QUIC.
 func ValidateProfiles(transport, tlsProfile, receiveProfile string) error {
 	if err := nsstls.ValidateClientProfile(tlsProfile); err != nil {
@@ -143,51 +200,32 @@ func ReadConfig(path string) (Config, error) {
 	if err != nil || len(data) > 64<<10 {
 		return Config{}, errors.New("invalid Firefox configuration")
 	}
-	// Reject duplicate keys too: json.Decoder otherwise accepts the last one.
-	d := json.NewDecoder(bytes.NewReader(data))
-	if token, err := d.Token(); err != nil || token != json.Delim('{') {
-		return Config{}, errors.New("invalid Firefox configuration")
-	}
-	seen := map[string]bool{}
-	for d.More() {
-		key, err := d.Token()
-		name, ok := key.(string)
-		if err != nil || !ok || seen[strings.ToLower(name)] {
-			return Config{}, errors.New("invalid Firefox configuration")
-		}
-		seen[strings.ToLower(name)] = true
-		var value json.RawMessage
-		if d.Decode(&value) != nil {
-			return Config{}, errors.New("invalid Firefox configuration")
-		}
-	}
 	var c Config
-	d = json.NewDecoder(bytes.NewReader(data))
-	d.DisallowUnknownFields()
-	if d.Decode(&c) != nil || d.Decode(new(any)) != io.EOF {
+	if safejson.Decode(bytes.NewReader(data), 1<<20, &c) != nil {
 		return Config{}, errors.New("invalid Firefox configuration")
 	}
 	return c.normalize()
 }
 
 type runtimeConfig struct {
-	ServerName             string `json:"server_name,omitempty"`
-	SPKIPin                string `json:"pin_sha256,omitempty"`
-	TLSClientProfile       string `json:"tls_client_profile,omitempty"`
-	HTTP2ReceiveProfile    string `json:"http2_receive_profile,omitempty"`
-	SOCKSToken             string `json:"socks_token,omitempty"`
-	ProxyHost              string `json:"proxy_host"`
-	ProxyPort              int    `json:"proxy_port"`
-	Authorization          string `json:"authorization"`
-	Transport              string `json:"transport"`
-	ListenPort             int    `json:"listen_port"`
-	MaxConnections         int    `json:"max_connections"`
-	ConnectTimeoutMS       int    `json:"connect_timeout_ms"`
-	CAPEM                  string `json:"ca_pem"`
-	IdleTimeoutMS          int    `json:"idle_timeout_ms"`
-	DrainTimeoutMS         int    `json:"drain_timeout_ms"`
-	MaxRetainedConnections int    `json:"max_retained_connections"`
-	StatsIntervalMS        int    `json:"stats_interval_ms"`
+	NodePolicies           map[string]tlsidentity.Policy `json:"node_policies,omitempty"`
+	ServerName             string                        `json:"server_name,omitempty"`
+	SPKIPin                string                        `json:"pin_sha256,omitempty"`
+	TLSClientProfile       string                        `json:"tls_client_profile,omitempty"`
+	HTTP2ReceiveProfile    string                        `json:"http2_receive_profile,omitempty"`
+	SOCKSToken             string                        `json:"socks_token,omitempty"`
+	ProxyHost              string                        `json:"proxy_host"`
+	ProxyPort              int                           `json:"proxy_port"`
+	Authorization          string                        `json:"authorization"`
+	Transport              string                        `json:"transport"`
+	ListenPort             int                           `json:"listen_port"`
+	MaxConnections         int                           `json:"max_connections"`
+	ConnectTimeoutMS       int                           `json:"connect_timeout_ms"`
+	CAPEM                  string                        `json:"ca_pem"`
+	IdleTimeoutMS          int                           `json:"idle_timeout_ms"`
+	DrainTimeoutMS         int                           `json:"drain_timeout_ms"`
+	MaxRetainedConnections int                           `json:"max_retained_connections"`
+	StatsIntervalMS        int                           `json:"stats_interval_ms"`
 }
 
 // Run owns a fresh private profile and helper process. Credentials never appear
@@ -239,7 +277,13 @@ func runWithClient(ctx context.Context, runtimePath string, config Config, stdou
 	if err := os.Mkdir(filepath.Join(private, "profile"), 0700); err != nil {
 		return err
 	}
-	data, err := json.Marshal(runtimeConfig{ServerName: c.ServerName, SPKIPin: c.SPKIPin, TLSClientProfile: c.TLSClientProfile, HTTP2ReceiveProfile: c.HTTP2ReceiveProfile, SOCKSToken: c.SOCKSToken, ProxyHost: u.Hostname(), ProxyPort: proxyPort, Authorization: "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)), Transport: c.Transport, ListenPort: listenPort, MaxConnections: c.MaxConnections, ConnectTimeoutMS: c.ConnectTimeoutMS, CAPEM: string(ca), IdleTimeoutMS: c.IdleTimeoutMS, DrainTimeoutMS: c.DrainTimeoutMS, MaxRetainedConnections: c.MaxRetainedConnections, StatsIntervalMS: c.StatsIntervalMS})
+	runtimeNodes := make(map[string]tlsidentity.Policy, len(c.NodePolicies))
+	for origin, policy := range c.NodePolicies {
+		endpoint, _ := cluster.Origin(origin)
+		key, _ := nativeOriginKey(endpoint)
+		runtimeNodes[key] = policy
+	}
+	data, err := json.Marshal(runtimeConfig{NodePolicies: runtimeNodes, ServerName: c.ServerName, SPKIPin: c.SPKIPin, TLSClientProfile: c.TLSClientProfile, HTTP2ReceiveProfile: c.HTTP2ReceiveProfile, SOCKSToken: c.SOCKSToken, ProxyHost: u.Hostname(), ProxyPort: proxyPort, Authorization: "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)), Transport: c.Transport, ListenPort: listenPort, MaxConnections: c.MaxConnections, ConnectTimeoutMS: c.ConnectTimeoutMS, CAPEM: string(ca), IdleTimeoutMS: c.IdleTimeoutMS, DrainTimeoutMS: c.DrainTimeoutMS, MaxRetainedConnections: c.MaxRetainedConnections, StatsIntervalMS: c.StatsIntervalMS})
 	if err != nil {
 		return err
 	}

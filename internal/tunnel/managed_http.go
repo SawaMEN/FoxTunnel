@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
 
@@ -18,6 +19,22 @@ func (c *Client) SetManagedHTTPTransport(mode string, factory func() (ManagedTra
 	c.backend = "auto"
 	c.configureManagedHTTP()
 }
+
+// SetManagedHTTPTransportWithIdentity delivers the immutable, validated node
+// policies to the native factory. Prepare invokes it under the managed lock.
+func (c *Client) SetManagedHTTPTransportWithIdentity(mode string, factory func(map[string]tlsidentity.Policy) (ManagedTransport, error)) {
+	var owner *managedTransport
+	c.SetManagedHTTPTransport(mode, func() (ManagedTransport, error) {
+		policies := make(map[string]tlsidentity.Policy, len(owner.nodePolicies))
+		for origin, policy := range owner.nodePolicies {
+			policies[origin] = policy
+		}
+		return factory(policies)
+	})
+	owner = c.managed
+	owner.acceptsNodePolicies = true
+}
+
 func (c *Client) configureManagedHTTP() {
 	var transport tlsTransport = managedHTTPTransport{client: c}
 	if xhttp.IsMode(c.nativeTransport) {

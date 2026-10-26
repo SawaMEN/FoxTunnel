@@ -58,6 +58,7 @@ type ClientConfig struct {
 	H3Fallback           string // Empty/none or h2; only before a Neqo HTTP request is created.
 	QUICHandshakeTimeout time.Duration
 	ServerName, SPKIPin  string
+	NodePinsFile         string // Owner-only per-origin trust file; configure all explicit nodes.
 	XHTTPPath, XHTTPHost string
 	HTTP2ReceiveProfile  string
 	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
@@ -125,6 +126,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 	if err = core.SetFallbackServers(config.FallbackServers); err != nil {
 		return nil, err
+	}
+	if config.NodePinsFile != "" {
+		if err = core.SetNodePinsFile(config.NodePinsFile); err != nil {
+			return nil, err
+		}
 	}
 	mode := config.Balance
 	if mode == "" {

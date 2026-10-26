@@ -329,3 +329,91 @@ func TestGeckoManagedHTTPIdentityOriginScope(t *testing.T) {
 		})
 	}
 }
+
+func TestNativeNodeIdentityNormalization(t *testing.T) {
+	pin := "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+	cfg := Config{Server: "https://EXAMPLE.invalid", Username: "u", Password: "p", NodePolicies: map[string]tlsidentity.Policy{"https://example.invalid:0443": {SNI: "CERT.INVALID", PinSHA256: pin}}}
+	normalized, err := cfg.normalize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := normalized.normalize()
+	if err != nil || again.NodePolicies["https://example.invalid:443"].SNI != "cert.invalid" {
+		t.Fatal("node identity normalization is not canonical/idempotent", err)
+	}
+	for _, nodes := range []map[string]tlsidentity.Policy{
+		{"https://other.invalid": {PinSHA256: pin}},
+		{"https://example.invalid": {}},
+		{"https://example.invalid": {PinSHA256: pin}, "https://EXAMPLE.invalid:0443": {PinSHA256: pin}},
+	} {
+		cfg.NodePolicies = nodes
+		if _, err := cfg.normalize(); err == nil {
+			t.Fatal("accepted incomplete/ambiguous node identity")
+		}
+	}
+}
+
+func TestGeckoManagedHTTPNodePins(t *testing.T) {
+	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	if bundle == "" {
+		t.Skip("rebuilt per-node identity bundle required")
+	}
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) {
+			for _, fault := range []string{"valid", "wrong-second-pin", "unlisted-origin"} {
+				t.Run(fault, func(t *testing.T) {
+					var counts [2]atomic.Int32
+					configs := make([]Config, 2)
+					pins := make([]string, 2)
+					var roots []byte
+					names := []string{"first.invalid", "second.invalid"}
+					for i := range configs {
+						cert, ca := testCertificate(t, names[i])
+						leaf, _ := x509.ParseCertificate(cert.Certificate[0])
+						pins[i] = tlsidentity.Pin(leaf)
+						configs[i] = nativeProxyConfigured(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { counts[i].Add(1); w.Write([]byte(names[i])) }), func(s *httptest.Server) { s.TLS.Certificates = []tls.Certificate{cert} })
+						roots = append(roots, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca})...)
+					}
+					cfg := configs[0]
+					cfg.CACert = filepath.Join(t.TempDir(), "node-roots.pem")
+					os.WriteFile(cfg.CACert, roots, 0600)
+					cfg.NodePolicies = map[string]tlsidentity.Policy{configs[0].Server: {SNI: names[0], PinSHA256: pins[0]}, configs[1].Server: {SNI: names[1], PinSHA256: pins[1]}}
+					switch fault {
+					case "wrong-second-pin":
+						cfg.NodePolicies[configs[1].Server] = tlsidentity.Policy{SNI: names[1], PinSHA256: pins[0]}
+					case "unlisted-origin":
+						delete(cfg.NodePolicies, configs[1].Server)
+					}
+					m, err := NewManaged(bundle, cfg)
+					if err != nil {
+						t.Fatal(err)
+					}
+					defer m.Close()
+					ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+					defer cancel()
+					for i := range configs {
+						req, _ := http.NewRequestWithContext(ctx, "POST", configs[i].Server+"/", bytes.NewReader([]byte("never-before-pin")))
+						resp, err := m.RoundTrip(req)
+						if i == 1 && fault != "valid" {
+							if resp != nil {
+								resp.Body.Close()
+							}
+							if err == nil || counts[1].Load() != 0 {
+								t.Fatal("node pin/membership failure leaked an application request", err)
+							}
+							continue
+						}
+						if err != nil {
+							t.Fatal("independent node identity", err)
+						}
+						body, err := io.ReadAll(resp.Body)
+						resp.Body.Close()
+						if err != nil || string(body) != names[i] {
+							t.Fatal("independent node reply", err)
+						}
+					}
+				})
+			}
+		})
+	}
+}

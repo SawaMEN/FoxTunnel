@@ -207,7 +207,7 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 			return err
 		}
 		bundle := filepath.Dir(filepath.Dir(verified))
-		c.SetManagedHTTPTransport(p.Transport, func() (tunnel.ManagedTransport, error) {
+		c.SetManagedHTTPTransportWithIdentity(p.Transport, func(nodePolicies map[string]tlsidentity.Policy) (tunnel.ManagedTransport, error) {
 			nativeMode := p.Transport
 			if nativeMode == "h3-post" {
 				nativeMode = "h3-connect"
@@ -220,7 +220,7 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 			// applying that same limit here can reject a flow's own GET/POST pair.
 			// The helper keeps its separate bounded default of 256 operations;
 			// SDK/SOCKS admission continues to enforce the user's logical limit.
-			return firefox.NewManaged(bundle, firefox.Config{ServerName: identity.SNI, SPKIPin: identity.PinSHA256, TLSClientProfile: p.TLSClientProfile, HTTP2ReceiveProfile: p.HTTP2ReceiveProfile, Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: nativeMode, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
+			return firefox.NewManaged(bundle, firefox.Config{NodePolicies: nodePolicies, ServerName: identity.SNI, SPKIPin: identity.PinSHA256, TLSClientProfile: p.TLSClientProfile, HTTP2ReceiveProfile: p.HTTP2ReceiveProfile, Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: nativeMode, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
 		})
 		c.SetEngineStatus("necko", p.Transport, "nss", "necko", "none")
 		return nil
