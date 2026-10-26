@@ -540,3 +540,10 @@ follow-up's general CI is still running. Local full Go race checks and all 26 JS
 tests passed, including immutable native policy snapshots and nested duplicate
 JSON rejection. Native identity/profile tests remain unqualified until the new
 compiled bundle is available and those gates pass.
+
+The first source run `40286512326` failed on both architectures because
+`nsACString` does not provide the range iteration interface used by the DNS-name
+validator. The validator now traverses the native string by index and `CharAt`,
+with regenerated patch/source hashes. The failed runtime selection did not use
+an older binary or weaken provenance checks. Stage 5 remains **1/4** until the
+corrected native build and identity/profile gates pass.

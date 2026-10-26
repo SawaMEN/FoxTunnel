@@ -19,7 +19,7 @@
  #include "SharedCertVerifier.h"
  #include "mozilla/ErrorResult.h"
  #include "mozilla/StaticPrefs_network.h"
-@@ -22,6 +34,111 @@
+@@ -22,6 +34,112 @@
  using namespace mozilla;
  
  extern LazyLogModule gPIPNSSLog;
@@ -50,7 +50,8 @@
 +  }
 +  uint32_t label = 0;
 +  char previous = '.';
-+  for (char c : aName) {
++  for (uint32_t i = 0; i < aName.Length(); ++i) {
++    const char c = aName.CharAt(i);
 +    if (c == '.') {
 +      if (!label || previous == '-') { return false; }
 +      label = 0;
@@ -131,7 +132,7 @@
  
  NS_IMPL_ISUPPORTS(CommonSocketControl, nsITLSSocketControl)
  
-@@ -48,6 +165,21 @@
+@@ -48,6 +166,21 @@
  #if defined(MOZ_DIAGNOSTIC_ASSERT_ENABLED)
    mOwningThread = PR_GetCurrentThread();
  #endif
@@ -153,7 +154,7 @@
  }
  
  void CommonSocketControl::SetStatusErrorBits(
-@@ -170,6 +302,16 @@
+@@ -170,6 +303,16 @@
                                          int32_t port, bool* _retval) {
    COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
    *_retval = false;
