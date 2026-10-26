@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "status": "native-build-in-progress",
+  "status": "native-qualification-in-progress",
   "stage": 5,
-  "stage_checks_complete": 1,
+  "stage_checks_complete": 2,
   "stage_checks_total": 4,
   "overall_stages_complete": 4,
   "overall_stages_total": 6,
-  "candidate_code_commit": "adbe03c4c2bd52079a595be2fe5c57cadc89b542",
+  "candidate_code_commit": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e",
   "native_source_commit": "2d35a9bff3caf64ecb0088618556797f60c5dbb2",
   "source_run": 40317262284,
-  "runtime_run": 40317917970,
+  "runtime_run": 40321468060,
   "failed_source_run": 40286512326,
-  "failure": "Pinned nsACString does not support range-based iteration; corrected to indexed CharAt traversal",
+  "failure": "Previous ARM64 source gates exceeded the unchanged RSS growth bound; runtime audit flagged H2 SETTINGS ACK / HPACK scheduling differences. First compiled profile test expected unfiltered NSS signature ordering.",
   "source_lock_sha256": "0e50df6a76eb0d490415f5fbda1a0d6faab2f06ed02c4e233098a60919feab43",
-  "client_js_sha256": "5b42088b4d07608ea2e084d70e0fed8deecb67c87ecbb6c93b6c49dd509143f2",
+  "client_js_sha256": "637e8bf2d5b72790a150e4064f603ef8d78b214964287e83d667e569268de868",
   "native_patches": 28,
   "local_checks": [
     "Corrected patch applies exactly to the pinned original source and matches updated output digest",
@@ -21,13 +21,40 @@
     "Go race checks for firefox-necko and transportengine passed",
     "JavaScript tests: 26 passed",
     "Native direct-policy test script syntax checked",
-    "Documentation links and whitespace checks passed"
+    "Documentation links and whitespace checks passed",
+    "Verified rebuilt amd64 bundle: native SNI/SPKI, TLS/H2 presets, origin scope, per-node pins and immutable API gates passed",
+    "All POST/CONNECT/UDP-v1/UDP-v2 negative gates complete before their shared context expires",
+    "60-second H2/H3 shrinking-GC soak passed unchanged resource limits",
+    "Nine paired native wire / Firefox self-control repetitions per protocol: strict audit passed with inconclusive variable fields, no unexpected differences",
+    "17 native managed groups each passed three times on the verified AMD64 bundle (51 top-level executions)"
   ],
   "pending": [
-    "Complete corrected C++ build on Linux amd64 and ARM64",
-    "Run compiled SNI/SPKI and per-node policy positive/negative gates",
-    "Run measured native TLS/H2 profile and direct immutable API checks",
-    "Qualify updated CLI/SDK and regressions; retain evidence and promote to xfd"
+    "Complete independent AMD64 and ARM64 native runtime/security/profile gates",
+    "Complete nine paired wire/self-control repetitions per protocol with strict raw-field enforcement",
+    "Qualify updated CLI/SDK and resource regressions; retain final evidence and promote to xfd"
   ],
-  "promotion": "Not promoted; xfd remains at qualified stage 4"
+  "promotion": "Not promoted; xfd remains at qualified stage 4",
+  "previous_runtime_run": 40317917970,
+  "native_compilation": {
+    "amd64": "passed",
+    "arm64": "passed",
+    "source_run": 40317262284,
+    "note": "Compilation passed on both; ARM64 source operational gate failed. New runtime gates independently recheck the exact source artifact."
+  },
+  "wire_gates": {
+    "amd64": {
+      "candidate_trials_per_protocol": 9,
+      "firefox_self_trials_per_protocol": 9,
+      "unexpected_differences": 0,
+      "status": "inconclusive",
+      "raw_reports_reproduced": true
+    },
+    "arm64": {
+      "candidate_trials_per_protocol": 9,
+      "firefox_self_trials_per_protocol": 9,
+      "unexpected_differences": 0,
+      "status": "inconclusive",
+      "raw_reports_reproduced": true
+    }
+  }
 }

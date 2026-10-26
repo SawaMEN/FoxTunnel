@@ -485,16 +485,16 @@ bridge or Android/macOS Necko. `main` is unchanged.
 
 ### Stage 5 candidate: native identity and profile policy
 
-Stage 5 progress: **1 of 4 steps confirmed**; overall completion remains
+Stage 5 progress: **2 of 4 steps confirmed**; overall completion remains
 **4 of 6 stages**. Work is isolated on `xfd-identity`, based on the qualified
-stage-4 tree. The new 28-patch source lock is a candidate until rebuilt and
-qualified on both native architectures. No promotion to `xfd` is claimed yet.
+stage-4 tree. The new 28-patch source lock compiled on both native architectures;
+runtime qualification remains in progress. No promotion to `xfd` is claimed yet.
 
 1. Done: identify trust, origin scope, session/coalescing and profile boundaries.
-2. Candidate implementation: primary SNI/SPKI, bounded native TLS/H2 presets,
+2. Done: primary SNI/SPKI, bounded native TLS/H2 presets,
    immutable policy registration and CLI/SDK wiring, including owner-only
    per-node pin files with exact configured-origin membership.
-3. Pending: rebuilt native positive/negative trust gates and wire measurements.
+3. Pending: qualify native positive/negative trust gates and wire measurements on both architectures.
 4. Pending: native CLI/SDK, amd64/ARM64 regressions, evidence and qualification.
 
 A helper-only parent-process API registers an immutable policy for each native
@@ -557,3 +557,25 @@ requires its exact lock and includes native invalid-name/pin/port, idempotence
 and immutable-policy API assertions. See the current
 [stage-5 checkpoint](validation/identity/progress.json). Both native results
 remain pending; `xfd` retains the qualified stage-4 implementation.
+
+
+The corrected C++ build passed on **both architectures** in source run
+`40317262284`. Its ARM64 resource gate failed with roughly 211 MiB RSS growth;
+compiled artifacts retain exact native provenance and require fresh gates.
+Runtime run `40317917970` also exposed H2 SETTINGS ACK / HPACK table-update
+scheduling outside its three Firefox self-control samples. The raw reports and
+resource samples are preserved in `validation/identity/checkpoint-2of4/`.
+
+Candidate `23c4eb6` uses a shrinking final GC after cycle collection to release
+unused shell arenas, retaining the same five-second maintenance cadence and
+RSS/FD limits. It samples nine candidate and nine Firefox self comparisons per
+protocol, retaining all raw fields and strict enforcement. Native TLS tests now
+expect NSS's actual TLS-1.3 filtering (PKCS#1 certificate schemes last), matching
+the pre-existing NSS profile test. Denied-peer tests bound helper setup and
+assert their overall context has not expired before all four carriers finish.
+
+The rebuilt verified amd64 bundle passed native identity, profile, origin-scope,
+node-pin and direct API gates locally. The 60-second H2/H3 load passed unchanged
+resource limits. These do not qualify ARM64. Both architectures are being
+rechecked by [runtime run 40321468060](https://github.com/SawaMEN/FoxTunnel/actions/runs/40321468060).
+Current progress remains **2/4**, overall **4/6**; `xfd` and `main` are unchanged.
