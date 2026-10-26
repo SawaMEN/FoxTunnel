@@ -1,0 +1,181 @@
+2026-10-26T12:18:44.0499086Z - necko-linux-arm64-runtime (ID: 12647738810, Size: 153932068, Expected Digest: sha256:649524a443bd0e338a7d2e99e996cc8324d68c12d089d3cb941632c281a64a5e)
+2026-10-26T12:18:48.0258863Z - necko-source-provenance-arm64 (ID: 12649005034, Size: 44288, Expected Digest: sha256:0464c164c5b12311b5ca6db191637edcb2963540aa3c78254e48c2ca2bc846ba)
+2026-10-26T12:19:15.6733639Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s
+2026-10-26T12:19:28.6311860Z --- PASS: TestGeckoBrowserFingerprint (10.12s)
+2026-10-26T12:19:43.8106761Z --- PASS: TestGeckoFirefoxSelfComparison (15.18s)
+2026-10-26T12:19:44.0340259Z --- PASS: TestGeckoCONNECT (0.22s)
+2026-10-26T12:19:44.2515686Z --- PASS: TestGeckoCONNECTHandoff (0.22s)
+2026-10-26T12:19:56.5924196Z --- PASS: TestGeckoTrustBeforeCredentials (12.34s)
+2026-10-26T12:19:57.0288516Z --- PASS: TestGeckoConcurrentCONNECT (0.44s)
+2026-10-26T12:20:05.3731994Z --- PASS: TestGeckoCancellation (8.34s)
+2026-10-26T12:20:06.4489785Z --- PASS: TestGeckoH3NoTCPFallback (1.08s)
+2026-10-26T12:20:06.5042494Z --- PASS: TestGeckoLocalHalfClose (0.05s)
+2026-10-26T12:20:07.0406052Z --- PASS: TestGeckoManagedBond (0.54s)
+2026-10-26T12:20:07.2246606Z --- PASS: TestGeckoManagedHTTPNoReplay (0.18s)
+2026-10-26T12:20:07.4425399Z --- PASS: TestGeckoManagedHTTPConnect (0.22s)
+2026-10-26T12:20:07.6059238Z --- PASS: TestGeckoManagedHTTPGetAndTrust (0.16s)
+2026-10-26T12:20:07.7097127Z --- PASS: TestGeckoManagedHTTPAlternateOriginAndOutage (0.10s)
+2026-10-26T12:20:07.8231352Z --- PASS: TestGeckoManagedHTTPFixedUpload (0.11s)
+2026-10-26T12:20:07.9071547Z --- PASS: TestGeckoManagedHTTPInteractiveDownload (0.08s)
+2026-10-26T12:20:08.1379892Z --- PASS: TestGeckoManagedXHTTP (0.23s)
+2026-10-26T12:20:11.8752381Z --- PASS: TestGeckoNetworkRecovery (3.74s)
+2026-10-26T12:20:14.8158532Z --- PASS: TestGeckoIdleAndDrainLimits (2.94s)
+2026-10-26T12:20:15.3968754Z --- PASS: TestGeckoReverseHalfClose (0.58s)
+2026-10-26T12:20:17.0417582Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:20:17.0427810Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:20:27.1084517Z --- PASS: TestGeckoBrowserFingerprint (10.06s)
+2026-10-26T12:20:41.1115954Z --- PASS: TestGeckoFirefoxSelfComparison (14.00s)
+2026-10-26T12:20:41.1131826Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:20:41.1135123Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:20:51.2297668Z --- PASS: TestGeckoBrowserFingerprint (10.12s)
+2026-10-26T12:21:04.9619753Z --- PASS: TestGeckoFirefoxSelfComparison (13.73s)
+2026-10-26T12:21:04.9637933Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:21:04.9640795Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:21:14.9997019Z --- PASS: TestGeckoBrowserFingerprint (10.04s)
+2026-10-26T12:21:29.0025558Z --- PASS: TestGeckoFirefoxSelfComparison (14.00s)
+2026-10-26T12:21:29.0045693Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:21:29.0048591Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:21:38.9969288Z --- PASS: TestGeckoBrowserFingerprint (9.99s)
+2026-10-26T12:21:52.7764770Z --- PASS: TestGeckoFirefoxSelfComparison (13.78s)
+2026-10-26T12:21:52.7777519Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:21:52.7780354Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:22:02.8219568Z --- PASS: TestGeckoBrowserFingerprint (10.04s)
+2026-10-26T12:22:16.5698039Z --- PASS: TestGeckoFirefoxSelfComparison (13.75s)
+2026-10-26T12:22:16.5712534Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:22:16.5715496Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:22:26.7117200Z --- PASS: TestGeckoBrowserFingerprint (10.14s)
+2026-10-26T12:22:40.5975937Z --- PASS: TestGeckoFirefoxSelfComparison (13.89s)
+2026-10-26T12:22:40.5989103Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:22:40.5991847Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:22:50.6536594Z --- PASS: TestGeckoBrowserFingerprint (10.05s)
+2026-10-26T12:23:04.3168958Z --- PASS: TestGeckoFirefoxSelfComparison (13.66s)
+2026-10-26T12:23:04.3182860Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:23:04.3185518Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:23:14.2903692Z --- PASS: TestGeckoBrowserFingerprint (9.97s)
+2026-10-26T12:23:28.1755873Z --- PASS: TestGeckoFirefoxSelfComparison (13.88s)
+2026-10-26T12:23:28.1773223Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
+2026-10-26T12:23:28.1775879Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
+2026-10-26T12:23:38.1203064Z --- PASS: TestGeckoBrowserFingerprint (9.94s)
+2026-10-26T12:23:51.8966917Z --- PASS: TestGeckoFirefoxSelfComparison (13.78s)
+2026-10-26T12:23:53.0839514Z FX fingerprint audit: inconclusive
+2026-10-26T12:23:53.0840693Z h2-connect unexpected: none inconclusive: connection_1.h2_frames, connection_1.hpack_blocks sporadic: none
+2026-10-26T12:23:53.0842535Z h3-connect unexpected: none inconclusive: connection_1.hello.extensions, connection_1.hello.ja3, connection_1.hello.ja3_md5, connection_2.hello.extensions, connection_2.hello.ja3, connection_2.hello.ja3_md5 sporadic: none
+2026-10-26T12:23:54.1716964Z ##[group]Run go test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s
+2026-10-26T12:23:54.5629042Z --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper (0.01s)
+2026-10-26T12:23:54.5639223Z --- PASS: TestLifetimeConfigValidation (0.00s)
+2026-10-26T12:23:54.5650665Z --- PASS: TestBundleResolvesVersionPointerBeforeExecution (0.00s)
+2026-10-26T12:23:54.5652016Z --- PASS: TestBundleExecutionPlatformGate (0.00s)
+2026-10-26T12:23:54.5877405Z --- PASS: TestBundleArchitectureCannotBeRelabeledOrMixed (0.02s)
+2026-10-26T12:23:58.3341185Z --- PASS: TestGeckoNetworkRecovery (3.75s)
+2026-10-26T12:23:58.4367461Z --- PASS: TestNetworkRelayPeers (0.10s)
+2026-10-26T12:24:01.3964323Z --- PASS: TestGeckoIdleAndDrainLimits (2.96s)
+2026-10-26T12:24:01.4089865Z --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper (0.01s)
+2026-10-26T12:24:01.4099406Z --- PASS: TestLifetimeConfigValidation (0.00s)
+2026-10-26T12:24:01.4108971Z --- PASS: TestBundleResolvesVersionPointerBeforeExecution (0.00s)
+2026-10-26T12:24:01.4110122Z --- PASS: TestBundleExecutionPlatformGate (0.00s)
+2026-10-26T12:24:01.4326584Z --- PASS: TestBundleArchitectureCannotBeRelabeledOrMixed (0.02s)
+2026-10-26T12:24:05.1658479Z --- PASS: TestGeckoNetworkRecovery (3.73s)
+2026-10-26T12:24:05.2688646Z --- PASS: TestNetworkRelayPeers (0.10s)
+2026-10-26T12:24:08.2205337Z --- PASS: TestGeckoIdleAndDrainLimits (2.95s)
+2026-10-26T12:24:08.2332715Z --- PASS: TestBundleRejectsCorruptionLinksAndIncompatibleHelper (0.01s)
+2026-10-26T12:24:08.2555102Z --- PASS: TestLifetimeConfigValidation (0.00s)
+2026-10-26T12:24:08.2556023Z --- PASS: TestBundleResolvesVersionPointerBeforeExecution (0.00s)
+2026-10-26T12:24:08.2556917Z --- PASS: TestBundleExecutionPlatformGate (0.00s)
+2026-10-26T12:24:08.2574559Z --- PASS: TestBundleArchitectureCannotBeRelabeledOrMixed (0.02s)
+2026-10-26T12:24:11.9943706Z --- PASS: TestGeckoNetworkRecovery (3.74s)
+2026-10-26T12:24:12.0969902Z --- PASS: TestNetworkRelayPeers (0.10s)
+2026-10-26T12:24:15.0325717Z --- PASS: TestGeckoIdleAndDrainLimits (2.94s)
+2026-10-26T12:24:16.0506573Z [36;1msha256sum foxtunnel-necko-linux-arm64.tar.gz > SHA256SUMS[0m
+2026-10-26T12:25:10.0681527Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoPackagedLauncher$' -v -count=1 -timeout=90s
+2026-10-26T12:25:11.7833089Z --- PASS: TestGeckoPackagedLauncher (1.34s)
+2026-10-26T12:25:12.7977641Z ##[group]Run go test -race . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManaged(IPC|UDP|HTTP|Bond|XHTTP))' -v -count=3 -timeout=900s
+2026-10-26T12:31:50.8642080Z --- PASS: TestIntegratedNecko (132.58s)
+2026-10-26T12:31:50.8715032Z --- PASS: TestIntegratedNecko (133.48s)
+2026-10-26T12:31:50.8785438Z --- PASS: TestIntegratedNecko (129.95s)
+2026-10-26T12:31:50.8833956Z --- PASS: TestGeckoManagedBond (10.86s)
+2026-10-26T12:31:50.8839435Z --- PASS: TestGeckoManagedHTTP3 (1.24s)
+2026-10-26T12:31:50.8841474Z --- PASS: TestGeckoManagedHTTP3NoTCPFallback (5.10s)
+2026-10-26T12:31:50.8844304Z --- PASS: TestGeckoManagedHTTP3Trust (1.17s)
+2026-10-26T12:31:50.8845334Z --- PASS: TestGeckoManagedHTTPInterruptedBody (1.19s)
+2026-10-26T12:31:50.8845922Z --- PASS: TestGeckoManagedHTTP (1.55s)
+2026-10-26T12:31:50.8847165Z --- PASS: TestGeckoManagedHTTPNoReplay (2.37s)
+2026-10-26T12:31:50.8849888Z --- PASS: TestGeckoManagedHTTPHeadersOnly (3.86s)
+2026-10-26T12:31:50.8874153Z --- PASS: TestGeckoManagedHTTPIdentity (24.00s)
+2026-10-26T12:31:50.8881856Z --- PASS: TestGeckoManagedHTTPNativeProfiles (1.17s)
+2026-10-26T12:31:50.8883435Z --- PASS: TestGeckoManagedHTTPIdentityOriginScope (2.42s)
+2026-10-26T12:31:50.8889344Z --- PASS: TestGeckoManagedHTTPNodePins (7.25s)
+2026-10-26T12:31:50.8895259Z --- PASS: TestGeckoManagedHTTPIdentityPolicyAPI (1.16s)
+2026-10-26T12:31:50.8898178Z --- PASS: TestGeckoManagedUDPMultiNode (4.89s)
+2026-10-26T12:31:50.8902894Z --- PASS: TestGeckoManagedIPC (2.42s)
+2026-10-26T12:31:50.8904847Z --- PASS: TestGeckoManagedUDPStream (6.61s)
+2026-10-26T12:31:50.8907566Z --- PASS: TestGeckoManagedXHTTP (3.80s)
+2026-10-26T12:31:50.8916406Z --- PASS: TestGeckoManagedBond (10.91s)
+2026-10-26T12:31:50.8922247Z --- PASS: TestGeckoManagedHTTP3 (1.28s)
+2026-10-26T12:31:50.8924283Z --- PASS: TestGeckoManagedHTTP3NoTCPFallback (5.12s)
+2026-10-26T12:31:50.8927066Z --- PASS: TestGeckoManagedHTTP3Trust (1.20s)
+2026-10-26T12:31:50.8927734Z --- PASS: TestGeckoManagedHTTPInterruptedBody (1.17s)
+2026-10-26T12:31:50.8928312Z --- PASS: TestGeckoManagedHTTP (1.64s)
+2026-10-26T12:31:50.8929561Z --- PASS: TestGeckoManagedHTTPNoReplay (2.37s)
+2026-10-26T12:31:50.8932430Z --- PASS: TestGeckoManagedHTTPHeadersOnly (3.83s)
+2026-10-26T12:31:50.8956330Z --- PASS: TestGeckoManagedHTTPIdentity (24.29s)
+2026-10-26T12:31:50.8964125Z --- PASS: TestGeckoManagedHTTPNativeProfiles (1.21s)
+2026-10-26T12:31:50.8965676Z --- PASS: TestGeckoManagedHTTPIdentityOriginScope (2.47s)
+2026-10-26T12:31:50.8971541Z --- PASS: TestGeckoManagedHTTPNodePins (7.35s)
+2026-10-26T12:31:50.8977396Z --- PASS: TestGeckoManagedHTTPIdentityPolicyAPI (1.19s)
+2026-10-26T12:31:50.8980302Z --- PASS: TestGeckoManagedUDPMultiNode (4.94s)
+2026-10-26T12:31:50.8985051Z --- PASS: TestGeckoManagedIPC (2.43s)
+2026-10-26T12:31:50.8987017Z --- PASS: TestGeckoManagedUDPStream (6.55s)
+2026-10-26T12:31:50.8989735Z --- PASS: TestGeckoManagedXHTTP (3.89s)
+2026-10-26T12:31:50.8996931Z --- PASS: TestGeckoManagedBond (10.93s)
+2026-10-26T12:31:50.9002603Z --- PASS: TestGeckoManagedHTTP3 (1.27s)
+2026-10-26T12:31:50.9004627Z --- PASS: TestGeckoManagedHTTP3NoTCPFallback (5.13s)
+2026-10-26T12:31:50.9007094Z --- PASS: TestGeckoManagedHTTP3Trust (1.19s)
+2026-10-26T12:31:50.9007757Z --- PASS: TestGeckoManagedHTTPInterruptedBody (1.19s)
+2026-10-26T12:31:50.9008699Z --- PASS: TestGeckoManagedHTTP (1.66s)
+2026-10-26T12:31:50.9009951Z --- PASS: TestGeckoManagedHTTPNoReplay (2.43s)
+2026-10-26T12:31:50.9012745Z --- PASS: TestGeckoManagedHTTPHeadersOnly (3.93s)
+2026-10-26T12:31:50.9036956Z --- PASS: TestGeckoManagedHTTPIdentity (24.16s)
+2026-10-26T12:31:50.9044754Z --- PASS: TestGeckoManagedHTTPNativeProfiles (1.20s)
+2026-10-26T12:31:50.9046310Z --- PASS: TestGeckoManagedHTTPIdentityOriginScope (2.44s)
+2026-10-26T12:31:50.9052345Z --- PASS: TestGeckoManagedHTTPNodePins (7.37s)
+2026-10-26T12:31:50.9058124Z --- PASS: TestGeckoManagedHTTPIdentityPolicyAPI (1.16s)
+2026-10-26T12:31:50.9061047Z --- PASS: TestGeckoManagedUDPMultiNode (4.93s)
+2026-10-26T12:31:50.9065768Z --- PASS: TestGeckoManagedIPC (2.44s)
+2026-10-26T12:31:50.9067736Z --- PASS: TestGeckoManagedUDPStream (6.55s)
+2026-10-26T12:31:50.9070500Z --- PASS: TestGeckoManagedXHTTP (3.80s)
+2026-10-26T12:31:50.9105193Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoBrowserFingerprint$' -v -count=3 -timeout=180s
+2026-10-26T12:32:03.5250475Z --- PASS: TestGeckoBrowserFingerprint (12.23s)
+2026-10-26T12:32:15.7137784Z --- PASS: TestGeckoBrowserFingerprint (12.19s)
+2026-10-26T12:32:28.0080567Z --- PASS: TestGeckoBrowserFingerprint (12.29s)
+2026-10-26T12:32:29.0741058Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoManagedSoak$' -v -count=1 -timeout=1200s
+2026-10-26T12:33:37.3443623Z     managed_soak_test.go:253: h2-post: 2312 verified rounds, RSS 157464 -> 148760 KiB, FDs 46 -> 46
+2026-10-26T12:34:45.0639176Z     managed_soak_test.go:253: xhttp-stream-one: 2476 verified rounds, RSS 156172 -> 130296 KiB, FDs 47 -> 47
+2026-10-26T12:35:52.8683863Z     managed_soak_test.go:253: xhttp-stream-up: 2472 verified rounds, RSS 152320 -> 137508 KiB, FDs 48 -> 48
+2026-10-26T12:37:01.1963006Z     managed_soak_test.go:253: xhttp-packet-up: 1064 verified rounds, RSS 194328 -> 276628 KiB, FDs 48 -> 47
+2026-10-26T12:38:08.9855981Z     managed_soak_test.go:253: bond-lanes: 2452 verified rounds, RSS 160624 -> 143996 KiB, FDs 85 -> 47
+2026-10-26T12:39:16.1923075Z     managed_soak_test.go:253: udp-v2: 2771 verified rounds, RSS 109536 -> 131152 KiB, FDs 47 -> 46
+2026-10-26T12:40:23.4273736Z     managed_soak_test.go:253: udp-multi-node: 2772 verified rounds, RSS 117868 -> 129848 KiB, FDs 49 -> 47
+2026-10-26T12:41:31.1934895Z     managed_soak_test.go:253: h3-post: 2372 verified rounds, RSS 162620 -> 148916 KiB, FDs 47 -> 46
+2026-10-26T12:42:39.0578156Z     managed_soak_test.go:253: h3-bond-lanes: 2420 verified rounds, RSS 169124 -> 149660 KiB, FDs 93 -> 48
+2026-10-26T12:43:46.3007796Z     managed_soak_test.go:253: h3-udp-v1: 2471 verified rounds, RSS 120924 -> 163164 KiB, FDs 47 -> 46
+2026-10-26T12:44:53.4942655Z     managed_soak_test.go:253: h3-udp-v2: 2754 verified rounds, RSS 109340 -> 132876 KiB, FDs 47 -> 46
+2026-10-26T12:46:00.7458310Z     managed_soak_test.go:253: h3-udp-multi-node: 2756 verified rounds, RSS 119728 -> 132628 KiB, FDs 49 -> 47
+2026-10-26T12:46:00.7468584Z --- PASS: TestGeckoManagedSoak (811.27s)
+2026-10-26T12:46:03.8096056Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
+2026-10-26T12:51:07.4005778Z     operations_test.go:342: h2-connect: 12632 verified tunnels, RSS 142676 -> 278040 KiB, FDs 46 -> 46, CPU +16617 ticks
+2026-10-26T12:56:10.3919187Z     operations_test.go:342: h3-connect: 12576 verified tunnels, RSS 143272 -> 313984 KiB, FDs 46 -> 46, CPU +26932 ticks
+2026-10-26T12:56:10.4257404Z --- PASS: TestGeckoSoak (606.26s)
+2026-10-26T12:56:11.4542864Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=240s
+2026-10-26T12:57:14.7463113Z     operations_test.go:342: h2-connect: 2456 verified tunnels, RSS 142736 -> 150232 KiB, FDs 46 -> 46, CPU +3446 ticks
+2026-10-26T12:58:17.6234486Z     operations_test.go:342: h3-connect: 2464 verified tunnels, RSS 147464 -> 152900 KiB, FDs 46 -> 46, CPU +5567 ticks
+2026-10-26T12:58:17.6354287Z --- PASS: TestGeckoSoak (125.81s)
+2026-10-26T12:58:18.6572307Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=240s
+2026-10-26T12:59:22.2370453Z     operations_test.go:342: h2-connect: 2504 verified tunnels, RSS 142544 -> 261868 KiB, FDs 46 -> 46, CPU +3366 ticks
+2026-10-26T13:00:25.0939208Z     operations_test.go:342: h3-connect: 2520 verified tunnels, RSS 146616 -> 254932 KiB, FDs 46 -> 46, CPU +5398 ticks
+2026-10-26T13:00:25.1129980Z --- PASS: TestGeckoSoak (126.08s)
+2026-10-26T13:00:26.1742225Z h2-connect CPU s/GiB 53.882 MiB/s 10.527 sampled RSS peak KiB 361456
+2026-10-26T13:00:26.1744249Z h3-connect CPU s/GiB 87.717 MiB/s 10.48 sampled RSS peak KiB 368544
+2026-10-26T13:00:26.2068062Z h2-connect CPU s/GiB 55.06 MiB/s 10.433 sampled RSS peak KiB 336268
+2026-10-26T13:00:26.2068687Z paired h2-connect throughput delta % 1.95 CPU s/GiB delta % -4.2 sampled RSS peak delta KiB 7660
+2026-10-26T13:00:26.2069228Z h3-connect CPU s/GiB 87.739 MiB/s 10.5 sampled RSS peak KiB 347260
+2026-10-26T13:00:26.2069774Z paired h3-connect throughput delta % 2.27 CPU s/GiB delta % -5.19 sampled RSS peak delta KiB -6640

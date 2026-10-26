@@ -1,0 +1,311 @@
+{
+  "arch": "amd64",
+  "source_run": 40317262284,
+  "runtime_run": 40321468060,
+  "code_commit": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e",
+  "mandatory_groups": {
+    "TestIntegratedNecko": 3,
+    "TestGeckoManagedBond": 3,
+    "TestGeckoManagedHTTP3": 3,
+    "TestGeckoManagedHTTP3NoTCPFallback": 3,
+    "TestGeckoManagedHTTP3Trust": 3,
+    "TestGeckoManagedHTTPInterruptedBody": 3,
+    "TestGeckoManagedHTTP": 3,
+    "TestGeckoManagedHTTPNoReplay": 3,
+    "TestGeckoManagedHTTPHeadersOnly": 3,
+    "TestGeckoManagedHTTPIdentity": 3,
+    "TestGeckoManagedHTTPNativeProfiles": 3,
+    "TestGeckoManagedHTTPIdentityOriginScope": 3,
+    "TestGeckoManagedHTTPNodePins": 3,
+    "TestGeckoManagedHTTPIdentityPolicyAPI": 3,
+    "TestGeckoManagedUDPMultiNode": 3,
+    "TestGeckoManagedIPC": 3,
+    "TestGeckoManagedUDPStream": 3,
+    "TestGeckoManagedXHTTP": 3
+  },
+  "legacy_http_gates": "Five unbundled HTTP gate groups passed in the earlier native runtime step; they skip in the bundle-only step.",
+  "job": {
+    "id": 121567397760,
+    "run_id": 40321468060,
+    "workflow_name": "Mozilla Necko runtime gates",
+    "head_branch": "xfd-identity",
+    "run_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/runs/40321468060",
+    "run_attempt": 1,
+    "node_id": "CR_kwDOVNwVG88AAAAcTftHgA",
+    "head_sha": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e",
+    "url": "https://api.github.com/repos/SawaMEN/FoxTunnel/actions/jobs/121567397760",
+    "html_url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/40321468060/job/121567397760",
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2026-10-26T12:18:32Z",
+    "started_at": "2026-10-26T12:18:35Z",
+    "completed_at": "2026-10-26T13:04:25Z",
+    "name": "runtime (amd64)",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1,
+        "started_at": "2026-10-26T12:18:36Z",
+        "completed_at": "2026-10-26T12:18:37Z"
+      },
+      {
+        "name": "Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 2,
+        "started_at": "2026-10-26T12:18:37Z",
+        "completed_at": "2026-10-26T12:18:39Z"
+      },
+      {
+        "name": "Select compiled runtime for this verification",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 3,
+        "started_at": "2026-10-26T12:18:39Z",
+        "completed_at": "2026-10-26T12:18:42Z"
+      },
+      {
+        "name": "Run actions/download-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 4,
+        "started_at": "2026-10-26T12:18:42Z",
+        "completed_at": "2026-10-26T12:18:50Z"
+      },
+      {
+        "name": "Run actions/download-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 5,
+        "started_at": "2026-10-26T12:18:50Z",
+        "completed_at": "2026-10-26T12:18:51Z"
+      },
+      {
+        "name": "Install runtime libraries and diagnostic tools",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 6,
+        "started_at": "2026-10-26T12:18:51Z",
+        "completed_at": "2026-10-26T12:19:07Z"
+      },
+      {
+        "name": "Extract and verify exact source and runtime hashes",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 7,
+        "started_at": "2026-10-26T12:19:07Z",
+        "completed_at": "2026-10-26T12:19:08Z"
+      },
+      {
+        "name": "Basic xpcshell startup with bounded diagnostics",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 8,
+        "started_at": "2026-10-26T12:19:08Z",
+        "completed_at": "2026-10-26T12:19:09Z"
+      },
+      {
+        "name": "Run actions/setup-go@v5",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 9,
+        "started_at": "2026-10-26T12:19:09Z",
+        "completed_at": "2026-10-26T12:19:19Z"
+      },
+      {
+        "name": "FX buffer and fingerprint audit unit regressions",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 10,
+        "started_at": "2026-10-26T12:19:19Z",
+        "completed_at": "2026-10-26T12:19:22Z"
+      },
+      {
+        "name": "Native CONNECT, half-close and certificate trust gates",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 11,
+        "started_at": "2026-10-26T12:19:22Z",
+        "completed_at": "2026-10-26T12:20:47Z"
+      },
+      {
+        "name": "Full Firefox wire comparison on the verified runtime",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 12,
+        "started_at": "2026-10-26T12:20:47Z",
+        "completed_at": "2026-10-26T12:24:37Z"
+      },
+      {
+        "name": "Run actions/upload-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 13,
+        "started_at": "2026-10-26T12:24:37Z",
+        "completed_at": "2026-10-26T12:24:39Z"
+      },
+      {
+        "name": "Operational bounds, path outage and QUIC NAT rebinding",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 14,
+        "started_at": "2026-10-26T12:24:39Z",
+        "completed_at": "2026-10-26T12:25:02Z"
+      },
+      {
+        "name": "Package and verify native Linux amd64 launcher",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 15,
+        "started_at": "2026-10-26T12:25:02Z",
+        "completed_at": "2026-10-26T12:26:22Z"
+      },
+      {
+        "name": "Real H2/H3 transfer and SIGTERM from packaged launcher",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 16,
+        "started_at": "2026-10-26T12:26:22Z",
+        "completed_at": "2026-10-26T12:26:25Z"
+      },
+      {
+        "name": "Integrated main CLI and SDK native gates",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 17,
+        "started_at": "2026-10-26T12:26:25Z",
+        "completed_at": "2026-10-26T12:35:30Z"
+      },
+      {
+        "name": "Managed engine Firefox wire comparison",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 18,
+        "started_at": "2026-10-26T12:35:30Z",
+        "completed_at": "2026-10-26T12:36:11Z"
+      },
+      {
+        "name": "Sustained managed H2/H3 HTTP, Bond and UDP resources",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 19,
+        "started_at": "2026-10-26T12:36:11Z",
+        "completed_at": "2026-10-26T12:49:51Z"
+      },
+      {
+        "name": "Run actions/upload-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 20,
+        "started_at": "2026-10-26T12:49:51Z",
+        "completed_at": "2026-10-26T12:49:52Z"
+      },
+      {
+        "name": "Run actions/upload-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 21,
+        "started_at": "2026-10-26T12:49:52Z",
+        "completed_at": "2026-10-26T12:49:53Z"
+      },
+      {
+        "name": "Sustained native resource measurements",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 22,
+        "started_at": "2026-10-26T12:49:53Z",
+        "completed_at": "2026-10-26T13:00:00Z"
+      },
+      {
+        "name": "FX pinned pre-optimization paired control (60 seconds per protocol)",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 23,
+        "started_at": "2026-10-26T13:00:00Z",
+        "completed_at": "2026-10-26T13:02:08Z"
+      },
+      {
+        "name": "FX current paired workload (60 seconds per protocol)",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 24,
+        "started_at": "2026-10-26T13:02:08Z",
+        "completed_at": "2026-10-26T13:04:16Z"
+      },
+      {
+        "name": "FX resource efficiency report",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 25,
+        "started_at": "2026-10-26T13:04:16Z",
+        "completed_at": "2026-10-26T13:04:16Z"
+      },
+      {
+        "name": "Run actions/upload-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 26,
+        "started_at": "2026-10-26T13:04:16Z",
+        "completed_at": "2026-10-26T13:04:17Z"
+      },
+      {
+        "name": "Run actions/upload-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 27,
+        "started_at": "2026-10-26T13:04:17Z",
+        "completed_at": "2026-10-26T13:04:20Z"
+      },
+      {
+        "name": "Run actions/upload-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 28,
+        "started_at": "2026-10-26T13:04:20Z",
+        "completed_at": "2026-10-26T13:04:21Z"
+      },
+      {
+        "name": "Run actions/upload-artifact@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 29,
+        "started_at": "2026-10-26T13:04:21Z",
+        "completed_at": "2026-10-26T13:04:22Z"
+      },
+      {
+        "name": "Post Run actions/setup-go@v5",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 57,
+        "started_at": "2026-10-26T13:04:22Z",
+        "completed_at": "2026-10-26T13:04:22Z"
+      },
+      {
+        "name": "Post Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 58,
+        "started_at": "2026-10-26T13:04:22Z",
+        "completed_at": "2026-10-26T13:04:23Z"
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 59,
+        "started_at": "2026-10-26T13:04:23Z",
+        "completed_at": "2026-10-26T13:04:23Z"
+      }
+    ],
+    "check_run_url": "https://api.github.com/repos/SawaMEN/FoxTunnel/check-runs/121567397760",
+    "labels": [
+      "ubuntu-24.04"
+    ],
+    "runner_id": 1000049237,
+    "runner_name": "GitHub Actions 1000049237",
+    "runner_group_id": 0,
+    "runner_group_name": "GitHub Actions"
+  }
+}

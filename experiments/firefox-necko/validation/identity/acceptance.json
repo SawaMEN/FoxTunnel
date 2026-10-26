@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "stage": 5,
+  "status": "qualified",
+  "stage_checks_complete": 4,
+  "stage_checks_total": 4,
+  "overall_stages_complete": 5,
+  "overall_stages_total": 6,
+  "implementation_commit": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e",
+  "native_source_commit": "2d35a9bff3caf64ecb0088618556797f60c5dbb2",
+  "source_run": 40317262284,
+  "runtime_run": 40321468060,
+  "source_note": "C++ compilation passed on both architectures; original ARM64 operational gate failed. Exact compiled artifacts were independently verified and every consuming runtime gate passed for the corrected helper.",
+  "source_lock_sha256": "0e50df6a76eb0d490415f5fbda1a0d6faab2f06ed02c4e233098a60919feab43",
+  "client_js_sha256": "637e8bf2d5b72790a150e4064f603ef8d78b214964287e83d667e569268de868",
+  "native_patches": 28,
+  "platforms": [
+    "linux-amd64",
+    "linux-arm64"
+  ],
+  "mandatory_groups_per_architecture": 18,
+  "repetitions": 3,
+  "mandatory_group_executions": 108,
+  "managed_resource_workloads": 24,
+  "five_minute_connect_runs": 4,
+  "paired_one_minute_runs": 8,
+  "wire_candidate_trials_per_protocol_per_architecture": 9,
+  "wire_firefox_self_trials_per_protocol_per_architecture": 9,
+  "unexpected_wire_differences": 0,
+  "wire_status": "inconclusive variable fields; no normalization or browser/DPI equality claim",
+  "generic_ci": {
+    "go_race_vet_fuzz_build": 40321468052,
+    "nss": 40321468091,
+    "neqo": 40321468258,
+    "all": "success"
+  },
+  "promotion_branch": "xfd",
+  "main": "Not modified",
+  "remaining_stage": 6,
+  "remaining_work": "Unified NSS + Necko distributions; published unified archives remain unchanged.",
+  "limitations": [
+    "Linux AMD64/ARM64 qualification only",
+    "Static per-node pins cannot be combined with dynamic discovery",
+    "Policy rotation requires a new helper",
+    "TLS/H2 preset is measured parameters, not full Firefox 158 parity",
+    "Loopback lab resources are not WAN, DPI, multiday or statistical speedup evidence"
+  ]
+}

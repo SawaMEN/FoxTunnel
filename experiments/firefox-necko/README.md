@@ -152,8 +152,11 @@ include destinations and headers, so the diagnostic runs use isolated fixtures.
 
 ## Remaining scope
 
-The experimental configuration deliberately excludes SPKI pins, SNI overrides,
-UDP forwarding, bonding and FoxTunnel padding. Full Necko wire comparison on
+The integrated engine now qualifies native SNI/SPKI and per-node pins, measured
+TLS/H2 presets, H2/H3 HTTP/UDP and Bond, XHTTP and supported padding modes on
+Linux AMD64 and ARM64; see the [integration record](INTEGRATION.md) and
+[stage-5 acceptance](validation/identity/README.md). Unified release archives
+remain the next stage. Full Necko wire comparison on
 the same runtime and workload is recorded in stage 3 and repeated in stage 4.
 Controlled load, bounded drains, path outage/NAT rebinding, CPU/RSS/FDs, packaging
 and runtime compatibility are qualified in [stage 4](validation/stage4/README.md).

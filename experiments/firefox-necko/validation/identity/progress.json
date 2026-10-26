@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "status": "native-resource-qualification-in-progress",
+  "status": "qualified",
   "stage": 5,
-  "stage_checks_complete": 3,
+  "stage_checks_complete": 4,
   "stage_checks_total": 4,
-  "overall_stages_complete": 4,
+  "overall_stages_complete": 5,
   "overall_stages_total": 6,
   "candidate_code_commit": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e",
   "native_source_commit": "2d35a9bff3caf64ecb0088618556797f60c5dbb2",
@@ -30,12 +30,8 @@
     "Seven-carrier main CLI/SDK matrix passed three repetitions",
     "Five-minute H2/H3 CONNECT load: 21712 rounds plus 32 warmups, exact current helper and source-lock hashes, unchanged bounds passed"
   ],
-  "pending": [
-    "Complete 12 managed HTTP/Bond/UDP resource workloads on each architecture",
-    "Complete five-minute native CONNECT and paired 60-second controls on both architectures",
-    "Verify final reports, retain evidence and promote qualified implementation to xfd"
-  ],
-  "promotion": "Not promoted; xfd remains at qualified stage 4",
+  "pending": [],
+  "promotion": "Qualified implementation promoted to xfd; main not modified",
   "previous_runtime_run": 40317917970,
   "native_compilation": {
     "amd64": "passed",
@@ -64,5 +60,6 @@
     "arm64": "passed",
     "runtime_run": 40321468060,
     "candidate_code_commit": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e"
-  }
+  },
+  "acceptance": "acceptance.json"
 }

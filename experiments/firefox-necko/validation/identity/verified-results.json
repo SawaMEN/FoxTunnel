@@ -1,0 +1,120 @@
+{
+  "amd64": {
+    "mandatory_groups": 18,
+    "repetitions": 3,
+    "top_level_executions": 54,
+    "managed_workloads": 12,
+    "h3_managed_workloads": 5,
+    "managed_rounds": 26270,
+    "wire_trials_per_protocol": 9,
+    "firefox_self_trials_per_protocol": 9,
+    "wire_audit": "inconclusive",
+    "unexpected_wire_differences": 0,
+    "integrated_wire_trials_per_protocol": 3,
+    "connect": {
+      "h2-connect": {
+        "transport": "h2-connect",
+        "duration_seconds": 300,
+        "rounds": 11056,
+        "parallel_streams": 8,
+        "payload_bytes_per_round": 131072,
+        "wire_app_gib": 2.6992,
+        "app_mib_per_second": 9.213,
+        "cpu_seconds": 186.51,
+        "cpu_seconds_per_gib": 69.098,
+        "rss_start_kib": 123440,
+        "rss_end_kib": 218208,
+        "rss_max_sampled_kib": 325920,
+        "rss_delta_kib": 94768,
+        "fd_max_sampled": 45,
+        "gc_collections": 57,
+        "gc_ms": 1473
+      },
+      "h3-connect": {
+        "transport": "h3-connect",
+        "duration_seconds": 300,
+        "rounds": 9864,
+        "parallel_streams": 8,
+        "payload_bytes_per_round": 131072,
+        "wire_app_gib": 2.4082,
+        "app_mib_per_second": 8.22,
+        "cpu_seconds": 334.89,
+        "cpu_seconds_per_gib": 139.062,
+        "rss_start_kib": 125224,
+        "rss_end_kib": 143636,
+        "rss_max_sampled_kib": 301644,
+        "rss_delta_kib": 18412,
+        "fd_max_sampled": 46,
+        "gc_collections": 58,
+        "gc_ms": 1472
+      }
+    },
+    "paired_report_reproduced": true,
+    "runtime_sha256": {
+      "firefox": "1e9f7cae7e29660963b900e1d6e9a983823b212ba612a3c4f93ae8d330426bbb",
+      "libnss3.so": "769e56c33083d6ef5fcbf5d56d704a7412a7b039ca5f65a47f15269f06f70ec5",
+      "libxul.so": "efb995ae53ddf086e4d7ef886620c27fc66c3b9e3ee78f022d1361af48dadf92",
+      "platform.ini": "a424711a316fe4fb2f22b619abc7b09a4bdf21d51e17527e60eb45d312dc0960",
+      "xpcshell": "17d176ab1416739645f353add27ac1a39201353805ac1f5a4e25a8614438d52b"
+    }
+  },
+  "arm64": {
+    "mandatory_groups": 18,
+    "repetitions": 3,
+    "top_level_executions": 54,
+    "managed_workloads": 12,
+    "h3_managed_workloads": 5,
+    "managed_rounds": 29092,
+    "wire_trials_per_protocol": 9,
+    "firefox_self_trials_per_protocol": 9,
+    "wire_audit": "inconclusive",
+    "unexpected_wire_differences": 0,
+    "integrated_wire_trials_per_protocol": 3,
+    "connect": {
+      "h2-connect": {
+        "transport": "h2-connect",
+        "duration_seconds": 300,
+        "rounds": 12632,
+        "parallel_streams": 8,
+        "payload_bytes_per_round": 131072,
+        "wire_app_gib": 3.084,
+        "app_mib_per_second": 10.527,
+        "cpu_seconds": 166.17,
+        "cpu_seconds_per_gib": 53.882,
+        "rss_start_kib": 142676,
+        "rss_end_kib": 278040,
+        "rss_max_sampled_kib": 361456,
+        "rss_delta_kib": 135364,
+        "fd_max_sampled": 46,
+        "gc_collections": 55,
+        "gc_ms": 1111
+      },
+      "h3-connect": {
+        "transport": "h3-connect",
+        "duration_seconds": 300,
+        "rounds": 12576,
+        "parallel_streams": 8,
+        "payload_bytes_per_round": 131072,
+        "wire_app_gib": 3.0703,
+        "app_mib_per_second": 10.48,
+        "cpu_seconds": 269.32,
+        "cpu_seconds_per_gib": 87.717,
+        "rss_start_kib": 143272,
+        "rss_end_kib": 313984,
+        "rss_max_sampled_kib": 368544,
+        "rss_delta_kib": 170712,
+        "fd_max_sampled": 47,
+        "gc_collections": 56,
+        "gc_ms": 1185
+      }
+    },
+    "paired_report_reproduced": true,
+    "runtime_sha256": {
+      "firefox": "78ae762d72aca50fa2a46a98cf0c2b95f5765970c2dee882a117ee9575699ee0",
+      "libnss3.so": "1a1b8dae086127295589f1268d631d269a8685ebbbb548b45375759cf58647ac",
+      "libxul.so": "4bf1e8cd6bbfcad965285260fe217f489b7a2af46da49b4a486149c8f23cc6e2",
+      "platform.ini": "1c578b42adb8039ad63d281e9c5a4eed55e3ddae74db53c537f58e54db4b089e",
+      "xpcshell": "f6137c0cdd9d9ff2846a282995cb4836d7def38f6c2e5f5124dc28446806cb65"
+    }
+  }
+}

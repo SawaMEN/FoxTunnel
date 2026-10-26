@@ -1,6 +1,6 @@
 # Necko in the main CLI and SDK
 
-The Linux amd64 main CLI and Go SDK now support `Engine: "necko"`. They verify
+The Linux AMD64 and ARM64 main CLI and Go SDK now support `Engine: "necko"`. They verify
 the distribution, start one owned xpcshell process, wait for readiness and join
 it on shutdown. A separate manual launcher is no longer required. TLS, HTTP/2,
 HTTP/3 and QUIC remain in Mozilla; the Go adapter handles local IPC only.
@@ -10,6 +10,10 @@ build [40129737449](https://github.com/SawaMEN/FoxTunnel/actions/runs/4012973744
 The packaged native gate passed three consecutive runs in
 [40133136426](https://github.com/SawaMEN/FoxTunnel/actions/runs/40133136426).
 The six-step qualification record below defines the supported scope.
+
+Current qualification: **5/6 stages complete**, including native identity and
+profiles on both architectures. See [stage-5 acceptance](validation/identity/README.md).
+The stage-specific records below preserve earlier scope and limitations.
 
 ## Main CLI
 
@@ -170,7 +174,8 @@ application protocol implemented in Go; its outer HTTPS carrier uses Mozilla.
 Padding and strict draft negotiation can use H2 POST or XHTTP; the existing raw
 CONNECT handoff cannot forward their extension headers and rejects those options.
 H3 CONNECT can use the new adapter for TCP; H3 POST/UDP HTTP channels, manual
-SNI/SPKI overrides, per-node pins and native ARM64 packaging remain unsupported.
+SNI/SPKI overrides, per-node pins and native ARM64 packaging were outside that
+stage-1 checkpoint; their current qualification is described in stage 5 below.
 
 Validation is split deliberately:
 
@@ -483,110 +488,70 @@ SNI/SPKI/profile overrides and unified NSS + Necko release archives remain
 stages 5 and 6. Linux ARM64 Necko does not qualify the separate Neqo Rust FFI
 bridge or Android/macOS Necko. `main` is unchanged.
 
-### Stage 5 candidate: native identity and profile policy
+### Stage 5: native identity and profile policy
 
-Stage 5 progress: **3 of 4 steps confirmed**; overall completion remains
-**4 of 6 stages**. Work is isolated on `xfd-identity`, based on the qualified
-stage-4 tree. The new 28-patch source lock compiled on both native architectures;
-runtime qualification remains in progress. No promotion to `xfd` is claimed yet.
+Stage 5 is **4/4 complete**; overall completion is **5/6 stages**. Native code
+`23c4eb68b18c2f8b2298c37431e81e71a2c84b8e` is qualified on Linux AMD64 and ARM64
+by [runtime run 40321468060](https://github.com/SawaMEN/FoxTunnel/actions/runs/40321468060).
+Both jobs passed the complete gate set. See the
+[acceptance record](validation/identity/README.md) and
+[verified results](validation/identity/verified-results.json).
 
-1. Done: identify trust, origin scope, session/coalescing and profile boundaries.
-2. Done: primary SNI/SPKI, bounded native TLS/H2 presets,
-   immutable policy registration and CLI/SDK wiring, including owner-only
-   per-node pin files with exact configured-origin membership.
-3. Done: native positive/negative trust gates, measured TLS/H2 profiles and wire controls on both architectures.
-4. Pending: native CLI/SDK, amd64/ARM64 regressions, evidence and qualification.
+1. Done: trust, origin, session/coalescing and profile boundary audit.
+2. Done: native SNI/SPKI, per-node pins, measured TLS/H2 presets and CLI/SDK wiring.
+3. Done: native positive/negative security, profile, immutable API and wire gates
+   on both architectures.
+4. Done: full CLI/SDK regressions, all resource workloads, paired controls and
+   evidence verification. Qualified work is promoted to `xfd`; `main` is untouched.
 
 A helper-only parent-process API registers an immutable policy for each native
-route before any socket can be opened to it. Installing a policy after an
-unprotected connection, changing a registered policy, invalid pin/DNS inputs
-and unbounded registration fail closed. Ordinary Firefox connections do not
-activate this registry. Policy-enabled TCP sockets disable cache, tickets and
-early data; native QUIC excludes policy-enabled connections from token use and
-storage. Coalescing into or out of policy routes is rejected. ECH public-name
-verification cannot replace the configured identity hostname.
+route before any socket can be opened to it. Late registration after an
+unprotected connection, policy changes, malformed pin/DNS inputs and unbounded
+registration fail closed. Ordinary Firefox connections do not activate the
+registry. Policy-enabled TCP sockets disable cache, tickets and early data;
+native QUIC excludes those connections from token use and storage. Coalescing
+into or out of policy routes is rejected. ECH public-name verification cannot
+replace the configured identity hostname.
 
-SNI changes the NSS/QUIC server name and certificate hostname, preserving the
-network route and HTTP authority. The leaf SPKI SHA-256 check runs after normal
-PKI verification and before NSS/QUIC completes authentication. Pin failure is
-terminal and is not an override or a retryable outage. The primary identity is
-not inherited by alternate origins. A helper's identity/preset settings are
-immutable after construction; later low-level setters cannot silently drop them.
+SNI changes the NSS/QUIC server name and certificate hostname while preserving
+the network route and HTTP authority. Leaf SPKI SHA-256 checking follows normal
+PKI verification and precedes completed NSS/QUIC authentication. A pin failure
+is terminal, cannot be overridden and is not a retryable HTTP outage. Primary
+identity does not follow alternate origins. Owner-only per-node pin files require
+exact configured-origin membership. They cannot be combined with dynamic
+discovery, matching the existing file contract. Identity and profile settings
+remain immutable for the helper lifetime; policy rotation requires a new helper.
 
-The `firefox-158` TCP TLS preference preset selects measured groups, key shares
-and signature preferences in the pinned native NSS and requires TLS 1.3. Its H2
-receive preset explicitly selects measured HPACK, connection and stream windows.
-The name denotes a parameter preset, not the Firefox 158 executable or full
-fingerprint parity. TCP/H2-specific presets are rejected for H3. Defaults retain
-the pinned runtime's native settings.
+The `firefox-158` TCP TLS preset selects measured groups, key shares and signature
+preferences in pinned NSS, requiring TLS 1.3. NSS's real TLS-1.3 filtering moves
+PKCS#1 certificate schemes last. The H2 receive preset sets measured HPACK,
+connection and stream windows. The name denotes parameters, not a Firefox 158
+binary or complete fingerprint parity. TCP/H2 presets are rejected for H3;
+defaults retain the pinned runtime's native settings.
 
-Candidate tests exercise SNI without an IP SAN, HTTP authority preservation,
-correct and incorrect pins, hostname and CA failures before application requests,
-CONNECT/POST/UDP v1/v2, alternate-origin isolation, measured TLS/H2 parameters and
-main CLI/SDK automatic engine selection and separate per-node identities. Static
-node pin files cannot be combined with dynamic discovery, matching the existing
-file contract. These tests require the new verified
-bundle; their skips without it are not native qualification. Local Go race and
-JS/parser checks and exact patch application are preparatory evidence only.
+Each architecture passed 18 mandatory groups three times, including all seven
+CLI/SDK carriers, native identity without an IP SAN, authority preservation,
+wrong pin/name/CA denials before application requests, POST/CONNECT/UDP v1/v2,
+alternate-origin isolation, per-node pins, measured profiles and direct API
+validation. Five older unbundled HTTP groups passed in the earlier runtime step;
+they intentionally skip in the bundle-only matrix and are not credited as its
+mandatory groups. Each architecture also passed all 12 managed load modes,
+300-second H2/H3 CONNECT runs, and baseline/current 60-second paired controls.
+Resource bounds and process/profile cleanup checks were retained unchanged.
 
-Current candidate: `ba7aeb809afcb803eaf1fe0c9968125592071ad7`.
-[Source build 40286512326](https://github.com/SawaMEN/FoxTunnel/actions/runs/40286512326)
-compiles the exact 28-patch native lock on amd64 and ARM64. The per-node Go/JS
-follow-up leaves that lock unchanged, so it does not cancel or replace the C++
-build. [Runtime qualification 40287901623](https://github.com/SawaMEN/FoxTunnel/actions/runs/40287901623)
-waits for the matching architecture artifacts and will package the updated helper
-and main CLI. The original candidate's general, NSS and Neqo CI passed; the
-follow-up's general CI is still running. Local full Go race checks and all 26 JS
-tests passed, including immutable native policy snapshots and nested duplicate
-JSON rejection. Native identity/profile tests remain unqualified until the new
-compiled bundle is available and those gates pass.
+Nine candidate and nine Firefox self-control trials per protocol passed strict
+raw-field regression enforcement on each architecture. H2 scheduling/HPACK and
+H3 extension order/JA3 remain variable and **inconclusive**, never equal by
+normalization. The saved raw observations independently reproduce every audit
+report. There is no claim of ordinary-browser, DPI, WAN or multi-day equivalence,
+or statistically established speedup.
 
-The first source run `40286512326` failed on both architectures because
-`nsACString` does not provide the range iteration interface used by the DNS-name
-validator. The validator now traverses the native string by index and `CharAt`,
-with regenerated patch/source hashes. The failed runtime selection did not use
-an older binary or weaken provenance checks. Stage 5 remains **1/4** until the
-corrected native build and identity/profile gates pass.
+The initial compile error and failed ARM64 resource/wire checks are preserved in
+[checkpoint-2of4](validation/identity/checkpoint-2of4/README.md). The helper now
+performs shrinking GC after cycle collection on its existing bounded cadence,
+releasing unused shell arenas while preserving all resource limits. Full dual
+architecture qualification is the evidence for completion, rather than local
+preparatory tests or a failed source workflow's overall status.
 
-The corrected source candidate is `2d35a9b`, with the direct native policy-API
-regression at `adbe03c`. The new
-[source run 40317262284](https://github.com/SawaMEN/FoxTunnel/actions/runs/40317262284)
-is compiling both architectures. The updated
-[runtime run 40317917970](https://github.com/SawaMEN/FoxTunnel/actions/runs/40317917970)
-requires its exact lock and includes native invalid-name/pin/port, idempotence
-and immutable-policy API assertions. See the current
-[stage-5 checkpoint](validation/identity/progress.json). Both native results
-remain pending; `xfd` retains the qualified stage-4 implementation.
-
-
-The corrected C++ build passed on **both architectures** in source run
-`40317262284`. Its ARM64 resource gate failed with roughly 211 MiB RSS growth;
-compiled artifacts retain exact native provenance and require fresh gates.
-Runtime run `40317917970` also exposed H2 SETTINGS ACK / HPACK table-update
-scheduling outside its three Firefox self-control samples. The raw reports and
-resource samples are preserved in `validation/identity/checkpoint-2of4/`.
-
-Candidate `23c4eb6` uses a shrinking final GC after cycle collection to release
-unused shell arenas, retaining the same five-second maintenance cadence and
-RSS/FD limits. It samples nine candidate and nine Firefox self comparisons per
-protocol, retaining all raw fields and strict enforcement. Native TLS tests now
-expect NSS's actual TLS-1.3 filtering (PKCS#1 certificate schemes last), matching
-the pre-existing NSS profile test. Denied-peer tests bound helper setup and
-assert their overall context has not expired before all four carriers finish.
-
-The rebuilt verified amd64 bundle passed native identity, profile, origin-scope,
-node-pin and direct API gates locally. The 60-second H2/H3 load passed unchanged
-resource limits. These do not qualify ARM64. Both architectures are being
-rechecked by [runtime run 40321468060](https://github.com/SawaMEN/FoxTunnel/actions/runs/40321468060).
-Current progress remains **2/4**, overall **4/6**; `xfd` and `main` are unchanged.
-
-
-Stage 5 reached **3/4** after both architecture jobs passed the integrated native
-CLI/SDK and security/profile matrix in run `40321468060`. Both strict wire audits
-had zero unexpected differences across nine candidate and nine self-control
-trials per protocol. Their preserved raw observations reproduce all reports
-exactly, with matching helper/source hashes. Variable fields stay inconclusive.
-Local AMD64 also passed all 17 managed groups and the seven-carrier CLI/SDK
-matrix three times, plus five-minute H2/H3 CONNECT load. Remaining acceptance is
-the dual-architecture managed/CONNECT/paired resource suite and final evidence;
-no promotion is claimed until that finishes.
+Remaining stage 6: verify and package unified NSS + Necko distributions. Existing
+published unified archives have not been upgraded by this stage.
