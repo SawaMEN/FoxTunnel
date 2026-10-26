@@ -434,7 +434,7 @@ remain stages 4 through 6. `main` is unchanged.
 
 ### Stage 4 candidate: native Linux ARM64
 
-Stage 4 progress: **0 of 4 native qualification steps**; overall completion
+Stage 4 progress: **2 of 4 native qualification steps**; overall completion
 remains **3 of 6 stages**. Work is isolated on `xfd-arm64`, based on the qualified
 stage-3 `xfd` tree; no promotion is claimed before real ARM64 runs pass.
 
@@ -475,5 +475,7 @@ The local full Go race run hit `TestNativeSetupTimeout` (setup request leaked).
 The same failure reproduced in both a full race run and a 20-repeat focused run
 on the unmodified stage-3 commit `3537bcf`; the candidate's general CI passed.
 This existing intermittent test is recorded rather than claimed fixed by the
-architecture changes. No native ARM64 qualification is claimed while the source
-and runtime jobs are pending.
+architecture changes. The native ARM64 source build, provenance/ELF verification,
+packaged launcher and integrated CLI/SDK gates have now passed. The 12-mode
+resource suite and amd64 runtime regressions remain pending; no final ARM64
+qualification or promotion is claimed. See the [retained checkpoint](validation/arm64/README.md).

@@ -1,0 +1,177 @@
+{
+  "schema": 1,
+  "status": "built-not-interop-tested",
+  "source": {
+    "schema": 1,
+    "repository": "https://github.com/mozilla-firefox/firefox.git",
+    "revision": "0f76fed7aea1f77db85afbf5a895754d8ad971d7",
+    "platforms": [
+      "linux-amd64",
+      "linux-arm64"
+    ],
+    "patches": [
+      {
+        "path": "experiments/firefox-necko/patches/h2-connect-cold-start.patch",
+        "sha256": "9ea3f6605d2e9db3c9c8acf68f9f59291e42eecf7665262e6a0bc2cf72f8fbae",
+        "source_path": "netwerk/protocol/http/nsHttpConnection.cpp",
+        "before_sha256": "be841353d229da17da27914792d734bf06c1fa18fe669ceda5f242fb6910b160",
+        "after_sha256": "5bcadcd19f6b0cf86f695c172acfbcd81b7ab9a13b8aec4ceaccb29f18a7f02a"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h2-tunnel-xpcom-identity.patch",
+        "sha256": "891e06ddfc57c77d5cb55d789926d0283eeeda11dc12f26ba29f7615db5310bf",
+        "source_path": "netwerk/protocol/http/Http2StreamTunnel.cpp",
+        "before_sha256": "6303f9f5518d78ac02fd203cc57779e8e009d010118a731efc4b853a818fe649",
+        "after_sha256": "84b23afcb25151d99ff878793f0dbbe8552f1e6158fd1e19c97864f1cdf75222"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h2-tunnel-half-close-api.patch",
+        "sha256": "2675344dc7d6d35fed5f687f8a8a451529493d22b233790324316bd7fa31b052",
+        "source_path": "netwerk/protocol/http/Http2StreamTunnel.h",
+        "before_sha256": "43eb4b531c703c808895382b29aaf5f3e0fbd186aea1208f78da1e70e17fc460",
+        "after_sha256": "a54cc59cec38cb787161540fdbce890ab8ea981ba0de8d3187ba642f8177eb12"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h3-tunnel-half-close.patch",
+        "sha256": "43e60c4c40a30d34822cf55399b17523a7eac5a9946dba33236b31b82019da3b",
+        "source_path": "netwerk/protocol/http/Http3StreamTunnel.cpp",
+        "before_sha256": "0d5d5d683aa7513059c4f3fb257ad4a1a81c30d6139de6fc757246dae36b03b2",
+        "after_sha256": "45a1b72b6c6f94174d7d1eb6714c14f752b1b075b45e34550310c068c19fa30a"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h3-tunnel-half-close-api.patch",
+        "sha256": "90b7c81d73f5ec57f7b2091f903fbcd62c54ec56094e635189f8473ee8c5ddd1",
+        "source_path": "netwerk/protocol/http/Http3StreamTunnel.h",
+        "before_sha256": "7dadafeaa2dcaa87908c52ebcf7a51743702c6cfc08eaa564b135ac2ac9b0a30",
+        "after_sha256": "fb0ef5ee31b9a3b13313d141e413a50e431f063d00307e8f930c102e5c7a54ca"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h2-inline-tunnel-copier.patch",
+        "sha256": "2cc1ad1789a24814d4cc170653a221435c08583c4fafe11dec009ad5cd50008f",
+        "source_path": "netwerk/protocol/http/nsHttpConnectionMgr.cpp",
+        "before_sha256": "0154d4f96a8eb2f5e5d14dc8373c297c394ff310f54776937a04ae42cafd9ea8",
+        "after_sha256": "310f242ad08ce5b5cc0eb6ed228cf665c917dc78254b6efb1ab618f29a240f6b"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/neqo-classic-connect-half-close.patch",
+        "sha256": "592af872f7ed93cd156088a35aea86ff34ba8a782a649b4cf72af583beced16b",
+        "source_path": "third_party/rust/neqo-http3/src/connection.rs",
+        "before_sha256": "17c54864ef79aa59d4d863ccc1e2e61ff3ed19023553a683ba8cb4cdb3b85437",
+        "after_sha256": "f9976203e6b5e7495a366fac31d3e565a103c682ac38de3f0e9478300c30a61f"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/neqo-vendor-checksum.patch",
+        "sha256": "0fb92c5468ad8dfb8add5c87597242657b3b7cb24ce34858875a5a5c13e220f2",
+        "source_path": "third_party/rust/neqo-http3/.cargo-checksum.json",
+        "before_sha256": "c65f2cf943eaf89f4e3fa53b80d472d0a55acb83ac935f3cc097318190108520",
+        "after_sha256": "1606765d97a9365dd118c5d585a4ea7329a8d13c22aaf4eb90aad95ae4257173"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/socket-half-close-api.patch",
+        "sha256": "2368ece298fa28ad166068a766716a02e5b3aea4fef8752525e0ee30ee1eb559",
+        "source_path": "netwerk/base/nsISocketTransport.idl",
+        "before_sha256": "b06dfb1fb1150436c67d1a167798cd42c798bd2f4985f41843a601ce492e0dff",
+        "after_sha256": "a05da0599b3c6269cd5e0ce2b65438bcd2865d620ddde907e49a14be472239c0"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/socket-output-half-close.patch",
+        "sha256": "b3c5d6d3fa7617b742fb09c2461e07c997645aca4b243333d36a66ec6699a019",
+        "source_path": "netwerk/base/nsSocketTransport2.cpp",
+        "before_sha256": "430e9a9e430c1840e0d7bbbce15bd59978009a85f068b47cdd32d4abcd72287a",
+        "after_sha256": "bbc554529e9b7b1e478ac4fccb02a0248b475fa97e77dd04aa7452c6f3900030"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h3-tunnel-cancel-output.patch",
+        "sha256": "a22b21b1cc9bde09ceb50e0c25a1b9422b13795e8f3d1535e60550375dac973a",
+        "source_path": "netwerk/protocol/http/Http3Session.cpp",
+        "before_sha256": "f2666130c3e3d9b25ce513fa8b246cc2badfcfa320028fbd6f387eb200c77781",
+        "after_sha256": "4a432083e39c34591c191abeea0c2918d5929efa56881d8d21e841d0386d84ce"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h2-response-first-upload.patch",
+        "source_path": "netwerk/protocol/http/Http2StreamBase.cpp",
+        "sha256": "dee77cd5da9398426dcca5479050cb9f0e737fa1d2c9690db9a44ac263b0ad2a",
+        "before_sha256": "49ac306d8687b3b37ef4f0a33dc90d48ee4daa48d98ebf22ed99230e3319c334",
+        "after_sha256": "47340829e7ac892b13906369ed7478893616ad2306fb722ded25ac22bf636f4b"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h2-half-closed-concurrency.patch",
+        "source_path": "netwerk/protocol/http/Http2Session.cpp",
+        "sha256": "3f56184ff8fe4c00a0a8541509ed3ffc811629e469c14bc5a500c687a57759c7",
+        "before_sha256": "436b7c7259bc3f971753d5796964570027f6b9b2a63a066d29b0429e5ad60788",
+        "after_sha256": "1a71fa6e41a39d8814c81cf856b4a70e9ca9fa102dc528a833f3055a150f04e6"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/h2-response-first-upload-api.patch",
+        "source_path": "netwerk/protocol/http/Http2StreamBase.h",
+        "sha256": "23a02cd924d18cfb556a57bb8ec12fa2859b41f62b37552982aaf5bc52bf2550",
+        "before_sha256": "cd03189d336df8d8e71a5b1464c7fe0bd8491a325335eee757927d149371bb55",
+        "after_sha256": "99e48b3ca006eb0f70345b18687db658347e8b8a4c99db7ca9548f2e0bff69fb"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/streaming-upload-xpcom-api.patch",
+        "sha256": "a4483ba36be1201d0cba5c4840ca1d08ab30b436f14d4f40ae78a46c3da15502",
+        "source_path": "netwerk/protocol/http/nsIHttpChannelInternal.idl",
+        "before_sha256": "6835efbdceb7bbfd2cca523ffdd98a2366e5501383864f33737c1300b6affc5c",
+        "after_sha256": "969ab1f0da09a8a81693b9a4426e7ecf5f6ea2a533801f7af97694f5c656bc1d"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/streaming-upload-channel.patch",
+        "sha256": "27eddf178f23f544524cf7560c5ccbedde7e377de7ea2925c945d39ed5f4d8f2",
+        "source_path": "netwerk/protocol/http/HttpBaseChannel.cpp",
+        "before_sha256": "066dbb5be37775d4486896de970e4c8c7cf6095fadd03f5f00846b70d77c029a",
+        "after_sha256": "e9e7edc3fa5133da58f6df57880826cd08c7d2dd56759408d3effea334446980"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/streaming-upload-channel-api.patch",
+        "sha256": "d32fddec9f95e0313e56d52e8ac6bfaaa59ca669caad4188bb4d67ea4ce77e78",
+        "source_path": "netwerk/protocol/http/HttpBaseChannel.h",
+        "before_sha256": "bb3d8e464de4ef65a8f49588a1d1aac724c9d7fb8555f468c4fc4c5531515663",
+        "after_sha256": "6a3a1a50024f1a0475792c3ae8c09aae375145cafc880eb7bf0b24e515c8482a"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/early-response-transaction-api.patch",
+        "source_path": "netwerk/protocol/http/nsHttpTransaction.h",
+        "sha256": "1063ae1d64ddb7e5e8263b745d059750a96da4ec095df5147766f73cf501483c",
+        "before_sha256": "7ab6edba2f7673c9bc379a4d7ce2632acf77046b7786a6ea34ebed76e6d0ccc9",
+        "after_sha256": "49f0963fc884e323f8930e1b1f693f8ccafafd40d5c8a4656a08f2d7b67f4171"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/http3-only-no-tcp-fallback.patch",
+        "source_path": "netwerk/protocol/http/nsHttpTransaction.cpp",
+        "sha256": "9adfbc5eb03c98d0956115c1dabc82c51ab9f31c4ffe9db658797af0d692b796",
+        "before_sha256": "1982338b39ce282ba63f98d7dcdc9d4bc754540866a5cce73093957106e95ad6",
+        "after_sha256": "a89632225b0236f8e35c118fc5c5f2d94d8b65a7892578090e3f1387a6a15a4f"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/http3-only-channel-policy.patch",
+        "source_path": "netwerk/protocol/http/nsHttpChannel.cpp",
+        "sha256": "3842801a3d760fd86b12d1cfa161ece41451b2c3c463ba789e57c7cc20e10a2a",
+        "before_sha256": "83503124e64ff48ee2210150a3c010817d1266e6cbd8e5e1406e6fc707784510",
+        "after_sha256": "31d8fa5eb696b506050557ed786b8e224185edb5f53f22a23a92bf6a0cef3274"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/early-response-pump-api.patch",
+        "source_path": "netwerk/base/nsInputStreamPump.h",
+        "sha256": "039e0f3001e864809174b84a9babb9ddff7ce8061dc05ecea229d90064f5daf2",
+        "before_sha256": "fc20597cfa2e21f6b51370891b4ba3fae0c61fe0655248ea6c2986f815dbd925",
+        "after_sha256": "1d7b2a7308e65b664eb5957155cc4eb5b1f2488acb08bdfaf8d6ed1b12e9ceeb"
+      },
+      {
+        "path": "experiments/firefox-necko/patches/early-response-pump.patch",
+        "source_path": "netwerk/base/nsInputStreamPump.cpp",
+        "sha256": "bd93b76efec1a90db97effd4a8291421d906584c40a634fae43cd435246deba6",
+        "before_sha256": "7bf9c0cec93dc741d5bcd64243c5df81c1d198df39a90ef6d1ef77e186678482",
+        "after_sha256": "2a8ab0706d9bfb82f5a86d548f9456ba2713da3946920fb87a8d2a283316f83e"
+      }
+    ]
+  },
+  "mozconfig_sha256": "ebfa452f623d2afa01bcbce4d3fca6a1d69217347e9ee03f7eb8dcce2817a2f9",
+  "target_platform": "linux-arm64",
+  "runtime": {
+    "xpcshell": "9a717cc90b3b579c733ae83d00eb3f43b7207da80561533033a4183c77087060",
+    "libxul.so": "9a3ebeeabe35f2166b246a1403ac9e82e213d2c2fe9b6c91348adb498ddb4e0e",
+    "libnss3.so": "e1377762ea180412efd66f60cbdb2931b243bf27aa4129ebd8d4dc0a91d35284",
+    "platform.ini": "c6dc2feda0ae50949c11630bd6fc90da3e9005b138c7fa20ffad3b830d3291f1"
+  }
+}
