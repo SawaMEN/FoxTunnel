@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "stage": 6,
+  "status": "native-archive-qualification-in-progress",
+  "stage_checks_complete": 2,
+  "stage_checks_total": 4,
+  "overall_stages_complete": 5,
+  "overall_stages_total": 6,
+  "candidate_commit": "ddf216ed288175a71471f2059c3539c3c1784e10",
+  "candidate_branch": "xfd-release",
+  "release_run": 40365922072,
+  "steps": [
+    "Archive/layout/platform audit complete",
+    "Dual-architecture merge, offline integrity checks, install/rollback and native CI wiring implemented",
+    "Pending: build and exercise actual AMD64/ARM64 combined archives",
+    "Pending: final artifact verification, evidence and promotion to xfd"
+  ],
+  "local_checks": [
+    "216 Python tests passed, 2 expected skips",
+    "Producer/consumer roundtrip includes empty files and canonical/legacy root handling",
+    "Both architectures reject rehashed mixed ELF, tampered/missing/extra files and source mismatch",
+    "AMD64 and ARM64 installer fixtures passed",
+    "Release notes validate both full unified archives and reject old partial ARM64 layout",
+    "All NSS notice-referenced license paths and SDK integration files retained",
+    "Refused exclusive archive creation preserves an existing archive unchanged"
+  ],
+  "main": "Not modified",
+  "publish": "Candidate branch resolves publish=false; no tag/release requested or published",
+  "superseded_run": 40364764698
+}
