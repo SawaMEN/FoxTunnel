@@ -18,6 +18,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/contract"
+	"github.com/SawaMEN/FoxTunnel/internal/egress"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
@@ -121,6 +122,8 @@ func main() {
 		cert := fs.String("cert", "", i18n.Text("TLS certificate PEM"))
 		key := fs.String("key", "", i18n.Text("TLS private key PEM"))
 		padding := fs.Bool("padding", false, i18n.Text("enable experimental negotiated initial-record padding"))
+		egressProxy := fs.String("egress-proxy", "", "SOCKS5 exit for all destination TCP/UDP; numeric proxy IP:port, no direct fallback")
+		egressDNS := fs.String("egress-dns", "", "numeric DNS IP:port through the SOCKS5 exit (default 1.1.1.1:53)")
 		bondHub := fs.Bool("bond-hub", false, i18n.Text("enable common exit for bonded streams"))
 		bondRelay := fs.String("bond-upstream", "", i18n.Text("trusted HTTPS common exit; run this server as a bond relay"))
 		bondCA := fs.String("bond-ca-cert", "", i18n.Text("additional trusted PEM for the common exit"))
@@ -151,6 +154,7 @@ func main() {
 			if err != nil {
 				log.Fatal(i18n.Text(err.Error()))
 			}
+			*egressProxy, *egressDNS = config.EgressProxy, config.EgressDNS
 			user, password = config.Username, config.Password
 			*usersFile, *usersState = config.UsersFile, config.UsersState
 			*listen, *cert, *key = config.Listen, config.Certificate, config.PrivateKey
@@ -214,7 +218,11 @@ func main() {
 		if err != nil {
 			log.Fatal(i18n.Text("invalid XHTTP path or Host"))
 		}
-		handler := &tunnel.Server{RequireProtocolNegotiation: wirePolicy == contract.ProtocolStrict, Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, EnableUDP: *enableUDP, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
+		exit, err := egress.New(*egressProxy, *egressDNS)
+		if err != nil {
+			log.Fatal(err)
+		}
+		handler := &tunnel.Server{Egress: exit, RequireProtocolNegotiation: wirePolicy == contract.ProtocolStrict, Access: controller, BondRelayOnly: controller != nil && *bondRelay != "", XHTTPSettings: carrierSettings, Username: user, Password: password, AllowPrivate: *allowPrivate, EnableUDP: *enableUDP, Cover: cover, Padding: *padding, MaxTunnels: *maxTunnels}
 		if *bondHub {
 			hub := handler.NewBondHub()
 			defer hub.Close()

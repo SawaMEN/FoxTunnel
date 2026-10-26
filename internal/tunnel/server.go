@@ -9,6 +9,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/bond"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/egress"
 	"github.com/SawaMEN/FoxTunnel/internal/i18n"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 	"io"
@@ -38,6 +39,7 @@ type Server struct {
 	AllowPrivate  bool
 	// EnableUDP admits bounded authenticated one-shot datagram relay requests.
 	EnableUDP   bool
+	Egress      *egress.Proxy // Optional fail-closed TCP/UDP and DNS cascade; set before serving.
 	Resolver    *net.Resolver
 	DialTimeout time.Duration
 	// Padding enables support for explicitly negotiated initial-v1 records.
@@ -237,13 +239,17 @@ func (s *Server) dialTarget(ctx context.Context, host, port string) (net.Conn, e
 }
 func (s *Server) dialRawTarget(ctx context.Context, host, port string) (net.Conn, error) {
 	dialer := &net.Dialer{Timeout: s.timeout(), KeepAlive: 30 * time.Second}
-	return s.dialResolvedTarget(ctx, host, port, dialer.DialContext)
+	dial := dialer.DialContext
+	if s.Egress != nil {
+		dial = s.Egress.DialContext
+	}
+	return s.dialResolvedTarget(ctx, host, port, dial)
 }
 
 // dialResolvedTarget owns resolution and passes only filtered numeric addresses
 // to the socket dialer. Keep DNS and dialing in this single policy boundary.
 func (s *Server) dialResolvedTarget(ctx context.Context, host, port string, dial contextDial) (net.Conn, error) {
-	resolver := s.Resolver
+	resolver := s.destinationResolver()
 	if resolver == nil {
 		resolver = net.DefaultResolver
 	}
@@ -315,4 +321,20 @@ func (s *Server) acquireTunnel() bool {
 			return true
 		}
 	}
+}
+
+// A configured cascade owns DNS too; never use the host resolver in that mode.
+func (s *Server) destinationResolver() *net.Resolver {
+	if s.Egress != nil {
+		return s.Egress.Resolver()
+	}
+	return s.Resolver
+}
+func (s *Server) dialUDPTarget(ctx context.Context, dest string) (net.Conn, error) {
+	return access.Dial(ctx, func(ctx context.Context) (net.Conn, error) {
+		if s.Egress != nil {
+			return s.Egress.DialContext(ctx, "udp", dest)
+		}
+		return (&net.Dialer{Timeout: s.timeout()}).DialContext(ctx, "udp", dest)
+	})
 }

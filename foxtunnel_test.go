@@ -319,3 +319,21 @@ func TestPublicSOCKSTransportResetIsNotEOF(t *testing.T) {
 		t.Fatal("public SOCKS adapter stalled after reset", err)
 	}
 }
+
+func TestServerCascadeAPIValidation(t *testing.T) {
+	for _, tc := range []struct {
+		proxy, dns string
+		valid      bool
+	}{
+		{"socks5://127.0.0.1:1080", "", true},
+		{"socks5://127.0.0.1:1080", "9.9.9.9:53", true},
+		{"http://127.0.0.1:1080", "", false},
+		{"socks5://proxy.example:1080", "", false},
+		{"", "9.9.9.9:53", false},
+	} {
+		_, err := ft.NewServer(ft.ServerConfig{Credentials: ft.Credentials{Username: "alice", Password: "secret"}, EgressProxy: tc.proxy, EgressDNS: tc.dns})
+		if (err == nil) != tc.valid {
+			t.Fatalf("valid=%v error=%v", tc.valid, err)
+		}
+	}
+}

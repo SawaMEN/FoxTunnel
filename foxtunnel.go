@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/access"
+	"github.com/SawaMEN/FoxTunnel/internal/egress"
 	"net"
 	"net/http"
 	"sync"
@@ -334,6 +335,8 @@ func NewAccessController(policy AccessPolicy, stateFile string) (*AccessControll
 }
 
 type ServerConfig struct {
+	EgressProxy string // socks5://[user:password@]numeric-IP:port; empty keeps direct mode.
+	EgressDNS   string // Numeric DNS IP:port via SOCKS TCP; defaults to 1.1.1.1:53.
 	// RequireProtocolNegotiation rejects authenticated legacy TCP/UDP requests.
 	RequireProtocolNegotiation bool
 
@@ -363,7 +366,11 @@ func NewServer(config ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{core: &tunnel.Server{RequireProtocolNegotiation: config.RequireProtocolNegotiation, Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, EnableUDP: config.EnableUDP, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
+	exit, err := egress.New(config.EgressProxy, config.EgressDNS)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{core: &tunnel.Server{Egress: exit, RequireProtocolNegotiation: config.RequireProtocolNegotiation, Access: config.Access, Username: config.Credentials.Username, Password: config.Credentials.Password, XHTTPSettings: settings, AllowPrivate: config.AllowPrivateDestinations, EnableUDP: config.EnableUDP, MaxTunnels: config.MaxTunnels, DialTimeout: config.DialTimeout, Padding: config.Padding, Cover: config.Cover}}, nil
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || r.TLS.Version < tls.VersionTLS13 {
