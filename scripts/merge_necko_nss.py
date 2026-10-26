@@ -107,7 +107,17 @@ def merge_files(necko, nss):
         "licenses/NSS-about-license.html": nss / "licenses/Mozilla-about-license.html",
         "licenses/NSS-THIRD-PARTY-NOTICES.txt": nss / "THIRD_PARTY_NOTICES.txt",
         "nss-build.json": nss / "build.json",
+        "LICENSE": nss / "LICENSE",
+        "THIRD_PARTY_NOTICES.txt": nss / "THIRD_PARTY_NOTICES.txt",
     }
+    # Keep the paths referenced by NSS notices, in addition to the Necko notices.
+    for source in sorted((nss / "licenses").iterdir()):
+        if not source.is_file() or source.is_symlink():
+            raise ValueError("invalid NSS license component")
+        required["licenses/" + source.name] = source
+    if metadata.get("product") == "protocol-core":
+        required.update({"integration.json": nss / "integration.json",
+                         "INTEGRATION.md": nss / "INTEGRATION.md"})
     for dest, src in required.items():
         if not src.exists() or src.is_symlink():
             raise ValueError("missing NSS component: " + str(src))
@@ -140,8 +150,10 @@ def merge_files(necko, nss):
 
 def make_archive(bundle, archive_path):
     archive_path.parent.mkdir(parents=True, exist_ok=True)
+    created = False
     try:
         with archive_path.open("xb") as raw:
+            created = True
             with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as gz:
                 with tarfile.open(fileobj=gz, mode="w|") as tar:
                     for p in (bundle, *sorted(bundle.rglob("*"))):
@@ -156,7 +168,8 @@ def make_archive(bundle, archive_path):
                         else:
                             tar.addfile(info)
     except Exception:
-        archive_path.unlink(missing_ok=True)
+        if created:
+            archive_path.unlink(missing_ok=True)
         raise
     return sha(archive_path)
 

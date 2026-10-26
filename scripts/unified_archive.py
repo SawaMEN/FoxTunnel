@@ -24,7 +24,8 @@ def unpack(source, destination, version, commit, archive_name=None):
     merge_necko_nss.extract_regular(source, destination, prefix="foxtunnel-necko")
     manifest = necko_bundle.verify(destination, "linux-" + arch)
     observed = manifest['files']
-    needed = ("foxtunnel", "lib/libnss3.so", "mozilla-runtime.json", "nss-build.json")
+    needed = ("foxtunnel", "lib/libnss3.so", "mozilla-runtime.json", "nss-build.json",
+              "LICENSE", "THIRD_PARTY_NOTICES.txt", "licenses/Mozilla-about-license.html")
     if any(name not in observed for name in needed):
         raise ValueError("missing native engine component")
 

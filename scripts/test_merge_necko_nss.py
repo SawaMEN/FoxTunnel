@@ -39,6 +39,8 @@ class MergeTests(unittest.TestCase):
         (nss / "mozilla-runtime.json").write_text("{}")
         (nss / "licenses/Mozilla-about-license.html").write_text("NSS license")
         (nss / "THIRD_PARTY_NOTICES.txt").write_text("Notices")
+        (nss / "LICENSE").write_text("FoxTunnel license")
+        (nss / "licenses/Go-LICENSE").write_text("Go license")
         return necko, nss
 
     def rehash(self, necko, arch='amd64'):
@@ -60,10 +62,26 @@ class MergeTests(unittest.TestCase):
             self.assertIn("lib/libnss3.so", manifest["files"])
             self.assertIn("runtime/xpcshell", manifest["files"])
             self.assertIn("nss-build.json", manifest["files"])
+            self.assertIn("LICENSE", manifest["files"])
+            self.assertIn("licenses/Go-LICENSE", manifest["files"])
+            self.assertIn("THIRD_PARTY_NOTICES.txt", manifest["files"])
             first, second = root / "a.tar.gz", root / "b.tar.gz"
             self.assertEqual(merge.make_archive(necko, first), merge.make_archive(necko, second))
             with tarfile.open(first) as archive:
                 self.assertIn("foxtunnel-necko/lib/libnss3.so", archive.getnames())
+
+    def test_existing_output_is_never_deleted_and_sdk_contract_is_kept(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);necko,nss=self.fixture(root)
+            metadata=json.loads((nss/'build.json').read_text());metadata['product']='protocol-core';(nss/'build.json').write_text(json.dumps(metadata))
+            (nss/'integration.json').write_text('{"schema":1}')
+            (nss/'INTEGRATION.md').write_text('SDK integration contract')
+            manifest=merge.merge_files(necko,nss)
+            self.assertIn('integration.json',manifest['files'])
+            self.assertIn('INTEGRATION.md',manifest['files'])
+            out=root/'existing.tar.gz';out.write_bytes(b'keep existing signed archive')
+            with self.assertRaises(FileExistsError):merge.make_archive(necko,out)
+            self.assertEqual(out.read_bytes(),b'keep existing signed archive')
 
     def test_refuse_missing_native_files_and_collision(self):
         with tempfile.TemporaryDirectory() as tmp:
