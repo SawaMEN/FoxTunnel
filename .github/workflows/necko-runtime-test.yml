@@ -159,10 +159,12 @@ jobs:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
           FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
         run: |
-          go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint|GeckoFirefoxSelfComparison)' -v -count=3 -timeout=180s
-          python3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json
+          # Sample both subjects and self controls equally. Three trials can
+          # miss Firefox's SETTINGS ACK / HPACK table-update scheduling race.
+          go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint|GeckoFirefoxSelfComparison)' -v -count=9 -timeout=600s
+          python3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json --minimum-repetitions 9
           python3 scripts/analyze_firefox_self.py --observations necko-fingerprint/observations/firefox-self --out necko-fingerprint/firefox-self.json
-          python3 scripts/evaluate_fx_fingerprint.py --candidate necko-fingerprint/comparison.json --control necko-fingerprint/firefox-self.json --out necko-fingerprint/fx-audit.json --enforce
+          python3 scripts/evaluate_fx_fingerprint.py --candidate necko-fingerprint/comparison.json --control necko-fingerprint/firefox-self.json --out necko-fingerprint/fx-audit.json --minimum-repetitions 9 --enforce
       - uses: actions/upload-artifact@v4
         if: always()
         with:

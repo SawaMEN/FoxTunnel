@@ -573,7 +573,9 @@ if (typeof Components !== "undefined") {
     if ((idleGarbage || retiredSinceCollection >= 64 || transferred - bytesAtCollection >= 16 * 1024 * 1024) &&
         now - lastCollection >= 5000) {
       const start = ChromeUtils.now();
-      Cu.forceGC(); Cu.forceCC(); Cu.forceGC();
+      // The final pass must also release unused arenas. An ordinary GC can
+      // leave the shell's high-water heap committed after wrappers are freed.
+      Cu.forceGC(); Cu.forceCC(); Cu.forceShrinkingGC();
       counters.gc_collections++;
       counters.gc_ms += Math.ceil(ChromeUtils.now() - start);
       retiredSinceCollection = 0;

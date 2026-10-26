@@ -89,12 +89,15 @@ func TestGeckoManagedHTTPIdentity(t *testing.T) {
 					case "missing-name":
 						cfg.ServerName = ""
 					}
+					if fault != "valid" {
+						cfg.ConnectTimeoutMS = 3000
+					}
 					m, err := NewManaged(bundle, cfg)
 					if err != nil {
 						t.Fatal(err)
 					}
 					defer m.Close()
-					ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 					defer cancel()
 					payload := []byte{0, 255, 13, 10, 128, 42}
 					req, _ := http.NewRequestWithContext(ctx, "POST", cfg.Server+"/identity", bytes.NewReader(payload))
@@ -124,6 +127,9 @@ func TestGeckoManagedHTTPIdentity(t *testing.T) {
 						if stream, e := m.OpenUDPStream(ctx); e == nil {
 							stream.Close()
 							t.Fatal("UDP-v2 accepted denied peer")
+						}
+						if ctx.Err() != nil {
+							t.Fatal("identity gate exhausted its context before exercising all carriers", ctx.Err())
 						}
 						if requests.Load() != 0 {
 							t.Fatal("application request/authorization reached denied peer")
@@ -260,7 +266,9 @@ func TestGeckoManagedHTTPNativeProfiles(t *testing.T) {
 	if !bytes.Equal(u16ProfileBytes(measured.p.Hello.SupportedGroups), u16ProfileBytes([]uint16{4588, 29, 23, 24, 25})) {
 		t.Fatal("native TLS group preset", measured.p.Hello.SupportedGroups)
 	}
-	if !bytes.Equal(u16ProfileBytes(measured.p.Hello.SignatureAlgorithms), u16ProfileBytes([]uint16{1027, 1283, 1539, 2052, 2053, 2054, 1025, 1281, 1537, 515, 513})) {
+	// NSS ssl3_FilterSigAlgs moves PKCS#1 certificate schemes last on a
+	// TLS-1.3-only socket, as in the existing native NSS profile gate.
+	if !bytes.Equal(u16ProfileBytes(measured.p.Hello.SignatureAlgorithms), u16ProfileBytes([]uint16{1027, 1283, 1539, 2052, 2053, 2054, 515, 1025, 1281, 1537, 513})) {
 		t.Fatal("native TLS signature preset", measured.p.Hello.SignatureAlgorithms)
 	}
 	if !bytes.Equal(u16ProfileBytes(measured.p.Hello.KeyShareGroups), u16ProfileBytes([]uint16{4588, 29, 23})) {
