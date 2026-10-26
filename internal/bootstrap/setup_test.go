@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"math/big"
 	"os"
@@ -251,5 +252,37 @@ func TestSetupXHTTPAutomaticRoute(t *testing.T) {
 	c, _ := ReadServer(filepath.Join(join.Output, "server.json"))
 	if c.XHTTPPath != a.XHTTPPath {
 		t.Fatal("join generated a different route")
+	}
+}
+
+func TestServerCascadeConfiguration(t *testing.T) {
+	for _, tc := range []struct {
+		proxy, dns string
+		valid      bool
+	}{
+		{"socks5://127.0.0.1:1080", "", true},
+		{"socks5://user:password@[::1]:1080", "9.9.9.9:53", true},
+		{"socks5://localhost:1080", "", false},
+		{"socks5://127.0.0.1:1080", "dns.example:53", false},
+		{"", "9.9.9.9:53", false},
+	} {
+		t.Run(tc.proxy+tc.dns, func(t *testing.T) {
+			c := ServerConfig{Version: 1, Listen: "127.0.0.1:8443", Certificate: "cert.pem", PrivateKey: "key.pem", Username: "alice", Password: "secret", MaxTunnels: 10, MaxConnections: 20, EgressProxy: tc.proxy, EgressDNS: tc.dns}
+			data, err := json.Marshal(c)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "server.json")
+			if err = os.WriteFile(path, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			got, err := ReadServer(path)
+			if (err == nil) != tc.valid {
+				t.Fatalf("valid=%v error=%v", tc.valid, err)
+			}
+			if err == nil && (got.EgressProxy != tc.proxy || got.EgressDNS != tc.dns) {
+				t.Fatal("cascade settings lost")
+			}
+		})
 	}
 }

@@ -203,7 +203,7 @@ func checkServerConfig(path string, r *configReport) {
 		r.add("relay", "local relay identity and trust configuration can be initialized", relayErr)
 	}
 	if r.OK {
-		r.Settings = map[string]any{"h3": c.H3Listen != "", "udp": c.EnableUDP, "managed_users": c.UsersFile != "", "bond_hub": c.BondHub, "bond_relay": c.BondUpstream != "", "max_tunnels": c.MaxTunnels, "max_connections": c.MaxConnections}
+		r.Settings = map[string]any{"h3": c.H3Listen != "", "udp": c.EnableUDP, "managed_users": c.UsersFile != "", "cascade": c.EgressProxy != "", "bond_hub": c.BondHub, "bond_relay": c.BondUpstream != "", "max_tunnels": c.MaxTunnels, "max_connections": c.MaxConnections}
 		r.Settings["protocol_policy"] = c.ProtocolPolicy.Effective()
 	}
 }

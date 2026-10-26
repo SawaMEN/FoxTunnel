@@ -18,6 +18,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
 	"github.com/SawaMEN/FoxTunnel/internal/contract"
+	"github.com/SawaMEN/FoxTunnel/internal/egress"
 	"github.com/SawaMEN/FoxTunnel/internal/profile"
 	"github.com/SawaMEN/FoxTunnel/internal/safejson"
 	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
@@ -25,6 +26,8 @@ import (
 )
 
 type ServerConfig struct {
+	EgressProxy    string                  `json:"egress_proxy,omitempty"`
+	EgressDNS      string                  `json:"egress_dns,omitempty"`
 	ProtocolPolicy contract.ProtocolPolicy `json:"protocol_policy,omitempty"`
 	UsersFile      string                  `json:"users_file,omitempty"`
 	UsersState     string                  `json:"users_state,omitempty"`
@@ -73,6 +76,9 @@ func ReadServer(path string) (ServerConfig, error) {
 	}
 	defer f.Close()
 	if safejson.Decode(f, 32<<10, &c) != nil || c.Version != 1 || c.Certificate == "" || c.PrivateKey == "" || !validCredentials(c) || c.MaxTunnels < 1 || c.MaxTunnels > 65536 || c.MaxConnections < 1 || c.MaxConnections > 65536 {
+		return ServerConfig{}, ErrConfig
+	}
+	if _, err := egress.New(c.EgressProxy, c.EgressDNS); err != nil {
 		return ServerConfig{}, ErrConfig
 	}
 	if c.ProtocolPolicy.Validate() != nil || c.ProtocolPolicy == contract.ProtocolStrict && (c.BondHub || c.BondUpstream != "" || c.ClusterFile != "") {
