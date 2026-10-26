@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "status": "native-qualification-in-progress",
+  "status": "native-resource-qualification-in-progress",
   "stage": 5,
-  "stage_checks_complete": 2,
+  "stage_checks_complete": 3,
   "stage_checks_total": 4,
   "overall_stages_complete": 4,
   "overall_stages_total": 6,
@@ -26,12 +26,14 @@
     "All POST/CONNECT/UDP-v1/UDP-v2 negative gates complete before their shared context expires",
     "60-second H2/H3 shrinking-GC soak passed unchanged resource limits",
     "Nine paired native wire / Firefox self-control repetitions per protocol: strict audit passed with inconclusive variable fields, no unexpected differences",
-    "17 native managed groups each passed three times on the verified AMD64 bundle (51 top-level executions)"
+    "17 native managed groups each passed three times on the verified AMD64 bundle (51 top-level executions)",
+    "Seven-carrier main CLI/SDK matrix passed three repetitions",
+    "Five-minute H2/H3 CONNECT load: 21712 rounds plus 32 warmups, exact current helper and source-lock hashes, unchanged bounds passed"
   ],
   "pending": [
-    "Complete independent AMD64 and ARM64 native runtime/security/profile gates",
-    "Complete nine paired wire/self-control repetitions per protocol with strict raw-field enforcement",
-    "Qualify updated CLI/SDK and resource regressions; retain final evidence and promote to xfd"
+    "Complete 12 managed HTTP/Bond/UDP resource workloads on each architecture",
+    "Complete five-minute native CONNECT and paired 60-second controls on both architectures",
+    "Verify final reports, retain evidence and promote qualified implementation to xfd"
   ],
   "promotion": "Not promoted; xfd remains at qualified stage 4",
   "previous_runtime_run": 40317917970,
@@ -56,5 +58,11 @@
       "status": "inconclusive",
       "raw_reports_reproduced": true
     }
+  },
+  "native_security_profile_cli_sdk": {
+    "amd64": "passed",
+    "arm64": "passed",
+    "runtime_run": 40321468060,
+    "candidate_code_commit": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e"
   }
 }

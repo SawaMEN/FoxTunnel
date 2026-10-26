@@ -485,7 +485,7 @@ bridge or Android/macOS Necko. `main` is unchanged.
 
 ### Stage 5 candidate: native identity and profile policy
 
-Stage 5 progress: **2 of 4 steps confirmed**; overall completion remains
+Stage 5 progress: **3 of 4 steps confirmed**; overall completion remains
 **4 of 6 stages**. Work is isolated on `xfd-identity`, based on the qualified
 stage-4 tree. The new 28-patch source lock compiled on both native architectures;
 runtime qualification remains in progress. No promotion to `xfd` is claimed yet.
@@ -494,7 +494,7 @@ runtime qualification remains in progress. No promotion to `xfd` is claimed yet.
 2. Done: primary SNI/SPKI, bounded native TLS/H2 presets,
    immutable policy registration and CLI/SDK wiring, including owner-only
    per-node pin files with exact configured-origin membership.
-3. Pending: qualify native positive/negative trust gates and wire measurements on both architectures.
+3. Done: native positive/negative trust gates, measured TLS/H2 profiles and wire controls on both architectures.
 4. Pending: native CLI/SDK, amd64/ARM64 regressions, evidence and qualification.
 
 A helper-only parent-process API registers an immutable policy for each native
@@ -579,3 +579,14 @@ node-pin and direct API gates locally. The 60-second H2/H3 load passed unchanged
 resource limits. These do not qualify ARM64. Both architectures are being
 rechecked by [runtime run 40321468060](https://github.com/SawaMEN/FoxTunnel/actions/runs/40321468060).
 Current progress remains **2/4**, overall **4/6**; `xfd` and `main` are unchanged.
+
+
+Stage 5 reached **3/4** after both architecture jobs passed the integrated native
+CLI/SDK and security/profile matrix in run `40321468060`. Both strict wire audits
+had zero unexpected differences across nine candidate and nine self-control
+trials per protocol. Their preserved raw observations reproduce all reports
+exactly, with matching helper/source hashes. Variable fields stay inconclusive.
+Local AMD64 also passed all 17 managed groups and the seven-carrier CLI/SDK
+matrix three times, plus five-minute H2/H3 CONNECT load. Remaining acceptance is
+the dual-architecture managed/CONNECT/paired resource suite and final evidence;
+no promotion is claimed until that finishes.
