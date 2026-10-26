@@ -2,7 +2,10 @@
   "schema": 1,
   "repository": "https://github.com/mozilla-firefox/firefox.git",
   "revision": "0f76fed7aea1f77db85afbf5a895754d8ad971d7",
-  "platforms": ["linux-amd64", "linux-arm64"],
+  "platforms": [
+    "linux-amd64",
+    "linux-arm64"
+  ],
   "patches": [
     {
       "path": "experiments/firefox-necko/patches/h2-connect-cold-start.patch",
@@ -75,11 +78,11 @@
       "after_sha256": "bbc554529e9b7b1e478ac4fccb02a0248b475fa97e77dd04aa7452c6f3900030"
     },
     {
-      "path": "experiments/firefox-necko/patches/h3-tunnel-cancel-output.patch",
-      "sha256": "a22b21b1cc9bde09ceb50e0c25a1b9422b13795e8f3d1535e60550375dac973a",
+      "path": "experiments/firefox-necko/patches/h3-identity-and-half-close.patch",
+      "sha256": "0e777d5711c0b157adb6243fbb444b2f3b9d0168ae075f9da1b5793fe0101671",
       "source_path": "netwerk/protocol/http/Http3Session.cpp",
       "before_sha256": "f2666130c3e3d9b25ce513fa8b246cc2badfcfa320028fbd6f387eb200c77781",
-      "after_sha256": "4a432083e39c34591c191abeea0c2918d5929efa56881d8d21e841d0386d84ce"
+      "after_sha256": "4772d077e912f6c0bb3bcc254e0944c477648e63c9274cd95df0548eff03c9bf"
     },
     {
       "path": "experiments/firefox-necko/patches/h2-response-first-upload.patch",
@@ -157,6 +160,48 @@
       "sha256": "bd93b76efec1a90db97effd4a8291421d906584c40a634fae43cd435246deba6",
       "before_sha256": "7bf9c0cec93dc741d5bcd64243c5df81c1d198df39a90ef6d1ef77e186678482",
       "after_sha256": "2a8ab0706d9bfb82f5a86d548f9456ba2713da3946920fb87a8d2a283316f83e"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/foxtunnel-nsIX509CertDB-idl.patch",
+      "sha256": "ca7de7b5cf7fd2877ae1f61950b15c11dbfc954ce0195ed530e9cbaf2962ca5b",
+      "source_path": "security/manager/ssl/nsIX509CertDB.idl",
+      "before_sha256": "066f10e3cc1e7420d5be17d3c1738cf93699e2d2af21f6b5bccb7a59ec8cc20a",
+      "after_sha256": "186d333c74fc3334a11666c9c157ff381972243b037dd445b96d76173f260978"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/foxtunnel-nsNSSCertificateDB-cpp.patch",
+      "sha256": "df8baa1da580c02618589ff143c763b490b1c3e8a94da92999aa9bf668f9f3f8",
+      "source_path": "security/manager/ssl/nsNSSCertificateDB.cpp",
+      "before_sha256": "f689aadbd14260ac3d58fc89607da5223d86cf72396d98955d43e37fc880b1f1",
+      "after_sha256": "aeb04e53c46ee2919e0b8fa945c632adb9ebe0915abf95c0e99d407d532ac5cc"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/foxtunnel-CommonSocketControl-h.patch",
+      "sha256": "cba1f152c274136345e04ab4c97cf1e0f6bd70dd6801effc436b8e60892a752a",
+      "source_path": "security/manager/ssl/CommonSocketControl.h",
+      "before_sha256": "4a4353d01d8f1d61b625bc6d99d2e17c633d440e707ea0b423c58cc421d273f8",
+      "after_sha256": "af08f5ba2430c4bac64a0203ca5cdb0ee2f2d8514f1ba697e9885a1884c4e05f"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/foxtunnel-CommonSocketControl-cpp.patch",
+      "sha256": "e320bfdff1b8fce390fdf152a35ff8c02ffb5a7f974cd39086cbc554cf054ee0",
+      "source_path": "security/manager/ssl/CommonSocketControl.cpp",
+      "before_sha256": "2f4a585a44af0081a9e7aa453acd15f0ce7497e9d730dcf202e67199b099c2bb",
+      "after_sha256": "4b6665c5e6112c07ad34e57d7720557956dc26d9595b5191437e504308fe3f86"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/foxtunnel-SSLServerCertVerification-cpp.patch",
+      "sha256": "43fc3fa0f91da7b069d335fddf5abec05d374b9f5957505a59cc69f1f4207371",
+      "source_path": "security/manager/ssl/SSLServerCertVerification.cpp",
+      "before_sha256": "07e7f7dd3862188f70abf8e20cf9e5bf4285a8adea88a9b79d5e9b0d4e3161c7",
+      "after_sha256": "baec878d61b116dc1ee13a7160222066c8f4b4285b317fe59d141034e5ea2756"
+    },
+    {
+      "path": "experiments/firefox-necko/patches/foxtunnel-nsNSSIOLayer-cpp.patch",
+      "sha256": "034e0734242b83ed0c4a17a9ad4723676ac690a4af1e8d0dcab3d0a8561b1b96",
+      "source_path": "security/manager/ssl/nsNSSIOLayer.cpp",
+      "before_sha256": "8404b5698d42de48ce11367880d3076d7f9bcfbcf5d2f13985dafa46714d6b49",
+      "after_sha256": "739abfa4a17c5f408aee1aed9e8f56f0faeead38a73b047ad1b7fad4a62cbd0a"
     }
   ]
 }

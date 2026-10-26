@@ -1,0 +1,27 @@
+--- a/security/manager/ssl/CommonSocketControl.h
++++ b/security/manager/ssl/CommonSocketControl.h
+@@ -40,6 +40,14 @@
+ 
+   CommonSocketControl(const nsCString& aHostName, int32_t aPort,
+                       uint32_t aProviderFlags);
++
++  static nsresult RegisterFoxTunnelPolicy(
++      const nsACString& aRouteHost, int32_t aRoutePort,
++      const nsACString& aServerName, const nsACString& aPinSha256,
++      const nsACString& aTlsProfile);
++  bool CheckFoxTunnelPin(nsIX509Cert* aCert);
++  bool HasFoxTunnelPolicy() const { return mFoxTunnelPolicy; }
++  const nsCString& FoxTunnelTLSProfile() const { return mFoxTunnelTLSProfile; }
+ 
+   // Use "errorCode" 0 to indicate success.
+   virtual void SetCertVerificationResult(PRErrorCode errorCode) {
+@@ -140,6 +148,9 @@
+   virtual ~CommonSocketControl() = default;
+ 
+   nsCString mHostName;
++  nsCString mFoxTunnelPin;
++  nsCString mFoxTunnelTLSProfile;
++  bool mFoxTunnelPolicy = false;
+   int32_t mPort;
+   mozilla::OriginAttributes mOriginAttributes;
+ 

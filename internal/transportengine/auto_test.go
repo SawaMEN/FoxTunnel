@@ -46,3 +46,20 @@ func TestExplicitNeckoNeverDowngrades(t *testing.T) {
 		t.Fatal("legacy may not accept a Necko bundle")
 	}
 }
+
+func TestNativeProfileEngineSelection(t *testing.T) {
+	if runtime.GOOS != "linux" || (runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64") {
+		t.Skip("native platform")
+	}
+	for _, engine := range []string{"auto", "necko"} {
+		plan, err := Resolve(Config{Engine: engine, NeckoBundle: "/verified-at-apply", Transport: "h2-post", TLSClientProfile: "firefox-158", HTTP2ReceiveProfile: "firefox-158"})
+		if err != nil || plan.Engine != "necko" {
+			t.Fatal("native profile selection", plan, err)
+		}
+	}
+	for _, profile := range []Config{{Engine: "necko", Transport: "h3-connect", TLSClientProfile: "firefox-158"}, {Engine: "necko", Transport: "h3-post", HTTP2ReceiveProfile: "firefox-158"}, {Engine: "necko", Transport: "h2-post", TLSClientProfile: "unknown"}} {
+		if _, err := Resolve(profile); err == nil {
+			t.Fatal("accepted incompatible profile")
+		}
+	}
+}

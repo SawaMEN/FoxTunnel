@@ -25,6 +25,7 @@ import (
 	"time"
 
 	ft "github.com/SawaMEN/FoxTunnel"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 	"github.com/quic-go/quic-go/http3"
 )
@@ -49,11 +50,16 @@ func TestIntegratedNecko(t *testing.T) {
 			if e != nil {
 				t.Fatal(e)
 			}
-			leaf := &x509.Certificate{SerialNumber: big.NewInt(2), Subject: pkix.Name{CommonName: "localhost"}, NotBefore: root.NotBefore, NotAfter: root.NotAfter, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1")}}
+			leaf := &x509.Certificate{SerialNumber: big.NewInt(2), Subject: pkix.Name{CommonName: "localhost"}, NotBefore: root.NotBefore, NotAfter: root.NotAfter, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1")}, DNSNames: []string{"identity.invalid"}}
 			der, e := x509.CreateCertificate(rand.Reader, leaf, root, &key.PublicKey, key)
 			if e != nil {
 				t.Fatal(e)
 			}
+			parsedLeaf, e := x509.ParseCertificate(der)
+			if e != nil {
+				t.Fatal(e)
+			}
+			identityPin := tlsidentity.Pin(parsedLeaf)
 			proxy := httptest.NewUnstartedServer(handler)
 			proxy.EnableHTTP2 = true
 			proxy.TLS = &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{{Certificate: [][]byte{der}, PrivateKey: key}}}
@@ -87,6 +93,30 @@ func TestIntegratedNecko(t *testing.T) {
 					go func() { defer c.Close(); c.SetDeadline(time.Now().Add(10 * time.Second)); io.Copy(c, c) }()
 				}
 			}()
+			for _, selectedEngine := range []string{"necko", "auto"} {
+				t.Run("SDK-identity-"+selectedEngine, func(t *testing.T) {
+					cfg := ft.ClientConfig{Engine: selectedEngine, NeckoBundle: bundle, ServerURL: proxy.URL, CACertFile: ca, Transport: mode, Credentials: ft.Credentials{Username: "u", Password: "p"}, ServerName: "identity.invalid", SPKIPin: identityPin}
+					if mode != "h3-connect" && mode != "h3-post" {
+						cfg.TLSClientProfile = "firefox-158"
+						cfg.HTTP2ReceiveProfile = "firefox-158"
+					}
+					c, e := ft.NewClient(cfg)
+					if e != nil {
+						t.Fatal(e)
+					}
+					defer c.Close()
+					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+					defer cancel()
+					conn, e := c.DialContext(ctx, "tcp", echo.Addr().String())
+					if e != nil {
+						t.Fatal(e)
+					}
+					integratedNeckoTransfer(t, conn)
+					if c.Status().Engine != "necko" {
+						t.Fatal("identity/preset policy downgraded engine")
+					}
+				})
+			}
 			t.Run("SDK", func(t *testing.T) {
 				c, e := ft.NewClient(ft.ClientConfig{Engine: "necko", NeckoBundle: bundle, ServerURL: proxy.URL, CACertFile: ca, Transport: mode, Credentials: ft.Credentials{Username: "u", Password: "p"}, MaxConnections: 1})
 				if e != nil {
@@ -244,81 +274,93 @@ func TestIntegratedNecko(t *testing.T) {
 					integratedNeckoTransfer(t, conn)
 				})
 			}
-			t.Run("CLI", func(t *testing.T) {
-				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-				defer cancel()
-				cmd := exec.CommandContext(ctx, filepath.Join(bundle, "foxtunnel"), "client", "--engine", "necko", "--necko-bundle", bundle, "--server", proxy.URL, "--ca-cert", ca, "--transport", mode, "--listen", "127.0.0.1:0", "--events-json", "--shutdown-on-stdin-eof")
-				cmd.Dir = t.TempDir()
-				cmd.Env = append(os.Environ(), "FOXTUNNEL_USER=u", "FOXTUNNEL_PASSWORD=p")
-				stdin, e := cmd.StdinPipe()
-				if e != nil {
-					t.Fatal(e)
+			for _, useIdentity := range []bool{false, true} {
+				name := "CLI"
+				if useIdentity {
+					name = "CLI-identity"
 				}
-				stdout, e := cmd.StdoutPipe()
-				if e != nil {
-					t.Fatal(e)
-				}
-				var stderr bytes.Buffer
-				cmd.Stderr = &stderr
-				if e = cmd.Start(); e != nil {
-					t.Fatal(e)
-				}
-				done := make(chan error, 1)
-				go func() { done <- cmd.Wait() }()
-				stopped := false
-				defer func() {
-					if !stopped {
+				t.Run(name, func(t *testing.T) {
+					ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+					defer cancel()
+					cmd := exec.CommandContext(ctx, filepath.Join(bundle, "foxtunnel"), "client", "--engine", "necko", "--necko-bundle", bundle, "--server", proxy.URL, "--ca-cert", ca, "--transport", mode, "--listen", "127.0.0.1:0", "--events-json", "--shutdown-on-stdin-eof")
+					if useIdentity {
+						cmd.Args = append(cmd.Args, "--sni", "identity.invalid", "--pin-sha256", identityPin)
+						if mode != "h3-connect" && mode != "h3-post" {
+							cmd.Args = append(cmd.Args, "--tls-client-profile", "firefox-158", "--h2-receive-profile", "firefox-158")
+						}
+					}
+					cmd.Dir = t.TempDir()
+					cmd.Env = append(os.Environ(), "FOXTUNNEL_USER=u", "FOXTUNNEL_PASSWORD=p")
+					stdin, e := cmd.StdinPipe()
+					if e != nil {
+						t.Fatal(e)
+					}
+					stdout, e := cmd.StdoutPipe()
+					if e != nil {
+						t.Fatal(e)
+					}
+					var stderr bytes.Buffer
+					cmd.Stderr = &stderr
+					if e = cmd.Start(); e != nil {
+						t.Fatal(e)
+					}
+					done := make(chan error, 1)
+					go func() { done <- cmd.Wait() }()
+					stopped := false
+					defer func() {
+						if !stopped {
+							cancel()
+							<-done
+						}
+					}()
+					var ready struct {
+						Type   string `json:"type"`
+						Listen string `json:"tcp_listen"`
+					}
+					decoder := json.NewDecoder(stdout)
+					if e = decoder.Decode(&ready); e != nil || ready.Type != "ready" {
 						cancel()
 						<-done
+						stopped = true
+						t.Fatalf("CLI ready: %v: %s", e, stderr.String())
 					}
-				}()
-				var ready struct {
-					Type   string `json:"type"`
-					Listen string `json:"tcp_listen"`
-				}
-				decoder := json.NewDecoder(stdout)
-				if e = decoder.Decode(&ready); e != nil || ready.Type != "ready" {
-					cancel()
-					<-done
-					stopped = true
-					t.Fatalf("CLI ready: %v: %s", e, stderr.String())
-				}
-				conn, e := net.DialTimeout("tcp", ready.Listen, time.Second)
-				if e != nil {
-					t.Fatal(e)
-				}
-				host, p, _ := net.SplitHostPort(echo.Addr().String())
-				port, _ := strconv.Atoi(p)
-				ip := net.ParseIP(host).To4()
-				conn.SetDeadline(time.Now().Add(5 * time.Second))
-				conn.Write([]byte{5, 1, 0})
-				var greeting [2]byte
-				if _, e = io.ReadFull(conn, greeting[:]); e != nil || greeting != [2]byte{5, 0} {
-					t.Fatal("CLI SOCKS greeting", e)
-				}
-				request := append([]byte{5, 1, 0, 1}, ip...)
-				request = append(request, byte(port>>8), byte(port))
-				conn.Write(request)
-				var reply [10]byte
-				if _, e = io.ReadFull(conn, reply[:]); e != nil || reply[1] != 0 {
-					t.Fatal("CLI SOCKS CONNECT", e, reply)
-				}
-				integratedNeckoTransfer(t, conn)
-				stdin.Close()
-				select {
-				case e = <-done:
-					stopped = true
+					conn, e := net.DialTimeout("tcp", ready.Listen, time.Second)
 					if e != nil {
-						t.Fatalf("CLI shutdown: %v %s", e, stderr.String())
+						t.Fatal(e)
 					}
-				case <-time.After(5 * time.Second):
-					t.Fatal("CLI failed to join Necko")
-				}
-				if conn, e := net.DialTimeout("tcp", ready.Listen, 100*time.Millisecond); e == nil {
-					conn.Close()
-					t.Fatal("CLI listener survived shutdown")
-				}
-			})
+					host, p, _ := net.SplitHostPort(echo.Addr().String())
+					port, _ := strconv.Atoi(p)
+					ip := net.ParseIP(host).To4()
+					conn.SetDeadline(time.Now().Add(5 * time.Second))
+					conn.Write([]byte{5, 1, 0})
+					var greeting [2]byte
+					if _, e = io.ReadFull(conn, greeting[:]); e != nil || greeting != [2]byte{5, 0} {
+						t.Fatal("CLI SOCKS greeting", e)
+					}
+					request := append([]byte{5, 1, 0, 1}, ip...)
+					request = append(request, byte(port>>8), byte(port))
+					conn.Write(request)
+					var reply [10]byte
+					if _, e = io.ReadFull(conn, reply[:]); e != nil || reply[1] != 0 {
+						t.Fatal("CLI SOCKS CONNECT", e, reply)
+					}
+					integratedNeckoTransfer(t, conn)
+					stdin.Close()
+					select {
+					case e = <-done:
+						stopped = true
+						if e != nil {
+							t.Fatalf("CLI shutdown: %v %s", e, stderr.String())
+						}
+					case <-time.After(5 * time.Second):
+						t.Fatal("CLI failed to join Necko")
+					}
+					if conn, e := net.DialTimeout("tcp", ready.Listen, 100*time.Millisecond); e == nil {
+						conn.Close()
+						t.Fatal("CLI listener survived shutdown")
+					}
+				})
+			}
 		})
 	}
 }

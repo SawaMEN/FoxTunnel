@@ -109,9 +109,8 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}()
 	plan, err := transportengine.Resolve(transportengine.Config{
 		Engine: config.Engine, Transport: config.Transport, NeckoBundle: config.NeckoBundle,
-		AutoNeckoExcluded: ((config.RequireProtocolNegotiation || config.Padding) && !transportengine.NativeHTTPHeaders(config.Transport)) ||
-			config.ServerName != "" || config.SPKIPin != "",
-		TLSBackend: config.TLSBackend, QUICBackend: config.QUICBackend,
+		AutoNeckoExcluded: ((config.RequireProtocolNegotiation || config.Padding) && !transportengine.NativeHTTPHeaders(config.Transport)),
+		TLSBackend:        config.TLSBackend, QUICBackend: config.QUICBackend,
 		H3Fallback: config.H3Fallback, QUICHandshakeTimeout: config.QUICHandshakeTimeout,
 		TLSClientProfile: config.TLSClientProfile, HTTP2ReceiveProfile: config.HTTP2ReceiveProfile,
 	})

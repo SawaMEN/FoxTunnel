@@ -470,6 +470,9 @@ func socks5Reply(w io.Writer, code byte) error {
 // SetHTTP2ReceiveProfile changes only the outer H2 receive configuration.
 // Configure before Serve and before enabling bond/discovery.
 func (c *Client) SetHTTP2ReceiveProfile(name string) error {
+	if c.managed != nil {
+		return errors.New("configure native Necko profiles when creating its helper")
+	}
 	if err := h2profile.Validate(name); err != nil {
 		return err
 	}
@@ -490,6 +493,9 @@ func (c *Client) SetHTTP2ReceiveProfile(name string) error {
 
 // SetTLSClientProfile applies socket-local NSS preferences before serving.
 func (c *Client) SetTLSClientProfile(name string) error {
+	if c.managed != nil {
+		return errors.New("configure native Necko profiles when creating its helper")
+	}
 	if err := nsstls.ValidateClientProfile(name); err != nil {
 		return err
 	}

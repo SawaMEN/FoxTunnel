@@ -1,7 +1,7 @@
 name: Mozilla Necko source experiment
 on:
   push:
-    branches: [firefox, xfd, xfd-h3, xfd-arm64]
+    branches: [firefox, xfd, xfd-h3, xfd-arm64, xfd-identity]
     paths:
       - 'experiments/firefox-necko/patches/**'
       - 'experiments/firefox-necko/gecko.lock.json'

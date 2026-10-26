@@ -1,0 +1,20 @@
+--- a/security/manager/ssl/nsIX509CertDB.idl
++++ b/security/manager/ssl/nsIX509CertDB.idl
+@@ -77,8 +77,16 @@
+  * This represents a service to access and manipulate
+  * X.509 certificates stored in a database.
+  */
+-[scriptable, uuid(5c16cd9b-5a73-47f1-ab0f-11ede7495cce)]
++[scriptable, uuid(7ba276af-a633-4fbe-9c64-7c7528d96a02)]
+ interface nsIX509CertDB : nsISupports {
++  // Dedicated helper only. Register an immutable route policy before opening
++  // any socket to that route. A pin supplements ordinary PKI verification.
++  [must_use] void registerFoxTunnelPolicy(in ACString routeHost,
++                                         in long routePort,
++                                         in ACString serverName,
++                                         in ACString pinSha256,
++                                         in ACString tlsProfile);
++
+ 
+   /**
+    *  Constants that define which usages a certificate

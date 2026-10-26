@@ -60,6 +60,9 @@ func makeTLStransport(backend string, config *tls.Config, receiveProfile, client
 // their own hostname, and discovery supplies independent per-node policies.
 // Configure before enabling bond/discovery and before serving.
 func (c *Client) SetServerIdentity(sni, pin string) error {
+	if c.managed != nil {
+		return errors.New("configure native Necko identity when creating its helper")
+	}
 	policy, err := tlsidentity.Normalize(sni, pin)
 	if err != nil || c.bondClient != nil || c.bondDiscovery != nil {
 		return i18n.Error("invalid TLS identity settings")

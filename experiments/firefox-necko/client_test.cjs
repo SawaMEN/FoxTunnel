@@ -324,3 +324,12 @@ test('unclean native shutdown recovers without broadening TLS/protocol retries',
     assert.equal(nativeHTTPFailureReason(failure, results), 1);
   }
 });
+
+test('native identity is scoped to the primary origin and never inherited by alternate nodes', () => {
+  const {nativeRoutePolicy} = require('./client.js');
+  const cfg = {proxy_host: 'proxy.example', proxy_port: 443, server_name: 'cert.example', pin_sha256: 'sha256/fixture', tls_client_profile: 'firefox-158'};
+  assert.deepEqual(nativeRoutePolicy(cfg, 'PROXY.EXAMPLE', 443), {serverName:'cert.example',pin:'sha256/fixture',tlsProfile:'firefox-158'});
+  for (const [host,port] of [['other.example',443],['proxy.example',8443]]) {
+    assert.deepEqual(nativeRoutePolicy(cfg,host,port),{serverName:'',pin:'',tlsProfile:'firefox-158'});
+  }
+});

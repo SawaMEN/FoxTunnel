@@ -14,6 +14,7 @@ import (
 	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
 	"github.com/SawaMEN/FoxTunnel/internal/neqo"
 	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
 	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
 )
@@ -78,8 +79,7 @@ func Resolve(cfg Config) (Plan, error) {
 			(cfg.QUICBackend == "" || cfg.QUICBackend == "auto") &&
 			(cfg.H3Fallback == "" || cfg.H3Fallback == "none") &&
 			cfg.QUICHandshakeTimeout == 0 &&
-			(cfg.TLSClientProfile == "" || cfg.TLSClientProfile == "default") &&
-			(cfg.HTTP2ReceiveProfile == "" || cfg.HTTP2ReceiveProfile == "default")
+			firefox.ValidateProfiles(cfg.Transport, cfg.TLSClientProfile, cfg.HTTP2ReceiveProfile) == nil
 		if cfg.NeckoBundle != "" && compatible {
 			cfg.Engine = "necko"
 			// An explicitly selected, damaged bundle must fail verification, not
@@ -107,8 +107,11 @@ func Resolve(cfg Config) (Plan, error) {
 		if cfg.Transport != "h2-connect" && cfg.Transport != "h3-connect" && cfg.Transport != "h2-post" && cfg.Transport != "h3-post" && !xhttp.IsMode(cfg.Transport) {
 			return Plan{}, errors.New("Necko requires H2/H3 CONNECT, H2/H3 POST or an XHTTP transport")
 		}
-		if (cfg.TLSBackend != "" && cfg.TLSBackend != "auto") || cfg.QUICBackend != "" || (cfg.H3Fallback != "" && cfg.H3Fallback != "none") || cfg.QUICHandshakeTimeout != 0 || (cfg.TLSClientProfile != "" && cfg.TLSClientProfile != "default") || (cfg.HTTP2ReceiveProfile != "" && cfg.HTTP2ReceiveProfile != "default") {
-			return Plan{}, errors.New("Necko owns TLS, QUIC and HTTP settings; backend/profile overrides and fallback are unsupported")
+		if (cfg.TLSBackend != "" && cfg.TLSBackend != "auto") || cfg.QUICBackend != "" || (cfg.H3Fallback != "" && cfg.H3Fallback != "none") || cfg.QUICHandshakeTimeout != 0 {
+			return Plan{}, errors.New("Necko owns TLS and QUIC backends; backend overrides and fallback are unsupported")
+		}
+		if err := firefox.ValidateProfiles(cfg.Transport, cfg.TLSClientProfile, cfg.HTTP2ReceiveProfile); err != nil {
+			return Plan{}, err
 		}
 		return Plan{Config: cfg}, nil
 	case "mozilla":
@@ -195,8 +198,9 @@ func resolveMozilla(cfg Config) (Plan, error) {
 // continue to enforce CA, SNI, SPKI, ALPN and request-before-fallback rules.
 func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 	if p.Engine == "necko" {
-		if serverName != "" || pin != "" {
-			return errors.New("Necko currently requires URL hostname verification without SNI overrides or SPKI pins")
+		identity, err := tlsidentity.Normalize(serverName, pin)
+		if err != nil {
+			return err
 		}
 		verified, err := firefox.VerifyBundle(p.NeckoBundle)
 		if err != nil {
@@ -216,7 +220,7 @@ func (p Plan) Apply(c *tunnel.Client, serverName, pin string) error {
 			// applying that same limit here can reject a flow's own GET/POST pair.
 			// The helper keeps its separate bounded default of 256 operations;
 			// SDK/SOCKS admission continues to enforce the user's logical limit.
-			return firefox.NewManaged(bundle, firefox.Config{Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: nativeMode, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
+			return firefox.NewManaged(bundle, firefox.Config{ServerName: identity.SNI, SPKIPin: identity.PinSHA256, TLSClientProfile: p.TLSClientProfile, HTTP2ReceiveProfile: p.HTTP2ReceiveProfile, Server: c.ServerURL.String(), Username: c.Username, Password: c.Password, CACert: c.CACertFile, Transport: nativeMode, ConnectTimeoutMS: int(c.ConnectTimeout / time.Millisecond)})
 		})
 		c.SetEngineStatus("necko", p.Transport, "nss", "necko", "none")
 		return nil

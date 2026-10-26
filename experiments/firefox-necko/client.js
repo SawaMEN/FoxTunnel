@@ -347,8 +347,17 @@ function nativeHTTPFailureReason(status, results) {
     uncleanShutdown].includes(status) ? 2 : 1;
 }
 
+// Inputs are canonical native URI hosts. A primary policy never follows a
+// request to another host or port, including discovered/fallback nodes.
+function nativeRoutePolicy(cfg, host, port) {
+  const primary = host.toLowerCase() === cfg.proxy_host.toLowerCase() && port === cfg.proxy_port;
+  return {serverName: primary ? (cfg.server_name || "") : "",
+    pin: primary ? (cfg.pin_sha256 || "") : "",
+    tlsProfile: cfg.tls_client_profile === "firefox-158" ? "firefox-158" : ""};
+}
+
 if (typeof module !== "undefined") module.exports = {
-  SocksParser, socksReply, firefoxUserAgent, pumpBuffered, nativeHTTPFailureReason,
+  SocksParser, socksReply, firefoxUserAgent, pumpBuffered, nativeHTTPFailureReason, nativeRoutePolicy,
   validateHTTPMetadata, httpChunkHeader, pumpHTTPUpload, pumpHTTPDownload, collectHTTPUpload,
   writeAllWithBackpressure, sessionStatus, udpIPCReply,
   validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder, pumpNativeUDPFrames,
@@ -402,6 +411,34 @@ if (typeof Components !== "undefined") {
   Services.prefs.setBoolPref("network.captive-portal-service.enabled", false);
   Services.prefs.setBoolPref("network.connectivity-service.enabled", false);
   Services.prefs.setBoolPref("toolkit.telemetry.enabled", false);
+
+  const primaryURIHost = cfg.proxy_host.includes(":") ? `[${cfg.proxy_host}]` : cfg.proxy_host;
+  cfg.proxy_host = Services.io.newURI(`https://${primaryURIHost}:${cfg.proxy_port}`).host;
+  const nativeCertDB = Cc["@mozilla.org/security/x509certdb;1"].getService(Ci.nsIX509CertDB);
+  function registerEndpoint(host, port) {
+    // Identity belongs only to the primary origin, never an alternate node.
+    const {serverName: sni, pin, tlsProfile} = nativeRoutePolicy(cfg, host, port);
+    if (sni || pin || tlsProfile) {
+      if (typeof nativeCertDB.registerFoxTunnelPolicy !== "function") throw new Error("native identity API required");
+      nativeCertDB.registerFoxTunnelPolicy(host, port, sni, pin, tlsProfile);
+    }
+  }
+  registerEndpoint(cfg.proxy_host, cfg.proxy_port);
+  if (cfg.server_name || cfg.pin_sha256 || cfg.tls_client_profile === "firefox-158") {
+    Services.prefs.setBoolPref("network.http.http2.coalesce-hostnames", false);
+    // No credentials may enter QUIC early data before the pin is checked.
+    Services.prefs.setBoolPref("network.http.http3.enable_0rtt", false);
+    Services.prefs.setBoolPref("security.tls.enable_0rtt_data", false);
+  }
+  if (cfg.tls_client_profile === "firefox-158") {
+    Services.prefs.setIntPref("security.tls.version.min", 4);
+    Services.prefs.setIntPref("security.tls.version.max", 4);
+  }
+  if (cfg.http2_receive_profile === "firefox-158") {
+    Services.prefs.setIntPref("network.http.http2.push-allowance", 131072);
+    Services.prefs.setIntPref("network.http.http2.pull-allowance", 12582912);
+    Services.prefs.setIntPref("network.http.http2.default-hpack-buffer", 65536);
+  }
 
   if (cfg.ca_pem) {
     const certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(Ci.nsIX509CertDB);
@@ -573,6 +610,7 @@ if (typeof Components !== "undefined") {
       }).QueryInterface(Ci.nsIHttpChannel);
       if (origin) {
         const endpoint = Services.io.newURI(origin);
+        registerEndpoint(endpoint.host, endpoint.port === -1 ? 443 : endpoint.port);
         const port = endpoint.port === -1 ? 443 : endpoint.port;
         const selectedProxy = cfg.transport === "h3-connect"
           ? pps.newMASQUEProxyInfo(endpoint.host, port, "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null)
@@ -820,6 +858,8 @@ if (typeof Components !== "undefined") {
       return openTunnel(metadata.host, session, metadata.origin).then(remote => ({remote, encoded: new TextEncoder().encode(JSON.stringify({status: 200, proto: cfg.transport === "h3-connect" ? 3 : 2, headers: []}))}));
     }
     return new Promise((resolve, reject) => {
+      const endpoint = Services.io.newURI(metadata.origin);
+      registerEndpoint(endpoint.host, endpoint.port === -1 ? 443 : endpoint.port);
       const channel = NetUtil.newChannel({
         uri: `${metadata.origin}${metadata.path}`, loadUsingSystemPrincipal: true,
         securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |

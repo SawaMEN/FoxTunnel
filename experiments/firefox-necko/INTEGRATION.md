@@ -482,3 +482,47 @@ The complete prior 2/4 checkpoint is retained under
 SNI/SPKI/profile overrides and unified NSS + Necko release archives remain
 stages 5 and 6. Linux ARM64 Necko does not qualify the separate Neqo Rust FFI
 bridge or Android/macOS Necko. `main` is unchanged.
+
+### Stage 5 candidate: native identity and profile policy
+
+Stage 5 progress: **1 of 4 steps confirmed**; overall completion remains
+**4 of 6 stages**. Work is isolated on `xfd-identity`, based on the qualified
+stage-4 tree. The new 28-patch source lock is a candidate until rebuilt and
+qualified on both native architectures. No promotion to `xfd` is claimed yet.
+
+1. Done: identify trust, origin scope, session/coalescing and profile boundaries.
+2. Candidate implementation: primary SNI/SPKI, bounded native TLS/H2 presets,
+   immutable policy registration and CLI/SDK wiring. Per-node pin-file support
+   remains explicitly rejected while its managed-policy integration is pending.
+3. Pending: rebuilt native positive/negative trust gates and wire measurements.
+4. Pending: native CLI/SDK, amd64/ARM64 regressions, evidence and qualification.
+
+A helper-only parent-process API registers an immutable policy for each native
+route before any socket can be opened to it. Installing a policy after an
+unprotected connection, changing a registered policy, invalid pin/DNS inputs
+and unbounded registration fail closed. Ordinary Firefox connections do not
+activate this registry. Policy-enabled TCP sockets disable cache, tickets and
+early data; native QUIC excludes policy-enabled connections from token use and
+storage. Coalescing into or out of policy routes is rejected. ECH public-name
+verification cannot replace the configured identity hostname.
+
+SNI changes the NSS/QUIC server name and certificate hostname, preserving the
+network route and HTTP authority. The leaf SPKI SHA-256 check runs after normal
+PKI verification and before NSS/QUIC completes authentication. Pin failure is
+terminal and is not an override or a retryable outage. The primary identity is
+not inherited by alternate origins. A helper's identity/preset settings are
+immutable after construction; later low-level setters cannot silently drop them.
+
+The `firefox-158` TCP TLS preference preset selects measured groups, key shares
+and signature preferences in the pinned native NSS and requires TLS 1.3. Its H2
+receive preset explicitly selects measured HPACK, connection and stream windows.
+The name denotes a parameter preset, not the Firefox 158 executable or full
+fingerprint parity. TCP/H2-specific presets are rejected for H3. Defaults retain
+the pinned runtime's native settings.
+
+Candidate tests exercise SNI without an IP SAN, HTTP authority preservation,
+correct and incorrect pins, hostname and CA failures before application requests,
+CONNECT/POST/UDP v1/v2, alternate-origin isolation, measured TLS/H2 parameters and
+main CLI/SDK automatic engine selection. These tests require the new verified
+bundle; their skips without it are not native qualification. Local Go race and
+JS/parser checks and exact patch application are preparatory evidence only.

@@ -21,14 +21,21 @@ import (
 
 	"github.com/SawaMEN/FoxTunnel/internal/authheader"
 	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 )
 
 //go:embed client.js
 var clientScript []byte
 
-// Config deliberately excludes options that Necko cannot enforce here, such
-// as SPKI pins, a different SNI, bonding, UDP and FoxTunnel padding.
+// Config selects native Necko policy in the dedicated helper. Server identity
+// applies to the configured primary origin; other origins retain their own identity.
 type Config struct {
+	ServerName             string `json:"server_name,omitempty"`
+	SPKIPin                string `json:"spki_pin,omitempty"`
+	TLSClientProfile       string `json:"tls_client_profile,omitempty"`
+	HTTP2ReceiveProfile    string `json:"http2_receive_profile,omitempty"`
 	SOCKSToken             string `json:"-"` // Private authenticated IPC; not accepted in user JSON.
 	Server                 string `json:"server"`
 	Username               string `json:"username"`
@@ -50,6 +57,11 @@ func (c Config) normalize() (Config, error) {
 		return c, errors.New("Firefox requires an HTTPS proxy origin")
 	}
 	c.Server = u.String()
+	policy, err := tlsidentity.Normalize(c.ServerName, c.SPKIPin)
+	if err != nil {
+		return c, err
+	}
+	c.ServerName, c.SPKIPin = policy.SNI, policy.PinSHA256
 	if !authheader.ValidCredentials(c.Username, c.Password) {
 		return c, errors.New("Firefox requires valid proxy credentials")
 	}
@@ -58,6 +70,9 @@ func (c Config) normalize() (Config, error) {
 	}
 	if c.Transport != "h2-connect" && c.Transport != "h3-connect" {
 		return c, errors.New("Firefox transport must be h2-connect or h3-connect")
+	}
+	if err := ValidateProfiles(c.Transport, c.TLSClientProfile, c.HTTP2ReceiveProfile); err != nil {
+		return c, err
 	}
 	if c.Listen == "" {
 		c.Listen = "127.0.0.1:1080"
@@ -102,6 +117,20 @@ func (c Config) normalize() (Config, error) {
 	return c, nil
 }
 
+// ValidateProfiles rejects incompatible TCP-specific presets on QUIC.
+func ValidateProfiles(transport, tlsProfile, receiveProfile string) error {
+	if err := nsstls.ValidateClientProfile(tlsProfile); err != nil {
+		return err
+	}
+	if err := h2profile.Validate(receiveProfile); err != nil {
+		return err
+	}
+	if (transport == "h3-connect" || transport == "h3-post") && (tlsProfile == nsstls.Firefox158 || receiveProfile == h2profile.Firefox158) {
+		return errors.New("TCP TLS and HTTP/2 receive profiles cannot be applied to native HTTP/3")
+	}
+	return nil
+}
+
 // ReadConfig rejects unknown options rather than silently dropping trust policy.
 // Parsing errors never echo credentials from the input.
 func ReadConfig(path string) (Config, error) {
@@ -142,6 +171,10 @@ func ReadConfig(path string) (Config, error) {
 }
 
 type runtimeConfig struct {
+	ServerName             string `json:"server_name,omitempty"`
+	SPKIPin                string `json:"pin_sha256,omitempty"`
+	TLSClientProfile       string `json:"tls_client_profile,omitempty"`
+	HTTP2ReceiveProfile    string `json:"http2_receive_profile,omitempty"`
 	SOCKSToken             string `json:"socks_token,omitempty"`
 	ProxyHost              string `json:"proxy_host"`
 	ProxyPort              int    `json:"proxy_port"`
@@ -206,7 +239,7 @@ func runWithClient(ctx context.Context, runtimePath string, config Config, stdou
 	if err := os.Mkdir(filepath.Join(private, "profile"), 0700); err != nil {
 		return err
 	}
-	data, err := json.Marshal(runtimeConfig{SOCKSToken: c.SOCKSToken, ProxyHost: u.Hostname(), ProxyPort: proxyPort, Authorization: "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)), Transport: c.Transport, ListenPort: listenPort, MaxConnections: c.MaxConnections, ConnectTimeoutMS: c.ConnectTimeoutMS, CAPEM: string(ca), IdleTimeoutMS: c.IdleTimeoutMS, DrainTimeoutMS: c.DrainTimeoutMS, MaxRetainedConnections: c.MaxRetainedConnections, StatsIntervalMS: c.StatsIntervalMS})
+	data, err := json.Marshal(runtimeConfig{ServerName: c.ServerName, SPKIPin: c.SPKIPin, TLSClientProfile: c.TLSClientProfile, HTTP2ReceiveProfile: c.HTTP2ReceiveProfile, SOCKSToken: c.SOCKSToken, ProxyHost: u.Hostname(), ProxyPort: proxyPort, Authorization: "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)), Transport: c.Transport, ListenPort: listenPort, MaxConnections: c.MaxConnections, ConnectTimeoutMS: c.ConnectTimeoutMS, CAPEM: string(ca), IdleTimeoutMS: c.IdleTimeoutMS, DrainTimeoutMS: c.DrainTimeoutMS, MaxRetainedConnections: c.MaxRetainedConnections, StatsIntervalMS: c.StatsIntervalMS})
 	if err != nil {
 		return err
 	}

@@ -370,7 +370,7 @@ func main() {
 		tlsProfile := new(string)
 		*tlsProfile = "default"
 		if os.Args[1] == "client" {
-			fs.StringVar(tlsProfile, "tls-client-profile", "default", i18n.Text("TLS client profile: default or experimental firefox-158 (NSS 3.130)"))
+			fs.StringVar(tlsProfile, "tls-client-profile", "default", i18n.Text("TLS client profile: default or measured firefox-158 preferences (compatible native runtime required)"))
 		}
 		h2Profile := fs.String("h2-receive-profile", "default", i18n.Text("HTTP/2 receive profile: default or experimental firefox-158"))
 		sni := fs.String("sni", "", i18n.Text("verified TLS server name (default: URL hostname)"))
@@ -534,7 +534,7 @@ func main() {
 		intent := transportengine.Config{
 			Engine: *engine, Transport: *nativeTransport, NeckoBundle: *neckoBundle,
 			AutoNeckoExcluded: ((wirePolicy == contract.ProtocolStrict || *padding) && !transportengine.NativeHTTPHeaders(*nativeTransport)) ||
-				*sni != "" || *pin != "" || *nodePinsFile != "",
+				*nodePinsFile != "",
 			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,
 			H3Fallback: *h3Fallback, QUICHandshakeTimeout: *quicTimeout,
 			TLSClientProfile: *tlsProfile, HTTP2ReceiveProfile: *h2Profile,
