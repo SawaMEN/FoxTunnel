@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "status": "native-build-in-progress",
+  "stage": 5,
+  "stage_checks_complete": 1,
+  "stage_checks_total": 4,
+  "overall_stages_complete": 4,
+  "overall_stages_total": 6,
+  "candidate_code_commit": "adbe03c4c2bd52079a595be2fe5c57cadc89b542",
+  "native_source_commit": "2d35a9bff3caf64ecb0088618556797f60c5dbb2",
+  "source_run": 40317262284,
+  "runtime_run": 40317917970,
+  "failed_source_run": 40286512326,
+  "failure": "Pinned nsACString does not support range-based iteration; corrected to indexed CharAt traversal",
+  "source_lock_sha256": "0e50df6a76eb0d490415f5fbda1a0d6faab2f06ed02c4e233098a60919feab43",
+  "client_js_sha256": "5b42088b4d07608ea2e084d70e0fed8deecb67c87ecbb6c93b6c49dd509143f2",
+  "native_patches": 28,
+  "local_checks": [
+    "Corrected patch applies exactly to the pinned original source and matches updated output digest",
+    "Source preparation tests: 10 passed",
+    "Go race checks for firefox-necko and transportengine passed",
+    "JavaScript tests: 26 passed",
+    "Native direct-policy test script syntax checked",
+    "Documentation links and whitespace checks passed"
+  ],
+  "pending": [
+    "Complete corrected C++ build on Linux amd64 and ARM64",
+    "Run compiled SNI/SPKI and per-node policy positive/negative gates",
+    "Run measured native TLS/H2 profile and direct immutable API checks",
+    "Qualify updated CLI/SDK and regressions; retain evidence and promote to xfd"
+  ],
+  "promotion": "Not promoted; xfd remains at qualified stage 4"
+}

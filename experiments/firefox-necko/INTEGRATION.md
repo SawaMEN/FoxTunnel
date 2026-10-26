@@ -547,3 +547,13 @@ validator. The validator now traverses the native string by index and `CharAt`,
 with regenerated patch/source hashes. The failed runtime selection did not use
 an older binary or weaken provenance checks. Stage 5 remains **1/4** until the
 corrected native build and identity/profile gates pass.
+
+The corrected source candidate is `2d35a9b`, with the direct native policy-API
+regression at `adbe03c`. The new
+[source run 40317262284](https://github.com/SawaMEN/FoxTunnel/actions/runs/40317262284)
+is compiling both architectures. The updated
+[runtime run 40317917970](https://github.com/SawaMEN/FoxTunnel/actions/runs/40317917970)
+requires its exact lock and includes native invalid-name/pin/port, idempotence
+and immutable-policy API assertions. See the current
+[stage-5 checkpoint](validation/identity/progress.json). Both native results
+remain pending; `xfd` retains the qualified stage-4 implementation.
