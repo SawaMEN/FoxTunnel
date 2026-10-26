@@ -459,3 +459,21 @@ ARM64 observations are compared with Firefox on the same native runner/runtime.
 The amd64 historical resource record is not used as an ARM64 performance baseline.
 The existing 192 MiB final RSS-growth and idle-plus-16 descriptor limits remain
 unchanged. Fixture tests and cross-compilation do not qualify native networking.
+
+Candidate implementation: `24d74d081f209ba931b70500d8ba407c54fe83cf`.
+[Source build 40264186586](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186586)
+runs independent native amd64 and ARM64 jobs.
+[Runtime gates 40264186589](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186589)
+wait for each architecture's exact rebuilt source lock.
+[General CI 40264186549](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186549)
+passed. Local checks passed 211 Python tests (2 skips), 24 JavaScript tests,
+focused race-enabled bundle/engine tests and vet; launcher and CLI also
+cross-compiled to validated ARM64 ELF files. Cross-compilation does not count
+as native ARM64 qualification.
+
+The local full Go race run hit `TestNativeSetupTimeout` (setup request leaked).
+The same failure reproduced in both a full race run and a 20-repeat focused run
+on the unmodified stage-3 commit `3537bcf`; the candidate's general CI passed.
+This existing intermittent test is recorded rather than claimed fixed by the
+architecture changes. No native ARM64 qualification is claimed while the source
+and runtime jobs are pending.
