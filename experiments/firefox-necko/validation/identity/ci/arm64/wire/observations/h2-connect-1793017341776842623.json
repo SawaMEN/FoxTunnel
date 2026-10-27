@@ -1,0 +1,1744 @@
+{
+  "browser_version": "160.0a1",
+  "connections": [
+    {
+      "subject": "firefox",
+      "protocol": "h2",
+      "hello": {
+        "record_version": 769,
+        "legacy_version": 771,
+        "cipher_suites": [
+          4865,
+          4867,
+          4866,
+          49195,
+          49199,
+          52393,
+          52392,
+          49196,
+          49200,
+          49171,
+          49172,
+          156,
+          157,
+          47,
+          53
+        ],
+        "extensions": [
+          23,
+          65281,
+          10,
+          11,
+          35,
+          16,
+          5,
+          34,
+          18,
+          51,
+          43,
+          13,
+          45,
+          28,
+          27,
+          65037
+        ],
+        "supported_groups": [
+          4588,
+          29,
+          23,
+          24,
+          25
+        ],
+        "ec_point_formats": [
+          0
+        ],
+        "supported_versions": [
+          772,
+          771
+        ],
+        "signature_algorithms": [
+          1027,
+          1283,
+          1539,
+          2052,
+          2053,
+          2054,
+          1025,
+          1281,
+          1537,
+          515,
+          513
+        ],
+        "key_share_groups": [
+          4588,
+          29,
+          23
+        ],
+        "alpn": [
+          "h2",
+          "http/1.1"
+        ],
+        "sni_present": false,
+        "ja3": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037,4588-29-23-24-25,0",
+        "ja3_md5": "a6d822a3f8c8542526830987918a61f9"
+      },
+      "alpn": "h2",
+      "resumed": false,
+      "settings": [
+        {
+          "id": 1,
+          "value": 65536
+        },
+        {
+          "id": 2,
+          "value": 0
+        },
+        {
+          "id": 4,
+          "value": 131072
+        },
+        {
+          "id": 5,
+          "value": 16384
+        }
+      ],
+      "h2_frames": [
+        {
+          "type": 4,
+          "flags": 0,
+          "stream": 0,
+          "length": 24
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 0,
+          "length": 4
+        },
+        {
+          "type": 4,
+          "flags": 1,
+          "stream": 0,
+          "length": 0
+        },
+        {
+          "type": 1,
+          "flags": 36,
+          "stream": 3,
+          "length": 106
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 3,
+          "length": 4
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 928
+        },
+        {
+          "type": 0,
+          "flags": 1,
+          "stream": 3,
+          "length": 0
+        },
+        {
+          "type": 1,
+          "flags": 36,
+          "stream": 5,
+          "length": 10
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 5,
+          "length": 4
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 928
+        },
+        {
+          "type": 0,
+          "flags": 1,
+          "stream": 5,
+          "length": 0
+        }
+      ],
+      "hpack_blocks": [
+        {
+          "stream": 3,
+          "length": 101,
+          "sha256": "a57d4ce47d324c9c51af25abaa3db397383a91f465f939c6c74234bd39a9c17c",
+          "fields": [
+            {
+              "name": ":method",
+              "value": "CONNECT"
+            },
+            {
+              "name": ":authority",
+              "value": "\u003cfixture\u003e"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64; rv:160.0) Gecko/20100101 Firefox/160.0"
+            },
+            {
+              "name": "proxy-authorization",
+              "value": "\u003c10 bytes\u003e"
+            },
+            {
+              "name": "alpn",
+              "value": "webrtc"
+            }
+          ]
+        },
+        {
+          "stream": 5,
+          "length": 5,
+          "sha256": "7d11064d527078c336854068080dd58d93e0c5741be5d075ecea81219d313481",
+          "fields": [
+            {
+              "name": ":method",
+              "value": "CONNECT"
+            },
+            {
+              "name": ":authority",
+              "value": "\u003cfixture\u003e"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64; rv:160.0) Gecko/20100101 Firefox/160.0"
+            },
+            {
+              "name": "proxy-authorization",
+              "value": "\u003c10 bytes\u003e"
+            },
+            {
+              "name": "alpn",
+              "value": "webrtc"
+            }
+          ]
+        }
+      ],
+      "client_fin_streams": [
+        3,
+        5
+      ],
+      "client_reset_codes": null,
+      "requests": 2,
+      "completed": 2,
+      "truncated": false
+    },
+    {
+      "subject": "firefox",
+      "protocol": "h2",
+      "hello": {
+        "record_version": 769,
+        "legacy_version": 771,
+        "cipher_suites": [
+          4865,
+          4867,
+          4866,
+          49195,
+          49199,
+          52393,
+          52392,
+          49196,
+          49200,
+          49171,
+          49172,
+          156,
+          157,
+          47,
+          53
+        ],
+        "extensions": [
+          23,
+          65281,
+          10,
+          11,
+          35,
+          16,
+          5,
+          34,
+          18,
+          51,
+          43,
+          13,
+          45,
+          28,
+          27,
+          65037
+        ],
+        "supported_groups": [
+          4588,
+          29,
+          23,
+          24,
+          25
+        ],
+        "ec_point_formats": [
+          0
+        ],
+        "supported_versions": [
+          772,
+          771
+        ],
+        "signature_algorithms": [
+          1027,
+          1283,
+          1539,
+          2052,
+          2053,
+          2054,
+          1025,
+          1281,
+          1537,
+          515,
+          513
+        ],
+        "key_share_groups": [
+          4588,
+          29,
+          23
+        ],
+        "alpn": [
+          "h2",
+          "http/1.1"
+        ],
+        "sni_present": false,
+        "ja3": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037,4588-29-23-24-25,0",
+        "ja3_md5": "a6d822a3f8c8542526830987918a61f9"
+      },
+      "alpn": "h2",
+      "resumed": false,
+      "settings": [
+        {
+          "id": 1,
+          "value": 65536
+        },
+        {
+          "id": 2,
+          "value": 0
+        },
+        {
+          "id": 4,
+          "value": 131072
+        },
+        {
+          "id": 5,
+          "value": 16384
+        }
+      ],
+      "h2_frames": [
+        {
+          "type": 4,
+          "flags": 0,
+          "stream": 0,
+          "length": 24
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 0,
+          "length": 4
+        },
+        {
+          "type": 4,
+          "flags": 1,
+          "stream": 0,
+          "length": 0
+        },
+        {
+          "type": 1,
+          "flags": 36,
+          "stream": 3,
+          "length": 106
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 3,
+          "length": 4
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 928
+        },
+        {
+          "type": 0,
+          "flags": 1,
+          "stream": 3,
+          "length": 0
+        },
+        {
+          "type": 1,
+          "flags": 36,
+          "stream": 5,
+          "length": 10
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 5,
+          "length": 4
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 928
+        },
+        {
+          "type": 0,
+          "flags": 1,
+          "stream": 5,
+          "length": 0
+        }
+      ],
+      "hpack_blocks": [
+        {
+          "stream": 3,
+          "length": 101,
+          "sha256": "a57d4ce47d324c9c51af25abaa3db397383a91f465f939c6c74234bd39a9c17c",
+          "fields": [
+            {
+              "name": ":method",
+              "value": "CONNECT"
+            },
+            {
+              "name": ":authority",
+              "value": "\u003cfixture\u003e"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64; rv:160.0) Gecko/20100101 Firefox/160.0"
+            },
+            {
+              "name": "proxy-authorization",
+              "value": "\u003c10 bytes\u003e"
+            },
+            {
+              "name": "alpn",
+              "value": "webrtc"
+            }
+          ]
+        },
+        {
+          "stream": 5,
+          "length": 5,
+          "sha256": "7d11064d527078c336854068080dd58d93e0c5741be5d075ecea81219d313481",
+          "fields": [
+            {
+              "name": ":method",
+              "value": "CONNECT"
+            },
+            {
+              "name": ":authority",
+              "value": "\u003cfixture\u003e"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64; rv:160.0) Gecko/20100101 Firefox/160.0"
+            },
+            {
+              "name": "proxy-authorization",
+              "value": "\u003c10 bytes\u003e"
+            },
+            {
+              "name": "alpn",
+              "value": "webrtc"
+            }
+          ]
+        }
+      ],
+      "client_fin_streams": [
+        3,
+        5
+      ],
+      "client_reset_codes": null,
+      "requests": 2,
+      "completed": 2,
+      "truncated": false
+    },
+    {
+      "subject": "foxtunnel",
+      "protocol": "h2",
+      "hello": {
+        "record_version": 769,
+        "legacy_version": 771,
+        "cipher_suites": [
+          4865,
+          4867,
+          4866,
+          49195,
+          49199,
+          52393,
+          52392,
+          49196,
+          49200,
+          49171,
+          49172,
+          156,
+          157,
+          47,
+          53
+        ],
+        "extensions": [
+          23,
+          65281,
+          10,
+          11,
+          35,
+          16,
+          5,
+          34,
+          18,
+          51,
+          43,
+          13,
+          45,
+          28,
+          27,
+          65037
+        ],
+        "supported_groups": [
+          4588,
+          29,
+          23,
+          24,
+          25
+        ],
+        "ec_point_formats": [
+          0
+        ],
+        "supported_versions": [
+          772,
+          771
+        ],
+        "signature_algorithms": [
+          1027,
+          1283,
+          1539,
+          2052,
+          2053,
+          2054,
+          1025,
+          1281,
+          1537,
+          515,
+          513
+        ],
+        "key_share_groups": [
+          4588,
+          29,
+          23
+        ],
+        "alpn": [
+          "h2",
+          "http/1.1"
+        ],
+        "sni_present": false,
+        "ja3": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037,4588-29-23-24-25,0",
+        "ja3_md5": "a6d822a3f8c8542526830987918a61f9"
+      },
+      "alpn": "h2",
+      "resumed": false,
+      "settings": [
+        {
+          "id": 1,
+          "value": 65536
+        },
+        {
+          "id": 2,
+          "value": 0
+        },
+        {
+          "id": 4,
+          "value": 131072
+        },
+        {
+          "id": 5,
+          "value": 16384
+        }
+      ],
+      "h2_frames": [
+        {
+          "type": 4,
+          "flags": 0,
+          "stream": 0,
+          "length": 24
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 0,
+          "length": 4
+        },
+        {
+          "type": 4,
+          "flags": 1,
+          "stream": 0,
+          "length": 0
+        },
+        {
+          "type": 1,
+          "flags": 36,
+          "stream": 3,
+          "length": 106
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 3,
+          "length": 4
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 928
+        },
+        {
+          "type": 0,
+          "flags": 1,
+          "stream": 3,
+          "length": 0
+        },
+        {
+          "type": 1,
+          "flags": 36,
+          "stream": 5,
+          "length": 10
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 5,
+          "length": 4
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 928
+        },
+        {
+          "type": 0,
+          "flags": 1,
+          "stream": 5,
+          "length": 0
+        }
+      ],
+      "hpack_blocks": [
+        {
+          "stream": 3,
+          "length": 101,
+          "sha256": "a57d4ce47d324c9c51af25abaa3db397383a91f465f939c6c74234bd39a9c17c",
+          "fields": [
+            {
+              "name": ":method",
+              "value": "CONNECT"
+            },
+            {
+              "name": ":authority",
+              "value": "\u003cfixture\u003e"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64; rv:160.0) Gecko/20100101 Firefox/160.0"
+            },
+            {
+              "name": "proxy-authorization",
+              "value": "\u003c10 bytes\u003e"
+            },
+            {
+              "name": "alpn",
+              "value": "webrtc"
+            }
+          ]
+        },
+        {
+          "stream": 5,
+          "length": 5,
+          "sha256": "7d11064d527078c336854068080dd58d93e0c5741be5d075ecea81219d313481",
+          "fields": [
+            {
+              "name": ":method",
+              "value": "CONNECT"
+            },
+            {
+              "name": ":authority",
+              "value": "\u003cfixture\u003e"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64; rv:160.0) Gecko/20100101 Firefox/160.0"
+            },
+            {
+              "name": "proxy-authorization",
+              "value": "\u003c10 bytes\u003e"
+            },
+            {
+              "name": "alpn",
+              "value": "webrtc"
+            }
+          ]
+        }
+      ],
+      "client_fin_streams": [
+        3,
+        5
+      ],
+      "client_reset_codes": null,
+      "requests": 2,
+      "completed": 2,
+      "truncated": false
+    },
+    {
+      "subject": "foxtunnel",
+      "protocol": "h2",
+      "hello": {
+        "record_version": 769,
+        "legacy_version": 771,
+        "cipher_suites": [
+          4865,
+          4867,
+          4866,
+          49195,
+          49199,
+          52393,
+          52392,
+          49196,
+          49200,
+          49171,
+          49172,
+          156,
+          157,
+          47,
+          53
+        ],
+        "extensions": [
+          23,
+          65281,
+          10,
+          11,
+          35,
+          16,
+          5,
+          34,
+          18,
+          51,
+          43,
+          13,
+          45,
+          28,
+          27,
+          65037
+        ],
+        "supported_groups": [
+          4588,
+          29,
+          23,
+          24,
+          25
+        ],
+        "ec_point_formats": [
+          0
+        ],
+        "supported_versions": [
+          772,
+          771
+        ],
+        "signature_algorithms": [
+          1027,
+          1283,
+          1539,
+          2052,
+          2053,
+          2054,
+          1025,
+          1281,
+          1537,
+          515,
+          513
+        ],
+        "key_share_groups": [
+          4588,
+          29,
+          23
+        ],
+        "alpn": [
+          "h2",
+          "http/1.1"
+        ],
+        "sni_present": false,
+        "ja3": "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49171-49172-156-157-47-53,23-65281-10-11-35-16-5-34-18-51-43-13-45-28-27-65037,4588-29-23-24-25,0",
+        "ja3_md5": "a6d822a3f8c8542526830987918a61f9"
+      },
+      "alpn": "h2",
+      "resumed": false,
+      "settings": [
+        {
+          "id": 1,
+          "value": 65536
+        },
+        {
+          "id": 2,
+          "value": 0
+        },
+        {
+          "id": 4,
+          "value": 131072
+        },
+        {
+          "id": 5,
+          "value": 16384
+        }
+      ],
+      "h2_frames": [
+        {
+          "type": 4,
+          "flags": 0,
+          "stream": 0,
+          "length": 24
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 0,
+          "length": 4
+        },
+        {
+          "type": 4,
+          "flags": 1,
+          "stream": 0,
+          "length": 0
+        },
+        {
+          "type": 1,
+          "flags": 36,
+          "stream": 3,
+          "length": 106
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 3,
+          "length": 4
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 3,
+          "length": 928
+        },
+        {
+          "type": 0,
+          "flags": 1,
+          "stream": 3,
+          "length": 0
+        },
+        {
+          "type": 1,
+          "flags": 36,
+          "stream": 5,
+          "length": 10
+        },
+        {
+          "type": 8,
+          "flags": 0,
+          "stream": 5,
+          "length": 4
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 16000
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 384
+        },
+        {
+          "type": 0,
+          "flags": 0,
+          "stream": 5,
+          "length": 928
+        },
+        {
+          "type": 0,
+          "flags": 1,
+          "stream": 5,
+          "length": 0
+        }
+      ],
+      "hpack_blocks": [
+        {
+          "stream": 3,
+          "length": 101,
+          "sha256": "a57d4ce47d324c9c51af25abaa3db397383a91f465f939c6c74234bd39a9c17c",
+          "fields": [
+            {
+              "name": ":method",
+              "value": "CONNECT"
+            },
+            {
+              "name": ":authority",
+              "value": "\u003cfixture\u003e"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64; rv:160.0) Gecko/20100101 Firefox/160.0"
+            },
+            {
+              "name": "proxy-authorization",
+              "value": "\u003c10 bytes\u003e"
+            },
+            {
+              "name": "alpn",
+              "value": "webrtc"
+            }
+          ]
+        },
+        {
+          "stream": 5,
+          "length": 5,
+          "sha256": "7d11064d527078c336854068080dd58d93e0c5741be5d075ecea81219d313481",
+          "fields": [
+            {
+              "name": ":method",
+              "value": "CONNECT"
+            },
+            {
+              "name": ":authority",
+              "value": "\u003cfixture\u003e"
+            },
+            {
+              "name": "user-agent",
+              "value": "Mozilla/5.0 (X11; Linux x86_64; rv:160.0) Gecko/20100101 Firefox/160.0"
+            },
+            {
+              "name": "proxy-authorization",
+              "value": "\u003c10 bytes\u003e"
+            },
+            {
+              "name": "alpn",
+              "value": "webrtc"
+            }
+          ]
+        }
+      ],
+      "client_fin_streams": [
+        3,
+        5
+      ],
+      "client_reset_codes": null,
+      "requests": 2,
+      "completed": 2,
+      "truncated": false
+    }
+  ],
+  "kind": "necko-firefox-connect-comparison",
+  "limitations": [
+    "TLS 1.3-only loopback fixture; explicit H3 proxy and custom lab root",
+    "Both clients disable socket process because raw handoff requires it",
+    "ClientHello excludes randoms, SNI value, tickets and key bytes; QUIC record_version is zero",
+    "HPACK digests cover fixture header bytes; credentials and destination values are not serialized",
+    "H3 decoded headers/settings are recorded; QPACK instruction bytes are not measured",
+    "FIN packets may be retransmitted; frame counts are not packet-shape parity",
+    "No DPI indistinguishability or production-readiness claim"
+  ],
+  "payload_bytes": 132000,
+  "quic_parameter_scope": "selected effective peer parameters including decoder defaults; no raw parameter order/presence claim",
+  "reconnect_policy": "server closes each connection 200ms after its second tunnel completes; both clients pause before request three; process TLS cache remains alive",
+  "rounds_per_subject": 4,
+  "runtime_sha256": {
+    "firefox": "78ae762d72aca50fa2a46a98cf0c2b95f5765970c2dee882a117ee9575699ee0",
+    "libnss3.so": "1a1b8dae086127295589f1268d631d269a8685ebbbb548b45375759cf58647ac",
+    "libxul.so": "4bf1e8cd6bbfcad965285260fe217f489b7a2af46da49b4a486149c8f23cc6e2",
+    "platform.ini": "1c578b42adb8039ad63d281e9c5a4eed55e3ddae74db53c537f58e54db4b089e",
+    "xpcshell": "f6137c0cdd9d9ff2846a282995cb4836d7def38f6c2e5f5124dc28446806cb65"
+  },
+  "schema": 1,
+  "scope": "Full Firefox native CONNECT API versus xpcshell SOCKS adapter; same patched libxul and raw binary workload. Not normal navigation or stock Firefox equivalence.",
+  "source_sha256": {
+    "client.js": "637e8bf2d5b72790a150e4064f603ef8d78b214964287e83d667e569268de868",
+    "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+    "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+    "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+    "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+    "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+    "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+    "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+    "gecko.lock.json": "0e50df6a76eb0d490415f5fbda1a0d6faab2f06ed02c4e233098a60919feab43"
+  },
+  "transport": "h2-connect"
+}

@@ -1,0 +1,57 @@
+--- a/security/manager/ssl/nsNSSIOLayer.cpp
++++ b/security/manager/ssl/nsNSSIOLayer.cpp
+@@ -1286,7 +1286,7 @@
+       SECSuccess) {
+     return nullptr;
+   }
+-  if (SSL_SetURL(sslSock, host) != SECSuccess) {
++  if (SSL_SetURL(sslSock, PromiseFlatCString(infoObject->GetHostName()).get()) != SECSuccess) {
+     return nullptr;
+   }
+ 
+@@ -1476,6 +1476,17 @@
+     if (SECSuccess != SSL_OptionSet(fd, SSL_SECURITY, false)) {
+       return NS_ERROR_FAILURE;
+     }
++  }
++
++  // Identity policies are immutable for the helper lifetime. Do not send any
++  // application early data or resume a session before checking the new policy.
++  if (infoObject->HasFoxTunnelPolicy()) {
++    if (SSL_OptionSet(fd, SSL_NO_CACHE, true) != SECSuccess ||
++        SSL_OptionSet(fd, SSL_ENABLE_SESSION_TICKETS, false) != SECSuccess ||
++        SSL_OptionSet(fd, SSL_ENABLE_0RTT_DATA, false) != SECSuccess) {
++      return NS_ERROR_FAILURE;
++    }
++
+   }
+ 
+   SSLVersionRange range;
+@@ -1712,6 +1723,27 @@
+     }
+   }
+ #endif
++
++  if (infoObject->FoxTunnelTLSProfile().EqualsLiteral("firefox-158")) {
++    SSLVersionRange profileRange = {SSL_LIBRARY_VERSION_TLS_1_3, SSL_LIBRARY_VERSION_TLS_1_3};
++    if (SSL_VersionRangeSet(fd, &profileRange) != SECSuccess) { return NS_ERROR_FAILURE; }
++    infoObject->SetTLSVersionRange(profileRange);
++    const SSLNamedGroup groups[] = {static_cast<SSLNamedGroup>(4588),
++        ssl_grp_ec_curve25519, ssl_grp_ec_secp256r1,
++        ssl_grp_ec_secp384r1, ssl_grp_ec_secp521r1};
++    const SSLSignatureScheme signatures[] = {
++        static_cast<SSLSignatureScheme>(1027), static_cast<SSLSignatureScheme>(1283),
++        static_cast<SSLSignatureScheme>(1539), static_cast<SSLSignatureScheme>(2052),
++        static_cast<SSLSignatureScheme>(2053), static_cast<SSLSignatureScheme>(2054),
++        static_cast<SSLSignatureScheme>(1025), static_cast<SSLSignatureScheme>(1281),
++        static_cast<SSLSignatureScheme>(1537), static_cast<SSLSignatureScheme>(515),
++        static_cast<SSLSignatureScheme>(513)};
++    if (SSL_NamedGroupConfig(fd, groups, sizeof(groups) / sizeof(groups[0])) != SECSuccess ||
++        SSL_SendAdditionalKeyShares(fd, 2) != SECSuccess ||
++        SSL_SignatureSchemePrefSet(fd, signatures, sizeof(signatures) / sizeof(signatures[0])) != SECSuccess) {
++      return NS_ERROR_FAILURE;
++    }
++  }
+ 
+   // Set the Peer ID so that SSL proxy connections work properly and to
+   // separate anonymous and/or private browsing connections.

@@ -1,0 +1,326 @@
+{
+  "standalone": {
+    "schema": 1,
+    "kind": "necko-firefox-comparison-report",
+    "observations": [
+      {
+        "file": "h2-connect-1792970137325531055.json",
+        "sha256": "e1cc60d195ee6b43695dc92609fb49461f93fd50bff4970ae4f7f588ddd7ee9d",
+        "transport": "h2-connect",
+        "differences": [],
+        "check_status_counts": {
+          "equal": 46
+        }
+      },
+      {
+        "file": "h2-connect-1792970163258941246.json",
+        "sha256": "bf9f9917603edafbcd6998a36cff9c92094a60302ef1d093b3af1c8a917c558e",
+        "transport": "h2-connect",
+        "differences": [],
+        "check_status_counts": {
+          "equal": 46
+        }
+      },
+      {
+        "file": "h2-connect-1792970189134766388.json",
+        "sha256": "c89cc5118fd9b8567eb6d4280379c0c9b800b4482de3215091309e701b4e4c9b",
+        "transport": "h2-connect",
+        "differences": [],
+        "check_status_counts": {
+          "equal": 46
+        }
+      },
+      {
+        "file": "h3-connect-1792970142587142010.json",
+        "sha256": "509dde4962463ad0a27ff49cd3511de97a4f85a1b5f059cf1b1a46cd72ab766b",
+        "transport": "h3-connect",
+        "differences": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ],
+        "check_status_counts": {
+          "equal": 40,
+          "different": 6
+        }
+      },
+      {
+        "file": "h3-connect-1792970168517247398.json",
+        "sha256": "9542ec61e2503887d7781741abb7e1c4a95d06c186dc2a1dc835f2361d53c4a1",
+        "transport": "h3-connect",
+        "differences": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ],
+        "check_status_counts": {
+          "equal": 40,
+          "different": 6
+        }
+      },
+      {
+        "file": "h3-connect-1792970194365821955.json",
+        "sha256": "789f2d30637194ffe51bbc25d86911de061431908b6c824769c718674b2c4616",
+        "transport": "h3-connect",
+        "differences": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ],
+        "check_status_counts": {
+          "equal": 40,
+          "different": 6
+        }
+      }
+    ],
+    "extension_order_variability": {
+      "h2-connect": {
+        "firefox": [
+          {
+            "distinct_orders": 1,
+            "distinct_sets": 1
+          },
+          {
+            "distinct_orders": 1,
+            "distinct_sets": 1
+          }
+        ],
+        "foxtunnel": [
+          {
+            "distinct_orders": 1,
+            "distinct_sets": 1
+          },
+          {
+            "distinct_orders": 1,
+            "distinct_sets": 1
+          }
+        ]
+      },
+      "h3-connect": {
+        "firefox": [
+          {
+            "distinct_orders": 3,
+            "distinct_sets": 1
+          },
+          {
+            "distinct_orders": 3,
+            "distinct_sets": 1
+          }
+        ],
+        "foxtunnel": [
+          {
+            "distinct_orders": 3,
+            "distinct_sets": 1
+          },
+          {
+            "distinct_orders": 3,
+            "distinct_sets": 1
+          }
+        ]
+      }
+    },
+    "runtime_sha256": {
+      "firefox": "35edb04df1ac7f8d829f3b0b5bb0186432415a63082cc3f9c318db9d88a5c6a4",
+      "libnss3.so": "6785986a050f3778adfa3d0a15140604e599a5fee6201cc7be896fc9c16b18a3",
+      "libxul.so": "040c9edc147d5cad6ca4c1979359e5c18940ac9f983406fa33d88c4cfbe355fa",
+      "platform.ini": "1d9cd3eeafac73b0769939a5ebc461f1c8ddbb85699649e268d36f886550afcd",
+      "xpcshell": "0dd2969f693f7a638a7d9bf26aa064bee360b6730a35e18602b68a1d4aa79c42"
+    },
+    "source_sha256": {
+      "client.js": "4df48c2b4ec2e4c665ea8e781c620ddd47e80037f767d3a2525719d62d197270",
+      "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+      "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+      "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+      "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+      "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+      "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+      "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+      "gecko.lock.json": "a0722357a7aac53e6453294d8b424ffde2beaa5c008ad6bbbc6612383154e308"
+    },
+    "repetitions": {
+      "h2-connect": 3,
+      "h3-connect": 3
+    },
+    "both_protocols_measured": true,
+    "scope": "Raw native CONNECT API in a full Firefox process versus the SOCKS helper; same patched libxul and workload.",
+    "limitations": [
+      "Not ordinary page navigation, stock Firefox, an Internet path or a DPI test.",
+      "Randomized extension order and JA3 differences are preserved alongside extension-set comparisons.",
+      "H3 effective parameter values include decoder defaults; raw parameter order is not measured.",
+      "H3 decoded headers are measured, QPACK instruction bytes are not.",
+      "H2 resumed=false is an observation of this fixture, not proof that all TLS resumption is disabled.",
+      "TLS 1.3 only, custom root and disabled socket process constrain the result."
+    ]
+  },
+  "managed": {
+    "schema": 1,
+    "kind": "necko-firefox-comparison-report",
+    "observations": [
+      {
+        "file": "h2-connect-1792970612373592120.json",
+        "sha256": "3667398cab50cdb0b4103cd0537a2a7533350a66ea388b98c69ce993d7f6fd90",
+        "transport": "h2-connect",
+        "differences": [],
+        "check_status_counts": {
+          "equal": 46
+        }
+      },
+      {
+        "file": "h2-connect-1792970625907747012.json",
+        "sha256": "2381edfcac76cbd1a3863e254a656cfed73262fddd2123aa648e14171009cbe9",
+        "transport": "h2-connect",
+        "differences": [],
+        "check_status_counts": {
+          "equal": 46
+        }
+      },
+      {
+        "file": "h2-connect-1792970639473758826.json",
+        "sha256": "a7429a8d70b6c10caceb3f2fb4f7767d6772039a34b193daebe6211792dc9c97",
+        "transport": "h2-connect",
+        "differences": [],
+        "check_status_counts": {
+          "equal": 46
+        }
+      },
+      {
+        "file": "h3-connect-1792970618987586326.json",
+        "sha256": "d2f0439eea449720499cacf1da70384d68f08e51b224eb33f579ad0d43707c19",
+        "transport": "h3-connect",
+        "differences": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ],
+        "check_status_counts": {
+          "equal": 40,
+          "different": 6
+        }
+      },
+      {
+        "file": "h3-connect-1792970632504445307.json",
+        "sha256": "1c3f8641da3101e9de31f31b534074e5740efc4da2bf54e20287acb08fdd5e78",
+        "transport": "h3-connect",
+        "differences": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ],
+        "check_status_counts": {
+          "equal": 40,
+          "different": 6
+        }
+      },
+      {
+        "file": "h3-connect-1792970646124590084.json",
+        "sha256": "bf488f7641dc242f78559121d79fb5ae7d45776b796d21e635a1fae154bf3094",
+        "transport": "h3-connect",
+        "differences": [
+          "connection_1.hello.extensions",
+          "connection_1.hello.ja3",
+          "connection_1.hello.ja3_md5",
+          "connection_2.hello.extensions",
+          "connection_2.hello.ja3",
+          "connection_2.hello.ja3_md5"
+        ],
+        "check_status_counts": {
+          "equal": 40,
+          "different": 6
+        }
+      }
+    ],
+    "extension_order_variability": {
+      "h2-connect": {
+        "firefox": [
+          {
+            "distinct_orders": 1,
+            "distinct_sets": 1
+          },
+          {
+            "distinct_orders": 1,
+            "distinct_sets": 1
+          }
+        ],
+        "foxtunnel": [
+          {
+            "distinct_orders": 1,
+            "distinct_sets": 1
+          },
+          {
+            "distinct_orders": 1,
+            "distinct_sets": 1
+          }
+        ]
+      },
+      "h3-connect": {
+        "firefox": [
+          {
+            "distinct_orders": 3,
+            "distinct_sets": 1
+          },
+          {
+            "distinct_orders": 3,
+            "distinct_sets": 1
+          }
+        ],
+        "foxtunnel": [
+          {
+            "distinct_orders": 3,
+            "distinct_sets": 1
+          },
+          {
+            "distinct_orders": 3,
+            "distinct_sets": 1
+          }
+        ]
+      }
+    },
+    "runtime_sha256": {
+      "firefox": "35edb04df1ac7f8d829f3b0b5bb0186432415a63082cc3f9c318db9d88a5c6a4",
+      "libnss3.so": "6785986a050f3778adfa3d0a15140604e599a5fee6201cc7be896fc9c16b18a3",
+      "libxul.so": "040c9edc147d5cad6ca4c1979359e5c18940ac9f983406fa33d88c4cfbe355fa",
+      "platform.ini": "1d9cd3eeafac73b0769939a5ebc461f1c8ddbb85699649e268d36f886550afcd",
+      "xpcshell": "0dd2969f693f7a638a7d9bf26aa064bee360b6730a35e18602b68a1d4aa79c42"
+    },
+    "source_sha256": {
+      "client.js": "4df48c2b4ec2e4c665ea8e781c620ddd47e80037f767d3a2525719d62d197270",
+      "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+      "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+      "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+      "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+      "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+      "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+      "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+      "gecko.lock.json": "a0722357a7aac53e6453294d8b424ffde2beaa5c008ad6bbbc6612383154e308"
+    },
+    "repetitions": {
+      "h2-connect": 3,
+      "h3-connect": 3
+    },
+    "both_protocols_measured": true,
+    "scope": "Raw native CONNECT API in a full Firefox process versus the SOCKS helper; same patched libxul and workload.",
+    "limitations": [
+      "Not ordinary page navigation, stock Firefox, an Internet path or a DPI test.",
+      "Randomized extension order and JA3 differences are preserved alongside extension-set comparisons.",
+      "H3 effective parameter values include decoder defaults; raw parameter order is not measured.",
+      "H3 decoded headers are measured, QPACK instruction bytes are not.",
+      "H2 resumed=false is an observation of this fixture, not proof that all TLS resumption is disabled.",
+      "TLS 1.3 only, custom root and disabled socket process constrain the result."
+    ]
+  }
+}

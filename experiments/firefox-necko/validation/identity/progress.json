@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "status": "qualified",
+  "stage": 5,
+  "stage_checks_complete": 4,
+  "stage_checks_total": 4,
+  "overall_stages_complete": 5,
+  "overall_stages_total": 6,
+  "candidate_code_commit": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e",
+  "native_source_commit": "2d35a9bff3caf64ecb0088618556797f60c5dbb2",
+  "source_run": 40317262284,
+  "runtime_run": 40321468060,
+  "failed_source_run": 40286512326,
+  "failure": "Previous ARM64 source gates exceeded the unchanged RSS growth bound; runtime audit flagged H2 SETTINGS ACK / HPACK scheduling differences. First compiled profile test expected unfiltered NSS signature ordering.",
+  "source_lock_sha256": "0e50df6a76eb0d490415f5fbda1a0d6faab2f06ed02c4e233098a60919feab43",
+  "client_js_sha256": "637e8bf2d5b72790a150e4064f603ef8d78b214964287e83d667e569268de868",
+  "native_patches": 28,
+  "local_checks": [
+    "Corrected patch applies exactly to the pinned original source and matches updated output digest",
+    "Source preparation tests: 10 passed",
+    "Go race checks for firefox-necko and transportengine passed",
+    "JavaScript tests: 26 passed",
+    "Native direct-policy test script syntax checked",
+    "Documentation links and whitespace checks passed",
+    "Verified rebuilt amd64 bundle: native SNI/SPKI, TLS/H2 presets, origin scope, per-node pins and immutable API gates passed",
+    "All POST/CONNECT/UDP-v1/UDP-v2 negative gates complete before their shared context expires",
+    "60-second H2/H3 shrinking-GC soak passed unchanged resource limits",
+    "Nine paired native wire / Firefox self-control repetitions per protocol: strict audit passed with inconclusive variable fields, no unexpected differences",
+    "17 native managed groups each passed three times on the verified AMD64 bundle (51 top-level executions)",
+    "Seven-carrier main CLI/SDK matrix passed three repetitions",
+    "Five-minute H2/H3 CONNECT load: 21712 rounds plus 32 warmups, exact current helper and source-lock hashes, unchanged bounds passed"
+  ],
+  "pending": [],
+  "promotion": "Qualified implementation promoted to xfd; main not modified",
+  "previous_runtime_run": 40317917970,
+  "native_compilation": {
+    "amd64": "passed",
+    "arm64": "passed",
+    "source_run": 40317262284,
+    "note": "Compilation passed on both; ARM64 source operational gate failed. New runtime gates independently recheck the exact source artifact."
+  },
+  "wire_gates": {
+    "amd64": {
+      "candidate_trials_per_protocol": 9,
+      "firefox_self_trials_per_protocol": 9,
+      "unexpected_differences": 0,
+      "status": "inconclusive",
+      "raw_reports_reproduced": true
+    },
+    "arm64": {
+      "candidate_trials_per_protocol": 9,
+      "firefox_self_trials_per_protocol": 9,
+      "unexpected_differences": 0,
+      "status": "inconclusive",
+      "raw_reports_reproduced": true
+    }
+  },
+  "native_security_profile_cli_sdk": {
+    "amd64": "passed",
+    "arm64": "passed",
+    "runtime_run": 40321468060,
+    "candidate_code_commit": "23c4eb68b18c2f8b2298c37431e81e71a2c84b8e"
+  },
+  "acceptance": "acceptance.json"
+}

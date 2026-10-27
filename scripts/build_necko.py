@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare and build the pinned, experimental Necko runtime (Linux amd64).
+"""Prepare and build the pinned, experimental Necko runtime (Linux amd64 and ARM64).
 
 The source checkout must already exist. No browser artifact build is accepted:
 these patches change C++ in libxul. A successful build is not an interop result.
@@ -10,10 +10,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import platform
 import re
 import subprocess
 import sys
+
+from necko_platform import host_platform, verify_elf
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "experiments/firefox-necko/gecko.lock.json"
@@ -45,7 +46,7 @@ def load_lock(lock_path=LOCK, root=ROOT):
     lock = json.loads(lock_path.read_text())
     if lock.get("schema") != 1 or not re.fullmatch(r"[0-9a-f]{40}", lock.get("revision", "")):
         raise ValueError("invalid Gecko source lock")
-    if lock.get("platform") != "linux-amd64" or not lock.get("patches"):
+    if lock.get("platforms", [lock.get("platform")]) not in (["linux-amd64"], ["linux-amd64", "linux-arm64"]) or not lock.get("patches"):
         raise ValueError("unsupported Gecko source lock")
     seen = set()
     for patch in lock["patches"]:
@@ -130,18 +131,19 @@ def main():
     if out == source or out.is_relative_to(source):
         raise ValueError("keep build configuration and objects outside the source checkout")
     lock = load_lock()
+    target = host_platform()
+    if target not in lock.get("platforms", [lock.get("platform")]):
+        raise ValueError("native host is not supported by source lock")
     prepare(source, lock)
     out.mkdir(parents=True, exist_ok=True)
     config = out / "mozconfig"
     config.write_text(mozconfig(out / "obj", args.jobs, args.compiler_cache, args.no_bootstrap_update))
     provenance = {"schema": 1, "status": "source-prepared", "source": lock,
-                  "mozconfig_sha256": sha256(config)}
+                  "mozconfig_sha256": sha256(config), "target_platform": target}
     provenance_path = out / "provenance.json"
     provenance_path.write_text(json.dumps(provenance, indent=2) + "\n")
     if args.prepare_only:
         return
-    if sys.platform != "linux" or platform.machine() not in ("x86_64", "amd64"):
-        raise ValueError("this experimental build supports Linux amd64 only")
     env = os.environ.copy()
     env["MOZCONFIG"] = str(config)
     env["MOZ_OBJDIR"] = str(out / "obj")
@@ -151,6 +153,8 @@ def main():
     run([sys.executable, str(source / "mach"), "--no-interactive", "build"], source, env=env)
     runtime = out / "obj/dist/bin"
     files = ("xpcshell", "libxul.so", "libnss3.so", "platform.ini")
+    for name in ("xpcshell", "libxul.so", "libnss3.so", "firefox"):
+        verify_elf(runtime / name, target)
     provenance.update(status="built-not-interop-tested",
                       runtime={name: sha256(runtime / name) for name in files})
     provenance_path.write_text(json.dumps(provenance, indent=2) + "\n")

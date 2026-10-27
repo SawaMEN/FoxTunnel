@@ -141,3 +141,203 @@ test('diagnostic session snapshot avoids allocation-heavy spreads', () => {
   const many = new Set(Array.from({ length: 90000 }, (_, i) => ({ remote: null, lastProgress: i })));
   assert.deepEqual(sessionStatus(many, 100000), { connected: 0, oldest_ms: 100000 });
 });
+
+
+test('authenticated UDP-v1 IPC framing accepts only bounded complete packets', () => {
+  const { udpIPCReply } = require('./client.js');
+  const p = new SocksParser();
+  p.push([5, 1, 2]); assert.equal(p.greeting(2), true);
+  const input = [0, 0, 0, 1, 127, 0, 0, 1, 0, 53, 0, 255];
+  const frame = [5, 0xf0, 0, 0, 0, input.length, ...input];
+  for (const b of frame.slice(0, -1)) {
+    p.push([b]);
+    assert.equal(p.request(), null);
+  }
+  p.push([frame.at(-1)]);
+  assert.deepEqual([...p.request().udp], input);
+  assert.deepEqual([...udpIPCReply(Uint8Array.from(input))],
+    [5, 0, 0, input.length, ...input]);
+  assert.deepEqual([...udpIPCReply(new Uint8Array())], [5, 0, 0, 0]);
+  assert.deepEqual([...udpIPCReply(null, true)], [5, 1, 0, 0]);
+  assert.deepEqual([...udpIPCReply(null, true, 3)], [5, 3, 0, 0]);
+  assert.throws(() => udpIPCReply(null, true, 255), /invalid UDP failure/);
+  assert.deepEqual([...udpIPCReply(null, true, 13)], [5, 13, 0, 0]);
+  assert.throws(() => udpIPCReply(new Uint8Array(1233)), /invalid UDP/);
+});
+
+test('UDP IPC rejects unauthorized commands, excessive frames and trailing bytes', () => {
+  for (const raw of [
+    [5, 0xf0, 0, 1, 0, 8, ...Array(8).fill(0)],
+    [5, 0xf0, 0, 0, 0, 7, ...Array(7).fill(0)],
+    [5, 0xf0, 0, 0, 4, 209],
+    [5, 0xf0, 0, 0, 0, 8, ...Array(9).fill(0)],
+  ]) {
+    const p = new SocksParser();
+    p.push([5, 1, 2]); p.greeting(2);
+    p.push(raw);
+    assert.throws(() => p.request());
+  }
+});
+
+
+test('UDP-v2 native framer survives byte-wise fragmentation and coalescing', () => {
+  const { encodeNativeUDPStreamFrame, NativeUDPFrameDecoder } = require('./client.js');
+  const payload = Uint8Array.of(0, 0, 0, 1, 127, 0, 0, 1, 0, 53, 0, 255, 254, 128, 0);
+  const frame = encodeNativeUDPStreamFrame(payload);
+  let replies = [];
+  let decoder = new NativeUDPFrameDecoder(packet => replies.push(packet));
+  for (const b of frame) decoder.push(Uint8Array.of(b));
+  decoder.finish();
+  assert.deepEqual([...replies[0]], [...payload]);
+  replies = [];
+  decoder = new NativeUDPFrameDecoder(packet => replies.push(packet));
+  const many = new Uint8Array(frame.length * 150);
+  for (let n = 0; n < 150; n++) many.set(frame, n * frame.length);
+  decoder.push(many);
+  decoder.finish();
+  assert.equal(replies.length, 150);
+  for (const packet of replies) assert.deepEqual([...packet], [...payload]);
+});
+test('UDP-v2 native framer rejects malformed packets, lengths and truncated frames', () => {
+  const { validateNativeUDPDatagram, encodeNativeUDPStreamFrame, NativeUDPFrameDecoder } = require('./client.js');
+  for (const wire of [
+    Uint8Array.of(0, 0, 1, 1, 127, 0, 0, 1, 0, 53),
+    Uint8Array.of(0, 0, 0, 1, 127, 0, 0, 1, 0, 0),
+    Uint8Array.of(0, 0, 0, 3, 0, 0, 53),
+    new Uint8Array(1233),
+  ]) {
+    assert.throws(() => validateNativeUDPDatagram(wire));
+    assert.throws(() => encodeNativeUDPStreamFrame(wire));
+  }
+  for (const frame of [Uint8Array.of(0, 0), Uint8Array.of(4, 209)])
+    assert.throws(() => new NativeUDPFrameDecoder(() => {}).push(frame));
+  const valid = encodeNativeUDPStreamFrame(Uint8Array.of(0, 0, 0, 1, 127, 0, 0, 1, 0, 53));
+  const decoder = new NativeUDPFrameDecoder(() => {});
+  decoder.push(valid.subarray(0, valid.length - 1));
+  assert.throws(() => decoder.finish(), /truncated/);
+  assert.throws(() => new NativeUDPFrameDecoder(() => {}).push(new Uint8Array(32769)));
+});
+
+test('UDP-v2 pump validates frames, awaits backpressure and preserves binary bytes', async () => {
+  const { pumpNativeUDPFrames, encodeNativeUDPStreamFrame } = require('./client.js');
+  const frame = encodeNativeUDPStreamFrame(Uint8Array.of(0,0,0,1,127,0,0,1,0,53,0,255,128));
+  let reads = 0, writing = false, fin = 0;
+  const received = [];
+  const input = Buffer.concat([frame, frame]);
+  const source = { async read(scratch) {
+    assert.equal(writing, false);
+    if (reads === input.length) return null;
+    scratch[0] = input[reads++];
+    return scratch.subarray(0,1);
+  }};
+  await pumpNativeUDPFrames(source, { output: {close() {fin++;}}, async write(data) {
+    writing = true;
+    await new Promise(resolve => setImmediate(resolve));
+    received.push(Buffer.from(data)); writing = false;
+  }});
+  assert.deepEqual(Buffer.concat(received), input);
+  assert.equal(fin, 1);
+});
+
+test('UDP-v2 pump aborts truncated and malformed streams without clean FIN', async () => {
+  const { pumpNativeUDPFrames } = require('./client.js');
+  for (const bytes of [Uint8Array.of(0), Uint8Array.of(0,0), Uint8Array.of(0,10,0)]) {
+    let sent = false, fin = 0;
+    await assert.rejects(pumpNativeUDPFrames({async read() {
+      if (sent) return null; sent = true; return bytes;
+    }}, {output: {close() {fin++;}}, async write() {assert.fail('invalid packet forwarded');}}));
+    assert.equal(fin, 0);
+  }
+});
+
+test('private UDP-v2 command is exact and rejects pipelined bytes', () => {
+  for (const raw of [[5,0xf1,0,0], [5,0xf1,0,1], [5,0xf1,0,0,0]]) {
+    const parser = new SocksParser(); parser.push([5,1,2]); parser.greeting(2); parser.push(raw);
+    if (raw.length === 4 && raw[3] === 0) assert.deepEqual(parser.request(), {udpStream:true});
+    else assert.throws(() => parser.request());
+  }
+});
+
+test('private HTTP metadata rejects origin injection and header controls', () => {
+ const {validateHTTPMetadata} = require('./client.js');
+ const valid = {method:'POST',origin:'https://example.test:443',path:'/api?q=1',host:'route.example',headers:[['Content-Type','application/octet-stream']],body:true};
+ validateHTTPMetadata(valid);
+ for (const change of [
+  {origin:'http://example.test'}, {origin:'https://example.test@evil.test'},
+  {origin:'https://example.test/path'}, {path:'//evil.test/'}, {path:'/\\evil'},
+  {path:'/api#fragment'}, {path:'/api\r\nX:a'}, {headers:[['Cookie','private']]},
+  {headers:[['Host','evil.test']]}, {headers:[['X-Test','x\r\ny']]},
+  {headers:Array(65).fill(['X-Test','yes'])}, {body:true,method:'GET'},
+ ]) assert.throws(()=>validateHTTPMetadata({...valid,...change}));
+});
+
+test('private HTTP parser accepts fragmented metadata and preserves early upload', () => {
+ const p = new SocksParser();p.push([5,1,2]);p.greeting(2);
+ const metadata = Buffer.from(JSON.stringify({method:'POST',origin:'https://example.test',path:'/',host:'example.test',headers:[],body:true}));
+ const wire=Buffer.concat([Buffer.from([5,0xf2,0,0,metadata.length>>8,metadata.length&255]),metadata]);
+ for(const b of wire.subarray(0,-1)){p.push([b]);assert.equal(p.request(),null);}
+ p.push([wire.at(-1),0,0,0,1,255]);const req=p.request();assert.equal(req.http.method,'POST');assert.deepEqual([...req.early],[0,0,0,1,255]);
+});
+
+test('HTTP IPC upload honors framing and backpressure, rejects truncated streams', async () => {
+ const {pumpHTTPUpload,httpChunkHeader} = require('./client.js');
+ const payload=Buffer.from([0,255,128,42]);
+ const wire=Buffer.concat([httpChunkHeader(payload.length),payload,httpChunkHeader(0)]);
+ let offset=0,active=false,closed=false;const writes=[];
+ const source={async read(){assert.equal(active,false);return offset<wire.length?wire.subarray(offset,++offset):null;}};
+ const dest={output:{close(){closed=true;}},async write(bytes){active=true;await new Promise(r=>setTimeout(r,1));writes.push(Buffer.from(bytes));active=false;}};
+ await pumpHTTPUpload(source,dest);assert.deepEqual(Buffer.concat(writes),payload);assert.equal(closed,true);
+ for(const bytes of [wire.subarray(0,4),wire.subarray(0,-1),Buffer.concat([httpChunkHeader(0),Buffer.from([1])]),httpChunkHeader(32769)]){
+  let sent=false;await assert.rejects(()=>pumpHTTPUpload({async read(){if(sent)return null;sent=true;return bytes;}},dest));
+ }
+});
+
+test('HTTP IPC download reports native failure explicitly', async () => {
+ const {pumpHTTPDownload} = require('./client.js');
+ const writes=[];const source={failed:true,async read(){return null;}};
+ await pumpHTTPDownload(source,{async write(b){writes.push(Buffer.from(b));}});
+ assert.deepEqual([...writes[0]],[255,255,255,255]);
+});
+
+test('bounded fixed HTTP bodies preserve bytes and enforce declared length', async () => {
+ const {collectHTTPUpload,httpChunkHeader} = require('./client.js');
+ const payload=Buffer.from([0,255,128,42]);
+ const wire=Buffer.concat([httpChunkHeader(4),payload,httpChunkHeader(0)]);
+ const sourceFor=()=>{let n=0;return {async read(){return n<wire.length?wire.subarray(n,++n):null;}};};
+ assert.deepEqual([...await collectHTTPUpload(sourceFor(),new Uint8Array(),4)],[...payload]);
+ await assert.rejects(()=>collectHTTPUpload(sourceFor(),new Uint8Array(),3));
+ await assert.rejects(()=>collectHTTPUpload(sourceFor(),new Uint8Array(),5));
+ await assert.rejects(()=>collectHTTPUpload(sourceFor(),new Uint8Array(),1048577));
+});
+
+// The actual pinned xpcshell returns undefined for the new result name while
+// reporting 0x804b0065 when a multiplexed origin connection disappears.
+test('unclean native shutdown recovers without broadening TLS/protocol retries', () => {
+  const { nativeHTTPFailureReason } = require('./client.js');
+  const results = { NS_ERROR_CONNECTION_REFUSED: 0x804b000d,
+    NS_ERROR_NET_TIMEOUT: 0x804b000e, NS_ERROR_NET_RESET: 0x804b0014,
+    NS_ERROR_OFFLINE: 0x804b0010, NS_ERROR_UNKNOWN_HOST: 0x804b001e };
+  assert.equal(nativeHTTPFailureReason(0x804b0065, results), 2);
+  assert.equal(nativeHTTPFailureReason(0x804b0065,
+    {...results, NS_ERROR_NET_UNCLEAN_SHUTDOWN: 0x804b0065}), 2);
+  for (const failure of [0x805a1ff3, 0x804b0052, 0x80004005]) {
+    assert.equal(nativeHTTPFailureReason(failure, results), 1);
+  }
+});
+
+test('native identity is scoped to the primary origin and never inherited by alternate nodes', () => {
+  const {nativeRoutePolicy} = require('./client.js');
+  const cfg = {proxy_host: 'proxy.example', proxy_port: 443, server_name: 'cert.example', pin_sha256: 'sha256/fixture', tls_client_profile: 'firefox-158'};
+  assert.deepEqual(nativeRoutePolicy(cfg, 'PROXY.EXAMPLE', 443), {serverName:'cert.example',pin:'sha256/fixture',tlsProfile:'firefox-158'});
+  for (const [host,port] of [['other.example',443],['proxy.example',8443]]) {
+    assert.deepEqual(nativeRoutePolicy(cfg,host,port),{serverName:'',pin:'',tlsProfile:'firefox-158'});
+  }
+});
+
+test('explicit node pins require an exact registered origin, including the port', () => {
+ const {nativeRoutePolicy}=require('./client.js');
+ const cfg={proxy_host:'a.example',proxy_port:443,node_policies:{'a.example:443':{sni:'cert-a.example',pin_sha256:'sha256/a'},'b.example:8443':{sni:'cert-b.example',pin_sha256:'sha256/b'}}};
+ assert.deepEqual(nativeRoutePolicy(cfg,'B.EXAMPLE',8443),{serverName:'cert-b.example',pin:'sha256/b',tlsProfile:''});
+ assert.throws(()=>nativeRoutePolicy(cfg,'b.example',443));
+ assert.throws(()=>nativeRoutePolicy(cfg,'unknown.example',443));
+});

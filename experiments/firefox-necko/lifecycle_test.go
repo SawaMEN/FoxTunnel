@@ -317,10 +317,18 @@ func TestGeckoH3NoTCPFallback(t *testing.T) {
 
 func nativeProxy(t *testing.T, mode string, handler http.Handler, quicConfig ...*quic.Config) Config {
 	t.Helper()
+	return nativeProxyConfigured(t, mode, handler, nil, quicConfig...)
+}
+
+func nativeProxyConfigured(t *testing.T, mode string, handler http.Handler, configure func(*httptest.Server), quicConfig ...*quic.Config) Config {
+	t.Helper()
 	certificate, ca := testCertificate(t)
 	server := httptest.NewUnstartedServer(handler)
 	server.EnableHTTP2 = true
 	server.TLS = &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}}
+	if configure != nil {
+		configure(server)
+	}
 	server.StartTLS()
 	t.Cleanup(server.Close)
 	if mode == "h3-connect" {

@@ -3,8 +3,10 @@ package tunnel
 import (
 	"context"
 	"errors"
+	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
 	"io"
 	"net"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -17,9 +19,12 @@ type ManagedTransport interface {
 
 type managedTransport struct {
 	sync.Mutex
-	factory   func() (ManagedTransport, error)
-	transport ManagedTransport
-	closed    bool
+	acceptsNodePolicies bool
+	nodePolicies        map[string]tlsidentity.Policy
+	factory             func() (ManagedTransport, error)
+	transport           ManagedTransport
+	closed              bool
+	http                bool
 }
 
 // SetManagedTransport installs an owned native engine before concurrent use.
@@ -35,8 +40,18 @@ func (c *Client) validateManaged() error {
 	if c.ConnectTimeout > 0 && c.ConnectTimeout < 100*time.Millisecond {
 		return errors.New("Necko setup timeout must be at least 100ms")
 	}
-	if c.Padding || c.EnableUDP || c.UDPStreaming || c.UDPMultiNode || c.RequireProtocolNegotiation || len(c.fallbackServers) > 0 || c.bondClient != nil || c.bondDiscovery != nil || (c.balance != "" && c.balance != "failover") {
-		return errors.New("Necko supports TCP CONNECT without padding, UDP, bond, balancing, fallback servers or draft negotiation")
+	if c.fullManagedHTTP() {
+		connect := c.nativeTransport == "h2-connect" || c.nativeTransport == "h3-connect"
+		if connect && (c.Padding || c.RequireProtocolNegotiation) {
+			return errors.New("Necko CONNECT does not forward extension headers; use h2-post or XHTTP for padding/strict negotiation")
+		}
+		return nil
+	}
+	if c.Padding || c.UDPStreaming || c.UDPMultiNode || c.RequireProtocolNegotiation || len(c.fallbackServers) > 0 || c.bondClient != nil || c.bondDiscovery != nil || (c.balance != "" && c.balance != "failover") {
+		return errors.New("Necko supports TCP CONNECT and bounded UDP v1 without padding, UDP streaming, bond, balancing, fallback servers or draft negotiation")
+	}
+	if c.EnableUDP && c.nativeTransport != "h2-connect" {
+		return errors.New("Necko native UDP v1 requires h2-connect; h3-connect UDP is not implemented")
 	}
 	return nil
 }
@@ -125,4 +140,69 @@ func (c *Client) relayManaged(ctx context.Context, local net.Conn, target string
 	go func() { defer close(done); copyHalf(remote, local) }()
 	copyHalf(local, remote)
 	<-done
+}
+
+// exchangeManagedUDP requires an authenticated Mozilla HTTP/2 IPC adapter.
+// Absence of the feature is an error; never send credentials or packets
+// through the legacy Go transport as an implicit fallback.
+func (c *Client) exchangeManagedUDP(ctx context.Context, wire []byte) ([]byte, error) {
+	if err := c.Prepare(ctx); err != nil {
+		return nil, err
+	}
+	c.managed.Lock()
+	transport, closed := c.managed.transport, c.managed.closed
+	c.managed.Unlock()
+	if closed {
+		return nil, net.ErrClosed
+	}
+	exchange, ok := transport.(interface {
+		ExchangeUDP(context.Context, []byte) ([]byte, error)
+	})
+	if !ok {
+		return nil, errors.New("managed Necko transport cannot exchange UDP")
+	}
+	return exchange.ExchangeUDP(ctx, wire)
+}
+
+// managedUDPStream is the future Gecko streaming extension boundary.
+// It does not introduce a Go HTTP fallback, and is intentionally inaccessible
+// through normal UDPStreaming configuration until native Gecko implements it.
+type managedUDPStream interface {
+	OpenUDPStream(context.Context) (io.ReadWriteCloser, error)
+}
+
+func (c *Client) openManagedUDPStream(ctx context.Context, endpoint *url.URL) (*udpStream, error) {
+	if c.managed == nil || endpoint == nil || endpoint.Scheme != "https" ||
+		endpoint.Host != c.ServerURL.Host || c.nativeTransport != "h2-connect" {
+		return nil, errors.New("Necko native UDP stream requires the configured H2 HTTPS origin")
+	}
+	if err := c.Prepare(ctx); err != nil {
+		return nil, err
+	}
+	c.managed.Lock()
+	tr, closed := c.managed.transport, c.managed.closed
+	c.managed.Unlock()
+	if closed {
+		return nil, net.ErrClosed
+	}
+	bridge, ok := tr.(managedUDPStream)
+	if !ok {
+		return nil, errors.New("Necko does not yet provide a native UDP streaming channel")
+	}
+	stream, err := bridge.OpenUDPStream(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if stream == nil {
+		return nil, errors.New("native Necko UDP streaming channel is absent")
+	}
+	stop := context.AfterFunc(ctx, func() { _ = stream.Close() })
+	return &udpStream{
+		response: stream,
+		writer:   stream,
+		cancel: func() {
+			stop()
+			_ = stream.Close()
+		},
+	}, nil
 }

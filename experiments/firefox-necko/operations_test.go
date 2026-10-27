@@ -328,7 +328,7 @@ func TestGeckoSoak(t *testing.T) {
 			samples = append(samples, last)
 			if out := os.Getenv("FOXTUNNEL_OPERATIONS_OUT"); out != "" {
 				os.MkdirAll(out, 0700)
-				data, _ := json.MarshalIndent(map[string]any{"schema": 1, "transport": mode, "duration_seconds": seconds, "rounds": rounds, "payload_bytes_per_round": 128 << 10, "parallel_streams": 8, "warmup_tunnels": 16, "samples": samples, "counters": final, "cpu_ticks_per_second": ticksPerSecond, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond, "average_cpu_percent": 100000 * float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond / float64(last.AtMS-first.AtMS), "variant": variant, "ci_run_id": os.Getenv("GITHUB_RUN_ID"), "runner_name": os.Getenv("RUNNER_NAME"), "scope": "loopback churn plus binary half-close; not a production throughput benchmark"}, "", "  ")
+				data, _ := json.MarshalIndent(map[string]any{"schema": 1, "transport": mode, "duration_seconds": seconds, "rounds": rounds, "payload_bytes_per_round": 128 << 10, "parallel_streams": 8, "warmup_tunnels": 16, "samples": samples, "counters": final, "cpu_ticks_per_second": ticksPerSecond, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond, "average_cpu_percent": 100000 * float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond / float64(last.AtMS-first.AtMS), "variant": variant, "client_js_sha256": digestBytes(script), "source_lock_sha256": digestBytes(sourceLock), "ci_run_id": os.Getenv("GITHUB_RUN_ID"), "runner_name": os.Getenv("RUNNER_NAME"), "scope": "loopback churn plus binary half-close; not a production throughput benchmark"}, "", "  ")
 				if e := os.WriteFile(filepath.Join(out, mode+"-soak.json"), append(data, '\n'), 0600); e != nil {
 					t.Fatal(e)
 				}

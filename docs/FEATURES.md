@@ -28,17 +28,41 @@
 
 ## Движки
 
-Обычная Go-сборка использует Go TLS и quic-go. Linux-сборка с NSS позволяет
-выбрать `--tls-backend nss` для TCP. При `auto` tagged NSS-сборка использует NSS
-для TCP, а Go — для H3.
+Обычная Go-сборка использует Go TLS и quic-go. Linux NSS-сборка предоставляет
+Mozilla NSS для TCP; `--engine mozilla` выбирает NSS и Neqo при наличии
+скомпилированного Neqo. При отсутствии Neqo H3 по умолчанию остаётся на Go.
 
-Отдельная Linux amd64 сборка с NSS и Neqo поддерживает `--engine mozilla`:
-NSS для TCP/H2, Neqo для H3. Этот флаг не меняет транспорт в профиле.
-Неподдерживаемый явно выбранный backend возвращает ошибку.
+В объединённом Linux amd64 архиве `--engine auto` выбирается по умолчанию:
+полный Necko обслуживает совместимые `h2-connect` и `h3-connect`.
+Для обычного SOCKS5 UDP ASSOCIATE (UDP v1) поверх `h2-connect` Necko
+выполняет HTTPS POST через нативный HTTP/2 Mozilla. Локальным UDP-сокетом
+управляет Go, но удалённый TLS/HTTP запрос не использует Go transport.
+Для UDP Streaming v2, UDP Multi-Node, H3+UDP, Bond, padding, strict-policy,
+дополнительных нод, XHTTP, pinning или ручных сетевых параметров выбирается
+поддерживаемый NSS/Go-движок. Заданный вручную `--engine necko`
+никогда не переключается молча, а отвергает неподдерживаемый режим.
+Смена движка не повторяет прерванное соединение и не ослабляет TLS-проверку.
 
-NSS — TLS-библиотека, Neqo — QUIC/HTTP3-реализация Mozilla. Они не включают весь
-сетевой стек Firefox. Автоматический транспорт и H2 fallback движка Mozilla
-не повторяют уже отправленный запрос; TLS-ошибка не разрешает обход проверки.
+`--engine legacy` сохраняет прежнее поведение, `--engine mozilla` требует
+NSS/Neqo согласно выбранному транспорту, `--engine necko` требует полный
+проверенный runtime Linux amd64. В Go SDK режим `Engine: "auto"` включается
+явно; пустое значение сохраняет историческую совместимость API.
+NSS — TLS, Neqo — QUIC/HTTP3, Necko — полный сетевой стек Mozilla.
+
+
+## Native UDP v1 — начальный этап xfd
+
+- Реализован аутентифицированный IPC (SOCKS5 private cmd 0xF0) с проверкой размера до 1232 байт.
+- Gecko выполняет POST строго на `/.well-known/foxtunnel-udp-v1` прямым TLS/H2
+  соединением к настроенному HTTPS-выходу. Серверный протокол UDP v1 не меняется.
+- TCP SOCKS5 остаётся на Necko, локальный UDP ASSOCIATE обслуживает общий Go
+  код с ограничением количества запросов, адреса клиента и таймаутами.
+- Запускается `--engine auto --transport h2-connect --enable-udp` либо
+  `--engine necko --transport h2-connect --enable-udp`.
+- Пока не реализованы: UDP Streaming v2, UDP Multi-Node, native H3 UDP,
+  Bond/Discovery, XHTTP, pinning, padding. Они не включаются молча.
+- Нативный UDP-v1 POST не является QUIC DATAGRAM/MASQUE CONNECT-UDP.
+  Реальная поддержка этого этапа зависит от прохождения интеграционных CI-тестов.
 
 ## UDP
 
@@ -136,3 +160,14 @@ Lanes могут быть медленнее RPC при определённых
 WAN-ускорения, снижения ping или совпадения fingerprint.
 [Обязательная матрица проверок](DEVELOPMENT.md#стабильность-xhttp-и-tcp-bond).
 Работа над полным стеком Firefox ведётся отдельно: [этапы ветки firefox](FIREFOX.md).
+
+
+### Подготовка UDP Streaming v2 в Necko
+
+В `experiments/firefox-necko/client.js` добавлен независимый от XPCOM
+ограниченный кодек двухбайтовых BE16-кадров SOCKS5 UDP. Тесты покрывают
+фрагментацию/слияние кадров, границы размеров и неправильные адреса.
+**Это ещё не транспорт UDP Streaming v2:** для нативного двунаправленного
+HTTP-канала нужна отдельная реализация инкрементального upload stream в
+закреплённой версии Gecko и сквозной тест без Go HTTP-подмены. До этого
+`--engine necko --udp-stream` намеренно отвергается.

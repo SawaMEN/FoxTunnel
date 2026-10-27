@@ -90,10 +90,13 @@ type bondDiscovery struct {
 // coordinator. Its listed origins receive the same credentials after TLS/h2.
 // Call after TLS/timeouts, before Serve. A failed initial fetch fails closed.
 func (c *Client) EnableBondDiscovery(ctx context.Context) error {
+	if c.managed != nil && len(c.managed.nodePolicies) != 0 {
+		return errors.New("cannot combine dynamic discovery and static per-node SPKI pins")
+	}
 	if c.RequireProtocolNegotiation {
 		return errors.New("strict protocol policy is not supported with bond/discovery")
 	}
-	if c.managed != nil {
+	if c.managed != nil && !c.fullManagedHTTP() {
 		return errors.New("Necko does not support bond or discovery")
 	}
 	if pool, ok := c.transport.(*identityPool); ok && len(pool.nodePolicies) != 0 {
@@ -228,6 +231,16 @@ func (c *Client) discoveredBond(ctx context.Context) (*bond.Client, error) {
 							d.mu.Unlock()
 							return nil, i18n.Error("invalid TLS identity settings")
 						}
+					}
+				}
+				if c.fullManagedHTTP() {
+					var trustErr error
+					transport, trustErr = managedDiscoveryView(transport, endpoints)
+					if trustErr != nil {
+						close(d.refreshing)
+						d.refreshing = nil
+						d.mu.Unlock()
+						return nil, trustErr
 					}
 				}
 				d.current = &bond.Client{Endpoints: endpoints, Weights: weights, ExpectedHub: m.HubID,

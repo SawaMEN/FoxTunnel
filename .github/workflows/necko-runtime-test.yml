@@ -1,7 +1,7 @@
 name: Mozilla Necko runtime gates
 on:
   push:
-    branches: [main, firefox, fx]
+    branches: [main, firefox, fx, xfd, xfd-h3, xfd-arm64, xfd-identity]
     paths:
       - 'foxtunnel*.go'
       - 'necko_integration_test.go'
@@ -24,6 +24,8 @@ on:
       - 'experiments/firefox-necko/*.go'
       - 'experiments/firefox-necko/fingerprint/**'
       - 'experiments/firefox-necko/cmd/**'
+      - 'scripts/necko_platform.py'
+      - 'scripts/test_necko_platform.py'
       - 'scripts/package_necko.py'
       - 'scripts/test_package_necko.py'
       - 'scripts/select_necko_runtime.py'
@@ -50,8 +52,19 @@ concurrency:
   cancel-in-progress: true
 jobs:
   runtime:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    name: runtime (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            suffix: ''
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            suffix: '-arm64'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
       - name: Select compiled runtime for this verification
@@ -67,17 +80,17 @@ jobs:
             fi
             echo "run_id=$REQUESTED_RUN" >> "$GITHUB_OUTPUT"
           else
-            python3 scripts/select_necko_runtime.py --output "$GITHUB_OUTPUT"
+            python3 scripts/select_necko_runtime.py --arch ${{ matrix.arch }} --output "$GITHUB_OUTPUT"
           fi
       - uses: actions/download-artifact@v4
         with:
-          name: necko-linux-amd64-runtime
+          name: necko-linux-${{ matrix.arch }}-runtime
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
           path: runtime-archive
       - uses: actions/download-artifact@v4
         with:
-          name: necko-source-provenance
+          name: necko-source-provenance${{ matrix.suffix }}
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
           path: runtime-provenance
@@ -88,7 +101,11 @@ jobs:
           mkdir runtime
           tar --no-same-owner --zstd -xf runtime-archive/runtime.tar.zst -C runtime
           python3 - <<'PY'
-          import hashlib, json
+          import hashlib, json, sys
+          sys.path.insert(0, 'scripts')
+          from necko_platform import host_platform, verify_elf
+          target = 'linux-${{ matrix.arch }}'
+          assert host_platform() == target, 'Native runner architecture differs'
           from pathlib import Path
           files = list(Path('runtime-provenance').rglob('provenance.json'))
           assert len(files) == 1, files
@@ -96,6 +113,9 @@ jobs:
           lock = json.loads(Path('experiments/firefox-necko/gecko.lock.json').read_text())
           assert p['source'] == lock, 'Runtime was built from a different source lock'
           assert p['status'] == 'built-not-interop-tested'
+          assert p.get('target_platform', 'linux-amd64') == target, 'Runtime provenance architecture differs'
+          for name in ('xpcshell', 'libxul.so', 'libnss3.so', 'firefox'):
+              verify_elf(Path('runtime') / name, target)
           for name, digest in p['runtime'].items():
               with (Path('runtime') / name).open('rb') as f:
                   assert hashlib.file_digest(f, 'sha256').hexdigest() == digest, name
@@ -139,14 +159,16 @@ jobs:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
           FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
         run: |
-          go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint|GeckoFirefoxSelfComparison)' -v -count=3 -timeout=180s
-          python3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json
+          # Sample both subjects and self controls equally. Three trials can
+          # miss Firefox's SETTINGS ACK / HPACK table-update scheduling race.
+          go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint|GeckoFirefoxSelfComparison)' -v -count=9 -timeout=600s
+          python3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json --minimum-repetitions 9
           python3 scripts/analyze_firefox_self.py --observations necko-fingerprint/observations/firefox-self --out necko-fingerprint/firefox-self.json
-          python3 scripts/evaluate_fx_fingerprint.py --candidate necko-fingerprint/comparison.json --control necko-fingerprint/firefox-self.json --out necko-fingerprint/fx-audit.json --enforce
+          python3 scripts/evaluate_fx_fingerprint.py --candidate necko-fingerprint/comparison.json --control necko-fingerprint/firefox-self.json --out necko-fingerprint/fx-audit.json --minimum-repetitions 9 --enforce
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: necko-firefox-fingerprint
+          name: necko-firefox-fingerprint${{ matrix.suffix }}
           path: necko-fingerprint/
           if-no-files-found: ignore
           retention-days: 14
@@ -154,7 +176,7 @@ jobs:
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s
-      - name: Package and verify opt-in Linux amd64 launcher
+      - name: Package and verify native Linux ${{ matrix.arch }} launcher
         env:
           RELEASE_VERSION: ${{ inputs.release_version || 'v0.0.0-ci' }}
         run: |
@@ -165,9 +187,9 @@ jobs:
           python3 scripts/collect_necko_licenses.py --out /tmp/necko-notices.txt
           cmp /tmp/necko-notices.txt experiments/firefox-necko/LICENSES.go.txt
           provenance=$(find runtime-provenance -name provenance.json -type f)
-          python3 scripts/package_necko.py --runtime runtime --provenance "$provenance" --launcher necko-launcher --cli necko-main-cli --out necko-bundle --archive foxtunnel-necko-linux-amd64.tar.gz
+          python3 scripts/package_necko.py --runtime runtime --provenance "$provenance" --launcher necko-launcher --cli necko-main-cli --out necko-bundle --archive foxtunnel-necko-linux-${{ matrix.arch }}.tar.gz
           necko-bundle/foxtunnel-necko --bundle "$PWD/necko-bundle" --verify
-          sha256sum foxtunnel-necko-linux-amd64.tar.gz > SHA256SUMS
+          sha256sum foxtunnel-necko-linux-${{ matrix.arch }}.tar.gz > SHA256SUMS
       - name: Real H2/H3 transfer and SIGTERM from packaged launcher
         env:
           FOXTUNNEL_BUNDLE: ${{ github.workspace }}/necko-bundle
@@ -175,7 +197,7 @@ jobs:
       - name: Integrated main CLI and SDK native gates
         env:
           FOXTUNNEL_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
-        run: go test -race . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManagedIPC)'  -v -count=1 -timeout=120s
+        run: go test -race . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManaged(IPC|UDP|HTTP|Bond|XHTTP))' -v -count=3 -timeout=900s
       - name: Managed engine Firefox wire comparison
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
@@ -184,10 +206,23 @@ jobs:
         run: |
           go test -race ./experiments/firefox-necko -run '^TestGeckoBrowserFingerprint$' -v -count=3 -timeout=180s
           python3 scripts/compare_necko_firefox.py --observations necko-integrated-fingerprint/observations --out necko-integrated-fingerprint/comparison.json
+      - name: Sustained managed H2/H3 HTTP, Bond and UDP resources
+        env:
+          FOXTUNNEL_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
+          FOXTUNNEL_MANAGED_SOAK_SECONDS: '60'
+          FOXTUNNEL_MANAGED_SOAK_OUT: ${{ github.workspace }}/necko-managed-operations
+        run: go test -race ./experiments/firefox-necko -run '^TestGeckoManagedSoak$' -v -count=1 -timeout=1200s
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: necko-integrated-fingerprint
+          name: necko-managed-operations${{ matrix.suffix }}
+          path: necko-managed-operations/
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: necko-integrated-fingerprint${{ matrix.suffix }}
           path: necko-integrated-fingerprint/
           if-no-files-found: ignore
           retention-days: 14
@@ -213,13 +248,26 @@ jobs:
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=240s
       - name: FX resource efficiency report
         run: |
-          python3 scripts/report_fx_operations.py --current necko-operations --reference experiments/firefox-necko/validation/stage4/ci-300s --out necko-operations/fx-resource-report.json
+          if [ '${{ matrix.arch }}' = amd64 ]; then
+            python3 scripts/report_fx_operations.py --current necko-operations --reference experiments/firefox-necko/validation/stage4/ci-300s --out necko-operations/fx-resource-report.json
+          else
+            python3 scripts/report_fx_operations.py --current necko-operations --out necko-operations/fx-resource-report.json
+          fi
           python3 scripts/report_fx_operations.py --current necko-operations-paired-current --paired-baseline necko-operations-paired-baseline --out necko-operations/paired-fx-report.json
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: foxtunnel-necko-linux-amd64
+          name: necko-paired-operations${{ matrix.suffix }}
           path: |
-            foxtunnel-necko-linux-amd64.tar.gz
+            necko-operations-paired-baseline/
+            necko-operations-paired-current/
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foxtunnel-necko-linux-${{ matrix.arch }}
+          path: |
+            foxtunnel-necko-linux-${{ matrix.arch }}.tar.gz
             SHA256SUMS
           if-no-files-found: error
           compression-level: 0
@@ -227,14 +275,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: necko-operations
+          name: necko-operations${{ matrix.suffix }}
           path: necko-operations/
           if-no-files-found: ignore
           retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: necko-runtime-diagnostics
+          name: necko-runtime-diagnostics${{ matrix.suffix }}
           path: |
             runtime-startup.log
             runtime-startup.strace

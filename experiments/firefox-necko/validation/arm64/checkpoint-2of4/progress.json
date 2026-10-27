@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "status": "native-runtime-qualification-in-progress",
+  "stage": 4,
+  "stage_checks_complete": 2,
+  "stage_checks_total": 4,
+  "overall_stages_complete": 3,
+  "overall_stages_total": 6,
+  "candidate_code_commit": "24d74d081f209ba931b70500d8ba407c54fe83cf",
+  "source_run": 40264186586,
+  "source_arm64_job": 121382841732,
+  "source_arm64_conclusion": "success",
+  "runtime_run": 40264186589,
+  "runtime_arm64_job": 121382841562,
+  "source_lock_sha256": "25009aac3060c76042f646795c7fa2c9a0122d029a646d734d7464258940906b",
+  "client_js_sha256": "4df48c2b4ec2e4c665ea8e781c620ddd47e80037f767d3a2525719d62d197270",
+  "confirmed": [
+    "Pinned Gecko and all 22 reviewed patches compiled on native ARM64",
+    "Build provenance and actual ELF architecture verified",
+    "Native packaged launcher and main CLI verified on ARM64",
+    "ARM64 H2/H3 integrated CLI/SDK gate and wire observation steps passed"
+  ],
+  "pending": [
+    "Remaining amd64 regression matrix for the new source lock",
+    "All 12 ARM64 managed workload modes",
+    "300-second H2/H3 CONNECT workloads and paired baseline/current controls",
+    "Final evidence verification and promotion to xfd"
+  ],
+  "wire_audit_scope": "Native CONNECT versus full Firefox on the same ARM64 runtime; zero unexpected differences; randomized extension ordering remains inconclusive; no DPI equivalence claim",
+  "retained_files_sha256": {
+    "artifacts.json": "171c74775d4d29ba6e201c08509d786280ea8d858155119012f2ad20ebd3c5bf",
+    "source-native-gates.txt": "5ec65428761fe9d61490f45619f6feae2d299a10d085d68c3d2c561a7da0be7b",
+    "source-provenance.json": "14de70f61b9ad6ba05d23982cc225947de9c8d920b6b5b3f5771a99b5433fa2e",
+    "source-resources/h2-connect-soak.json": "63cb24bbc24bfee8fe39c860a9987e648efc9660c2dc8f43e018dc0f8fbf0626",
+    "source-resources/h3-connect-soak.json": "9d70153aabe826417276b6f7a0f4638f14c0a76d7ece89194ef3fa101132f1bc",
+    "wire-audit.json": "0b8c94096a89144d86995c0d98444e0d41117240b0cce708b72efe6eed7bdc36",
+    "wire-summary.json": "a672058a2dc7916d12f9c7e9bdaaaf70f0a73f35aa0b7c264fac68248121bc22",
+    "README.md": "ec083e9b8890accceaa6aa664912e7c57552134f6f9c755a1c09abe00eb8b2bd"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "comparison_validity": "uncontrolled-between-runs; do not infer speedup",
+  "current": {
+    "h2-connect": {
+      "app_mib_per_second": 10.527,
+      "cpu_seconds": 166.17,
+      "cpu_seconds_per_gib": 53.882,
+      "duration_seconds": 300,
+      "fd_max_sampled": 46,
+      "gc_collections": 55,
+      "gc_ms": 1111,
+      "parallel_streams": 8,
+      "payload_bytes_per_round": 131072,
+      "rounds": 12632,
+      "rss_delta_kib": 135364,
+      "rss_end_kib": 278040,
+      "rss_max_sampled_kib": 361456,
+      "rss_start_kib": 142676,
+      "transport": "h2-connect",
+      "wire_app_gib": 3.084
+    },
+    "h3-connect": {
+      "app_mib_per_second": 10.48,
+      "cpu_seconds": 269.32,
+      "cpu_seconds_per_gib": 87.717,
+      "duration_seconds": 300,
+      "fd_max_sampled": 47,
+      "gc_collections": 56,
+      "gc_ms": 1185,
+      "parallel_streams": 8,
+      "payload_bytes_per_round": 131072,
+      "rounds": 12576,
+      "rss_delta_kib": 170712,
+      "rss_end_kib": 313984,
+      "rss_max_sampled_kib": 368544,
+      "rss_start_kib": 143272,
+      "transport": "h3-connect",
+      "wire_app_gib": 3.0703
+    }
+  },
+  "historical_reference": null,
+  "kind": "fx-necko-resource-report",
+  "limits": [
+    "Process RSS and CPU cover xpcshell helper only, not complete server/client.",
+    "Wire application bytes include upload and download; no WAN throughput conclusion.",
+    "Historical reference was measured on a different CI execution; CPU and RSS vary by host and runtime.",
+    "These samples are not proof of lower allocations; inspect heap profiles before claims.",
+    "Sampled peak RSS can miss true instantaneous peak.",
+    "Sequential paired runs share host and runtime but may suffer drift; repeat before claiming speedups."
+  ],
+  "paired_baseline": null,
+  "schema": 1
+}

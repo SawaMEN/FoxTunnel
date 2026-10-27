@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	_ "embed"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -36,14 +37,18 @@ func digestBytes(data []byte) string { s := sha256.Sum256(data); return hex.Enco
 // binds the runtime to this helper's source lock and embedded JS. Archive hashes
 // must still be obtained from a trusted publisher: a manifest is not a signature.
 func VerifyBundle(directory string) (string, error) {
-	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
-		return "", errors.New("Firefox bundle currently requires Linux amd64")
+	if runtime.GOOS != "linux" || (runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64") {
+		return "", errors.New("Firefox bundle requires Linux amd64 or ARM64")
 	}
-	return verifyBundle(directory)
+	return verifyBundlePlatform(directory, runtime.GOOS+"-"+runtime.GOARCH)
 }
 
 // Integrity validation is independent of the host's ability to execute Gecko.
 func verifyBundle(directory string) (string, error) {
+	return verifyBundlePlatform(directory, "linux-amd64")
+}
+
+func verifyBundlePlatform(directory, platform string) (string, error) {
 	invalid := errors.New("incompatible or damaged Firefox bundle")
 	absolute, e := filepath.Abs(directory)
 	if e != nil {
@@ -75,11 +80,32 @@ func verifyBundle(directory string) (string, error) {
 	if decoder.Decode(&m) != nil || decoder.Decode(new(any)) != io.EOF {
 		return "", invalid
 	}
-	if m.Schema != 1 || m.HelperProtocol != BundleProtocol || m.Platform != "linux-amd64" || m.SourceLockSHA256 != digestBytes(sourceLock) || m.ClientJSSHA256 != digestBytes(clientScript) || len(m.Files) == 0 || len(m.Files) > 20000 {
+	if m.Schema != 1 || m.HelperProtocol != BundleProtocol || m.Platform != platform || (platform != "linux-amd64" && platform != "linux-arm64") || m.SourceLockSHA256 != digestBytes(sourceLock) || m.ClientJSSHA256 != digestBytes(clientScript) || len(m.Files) == 0 || len(m.Files) > 20000 {
 		return "", invalid
 	}
 	for _, required := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "runtime/platform.ini", "provenance.json", "source-lock.json", "foxtunnel-necko"} {
 		if len(m.Files[required]) != 64 {
+			return "", invalid
+		}
+	}
+	// Validate binary architecture as well as manifest labels and hashes.
+	for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "foxtunnel-necko", "foxtunnel"} {
+		if _, ok := m.Files[name]; !ok {
+			continue
+		}
+		file, err := root.Open(name)
+		if err != nil {
+			return "", invalid
+		}
+		var header [64]byte
+		_, err = io.ReadFull(file, header[:])
+		file.Close()
+		machine := uint16(62)
+		if platform == "linux-arm64" {
+			machine = 183
+		}
+		kind := binary.LittleEndian.Uint16(header[16:18])
+		if err != nil || !bytes.Equal(header[:7], []byte{127, 'E', 'L', 'F', 2, 1, 1}) || (kind != 2 && kind != 3) || binary.LittleEndian.Uint16(header[18:20]) != machine || binary.LittleEndian.Uint32(header[20:24]) != 1 {
 			return "", invalid
 		}
 	}

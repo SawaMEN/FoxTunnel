@@ -22,6 +22,7 @@ import tarfile
 import tempfile
 
 import release_verify as contract
+import unified_archive
 
 
 def regular(path):
@@ -69,7 +70,9 @@ def sync_bundle(path):
     # durable. This prevents a durable pointer to merely cached bundle files.
     for child in path.rglob('*'):
         if child.is_file():
-            with child.open('r+b') as stream:
+            # Linux refuses write opens while an executable is mapped (ETXTBSY).
+            # No writes remain here; fsync only needs a readable descriptor.
+            with child.open('rb' if os.name != 'nt' else 'r+b') as stream:
                 os.fsync(stream.fileno())
     for directory in sorted((p for p in path.rglob('*') if p.is_dir()), key=lambda p: len(p.parts), reverse=True):
         sync_directory(directory)
@@ -137,6 +140,10 @@ class Deployment:
         path = self.releases / identity
         private_dir_existing(path)
         record_path = path / 'installation.json'
+        if not record_path.exists():
+            # A Necko manifest rejects untracked installation files. Its
+            # deployment record lives beside (never inside) the bundle.
+            record_path = self.releases / (identity + '.json')
         regular(record_path)
         record = contract.read_json(record_path)
         if type(record.get('schema')) is not int or record.get('schema') != 1 or record.get('identity') != identity or not isinstance(record.get('files'), dict):
@@ -183,7 +190,11 @@ class Deployment:
             package.mkdir(mode=0o700)
             goos, arch = target()
             executable = 'foxtunnel.exe' if goos == 'windows' else 'foxtunnel'
-            if archive:
+            unified = archive and goos == 'linux' and arch in ('amd64', 'arm64') and source.name == (
+                f'foxtunnel_{version[1:]}_linux_{arch}.tar.gz')
+            if unified:
+                unified_archive.unpack(snapshot, package, version, commit, archive_name=source.name)
+            elif archive:
                 metadata = contract.embedded_metadata(snapshot)
                 # embedded_metadata includes the snapshot filename. Restore the
                 # reviewed release filename before validating the existing format.
@@ -216,7 +227,8 @@ class Deployment:
             files = {p.relative_to(package).as_posix(): digest(p) for p in package.rglob('*') if p.is_file()}
             record = {'schema': 1, 'identity': expected_sha, 'version': version, 'commit': commit,
                       'goos': goos, 'goarch': arch, 'build_flavor': info['build_flavor'], 'files': files}
-            atomic_json(package / 'installation.json', record)
+            if not unified:
+                atomic_json(package / 'installation.json', record)
             sync_bundle(package)
             destination = self.releases / expected_sha
             if destination.exists() or destination.is_symlink():
@@ -226,6 +238,8 @@ class Deployment:
             else:
                 os.rename(package, destination)
                 sync_directory(self.releases)
+            if unified:
+                atomic_json(self.releases / (expected_sha + '.json'), record)
             if state['active'] != expected_sha:
                 atomic_json(self.state_path, {'schema': 1, 'active': expected_sha, 'previous': state['active']})
             return record

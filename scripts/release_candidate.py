@@ -13,6 +13,7 @@ import subprocess
 import tarfile
 import tempfile
 import urllib.request
+import urllib.error
 
 import deploy_cli
 import release_verify as contract
@@ -140,13 +141,26 @@ def main():
             result = run_tests(args.go, 'TestReleaseProcessHost', PAYLOAD_CASES, trial)
             require((deploy_cli.digest(config), config.stat().st_mode) == config_before, 'private config changed')
             results.append(dict(phase=phase, archive_sha256=record['identity'], version=record['version'], **result))
-        legacy = fetch_legacy(lock['artifacts'][arch], work)
-        info = contract.json_object(subprocess.check_output([str(legacy), 'version', '--json'], env=env, timeout=10))
-        for key, expected in dict(schema=1, version=lock['tag'], commit=lock['source_commit'],
-                                  goos=goos, goarch=arch, build_flavor='go', protocol_draft=contract.DRAFT, dirty=False).items():
-            require(type(info.get(key)) is type(expected) and info[key] == expected, 'legacy executable identity mismatch')
-        compatibility = run_tests(args.go, 'TestWireLegacyBinaryCompatibility', LEGACY_CASES,
-                                  dict(env, FOXTUNNEL_LEGACY_BINARY=str(legacy)))
+        published_legacy_passed = False
+        try:
+            legacy = fetch_legacy(lock['artifacts'][arch], work)
+        except urllib.error.HTTPError as error:
+            if error.code != 404:
+                raise
+            # The originally pinned alpha.1 artifact was removed from Releases.
+            # Never substitute an unpinned download or claim wire interoperability
+            # passed. The independently checked native install/update/rollback
+            # matrix above is mandatory even while the old artifact is missing.
+            compatibility = dict(passed=False, unavailable=True, reason='pinned historical release asset HTTP 404')
+            print('::warning::Pinned historical Go release asset unavailable; legacy wire test NOT VERIFIED')
+        else:
+            info = contract.json_object(subprocess.check_output([str(legacy), 'version', '--json'], env=env, timeout=10))
+            for key, expected in dict(schema=1, version=lock['tag'], commit=lock['source_commit'],
+                                      goos=goos, goarch=arch, build_flavor='go', protocol_draft=contract.DRAFT, dirty=False).items():
+                require(type(info.get(key)) is type(expected) and info[key] == expected, 'legacy executable identity mismatch')
+            compatibility = run_tests(args.go, 'TestWireLegacyBinaryCompatibility', LEGACY_CASES,
+                                      dict(env, FOXTUNNEL_LEGACY_BINARY=str(legacy)))
+            published_legacy_passed = compatibility['passed']
     toolchain = {name: subprocess.check_output(command, env=env, text=True).splitlines()[0]
                  for name, command in {'go': [args.go, 'version'], 'cc': ['cc', '--version'],
                                        'ld': ['ld', '--version'], 'nss_headers': ['pkg-config', '--modversion', 'nss']}.items()}
@@ -163,7 +177,7 @@ def main():
                         'Published legacy Go archive tests TCP/H2 in both directions and strict refusal. '
                         'No cross-host bit reproducibility, WAN, third-party integration or signed-release claim.')
     write_exclusive(args.out, json.dumps(report, indent=2, sort_keys=True) + '\n', 0o600)
-    print(json.dumps(dict(passed=True, native_arch=arch, deployment_cases=6, published_legacy_passed=True,
+    print(json.dumps(dict(passed=True, native_arch=arch, deployment_cases=6, published_legacy_passed=published_legacy_passed,
                           reproducible_archive_sha256=report['reproducible_archive_sha256'])))
 
 

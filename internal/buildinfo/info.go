@@ -56,7 +56,7 @@ func Current() Info {
 		defaultBackend = "nss"
 	}
 	engines := []string{"legacy"}
-	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
+	if runtime.GOOS == "linux" && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64") {
 		engines = append(engines, "necko")
 	}
 	if NSSAvailable {

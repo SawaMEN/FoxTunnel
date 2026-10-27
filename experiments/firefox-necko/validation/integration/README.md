@@ -1,5 +1,9 @@
 # Main CLI and SDK Necko integration
 
+This is the historical TCP integration baseline. The current xfd stage-1
+streaming qualification is recorded in [acceptance.json](../streaming/acceptance.json)
+and [INTEGRATION.md](../../INTEGRATION.md#stage-1-final-native-qualification).
+
 This record covers the Linux amd64 `necko` engine in the main FoxTunnel CLI and
 Go SDK, on branch `firefox`. The qualified code is
 `12414b0ae84f0afbfae43db3ae2a6584bcdb2abd`; production implementation entered in

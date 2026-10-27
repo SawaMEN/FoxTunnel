@@ -1,0 +1,185 @@
+{
+  "schema": 1,
+  "status": "qualified",
+  "stage": 3,
+  "stage_checks_complete": 4,
+  "stage_checks_total": 4,
+  "overall_stages_complete": 3,
+  "overall_stages_total": 6,
+  "qualified_code_commit": "7d4eee64c0acd83daefdaa4c3bd8ab87558bb247",
+  "source_build_commit": "bee2e2d0b8aef8427804472bdd10e88f848ea7e6",
+  "source_build_run": 40234429164,
+  "runtime_run": 40234867279,
+  "runtime_job": 121294223750,
+  "mandatory_native_group_passes": {
+    "TestIntegratedNecko": 3,
+    "TestGeckoManagedBond": 3,
+    "TestGeckoManagedHTTP3": 3,
+    "TestGeckoManagedHTTP3NoTCPFallback": 3,
+    "TestGeckoManagedHTTP3Trust": 3,
+    "TestGeckoManagedHTTPInterruptedBody": 3,
+    "TestGeckoManagedHTTP": 3,
+    "TestGeckoManagedHTTPNoReplay": 3,
+    "TestGeckoManagedHTTPHeadersOnly": 3,
+    "TestGeckoManagedUDPMultiNode": 3,
+    "TestGeckoManagedIPC": 3,
+    "TestGeckoManagedUDPStream": 3,
+    "TestGeckoManagedXHTTP": 3
+  },
+  "mandatory_native_skips": 0,
+  "optional_research_groups_skipped": [
+    "TestGeckoManagedHTTPConnect",
+    "TestGeckoManagedHTTPGetAndTrust",
+    "TestGeckoManagedHTTPAlternateOriginAndOutage",
+    "TestGeckoManagedHTTPFixedUpload",
+    "TestGeckoManagedHTTPInteractiveDownload"
+  ],
+  "client_js_sha256": "4df48c2b4ec2e4c665ea8e781c620ddd47e80037f767d3a2525719d62d197270",
+  "source_lock_sha256": "a0722357a7aac53e6453294d8b424ffde2beaa5c008ad6bbbc6612383154e308",
+  "managed_modes_passed": 12,
+  "managed_workload_seconds_per_mode": 60,
+  "managed_settle_seconds": 6,
+  "managed_measures": {
+    "bond-lanes": {
+      "rounds": 2088,
+      "native_protocol": 2,
+      "tcp_origin_accepts": 4,
+      "rss_delta_kib": 130952,
+      "rss_max_sampled_kib": 367044,
+      "fd_end": 46,
+      "idle_fds": 38
+    },
+    "h2-post": {
+      "rounds": 932,
+      "native_protocol": 2,
+      "tcp_origin_accepts": 4,
+      "rss_delta_kib": -33384,
+      "rss_max_sampled_kib": 268772,
+      "fd_end": 45,
+      "idle_fds": 41
+    },
+    "h3-bond-lanes": {
+      "rounds": 1668,
+      "native_protocol": 3,
+      "tcp_origin_accepts": 0,
+      "rss_delta_kib": -37796,
+      "rss_max_sampled_kib": 387788,
+      "fd_end": 47,
+      "idle_fds": 37
+    },
+    "h3-post": {
+      "rounds": 1768,
+      "native_protocol": 3,
+      "tcp_origin_accepts": 0,
+      "rss_delta_kib": -32268,
+      "rss_max_sampled_kib": 293404,
+      "fd_end": 45,
+      "idle_fds": 36
+    },
+    "h3-udp-multi-node": {
+      "rounds": 2698,
+      "native_protocol": 3,
+      "tcp_origin_accepts": 0,
+      "rss_delta_kib": 5780,
+      "rss_max_sampled_kib": 153116,
+      "fd_end": 46,
+      "idle_fds": 39
+    },
+    "h3-udp-v1": {
+      "rounds": 2435,
+      "native_protocol": 3,
+      "tcp_origin_accepts": 0,
+      "rss_delta_kib": 11844,
+      "rss_max_sampled_kib": 157308,
+      "fd_end": 45,
+      "idle_fds": 44
+    },
+    "h3-udp-v2": {
+      "rounds": 2692,
+      "native_protocol": 3,
+      "tcp_origin_accepts": 0,
+      "rss_delta_kib": 6956,
+      "rss_max_sampled_kib": 145760,
+      "fd_end": 45,
+      "idle_fds": 36
+    },
+    "udp-multi-node": {
+      "rounds": 2743,
+      "native_protocol": 2,
+      "tcp_origin_accepts": 2,
+      "rss_delta_kib": 6148,
+      "rss_max_sampled_kib": 131180,
+      "fd_end": 46,
+      "idle_fds": 37
+    },
+    "udp-v2": {
+      "rounds": 2725,
+      "native_protocol": 2,
+      "tcp_origin_accepts": 1,
+      "rss_delta_kib": 7728,
+      "rss_max_sampled_kib": 143116,
+      "fd_end": 45,
+      "idle_fds": 37
+    },
+    "xhttp-packet-up": {
+      "rounds": 968,
+      "native_protocol": 2,
+      "tcp_origin_accepts": 1,
+      "rss_delta_kib": -38588,
+      "rss_max_sampled_kib": 356952,
+      "fd_end": 46,
+      "idle_fds": 39
+    },
+    "xhttp-stream-one": {
+      "rounds": 2000,
+      "native_protocol": 2,
+      "tcp_origin_accepts": 1,
+      "rss_delta_kib": 37868,
+      "rss_max_sampled_kib": 210740,
+      "fd_end": 46,
+      "idle_fds": 37
+    },
+    "xhttp-stream-up": {
+      "rounds": 1944,
+      "native_protocol": 2,
+      "tcp_origin_accepts": 1,
+      "rss_delta_kib": 46892,
+      "rss_max_sampled_kib": 217856,
+      "fd_end": 47,
+      "idle_fds": 38
+    }
+  },
+  "connect_soak_seconds_per_protocol": 300,
+  "paired_control_seconds_per_protocol_and_variant": 60,
+  "scope": [
+    "Linux amd64; native Necko H3 GET/POST, UDP v1/v2, Multi-Node and Bond; H2 regression matrix",
+    "Helper-only loopback resource measurements; sampled peaks retained",
+    "No WAN, whole-client memory, statistical speedup or DPI equivalence claim",
+    "ARM64, remaining identity/profile settings and unified release archives remain stages 4-6"
+  ],
+  "retained_files_sha256": {
+    "artifacts.json": "09ba5411702b2e2a50e1d753b1481df8253ff78eb9768df33d5394d4cd62541c",
+    "connect/fx-resource-report.json": "e6416dd29dd90f8a9f75c477e261b10d5d5228facaf0d829f203e5d2682f0f3e",
+    "connect/h2-connect-soak.json": "83b8265d3ee73b04b5e040f6b51c1ca6d45271d257922bbe9abaea66660dd082",
+    "connect/h3-connect-soak.json": "693e7adeed7c3951906f9474e091ec40e40623b3c224cd9896f39aed5663c13a",
+    "connect/paired-fx-report.json": "72561a26c922aeea92ee6e33d77e390dedaffb609245454ff2411e0ab5e12355",
+    "managed/bond-lanes-managed-soak.json": "0a925b2dfde9a04c5d27fad01fdb0b7f88fd76662403bb5d1e20cf4bed2fa440",
+    "managed/h2-post-managed-soak.json": "0a7095aa3a4d73075229bf5debf6ca44d173aa74955b9248fec8790dfea9a865",
+    "managed/h3-bond-lanes-managed-soak.json": "23359614a8c99f1dbbea75314afedc00691d454c1fe66292ba975b4be9c9887f",
+    "managed/h3-post-managed-soak.json": "b81939a3dc08a86e2495b4183e6d99ae16913193b0077436dbbd53e065b222c6",
+    "managed/h3-udp-multi-node-managed-soak.json": "7f74c44d2259598c650a0bee7fb071298868c2b8b9efb6240146c07f5a2c3810",
+    "managed/h3-udp-v1-managed-soak.json": "e114b5fc23291687c68dce568d035856c8b4138ea584697a64b510423837ed10",
+    "managed/h3-udp-v2-managed-soak.json": "c6a32ec4174bc4f13df6a4821a565cb537979a811cc5ac6acfc165d8972b678b",
+    "managed/udp-multi-node-managed-soak.json": "2df9d3acf843e39956892d407b9c629bfe7ab319a1fdafcaa9a52d196021c340",
+    "managed/udp-v2-managed-soak.json": "4edc34c2c0724c01f606a0a4f32aa0a790f63650d09cbba429c52e7ef93072d0",
+    "managed/xhttp-packet-up-managed-soak.json": "0bc234648b2f713b2e70be7d27689d2e5ef9187cbd86eee8247dc2a3182c3f43",
+    "managed/xhttp-stream-one-managed-soak.json": "fd70f6c95cb6aeae51212d17a5dc605126c0c959b2db9fe7047ccbbbd4763cf5",
+    "managed/xhttp-stream-up-managed-soak.json": "5ed36d0b7715b82e201fe50fda8cc2f4f55ff7f556644a14f4ed46c498fed43f",
+    "native-gates.txt": "6341ea0ae04296b252709b69df4e85349e993c40f01e9d6bb7e86969eb0ab80c",
+    "paired/necko-operations-paired-baseline/h2-connect-soak.json": "dacd00cff12f28c9a5c3c272c1890ba5f2ea882147beb90edfa256a1d13cd475",
+    "paired/necko-operations-paired-baseline/h3-connect-soak.json": "bbaf1dc778b1a7ad365f9364d5edf1bf5c07c75ece8344a4284e32415ad8936b",
+    "paired/necko-operations-paired-current/h2-connect-soak.json": "9bfd3c6ff63514a469309d2fdc6f3e871b2879a14fc03999e8d4556546a4b30d",
+    "paired/necko-operations-paired-current/h3-connect-soak.json": "67b4939037dce725fbed90d98f5358aa132abebbf39c5881e847e03e37db9f9a",
+    "wire-summary.json": "0e04033b6432ad47b0375eaa1b306803cf2b4b62307d5eea16edb4ba8faec731"
+  }
+}

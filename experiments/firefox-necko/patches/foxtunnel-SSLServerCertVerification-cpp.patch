@@ -1,0 +1,30 @@
+--- a/security/manager/ssl/SSLServerCertVerification.cpp
++++ b/security/manager/ssl/SSLServerCertVerification.cpp
+@@ -1011,7 +1011,8 @@
+ 
+   const nsCString echPublicName(channelPreInfo.echPublicName);
+   const nsACString& hostname =
+-      verifyToEchPublicName ? echPublicName : socketInfo->GetHostName();
++      verifyToEchPublicName && !socketInfo->HasFoxTunnelPolicy()
++          ? echPublicName : socketInfo->GetHostName();
+   socketInfo->SetCertVerificationWaiting();
+   rv = AuthCertificateHookInternal(socketInfo, static_cast<const void*>(fd),
+                                    hostname, std::move(peerCertsBytes),
+@@ -1146,6 +1147,17 @@
+       mCertificateTransparencyStatus);
+ 
+   if (mSucceeded) {
++    nsTArray<uint8_t> certBytes(mBuiltChain.ElementAt(0).Clone());
++    nsCOMPtr<nsIX509Cert> leaf(new nsNSSCertificate(std::move(certBytes)));
++    if (!mSocketControl->CheckFoxTunnelPin(leaf)) {
++      mSucceeded = false;
++      mFinalError = mozilla::pkix::MOZILLA_PKIX_ERROR_KEY_PINNING_FAILURE;
++      // A pin failure is terminal and cannot be certificate-overridden.
++      mOverridableErrorCategory =
++          nsITransportSecurityInfo::OverridableErrorCategory::ERROR_UNSET;
++    }
++  }
++  if (mSucceeded) {
+     MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
+             ("SSLServerCertVerificationResult::Run setting NEW cert"));
+     nsTArray<uint8_t> certBytes(mBuiltChain.ElementAt(0).Clone());

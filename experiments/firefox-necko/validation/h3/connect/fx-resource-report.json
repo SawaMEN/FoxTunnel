@@ -1,0 +1,90 @@
+{
+  "comparison_validity": "uncontrolled-between-runs; do not infer speedup",
+  "current": {
+    "h2-connect": {
+      "app_mib_per_second": 9.267,
+      "cpu_seconds": 183.17,
+      "cpu_seconds_per_gib": 67.47,
+      "duration_seconds": 300,
+      "fd_max_sampled": 45,
+      "gc_collections": 57,
+      "gc_ms": 1469,
+      "parallel_streams": 8,
+      "payload_bytes_per_round": 131072,
+      "rounds": 11120,
+      "rss_delta_kib": 30152,
+      "rss_end_kib": 151896,
+      "rss_max_sampled_kib": 310980,
+      "rss_start_kib": 121744,
+      "transport": "h2-connect",
+      "wire_app_gib": 2.7148
+    },
+    "h3-connect": {
+      "app_mib_per_second": 8.26,
+      "cpu_seconds": 329.73,
+      "cpu_seconds_per_gib": 136.256,
+      "duration_seconds": 300,
+      "fd_max_sampled": 46,
+      "gc_collections": 58,
+      "gc_ms": 1133,
+      "parallel_streams": 8,
+      "payload_bytes_per_round": 131072,
+      "rounds": 9912,
+      "rss_delta_kib": 110132,
+      "rss_end_kib": 232968,
+      "rss_max_sampled_kib": 290472,
+      "rss_start_kib": 122836,
+      "transport": "h3-connect",
+      "wire_app_gib": 2.4199
+    }
+  },
+  "historical_reference": {
+    "h2-connect": {
+      "app_mib_per_second": 11.987,
+      "cpu_seconds": 136.62,
+      "cpu_seconds_per_gib": 38.904,
+      "duration_seconds": 300,
+      "fd_max_sampled": 46,
+      "gc_collections": 58,
+      "gc_ms": 1014,
+      "parallel_streams": 8,
+      "payload_bytes_per_round": 131072,
+      "rounds": 14384,
+      "rss_delta_kib": 78544,
+      "rss_end_kib": 200088,
+      "rss_max_sampled_kib": 356172,
+      "rss_start_kib": 121544,
+      "transport": "h2-connect",
+      "wire_app_gib": 3.5117
+    },
+    "h3-connect": {
+      "app_mib_per_second": 11.213,
+      "cpu_seconds": 244.67,
+      "cpu_seconds_per_gib": 74.477,
+      "duration_seconds": 300,
+      "fd_max_sampled": 45,
+      "gc_collections": 56,
+      "gc_ms": 830,
+      "parallel_streams": 8,
+      "payload_bytes_per_round": 131072,
+      "rounds": 13456,
+      "rss_delta_kib": 148236,
+      "rss_end_kib": 279276,
+      "rss_max_sampled_kib": 361492,
+      "rss_start_kib": 131040,
+      "transport": "h3-connect",
+      "wire_app_gib": 3.2852
+    }
+  },
+  "kind": "fx-necko-resource-report",
+  "limits": [
+    "Process RSS and CPU cover xpcshell helper only, not complete server/client.",
+    "Wire application bytes include upload and download; no WAN throughput conclusion.",
+    "Historical reference was measured on a different CI execution; CPU and RSS vary by host and runtime.",
+    "These samples are not proof of lower allocations; inspect heap profiles before claims.",
+    "Sampled peak RSS can miss true instantaneous peak.",
+    "Sequential paired runs share host and runtime but may suffer drift; repeat before claiming speedups."
+  ],
+  "paired_baseline": null,
+  "schema": 1
+}

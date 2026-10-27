@@ -1,6 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
+import struct
 import tempfile
 import unittest
 
@@ -8,18 +9,21 @@ import package_necko as bundle
 
 
 class PackageTests(unittest.TestCase):
-    def fixture(self, root):
+    def fixture(self, root, target='linux-amd64'):
+        binary = bytearray(64)
+        binary[:7] = b'\x7fELF\x02\x01\x01'
+        struct.pack_into('<HHI', binary, 16, 3, 183 if target == 'linux-arm64' else 62, 1)
         runtime = root / 'runtime'
         runtime.mkdir()
         hashes = {}
         for name in ('xpcshell', 'libxul.so', 'libnss3.so', 'platform.ini'):
-            (runtime / name).write_bytes(name.encode())
+            (runtime / name).write_bytes(name.encode() if name == 'platform.ini' else binary)
             hashes[name] = bundle.digest(runtime / name)
         provenance = root / 'provenance.json'
         provenance.write_text(json.dumps(dict(status='built-not-interop-tested',
-            source=json.loads((bundle.ROOT / 'experiments/firefox-necko/gecko.lock.json').read_text()), runtime=hashes)))
+            target_platform=target, source=json.loads((bundle.ROOT / 'experiments/firefox-necko/gecko.lock.json').read_text()), runtime=hashes)))
         launcher = root / 'launcher'
-        launcher.write_bytes(b'fixture launcher')
+        launcher.write_bytes(binary)
         return runtime, provenance, launcher
 
     def test_package_digests_and_no_overwrite(self):
@@ -35,6 +39,35 @@ class PackageTests(unittest.TestCase):
             bundle.archive(out, root / 'a.tar.gz')
             bundle.archive(out, root / 'b.tar.gz')
             self.assertEqual(bundle.digest(root / 'a.tar.gz'), bundle.digest(root / 'b.tar.gz'))
+
+    def test_arm64_bundle_and_mixed_architecture_rejection(self):
+        for fault in (None, 'xpcshell', 'libxul.so', 'libnss3.so', 'launcher', 'cli', 'label'):
+            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                runtime, provenance, launcher = self.fixture(root, 'linux-arm64')
+                cli = root / 'cli'
+                cli.write_bytes(launcher.read_bytes())
+                if fault == 'label':
+                    record = json.loads(provenance.read_text())
+                    record['target_platform'] = 'linux-amd64'
+                    provenance.write_text(json.dumps(record))
+                elif fault:
+                    path = launcher if fault == 'launcher' else cli if fault == 'cli' else runtime / fault
+                    binary = bytearray(path.read_bytes())
+                    struct.pack_into('<H', binary, 18, 62)
+                    path.write_bytes(binary)
+                    # Rehashing the mismatched runtime must not make it acceptable.
+                    if fault in ('xpcshell', 'libxul.so', 'libnss3.so'):
+                        record = json.loads(provenance.read_text())
+                        record['runtime'][fault] = bundle.digest(path)
+                        provenance.write_text(json.dumps(record))
+                if fault:
+                    with self.assertRaisesRegex(ValueError, 'ELF architecture'):
+                        bundle.package(runtime, provenance, launcher, root / 'bundle', cli)
+                    self.assertFalse((root / 'bundle').exists())
+                else:
+                    manifest = bundle.package(runtime, provenance, launcher, root / 'bundle', cli)
+                    self.assertEqual(manifest['platform'], 'linux-arm64')
 
     def test_recursive_output_paths_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:

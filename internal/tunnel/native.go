@@ -288,6 +288,9 @@ func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, se
 	if err != nil {
 		return nil, err
 	}
+	return newXHTTPWithOuter(mode, config, auth, settings, outer), nil
+}
+func newXHTTPWithOuter(mode string, config *tls.Config, auth string, settings xhttp.Settings, outer tlsTransport) tlsTransport {
 	inner := &http2.Transport{TLSClientConfig: config.Clone(), DisableCompression: true, IdleConnTimeout: 90 * time.Second}
 	t := &xhttpTransport{Transport: inner, outer: outer, carriers: make(map[net.Conn]bool)}
 	inner.DialTLSContext = func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
@@ -308,7 +311,7 @@ func newXHTTPTransport(mode, backend string, config *tls.Config, auth string, se
 		t.mu.Unlock()
 		return &trackedCarrier{Conn: conn, owner: t}, nil
 	}
-	return t, nil
+	return t
 }
 
 type xhttpTransport struct {

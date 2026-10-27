@@ -163,6 +163,16 @@ func (c *Client) exchangeUDP(ctx context.Context, wire []byte) (reply []byte, er
 		}
 		c.status.FinishOperation(ticket, reason)
 	}()
+	if c.managed != nil && !c.fullManagedHTTP() {
+		reply, err = c.exchangeManagedUDP(ctx, wire)
+		if err != nil || len(reply) == 0 {
+			return reply, err
+		}
+		if _, err := udpproto.Parse(reply); err != nil {
+			return nil, err
+		}
+		return reply, nil
+	}
 	u := *c.ServerURL
 	u.Path = udpPath
 	u.RawPath = ""

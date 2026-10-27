@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -119,6 +120,22 @@ class DeploymentContracts(unittest.TestCase):
 
 
 class LauncherLifecycle(unittest.TestCase):
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux executable write exclusion')
+    def test_sync_bundle_while_executable_is_running(self):
+        with tempfile.TemporaryDirectory() as temp:
+            bundle = Path(temp)
+            executable = bundle / 'sleep'
+            shutil.copy2('/bin/sleep', executable)
+            child = subprocess.Popen([str(executable), '30'])
+            try:
+                with self.assertRaises(OSError) as error:
+                    executable.open('r+b')
+                self.assertEqual(error.exception.errno, 26)
+                deploy.sync_bundle(bundle)
+            finally:
+                child.terminate()
+                child.wait(timeout=5)
+
     def test_windows_launcher_waits_for_child_and_preserves_exit_status(self):
         # A real child publishes its final marker shortly before exiting. The
         # launcher must remain waitable until both events have happened.

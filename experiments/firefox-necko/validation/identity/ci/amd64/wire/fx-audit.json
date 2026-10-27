@@ -1,0 +1,133 @@
+{
+  "kind": "fx-firefox-regression-audit",
+  "limitations": [
+    "Firefox-to-Firefox variation is inconclusive, not proof of similarity.",
+    "Three or more lab observations cannot establish distributional equivalence.",
+    "An isolated H2 frame or HPACK mismatch is recorded as sporadic; at least two-thirds repeated non-control mismatches are required to block CI.",
+    "No claims about ordinary browsing, traffic timing, payload shapes or DPI."
+  ],
+  "results": {
+    "h2-connect": {
+      "candidate_repetitions": 9,
+      "control_repetitions": 9,
+      "control_variable_fields": [
+        "connection_1.h2_frames",
+        "connection_1.hpack_blocks",
+        "connection_2.hpack_blocks"
+      ],
+      "inconclusive_fields": [],
+      "mismatch_frequencies": [
+        {
+          "candidate": 0,
+          "candidate_total": 9,
+          "field": "connection_1.h2_frames",
+          "firefox_self": 3,
+          "firefox_self_total": 9
+        },
+        {
+          "candidate": 0,
+          "candidate_total": 9,
+          "field": "connection_1.hpack_blocks",
+          "firefox_self": 3,
+          "firefox_self_total": 9
+        }
+      ],
+      "persistent_mismatch_threshold": 6,
+      "persistent_under_variable_control": [],
+      "sporadic_fields": [],
+      "unexpected_fields": []
+    },
+    "h3-connect": {
+      "candidate_repetitions": 9,
+      "control_repetitions": 9,
+      "control_variable_fields": [
+        "connection_1.hello.extensions",
+        "connection_1.hello.ja3",
+        "connection_1.hello.ja3_md5",
+        "connection_2.hello.extensions",
+        "connection_2.hello.ja3",
+        "connection_2.hello.ja3_md5"
+      ],
+      "inconclusive_fields": [
+        "connection_1.hello.extensions",
+        "connection_1.hello.ja3",
+        "connection_1.hello.ja3_md5",
+        "connection_2.hello.extensions",
+        "connection_2.hello.ja3",
+        "connection_2.hello.ja3_md5"
+      ],
+      "mismatch_frequencies": [
+        {
+          "candidate": 9,
+          "candidate_total": 9,
+          "field": "connection_1.hello.extensions",
+          "firefox_self": 9,
+          "firefox_self_total": 9
+        },
+        {
+          "candidate": 9,
+          "candidate_total": 9,
+          "field": "connection_1.hello.ja3",
+          "firefox_self": 9,
+          "firefox_self_total": 9
+        },
+        {
+          "candidate": 9,
+          "candidate_total": 9,
+          "field": "connection_1.hello.ja3_md5",
+          "firefox_self": 9,
+          "firefox_self_total": 9
+        },
+        {
+          "candidate": 9,
+          "candidate_total": 9,
+          "field": "connection_2.hello.extensions",
+          "firefox_self": 9,
+          "firefox_self_total": 9
+        },
+        {
+          "candidate": 9,
+          "candidate_total": 9,
+          "field": "connection_2.hello.ja3",
+          "firefox_self": 9,
+          "firefox_self_total": 9
+        },
+        {
+          "candidate": 9,
+          "candidate_total": 9,
+          "field": "connection_2.hello.ja3_md5",
+          "firefox_self": 9,
+          "firefox_self_total": 9
+        }
+      ],
+      "persistent_mismatch_threshold": 6,
+      "persistent_under_variable_control": [],
+      "sporadic_fields": [],
+      "unexpected_fields": []
+    }
+  },
+  "runtime_sha256": {
+    "firefox": "1e9f7cae7e29660963b900e1d6e9a983823b212ba612a3c4f93ae8d330426bbb",
+    "libnss3.so": "769e56c33083d6ef5fcbf5d56d704a7412a7b039ca5f65a47f15269f06f70ec5",
+    "libxul.so": "efb995ae53ddf086e4d7ef886620c27fc66c3b9e3ee78f022d1361af48dadf92",
+    "platform.ini": "a424711a316fe4fb2f22b619abc7b09a4bdf21d51e17527e60eb45d312dc0960",
+    "xpcshell": "17d176ab1416739645f353add27ac1a39201353805ac1f5a4e25a8614438d52b"
+  },
+  "schema": 1,
+  "scope": "Raw CONNECT on one pinned Gecko runtime; not ordinary Firefox navigation",
+  "source_sha256": {
+    "client.js": "637e8bf2d5b72790a150e4064f603ef8d78b214964287e83d667e569268de868",
+    "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
+    "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+    "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
+    "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+    "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
+    "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+    "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
+    "gecko.lock.json": "0e50df6a76eb0d490415f5fbda1a0d6faab2f06ed02c4e233098a60919feab43"
+  },
+  "sporadic_differences": 0,
+  "status": "inconclusive",
+  "unexpected_differences": 0,
+  "variable_differences": 6
+}

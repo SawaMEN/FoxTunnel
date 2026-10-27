@@ -1,0 +1,173 @@
+--- a/security/manager/ssl/CommonSocketControl.cpp
++++ b/security/manager/ssl/CommonSocketControl.cpp
+@@ -6,6 +6,18 @@
+ #include "CommonSocketControl.h"
+ 
+ #include "PublicKeyPinningService.h"
++#include "mozilla/Base64.h"
++#include "mozilla/ClearOnShutdown.h"
++#include "mozilla/StaticMutex.h"
++#include "mozilla/StaticPtr.h"
++#include "nsHashKeys.h"
++#include "nsReadableUtils.h"
++#include "nsThreadUtils.h"
++#include "nsTHashMap.h"
++#include "nsTHashSet.h"
++#include "nsXULAppAPI.h"
++#include "prenv.h"
++#include "prnetdb.h"
+ #include "SharedCertVerifier.h"
+ #include "mozilla/ErrorResult.h"
+ #include "mozilla/StaticPrefs_network.h"
+@@ -22,6 +34,112 @@
+ using namespace mozilla;
+ 
+ extern LazyLogModule gPIPNSSLog;
++
++namespace {
++struct FoxTunnelPolicy {
++  nsCString mServerName;
++  nsCString mPin;
++  nsCString mTLSProfile;
++};
++StaticMutex sFoxTunnelMutex;
++StaticAutoPtr<nsTHashMap<nsCStringHashKey, FoxTunnelPolicy>> sFoxTunnelPolicies;
++StaticAutoPtr<nsTHashSet<nsCStringHashKey>> sFoxTunnelSeenRoutes;
++bool sAnySocketCreated = false;
++nsCString FoxTunnelRoute(const nsACString& aHost, int32_t aPort) {
++  nsCString key(aHost);
++  ToLowerCase(key);
++  key.Append(':');
++  key.AppendInt(aPort);
++  return key;
++}
++bool ValidFoxTunnelName(const nsACString& aName) {
++  if (aName.IsEmpty()) { return true; }
++  if (aName.Length() > 253) { return false; }
++  PRNetAddr address;
++  if (PR_StringToNetAddr(PromiseFlatCString(aName).get(), &address) == PR_SUCCESS) {
++    return false;
++  }
++  uint32_t label = 0;
++  char previous = '.';
++  for (uint32_t i = 0; i < aName.Length(); ++i) {
++    const char c = aName.CharAt(i);
++    if (c == '.') {
++      if (!label || previous == '-') { return false; }
++      label = 0;
++    } else {
++      if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') ||
++          (!label && c == '-') || ++label > 63) { return false; }
++    }
++    previous = c;
++  }
++  return label && previous != '-';
++}
++}  // namespace
++
++nsresult CommonSocketControl::RegisterFoxTunnelPolicy(
++    const nsACString& aRouteHost, int32_t aRoutePort,
++    const nsACString& aServerName, const nsACString& aPinSha256,
++    const nsACString& aTlsProfile) {
++  NS_ENSURE_TRUE(NS_IsMainThread() && XRE_IsParentProcess() &&
++                     PR_GetEnv("FOXTUNNEL_FIREFOX_ROOT"),
++                 NS_ERROR_NOT_AVAILABLE);
++  NS_ENSURE_TRUE(!aRouteHost.IsEmpty() && aRouteHost.Length() <= 253 &&
++                     aRoutePort > 0 && aRoutePort <= 65535 &&
++                     ValidFoxTunnelName(aServerName), NS_ERROR_INVALID_ARG);
++  NS_ENSURE_TRUE(aTlsProfile.IsEmpty() || aTlsProfile.EqualsLiteral("firefox-158"),
++                 NS_ERROR_INVALID_ARG);
++  if (!aPinSha256.IsEmpty()) {
++    nsAutoCString decoded;
++    NS_ENSURE_TRUE(aPinSha256.Length() == 51 &&
++                       StringBeginsWith(aPinSha256, "sha256/"_ns),
++                   NS_ERROR_INVALID_ARG);
++    nsresult rv = Base64Decode(Substring(aPinSha256, 7), decoded);
++    NS_ENSURE_TRUE(NS_SUCCEEDED(rv) && decoded.Length() == 32,
++                   NS_ERROR_INVALID_ARG);
++    nsAutoCString encoded;
++    rv = Base64Encode(decoded, encoded);
++    NS_ENSURE_TRUE(NS_SUCCEEDED(rv) &&
++                       Substring(aPinSha256, 7).Equals(encoded),
++                   NS_ERROR_INVALID_ARG);
++  }
++  NS_ENSURE_TRUE(!aServerName.IsEmpty() || !aPinSha256.IsEmpty() ||
++                     !aTlsProfile.IsEmpty(), NS_ERROR_INVALID_ARG);
++  StaticMutexAutoLock lock(sFoxTunnelMutex);
++  if (!sFoxTunnelPolicies) {
++    // No prior connection may be reused under a newly installed policy.
++    NS_ENSURE_TRUE(!sAnySocketCreated, NS_ERROR_ALREADY_INITIALIZED);
++    sFoxTunnelPolicies = new nsTHashMap<nsCStringHashKey, FoxTunnelPolicy>();
++    sFoxTunnelSeenRoutes = new nsTHashSet<nsCStringHashKey>();
++    ClearOnShutdown(&sFoxTunnelPolicies);
++    ClearOnShutdown(&sFoxTunnelSeenRoutes);
++  }
++  nsCString key = FoxTunnelRoute(aRouteHost, aRoutePort);
++  if (auto entry = sFoxTunnelPolicies->Lookup(key)) {
++    const auto& p = entry.Data();
++    return p.mServerName.Equals(aServerName) && p.mPin.Equals(aPinSha256) &&
++                   p.mTLSProfile.Equals(aTlsProfile)
++               ? NS_OK : NS_ERROR_ALREADY_INITIALIZED;
++  }
++  NS_ENSURE_TRUE(!sFoxTunnelSeenRoutes->Contains(key) &&
++                     sFoxTunnelPolicies->Count() < 4096 &&
++                     sFoxTunnelSeenRoutes->Count() < 16384,
++                 NS_ERROR_ALREADY_INITIALIZED);
++  sFoxTunnelPolicies->InsertOrUpdate(key, FoxTunnelPolicy{
++      nsCString(aServerName), nsCString(aPinSha256), nsCString(aTlsProfile)});
++  return NS_OK;
++}
++
++bool CommonSocketControl::CheckFoxTunnelPin(nsIX509Cert* aCert) {
++  COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
++  if (mFoxTunnelPin.IsEmpty()) { return true; }
++  nsAutoCString digest;
++  if (!aCert || NS_FAILED(aCert->GetSha256SubjectPublicKeyInfoDigest(digest))) {
++    return false;
++  }
++  nsAutoCString expected("sha256/");
++  expected.Append(digest);
++  return expected.Equals(mFoxTunnelPin);
++}
+ 
+ NS_IMPL_ISUPPORTS(CommonSocketControl, nsITLSSocketControl)
+ 
+@@ -48,6 +166,21 @@
+ #if defined(MOZ_DIAGNOSTIC_ASSERT_ENABLED)
+   mOwningThread = PR_GetCurrentThread();
+ #endif
++  StaticMutexAutoLock lock(sFoxTunnelMutex);
++  sAnySocketCreated = true;
++  if (sFoxTunnelPolicies) {
++    nsCString key = FoxTunnelRoute(aHostName, aPort);
++    if (sFoxTunnelSeenRoutes->Count() < 16384) {
++      sFoxTunnelSeenRoutes->Insert(key);
++    }
++    if (auto entry = sFoxTunnelPolicies->Lookup(key)) {
++      const auto& policy = entry.Data();
++      mFoxTunnelPolicy = true;
++      if (!policy.mServerName.IsEmpty()) { mHostName = policy.mServerName; }
++      mFoxTunnelPin = policy.mPin;
++      mFoxTunnelTLSProfile = policy.mTLSProfile;
++    }
++  }
+ }
+ 
+ void CommonSocketControl::SetStatusErrorBits(
+@@ -170,6 +303,16 @@
+                                         int32_t port, bool* _retval) {
+   COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
+   *_retval = false;
++
++  // Never coalesce a socket into or out of a registered route policy.
++  if (mFoxTunnelPolicy) { return NS_OK; }
++  {
++    StaticMutexAutoLock lock(sFoxTunnelMutex);
++    if (sFoxTunnelPolicies &&
++        sFoxTunnelPolicies->Contains(FoxTunnelRoute(hostname, port))) {
++      return NS_OK;
++    }
++  }
+ 
+   // Different ports may not be joined together
+   if (port != GetPort()) return NS_OK;

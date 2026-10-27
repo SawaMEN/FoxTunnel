@@ -1,9 +1,12 @@
 package firefox
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 	"io"
 	"net"
 	"net/http"
@@ -19,9 +22,32 @@ func TestGeckoManagedIPC(t *testing.T) {
 	if bundle == "" {
 		t.Skip("verified integration bundle required")
 	}
-	var requests atomic.Int32
-	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true}
-	cfg := nativeProxy(t, "h2-connect", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests.Add(1); server.ServeHTTP(w, r) }))
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) { testGeckoManagedIPC(t, bundle, mode) })
+	}
+}
+
+func testGeckoManagedIPC(t *testing.T, bundle, mode string) {
+	t.Helper()
+	var requests, nativePOST, nativeProtocol, nativeAuth atomic.Int32
+	expectedProtocol := 2
+	if mode == "h3-connect" {
+		expectedProtocol = 3
+	}
+	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: true}
+	cfg := nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		if r.URL.Path == "/.well-known/foxtunnel-udp-v1" {
+			nativePOST.Add(1)
+			if r.ProtoMajor == expectedProtocol {
+				nativeProtocol.Add(1)
+			}
+			if r.Header.Get("Proxy-Authorization") != "" {
+				nativeAuth.Add(1)
+			}
+		}
+		server.ServeHTTP(w, r)
+	}))
 	m, err := NewManaged(bundle, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -90,6 +116,44 @@ func TestGeckoManagedIPC(t *testing.T) {
 	if err != nil || string(got) != "binary\x00\xff" {
 		t.Fatal("authenticated IPC transfer failed", err)
 	}
+	// Exercise the real native Necko HTTP POST path, not an in-process
+	// Go RoundTripper. An authenticated loopback IPC command must reach
+	// the existing UDP-v1 endpoint over verified Mozilla HTTP/2.
+	datagramTarget, e := net.ListenPacket("udp4", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer datagramTarget.Close()
+	go func() {
+		var buf [2048]byte
+		for {
+			n, peer, err := datagramTarget.ReadFrom(buf[:])
+			if err != nil {
+				return
+			}
+			_, _ = datagramTarget.WriteTo(buf[:n], peer)
+		}
+	}()
+	payload := []byte{0, 1, 2, 0xff, 0, 0x80, 0x42}
+	wire, e := udpproto.Encode(udpproto.Packet{
+		Host: "127.0.0.1", Port: uint16(datagramTarget.LocalAddr().(*net.UDPAddr).Port), Data: payload,
+	})
+	if e != nil {
+		t.Fatal(e)
+	}
+	dgctx, stopUDP := context.WithTimeout(context.Background(), 10*time.Second)
+	defer stopUDP()
+	result, e := m.ExchangeUDP(dgctx, wire)
+	if e != nil {
+		t.Fatalf("native Gecko UDP v1 relay: %v; UDP HTTP observed=%d H2=%d proxy-auth-present=%d", e, nativePOST.Load(), nativeProtocol.Load(), nativeAuth.Load())
+	}
+	response, e := udpproto.Parse(result)
+	if e != nil || string(response.Data) != string(payload) || response.Port != uint16(datagramTarget.LocalAddr().(*net.UDPAddr).Port) {
+		t.Fatalf("native UDP reply invalid: %v", e)
+	}
+	if requests.Load() < 2 {
+		t.Fatal("native UDP POST did not reach the HTTPS proxy")
+	}
 	if err = m.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -99,5 +163,101 @@ func TestGeckoManagedIPC(t *testing.T) {
 	if c, err = net.DialTimeout("tcp", listen, 100*time.Millisecond); err == nil {
 		c.Close()
 		t.Fatal("helper listener survived Close")
+	}
+}
+
+// The peer flushes response headers before reading upload bytes. This detects
+// Gecko buffering an unknown-length upload until EOF, as well as lost duplex.
+func TestGeckoManagedUDPStream(t *testing.T) {
+	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	if bundle == "" {
+		t.Skip("verified integration bundle required")
+	}
+	for _, mode := range []string{"h2-connect", "h3-connect"} {
+		t.Run(mode, func(t *testing.T) { testGeckoManagedUDPStream(t, bundle, mode) })
+	}
+}
+
+func testGeckoManagedUDPStream(t *testing.T, bundle, mode string) {
+	t.Helper()
+	var posts atomic.Int32
+	expectedProtocol := 2
+	if mode == "h3-connect" {
+		expectedProtocol = 3
+	}
+	cfg := nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/.well-known/foxtunnel-udp-stream-v2" || r.Method != "POST" || r.ProtoMajor != expectedProtocol || r.Header.Get("Proxy-Authorization") == "" {
+			http.Error(w, "invalid stream", http.StatusBadRequest)
+			return
+		}
+		posts.Add(1)
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		for {
+			packet, err := udpproto.ReadFrame(r.Body)
+			if err != nil {
+				return
+			}
+			if err := udpproto.WriteFrame(w, packet); err != nil {
+				return
+			}
+			w.(http.Flusher).Flush()
+		}
+	}))
+	m, err := NewManaged(bundle, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	stream, err := m.OpenUDPStream(ctx)
+	if err != nil {
+		t.Fatal("native response-before-upload handshake:", err)
+	}
+	defer stream.Close()
+	// Transfer several MiB through the two 64-KiB native pipes. Upload and
+	// download run independently: a request/reply loop cannot expose a deadlock
+	// caused by blocked response delivery while Gecko is still uploading.
+	const frames = 4096
+	packet := func(sequence int) []byte {
+		data := make([]byte, udpproto.MaxDatagram-10)
+		for i := range data {
+			data[i] = byte(i + sequence)
+		}
+		binary.BigEndian.PutUint32(data, uint32(sequence))
+		wire, err := udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: 53, Data: data})
+		if err != nil {
+			panic(err)
+		}
+		return wire
+	}
+	sent := make(chan error, 1)
+	go func() {
+		for i := 0; i < frames; i++ {
+			if err := udpproto.WriteFrame(stream, packet(i)); err != nil {
+				sent <- err
+				return
+			}
+		}
+		sent <- nil
+	}()
+	// Let the echo fill the download pipe before starting the reader.
+	time.Sleep(100 * time.Millisecond)
+	for i := 0; i < frames; i++ {
+		got, err := udpproto.ReadFrame(stream)
+		if err != nil || !bytes.Equal(got, packet(i)) {
+			t.Fatalf("native duplex frame %d: %v", i, err)
+		}
+	}
+	if err := <-sent; err != nil {
+		t.Fatal("native upload:", err)
+	}
+	if posts.Load() != 1 {
+		t.Fatal("stream reopened the HTTP request")
+	}
+	cancel()
+	if _, err := stream.Read(make([]byte, 1)); err == nil {
+		t.Fatal("cancel did not close flow")
 	}
 }

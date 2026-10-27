@@ -53,7 +53,7 @@ func (c *Client) EnableBond() error {
 	if c.RequireProtocolNegotiation {
 		return errors.New("strict protocol policy is not supported with bond/discovery")
 	}
-	if c.managed != nil {
+	if c.managed != nil && !c.fullManagedHTTP() {
 		return errors.New("Necko does not support bond or discovery")
 	}
 	if err := validateBondTraffic(c.BondTraffic, c.BondAdaptive); err != nil {

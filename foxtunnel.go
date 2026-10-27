@@ -44,7 +44,7 @@ type NodeStatus = nodeperf.Snapshot
 
 type Credentials struct{ Username, Password string }
 type ClientConfig struct {
-	NeckoBundle string // Verified Necko distribution; Engine must be necko.
+	NeckoBundle string // Verified Necko distribution; Engine may be necko or auto.
 	// RequireProtocolNegotiation opts into strict draft/capability confirmation.
 	// False preserves legacy interoperability. Configure both ends explicitly.
 	RequireProtocolNegotiation bool
@@ -52,18 +52,20 @@ type ClientConfig struct {
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
-	Engine               string // Empty/legacy preserves old selection; mozilla selects NSS/Neqo; necko owns a full verified Necko process.
+	Engine               string // Empty/legacy preserves old selection; auto uses Necko when compatible, otherwise NSS/Neqo or Go; mozilla and necko force a backend.
 	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for default H3); Neqo uses NSS.
 	Transport            string // Empty selects h2-connect.
 	QUICBackend          string // Empty/quic-go preserves the default; neqo is an opt-in build.
 	H3Fallback           string // Empty/none or h2; only before a Neqo HTTP request is created.
 	QUICHandshakeTimeout time.Duration
 	ServerName, SPKIPin  string
+	NodePinsFile         string // Owner-only per-origin trust file; configure all explicit nodes.
 	XHTTPPath, XHTTPHost string
 	HTTP2ReceiveProfile  string
 	TLSClientProfile     string // Local opt-in NSS preferences; empty keeps the default.
 	Padding              bool
 	EnableUDP            bool // Experimental datagram API and SOCKS5 UDP; off by default.
+	UDPMultiNode         bool // Pin destination flows to configured UDP exits.
 	UDPStreaming         bool // Opt-in v2 persistent UDP stream; requires EnableUDP.
 	ConnectTimeout       time.Duration
 	MaxConnections       int // Combined TCP/UDP connections and pending operations; 0 uses 256.
@@ -89,11 +91,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if config.MaxConnections < 0 || config.ConnectTimeout < 0 {
 		return nil, errors.New("negative client limit or timeout")
 	}
+	if config.UDPMultiNode && (!config.UDPStreaming || !config.EnableUDP || len(config.FallbackServers) == 0) {
+		return nil, errors.New("UDP multi-node requires streaming UDP and fallback servers")
+	}
 	if config.UDPStreaming && !config.EnableUDP {
 		return nil, errors.New("UDP streaming requires UDP to be enabled")
-	}
-	if config.Engine == "necko" && (config.XHTTPPath != "" || config.XHTTPHost != "") {
-		return nil, errors.New("Necko does not support XHTTP settings")
 	}
 	core, err := tunnel.NewClient(config.ServerURL, config.Credentials.Username, config.Credentials.Password, config.CACertFile)
 	if err != nil {
@@ -109,7 +111,8 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}()
 	plan, err := transportengine.Resolve(transportengine.Config{
 		Engine: config.Engine, Transport: config.Transport, NeckoBundle: config.NeckoBundle,
-		TLSBackend: config.TLSBackend, QUICBackend: config.QUICBackend,
+		AutoNeckoExcluded: ((config.RequireProtocolNegotiation || config.Padding) && !transportengine.NativeHTTPHeaders(config.Transport)),
+		TLSBackend:        config.TLSBackend, QUICBackend: config.QUICBackend,
 		H3Fallback: config.H3Fallback, QUICHandshakeTimeout: config.QUICHandshakeTimeout,
 		TLSClientProfile: config.TLSClientProfile, HTTP2ReceiveProfile: config.HTTP2ReceiveProfile,
 	})
@@ -124,6 +127,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 	if err = core.SetFallbackServers(config.FallbackServers); err != nil {
 		return nil, err
+	}
+	if config.NodePinsFile != "" {
+		if err = core.SetNodePinsFile(config.NodePinsFile); err != nil {
+			return nil, err
+		}
 	}
 	mode := config.Balance
 	if mode == "" {
@@ -141,6 +149,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	core.Padding = config.Padding
 	core.EnableUDP = config.EnableUDP
 	core.UDPStreaming = config.UDPStreaming
+	core.UDPMultiNode = config.UDPMultiNode
 	if err := core.Prepare(context.Background()); err != nil {
 		return nil, err
 	}

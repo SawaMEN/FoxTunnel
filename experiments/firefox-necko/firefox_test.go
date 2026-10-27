@@ -308,7 +308,14 @@ func testCertificate(t *testing.T, dnsName ...string) (tls.Certificate, []byte) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	root := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "FoxTunnel test CA"}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature}
+	// Distinct ingress roots may be loaded into one NSS database. Reusing the
+	// same issuer+serial with different keys causes SEC_ERROR_REUSED_ISSUER_AND_SERIAL.
+	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		t.Fatal(err)
+	}
+	serial.Add(serial, big.NewInt(1))
+	root := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: "FoxTunnel test CA " + serial.Text(16)}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature}
 	ca, err := x509.CreateCertificate(rand.Reader, root, root, &key.PublicKey, key)
 	if err != nil {
 		t.Fatal(err)
@@ -323,4 +330,17 @@ func testCertificate(t *testing.T, dnsName ...string) (tls.Certificate, []byte) 
 		t.Fatal(err)
 	}
 	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}, ca
+}
+
+func TestConfigRejectsNestedIdentityDuplicates(t *testing.T) {
+	for _, nodes := range []string{
+		`{"https://example.org":{"sni":"a.invalid","sni":"b.invalid","pin_sha256":"sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}}`,
+		`{"https://example.org":{"sni":"a.invalid","SNI":"b.invalid","pin_sha256":"sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}}`,
+	} {
+		path := filepath.Join(t.TempDir(), "identity.json")
+		os.WriteFile(path, []byte(`{"server":"https://example.org","username":"u","password":"p","node_policies":`+nodes+`}`), 0600)
+		if _, err := ReadConfig(path); err == nil {
+			t.Fatal("ambiguous nested identity document accepted")
+		}
+	}
 }

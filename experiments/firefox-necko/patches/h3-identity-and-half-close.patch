@@ -1,0 +1,64 @@
+--- a/netwerk/protocol/http/Http3Session.cpp
++++ b/netwerk/protocol/http/Http3Session.cpp
+@@ -239,7 +239,8 @@
+   // connection to the WebTransport server should authenticate using the
+   // expected certificate hash. Therefore, 0RTT should be disabled in this
+   // context to ensure the certificate hash is checked.
+-  if (StaticPrefs::network_http_http3_enable_0rtt() && !hasServCertHashes()) {
++  if (StaticPrefs::network_http_http3_enable_0rtt() && !hasServCertHashes() &&
++      !mSocketControl->HasFoxTunnelPolicy()) {
+     uint32_t maxAttempts =
+         StaticPrefs::network_ssl_tokens_cache_records_per_entry();
+     bool tokenFound = false;
+@@ -674,8 +675,12 @@
+             mStreamIdHash.Get(event.data_writable.stream_id);
+ 
+         if (stream) {
++          stream->SetBlockedByFlowControl(false);
+           StreamReadyToWrite(stream);
+-          stream->SetBlockedByFlowControl(false);
++          // SendData keeps flow-blocked streams queued. In that case the
++          // duplicate-queue guard above does not schedule another send.
++          // New QUIC credit must wake the connection regardless.
++          MaybeResumeSend();
+         }
+       } break;
+       case Http3Event::Tag::Reset:
+@@ -743,7 +748,8 @@
+         break;
+       case Http3Event::Tag::ResumptionToken: {
+         LOG(("Http3Session::ProcessEvents - ResumptionToken"));
+-        if (StaticPrefs::network_http_http3_enable_0rtt() && !data.IsEmpty()) {
++        if (StaticPrefs::network_http_http3_enable_0rtt() && !data.IsEmpty() &&
++            !mSocketControl->HasFoxTunnelPolicy()) {
+           LOG(("Got a resumption token"));
+           nsAutoCString peerId;
+           mSocketControl->GetPeerId(peerId);
+@@ -2375,11 +2381,13 @@
+     return;
+   }
+ 
++  bool tunnelResetQueued = false;
+   RefPtr<Http3Stream> httpStream = aStream->GetHttp3Stream();
+   if (httpStream && !httpStream->RecvdFin() && !httpStream->RecvdReset() &&
+       httpStream->HasStreamId()) {
+     mHttp3Connection->CancelFetch(httpStream->StreamId(),
+                                   HTTP3_APP_ERROR_REQUEST_CANCELLED);
++    tunnelResetQueued = !!aStream->GetHttp3StreamTunnel();
+   }
+ 
+   if ((NS_SUCCEEDED(aResult) || NS_BASE_STREAM_CLOSED == aResult) &&
+@@ -2391,6 +2399,13 @@
+ 
+   aStream->Close(aResult);
+   CloseStreamInternal(aStream, aResult);
++
++  // Tunnel cleanup can bypass CloseTransaction(), which normally wakes the
++  // UDP connection after CancelFetch queues RESET_STREAM / STOP_SENDING.
++  // Flush that reset even when no other stream has data and the peer is idle.
++  if (tunnelResetQueued && mConnection) {
++    (void)mConnection->ResumeSend();
++  }
+ }
+ 
+ void Http3Session::CloseStreamInternal(Http3StreamBase* aStream,

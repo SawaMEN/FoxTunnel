@@ -32,8 +32,12 @@ type nodePinEntry struct {
 // Call after TLS/profile and fallback configuration, before EnableBond/Serve.
 // Discovery supplies a separate, dynamic TLS policy: do not combine them.
 func (c *Client) SetNodePinsFile(path string) error {
-	if c.managed != nil && path != "" {
-		return errors.New("Necko does not support per-node pins")
+	if c.managed != nil {
+		c.managed.Lock()
+		defer c.managed.Unlock()
+		if !c.managed.http || !c.managed.acceptsNodePolicies || c.managed.transport != nil || c.managed.closed {
+			return errors.New("configure native node pins before starting the helper")
+		}
 	}
 	if path == "" || c.bondClient != nil || c.bondDiscovery != nil ||
 		c.identity != (tlsidentity.Policy{}) {
@@ -87,6 +91,13 @@ func (c *Client) SetNodePinsFile(path string) error {
 	}
 	if len(policies) != len(configured) {
 		return errors.New("missing SPKI pin for a trusted ingress")
+	}
+	if c.managed != nil {
+		if len(c.managed.nodePolicies) != 0 {
+			return errors.New("node pins were already configured")
+		}
+		c.managed.nodePolicies = policies
+		return nil
 	}
 	pool, ok := c.transport.(*identityPool)
 	if !ok {

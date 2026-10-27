@@ -162,7 +162,8 @@ func TestCascadeTCPTransports(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			p, count, _ := cascadeExit(t, false, mode == "h2-connect")
 			server := &Server{Username: "alice", Password: "secret", Egress: p}
-			c, _ := udpFixture(t, server)
+			// TCP carriers include WSS, which requires HTTP/1.1 ALPN.
+			c, _ := testClient(t, server)
 			if isH3Transport(mode) {
 				node := setupEndpoint(t, c, server)
 				startNativeH3(t, node, server)

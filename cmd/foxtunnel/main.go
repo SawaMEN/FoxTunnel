@@ -350,7 +350,11 @@ func main() {
 		neckoBundle := fs.String("necko-bundle", "", "verified Necko bundle directory (with --engine necko)")
 		engine := new(string)
 		if os.Args[1] == "client" {
-			fs.StringVar(engine, "engine", "legacy", i18n.Text("local transport engine: legacy (default), mozilla (NSS/Neqo) or necko (verified bundle)"))
+			defaultEngine := "legacy"
+			if transportengine.DefaultNeckoBundle() != "" {
+				defaultEngine = "auto"
+			}
+			fs.StringVar(engine, "engine", defaultEngine, i18n.Text("local transport engine: auto (Necko for compatible CONNECT, NSS/Neqo or Go otherwise), legacy, mozilla, necko"))
 		}
 		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, h3-connect, wss, xhttp-stream-one, xhttp-stream-up, xhttp-packet-up, or auto with --engine mozilla"))
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
@@ -374,7 +378,7 @@ func main() {
 		tlsProfile := new(string)
 		*tlsProfile = "default"
 		if os.Args[1] == "client" {
-			fs.StringVar(tlsProfile, "tls-client-profile", "default", i18n.Text("TLS client profile: default or experimental firefox-158 (NSS 3.130)"))
+			fs.StringVar(tlsProfile, "tls-client-profile", "default", i18n.Text("TLS client profile: default or measured firefox-158 preferences (compatible native runtime required)"))
 		}
 		h2Profile := fs.String("h2-receive-profile", "default", i18n.Text("HTTP/2 receive profile: default or experimental firefox-158"))
 		sni := fs.String("sni", "", i18n.Text("verified TLS server name (default: URL hostname)"))
@@ -537,7 +541,8 @@ func main() {
 		failClient := func(v ...any) { client.Close(); log.Fatal(v...) }
 		intent := transportengine.Config{
 			Engine: *engine, Transport: *nativeTransport, NeckoBundle: *neckoBundle,
-			TLSBackend: *tlsBackend, QUICBackend: *quicBackend,
+			AutoNeckoExcluded: ((wirePolicy == contract.ProtocolStrict || *padding) && !transportengine.NativeHTTPHeaders(*nativeTransport)),
+			TLSBackend:        *tlsBackend, QUICBackend: *quicBackend,
 			H3Fallback: *h3Fallback, QUICHandshakeTimeout: *quicTimeout,
 			TLSClientProfile: *tlsProfile, HTTP2ReceiveProfile: *h2Profile,
 		}
@@ -547,11 +552,6 @@ func main() {
 			if !explicit["quic-backend"] {
 				intent.QUICBackend = ""
 			}
-			for _, name := range []string{"xhttp-path", "xhttp-host", "node-pins-file"} {
-				if explicit[name] {
-					failClient("Necko does not support " + name)
-				}
-			}
 			if *neckoBundle == "" {
 				exe, e := os.Executable()
 				if e != nil {
@@ -560,12 +560,12 @@ func main() {
 				intent.NeckoBundle = filepath.Dir(exe)
 			}
 		}
-		if *engine == "mozilla" {
+		if *engine == "mozilla" || *engine == "auto" {
 			explicit := map[string]bool{}
 			fs.Visit(func(f *flag.Flag) { explicit[f.Name] = true })
 			// A connection link pins a server-selected carrier; do not
 			// overwrite it with speculative H3 discovery.
-			if !explicit["transport"] && *link == "" && *linkFile == "" {
+			if *engine == "mozilla" && !explicit["transport"] && *link == "" && *linkFile == "" {
 				intent.Transport = "auto"
 			}
 			if !explicit["quic-backend"] {

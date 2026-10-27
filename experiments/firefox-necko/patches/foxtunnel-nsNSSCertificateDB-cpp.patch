@@ -1,0 +1,23 @@
+--- a/security/manager/ssl/nsNSSCertificateDB.cpp
++++ b/security/manager/ssl/nsNSSCertificateDB.cpp
+@@ -5,6 +5,7 @@
+ #include "nsNSSCertificateDB.h"
+ 
+ #include "CertVerifier.h"
++#include "CommonSocketControl.h"
+ #include "CryptoTask.h"
+ #include "ExtendedValidation.h"
+ #include "NSSCertDBTrustDomain.h"
+@@ -1472,3 +1473,12 @@
+   return NS_OK;
+ #endif  // MOZ_WIDGET_ANDROID
+ }
++
++NS_IMETHODIMP
++nsNSSCertificateDB::RegisterFoxTunnelPolicy(
++    const nsACString& aRouteHost, int32_t aRoutePort,
++    const nsACString& aServerName, const nsACString& aPinSha256,
++    const nsACString& aTlsProfile) {
++  return CommonSocketControl::RegisterFoxTunnelPolicy(
++      aRouteHost, aRoutePort, aServerName, aPinSha256, aTlsProfile);
++}

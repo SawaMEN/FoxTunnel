@@ -1,0 +1,37 @@
+--- a/netwerk/protocol/http/nsIHttpChannelInternal.idl
++++ b/netwerk/protocol/http/nsIHttpChannelInternal.idl
+@@ -64,7 +64,7 @@
+  * using any feature exposed by this interface, be aware that this interface
+  * will change and you will be broken.  You have been warned.
+  */
+-[builtinclass, scriptable, uuid(4e28263d-1e03-46f4-aa5c-9512f91957f9)]
++[builtinclass, scriptable, uuid(c2b27494-72e5-41ce-8bb6-fb78651fe4e8)]
+ interface nsIHttpChannelInternal : nsISupports
+ {
+     /**
+@@ -547,4 +547,25 @@
+      * For testing purposes only.
+      */
+     readonly attribute unsigned long caps;
++
++    /**
++     * Opt in to an unknown-length async upload before setting the upload stream.
++     * Privileged callers must disable redirects and auth retries: this stream
++     * cannot be cloned or replayed. Ordinary uploads retain normalization.
++     */
++    [must_use] void enableStreamingUpload();
++
++    /**
++     * Parent-process native duplex carriers may deliver response headers before
++     * the first response body byte. Set before opening; redirects are disabled
++     * by the caller. Ordinary browser channels keep their existing pump timing.
++     */
++    [must_use] attribute boolean deliverResponseHeadersEarly;
++
++    /**
++     * Privileged parent-process HTTPS channel: require HTTP/3 directly for the
++     * URI origin, without Alt-Svc discovery or an HTTP/1/2 fallback race.
++     * Call before asyncOpen; normal NSS certificate verification is mandatory.
++     */
++    [must_use] void forceHTTP3();
+ };
