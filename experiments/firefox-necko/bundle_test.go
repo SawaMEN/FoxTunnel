@@ -1,6 +1,7 @@
 package firefox
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"os"
@@ -18,6 +19,9 @@ func testBundlePlatform(t *testing.T, platform string) string {
 	m := bundleManifest{Schema: 1, HelperProtocol: BundleProtocol, Platform: platform, SourceLockSHA256: digestBytes(sourceLock), ClientJSSHA256: digestBytes(clientScript), Files: map[string]string{}}
 	for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "runtime/platform.ini", "provenance.json", "source-lock.json", "foxtunnel-necko"} {
 		data := []byte("fixture " + name)
+		if name == "source-lock.json" {
+			data = sourceLock
+		}
 		if name == "runtime/xpcshell" || name == "runtime/libxul.so" || name == "runtime/libnss3.so" || name == "foxtunnel-necko" {
 			data = make([]byte, 64)
 			copy(data, []byte{127, 'E', 'L', 'F', 2, 1, 1})
@@ -35,6 +39,15 @@ func testBundlePlatform(t *testing.T, platform string) string {
 		}
 		m.Files[name] = digestBytes(data)
 	}
+	provenance := map[string]any{"status": "built-not-interop-tested", "target_platform": platform, "source": json.RawMessage(sourceLock), "runtime": map[string]string{"xpcshell": m.Files["runtime/xpcshell"], "libxul.so": m.Files["runtime/libxul.so"], "libnss3.so": m.Files["runtime/libnss3.so"], "platform.ini": m.Files["runtime/platform.ini"]}}
+	record, err := json.Marshal(provenance)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "provenance.json"), record, 0600); err != nil {
+		t.Fatal(err)
+	}
+	m.Files["provenance.json"] = digestBytes(record)
 	data, _ := json.Marshal(m)
 	if e := os.WriteFile(filepath.Join(root, "manifest.json"), data, 0600); e != nil {
 		t.Fatal(e)
@@ -144,16 +157,19 @@ func TestBundleArchitectureCannotBeRelabeledOrMixed(t *testing.T) {
 			if _, err := verifyBundlePlatform(root, other); err == nil {
 				t.Fatal("accepted other architecture")
 			}
-			for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "foxtunnel-necko", "foxtunnel"} {
+			for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "foxtunnel-necko", "foxtunnel", "lib/libnss3.so", "runtime/other-library.so"} {
 				t.Run(name, func(t *testing.T) {
 					mixed := testBundlePlatform(t, platform)
 					donor := testBundlePlatform(t, other)
 					donorName := name
-					if name == "foxtunnel" {
+					if name == "foxtunnel" || name == "lib/libnss3.so" || name == "runtime/other-library.so" {
 						donorName = "foxtunnel-necko"
 					}
 					data, err := os.ReadFile(filepath.Join(donor, donorName))
 					if err != nil {
+						t.Fatal(err)
+					}
+					if err := os.MkdirAll(filepath.Dir(filepath.Join(mixed, name)), 0700); err != nil {
 						t.Fatal(err)
 					}
 					if err := os.WriteFile(filepath.Join(mixed, name), data, 0600); err != nil {
@@ -170,6 +186,152 @@ func TestBundleArchitectureCannotBeRelabeledOrMixed(t *testing.T) {
 						t.Fatal("accepted rehashed mixed-architecture bundle")
 					}
 				})
+			}
+		})
+	}
+}
+
+func TestBundleRejectsAmbiguousManifestAndRehashedSource(t *testing.T) {
+	for _, kind := range []string{"duplicate-field", "case-alias", "duplicate-file", "rehashed-source"} {
+		t.Run(kind, func(t *testing.T) {
+			root := testBundle(t)
+			manifest := filepath.Join(root, "manifest.json")
+			data, err := os.ReadFile(manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			switch kind {
+			case "duplicate-field":
+				data = append([]byte(`{"schema":2,`), data[1:]...)
+			case "case-alias":
+				data = bytes.Replace(data, []byte(`"schema"`), []byte(`"Schema"`), 1)
+			case "duplicate-file":
+				data = bytes.Replace(data, []byte(`"files":{`), []byte(`"files":{"source-lock.json":"wrong",`), 1)
+			case "rehashed-source":
+				var m bundleManifest
+				if err := json.Unmarshal(data, &m); err != nil {
+					t.Fatal(err)
+				}
+				changed := []byte(`{"different":"source"}`)
+				if err := os.WriteFile(filepath.Join(root, "source-lock.json"), changed, 0600); err != nil {
+					t.Fatal(err)
+				}
+				m.Files["source-lock.json"] = digestBytes(changed)
+				data, err = json.Marshal(m)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.WriteFile(manifest, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := verifyBundle(root); err == nil {
+				t.Fatal("accepted ambiguous or source-mismatched bundle")
+			}
+		})
+	}
+}
+
+func TestBundlePreservesCaseSensitiveFileNames(t *testing.T) {
+	root := testBundle(t)
+	manifest := filepath.Join(root, "manifest.json")
+	raw, err := os.ReadFile(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m bundleManifest
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"LICENSE", "license"} {
+		if err := os.WriteFile(filepath.Join(root, name), []byte(name), 0600); err != nil {
+			t.Fatal(err)
+		}
+		m.Files[name] = digestBytes([]byte(name))
+	}
+	raw, err = json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(manifest, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := verifyBundle(root); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBundleRejectsRehashedProvenanceAndPrivilegedModes(t *testing.T) {
+	for _, kind := range []string{"source", "runtime", "platform", "null-platform", "status", "duplicate", "file-mode", "directory-mode", "manifest-mode"} {
+		t.Run(kind, func(t *testing.T) {
+			root := testBundle(t)
+			manifest := filepath.Join(root, "manifest.json")
+			if kind == "file-mode" || kind == "directory-mode" || kind == "manifest-mode" {
+				if runtime.GOOS == "windows" {
+					t.Skip("POSIX modes")
+				}
+				name := "foxtunnel-necko"
+				mode := os.FileMode(0700) | os.ModeSetuid
+				if kind == "directory-mode" {
+					name, mode = "runtime", 0700|os.ModeSetgid
+				}
+				if kind == "manifest-mode" {
+					name = "manifest.json"
+				}
+				if err := os.Chmod(filepath.Join(root, name), mode); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				name := filepath.Join(root, "provenance.json")
+				raw, err := os.ReadFile(name)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var p map[string]any
+				if err := json.Unmarshal(raw, &p); err != nil {
+					t.Fatal(err)
+				}
+				switch kind {
+				case "source":
+					p["source"] = map[string]string{"wrong": "revision"}
+				case "runtime":
+					p["runtime"].(map[string]any)["libxul.so"] = "wrong"
+				case "platform":
+					p["target_platform"] = "linux-arm64"
+				case "null-platform":
+					p["target_platform"] = nil
+				case "status":
+					p["status"] = "unverified"
+				}
+				raw, err = json.Marshal(p)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if kind == "duplicate" {
+					raw = append([]byte(`{"status":"wrong",`), raw[1:]...)
+				}
+				if err := os.WriteFile(name, raw, 0600); err != nil {
+					t.Fatal(err)
+				}
+				var m bundleManifest
+				data, err := os.ReadFile(manifest)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := json.Unmarshal(data, &m); err != nil {
+					t.Fatal(err)
+				}
+				m.Files["provenance.json"] = digestBytes(raw)
+				data, err = json.Marshal(m)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(manifest, data, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err := verifyBundle(root); err == nil {
+				t.Fatal("accepted invalid provenance or privileged mode")
 			}
 		})
 	}
