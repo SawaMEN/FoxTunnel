@@ -331,7 +331,7 @@ func (s *Server) destinationResolver() *net.Resolver {
 	return s.Resolver
 }
 func (s *Server) dialUDPTarget(ctx context.Context, dest string) (net.Conn, error) {
-	return access.Dial(ctx, func(ctx context.Context) (net.Conn, error) {
+	return access.DialDatagram(ctx, func(ctx context.Context) (net.Conn, error) {
 		if s.Egress != nil {
 			return s.Egress.DialContext(ctx, "udp", dest)
 		}

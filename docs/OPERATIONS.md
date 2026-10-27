@@ -41,18 +41,19 @@ SIGHUP также независимо перечитывает access policy; �
 
 ## Релизные архивы
 
-С ветки `xfd` формируется **один архив для каждой архитектуры**:
+Текущий релизный workflow `main` формирует **один архив для каждой архитектуры**:
 
 | Target | Архив | Содержимое |
 |---|---|---|
 | Linux amd64 | `foxtunnel_VERSION_linux_amd64.tar.gz` | NSS-enabled CLI, `lib/`, `runtime/` (полный Necko), проверяемый manifest |
-| Linux arm64 | `foxtunnel_VERSION_linux_arm64_nss.tar.gz` | NSS CLI, `lib/`, метаданные и лицензии |
+| Linux arm64 | `foxtunnel_VERSION_linux_arm64.tar.gz` | NSS-enabled CLI, `lib/`, `runtime/` (полный Necko), проверяемый manifest |
 
 Не распаковывайте отдельные старые NSS/Necko архивы поверх единого каталога.
-В AMD64-пакете корень после распаковки — `foxtunnel-necko/`, запускайте
+В обоих пакетах корень после распаковки — `foxtunnel-necko/`, запускайте
 `foxtunnel-necko/foxtunnel`. Сохраняйте все вложенные файлы.
 Базовые glibc/libgcc не входят; runtime Linux ориентирован на Ubuntu 24.04.
-В ARM64 полный Necko пока недоступен.
+Состав старых выпусков может отличаться: проверяйте метаданные выбранного
+архива и `version --json`.
 
 Доступные опубликованные версии проверяйте в
 [Releases](https://github.com/SawaMEN/FoxTunnel/releases).

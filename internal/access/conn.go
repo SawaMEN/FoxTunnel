@@ -10,6 +10,16 @@ import (
 // Dial counts destination sockets (including DNS/dial time), not HTTP carriers.
 // The callback returns a raw socket; this wrapper preserves TCP half-close.
 func Dial(ctx context.Context, dial func(context.Context) (net.Conn, error)) (net.Conn, error) {
+	return dialMetered(ctx, dial, false)
+}
+
+// DialDatagram preserves packet boundaries when quota is nearly exhausted.
+// A packet that does not fit is rejected in full, never forwarded as a prefix.
+func DialDatagram(ctx context.Context, dial func(context.Context) (net.Conn, error)) (net.Conn, error) {
+	return dialMetered(ctx, dial, true)
+}
+
+func dialMetered(ctx context.Context, dial func(context.Context) (net.Conn, error), datagram bool) (net.Conn, error) {
 	// A dial context often has a shorter deadline than the established
 	// connection. Check it at admission and at hand-off; do not attach it as
 	// a lifetime cancellation hook after a successful dial.
@@ -61,7 +71,7 @@ func Dial(ctx context.Context, dial func(context.Context) (net.Conn, error)) (ne
 		release()
 		return nil, err
 	}
-	w := &meteredConn{Conn: conn, g: g, release: release}
+	w := &meteredConn{Conn: conn, g: g, release: release, datagram: datagram}
 	stop := context.AfterFunc(g.ctx, func() { w.Close() })
 	w.stopMu.Lock()
 	if w.closed {
@@ -85,6 +95,7 @@ func Dial(ctx context.Context, dial func(context.Context) (net.Conn, error)) (ne
 
 type meteredConn struct {
 	net.Conn
+	datagram                bool
 	g                       *grant
 	release                 func()
 	once                    sync.Once
@@ -114,6 +125,10 @@ func (w *meteredConn) CloseWrite() error {
 	return nil
 }
 func (g *grant) reserve(n int) (int, error) {
+	return g.reserveBytes(n, false)
+}
+
+func (g *grant) reserveBytes(n int, exact bool) (int, error) {
 	c := g.owner
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -121,7 +136,7 @@ func (g *grant) reserve(n int) (int, error) {
 	if c.closed || c.failed || g.ctx.Err() != nil {
 		return 0, ErrDenied
 	}
-	if n > 32<<10 {
+	if !exact && n > 32<<10 {
 		n = 32 << 10
 	}
 	if n == 0 {
@@ -143,6 +158,12 @@ func (g *grant) reserve(n int) (int, error) {
 	allowed := a.available
 	if quota > 0 {
 		allowed = min(allowed, max(0, quota-(a.charged-a.available)))
+	}
+	if exact && int64(n) > allowed {
+		if allowed == 0 && a.inflight == 0 {
+			g.cancel()
+		}
+		return 0, ErrQuota
 	}
 	n = int(min(int64(n), allowed))
 	if n == 0 {
@@ -170,6 +191,18 @@ func (g *grant) settle(reserved, n int) {
 func (w *meteredConn) Read(p []byte) (int, error) {
 	w.readMu.Lock()
 	defer w.readMu.Unlock()
+	if w.datagram {
+		// Read a complete packet before accounting its actual size. Reserving
+		// the receive buffer size would reject small packets unnecessarily;
+		// shrinking the buffer to remaining quota would silently truncate them.
+		got, readErr := w.Conn.Read(p)
+		n, err := w.g.reserveBytes(got, true)
+		if err != nil {
+			return 0, err
+		}
+		w.g.settle(n, got)
+		return got, readErr
+	}
 	n, err := w.g.reserve(len(p))
 	if err != nil {
 		return 0, err
@@ -181,6 +214,18 @@ func (w *meteredConn) Read(p []byte) (int, error) {
 func (w *meteredConn) Write(p []byte) (int, error) {
 	w.writeMu.Lock()
 	defer w.writeMu.Unlock()
+	if w.datagram {
+		n, err := w.g.reserveBytes(len(p), true)
+		if err != nil {
+			return 0, err
+		}
+		sent, err := w.Conn.Write(p)
+		w.g.settle(n, sent)
+		if err == nil && sent != len(p) {
+			err = io.ErrShortWrite
+		}
+		return sent, err
+	}
 	total := 0
 	for len(p) > 0 {
 		n, err := w.g.reserve(len(p))

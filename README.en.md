@@ -25,9 +25,9 @@ go build -o foxtunnel ./cmd/foxtunnel
 - [Development](docs/DEVELOPMENT.md) — builds, tests and measurements (Russian).
 - [Operations](docs/OPERATIONS.md) — access, certificates and releases (Russian).
 
-Branch `xfd` publishes one archive per Linux architecture. AMD64 combines an NSS-enabled
-CLI with the full verified Necko runtime; ARM64 keeps NSS without full Necko.
-The AMD64 CLI automatically selects Necko for compatible CONNECT sessions and NSS/Go
+The current `main` release workflow builds one archive per Linux architecture:
+both AMD64 and ARM64 combine an NSS-enabled CLI with the full Necko runtime.
+The CLI automatically selects Necko for compatible settings and NSS/Go
 for other features. Keep the full extracted directory, including `lib/` and `runtime/`.
 No GUI, APK, DMG or system VPN adapter is included.
 

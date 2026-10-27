@@ -60,9 +60,9 @@ class LocalUDPSOCKS:
 
     def __exit__(self, *_):
         self.closed.set()
+        self.worker.join(timeout=3)
         self.control.close()
         self.udp.close()
-        self.worker.join(timeout=3)
 
 
 def document(mode="tcp", day=1, label="legacy", value=10.0, rate=100.0,
