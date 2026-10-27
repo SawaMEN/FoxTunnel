@@ -1,0 +1,290 @@
+{
+  "runs": [
+    {
+      "id": 40428558103,
+      "name": "Tests",
+      "head_sha": "98030b14ab5c229183b57aef5b54ef1c7be1eab1",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 121940344224,
+          "name": "go",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-go@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Check format",
+              "conclusion": "success"
+            },
+            {
+              "name": "Check documentation links",
+              "conclusion": "success"
+            },
+            {
+              "name": "Firefox prototype SOCKS parser (no native runtime claim)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Enforce protocol-core boundaries",
+              "conclusion": "success"
+            },
+            {
+              "name": "Check module dependency hygiene",
+              "conclusion": "success"
+            },
+            {
+              "name": "Vet",
+              "conclusion": "success"
+            },
+            {
+              "name": "Test with race detector",
+              "conclusion": "success"
+            },
+            {
+              "name": "Fuzz protocol capability parsing",
+              "conclusion": "success"
+            },
+            {
+              "name": "Fuzz padding decoder",
+              "conclusion": "success"
+            },
+            {
+              "name": "\u0424\u0430\u0437\u0437\u0438\u043d\u0433 \u0441\u0441\u044b\u043b\u043e\u043a vetroff",
+              "conclusion": "success"
+            },
+            {
+              "name": "Release manifest integrity checks",
+              "conclusion": "success"
+            },
+            {
+              "name": "Independent external SDK consumer",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0438\u0437\u0432\u0435\u0441\u0442\u043d\u044b\u0445 \u0443\u044f\u0437\u0432\u0438\u043c\u043e\u0441\u0442\u0435\u0439 Go",
+              "conclusion": "success"
+            },
+            {
+              "name": "\u0424\u0430\u0437\u0437\u0438\u043d\u0433 \u0441\u043e\u0441\u0442\u0430\u0432\u0430 \u043a\u043b\u0430\u0441\u0442\u0435\u0440\u0430",
+              "conclusion": "success"
+            },
+            {
+              "name": "\u0424\u0430\u0437\u0437\u0438\u043d\u0433 \u043f\u0443\u0442\u0435\u0439 XHTTP",
+              "conclusion": "success"
+            },
+            {
+              "name": "\u0424\u0430\u0437\u0437\u0438\u043d\u0433 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a XHTTP",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-go@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 40428558031,
+      "name": "NSS ClientHello experiment",
+      "head_sha": "98030b14ab5c229183b57aef5b54ef1c7be1eab1",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 121940343408,
+          "name": "nss",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-go@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install NSS and NSPR build headers",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build native NSS probe",
+              "conclusion": "success"
+            },
+            {
+              "name": "Capture real NSS ClientHello over loopback",
+              "conclusion": "success"
+            },
+            {
+              "name": "Enforce NSS protocol-core boundaries",
+              "conclusion": "success"
+            },
+            {
+              "name": "Test NSS data transport with race detector",
+              "conclusion": "success"
+            },
+            {
+              "name": "Repeat core destination and managed UDP revocation security",
+              "conclusion": "success"
+            },
+            {
+              "name": "Vet NSS adapter",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build NSS client",
+              "conclusion": "success"
+            },
+            {
+              "name": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Go-\u0443\u044f\u0437\u0432\u0438\u043c\u043e\u0441\u0442\u0435\u0439 \u0441\u0431\u043e\u0440\u043a\u0438 NSS",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-go@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 40428564808,
+      "name": "Mozilla Neqo client experiment",
+      "head_sha": "98030b14ab5c229183b57aef5b54ef1c7be1eab1",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 121940367428,
+          "name": "neqo",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-go@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install build tools and libclang",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install pinned Rust",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build pinned bridge, runtime and license inventory",
+              "conclusion": "success"
+            },
+            {
+              "name": "Rust format, clippy and ABI tests",
+              "conclusion": "success"
+            },
+            {
+              "name": "Neqo interop, trust and UDP fallback with race detector",
+              "conclusion": "success"
+            },
+            {
+              "name": "Repeat native lifecycle with strict cgo pointer checks",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify explicit backend reporting",
+              "conclusion": "success"
+            },
+            {
+              "name": "Comparable native CPU RSS throughput and allocations",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Update stage 5 paired H3 baseline and Go-side profiles",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Fresh pinned Firefox NaiveProxy FoxTunnel TLS H2 and decoded H3",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Retain provenance and dependency license inventory",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-go@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "trees": [
+    "57aa572dd92e95f8a007d9784dc726e0832bc7e0",
+    "57aa572dd92e95f8a007d9784dc726e0832bc7e0"
+  ],
+  "schema": 1,
+  "status": "verified",
+  "tested_commit": "98030b14ab5c229183b57aef5b54ef1c7be1eab1",
+  "merged_commit": "61e598bdb79b71686a2514d2fbbefe63162c39b9",
+  "scope": "Identical source trees; no claim that ddf216e archive bytes belong to the merge commit"
+}

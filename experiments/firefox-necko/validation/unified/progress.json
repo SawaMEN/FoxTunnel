@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "stage": 6,
-  "status": "native-archives-qualified-integration-pending",
-  "stage_checks_complete": 3,
+  "status": "qualified",
+  "stage_checks_complete": 4,
   "stage_checks_total": 4,
-  "overall_stages_complete": 5,
+  "overall_stages_complete": 6,
   "overall_stages_total": 6,
   "candidate_commit": "ddf216ed288175a71471f2059c3539c3c1784e10",
-  "candidate_branch": "xfd-release",
+  "candidate_branch": "xfd-release (merged; branch subsequently removed)",
   "release_run": 40365922072,
   "steps": [
     "Archive/layout/platform audit complete",
     "Dual-architecture secure merge, install and CI complete",
     "Actual AMD64/ARM64 archives qualified natively and independently verified offline",
-    "Evidence recorded; integration with current main and promotion pending"
+    "Final evidence and exact-tree integration checks recorded; qualification accepted on main"
   ],
   "local_checks": [
     "216 Python tests passed, 2 expected skips",
@@ -27,12 +27,18 @@
     "26 JavaScript tests passed",
     "Markdown links valid"
   ],
-  "main": "Current main a65a0ed merged without conflicts into candidate; remote main not yet changed",
+  "main": "61e598bdb79b71686a2514d2fbbefe63162c39b9",
   "publish": "Candidate branch resolves publish=false; no tag/release requested or published",
   "superseded_run": 40364764698,
   "integration_changes": [
     "Preserve existing SOCKS5 cascade changes from main",
-    "Read-only POSIX fsync avoids ETXTBSY while an executable is mapped; Windows keeps writable descriptor"
+    "Read-only POSIX fsync avoids ETXTBSY while an executable is mapped; Windows keeps writable descriptor",
+    "Cascade TCP test uses HTTP/1.1-capable TLS fixture for native NSS WSS; repeat NSS and Neqo CI succeeded"
   ],
-  "qualification_scope": "Archive evidence is for ddf216e; subsequent installer fix and merge require integration checks"
+  "qualification_scope": "Native archive qualification is pinned to ddf216e. Installer fsync correction and cascade integration are separately covered by successful core, NSS and Neqo CI on the exact merged source tree. Fresh main runtime/release runs are subsequent builds and are not claimed as completed.",
+  "integration_ci": [
+    40428558103,
+    40428558031,
+    40428564808
+  ]
 }

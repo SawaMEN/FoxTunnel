@@ -1,32 +1,57 @@
 # Unified NSS + Necko distributions
 
-Stage 6: **3/4**, overall **5/6**; integration and promotion pending.
+Stage 6: **4/4**, overall **6/6**. Qualified code is merged in main through
+[PR #49](https://github.com/SawaMEN/FoxTunnel/pull/49). Only main remains on the
+remote; the final evidence checkpoint is saved directly there.
+
+## Native archive qualification
 
 [Run 40365922072](https://github.com/SawaMEN/FoxTunnel/actions/runs/40365922072)
 qualified source ddf216ed288175a71471f2059c3539c3c1784e10 on native Linux
-AMD64 and ARM64. All nine required jobs succeeded; publication was correctly
-skipped. The two verification reports and workflow evidence are retained here.
+AMD64 and ARM64. All nine required jobs succeeded; publication was skipped.
 
-Both actual combined archives passed deterministic reproduction, native NSS
-installation, unified installation, rollback, immutable reinstallation, helper
-verification, NSS SDK transfers, seven-carrier CLI/SDK tests, and native
-SNI/SPKI/node pin/TLS/H2 profile gates. The complete runtime resource and wire
-gates also passed. This is Linux qualification; no broader platform or
-fingerprint equivalence is claimed.
+| Platform | Qualified artifact | Manifest files |
+|---|---|---:|
+| Linux AMD64 | [unified-amd64-release-assets](https://github.com/SawaMEN/FoxTunnel/actions/runs/40365922072/artifacts/12674636217) | 8302 |
+| Linux ARM64 | [unified-arm64-release-assets](https://github.com/SawaMEN/FoxTunnel/actions/runs/40365922072/artifacts/12674940979) | 8301 |
 
-The archives were independently downloaded and verified offline against their
-checksums and complete manifests: 8302 files on AMD64 and 8301 on ARM64.
-See the per-platform reports for archive identities. These archives belong to
-ddf216e, before the subsequent installer fsync fix and integration with main.
+Each artifact has one full archive, its checksum and native verification report.
+These are retained CI assets for v0.0.0-ci, not a newly published public version.
+See [qualified-assets.md](qualified-assets.md) for archive hashes and sizes and
+[acceptance.json](acceptance.json) for exact scope.
 
-The merge preserves the SOCKS5 cascade implementation already on main.
-A local preflight exposed Linux ETXTBSY when reopening a mapped executable for
-writing during fsync. POSIX sync now uses a read-only descriptor; the regression
-test holds a real executable running while syncing. Windows retains the
-existing writable descriptor. Local verification: 217 Python tests (2 expected
-skips), 26 JS tests, and Markdown links passed. Go integration runs in CI.
+Both actual combined archives passed 14 qualification checks per architecture:
+complete manifest/ELF/source identity, deterministic reproduction, native NSS and
+unified installation, rollback/reinstallation, actual executable/helper identity,
+NSS SDK transfers, seven-carrier CLI/SDK transfers and identity/profile gates.
+The complete native runtime resource and wire gates were required dependencies.
+Both archives were downloaded and independently verified offline; reports,
+workflow evidence and an evidence hash index are retained here.
 
-Both native archives contain the NSS main CLI, Necko helper and pinned runtime,
-NSS libraries, source patches, all notice-referenced licenses, SDK integration
-contracts and integrity metadata. Candidate builds cannot publish; reviewed
-version/tag publication policy is unchanged.
+## Integration into main
+
+The merge retains SOCKS5 cascade support and fixes Linux ETXTBSY during installer
+fsync using a readable POSIX descriptor. A real executing-binary regression
+covers the fix; Windows retains the existing writable descriptor.
+
+The WSS cascade test now uses a server supporting HTTP/1.1 ALPN. After the fix,
+[Tests](https://github.com/SawaMEN/FoxTunnel/actions/runs/40428558103),
+[NSS](https://github.com/SawaMEN/FoxTunnel/actions/runs/40428558031) and
+[Neqo](https://github.com/SawaMEN/FoxTunnel/actions/runs/40428564808) succeeded on
+98030b1. Its source tree is exactly the tree merged into main at 61e598b:
+57aa572dd92e95f8a007d9784dc726e0832bc7e0.
+See [integration-ci.json](integration-ci.json) for pinned jobs and step results.
+Local checks passed: 217 Python tests (2 expected skips), 26 JS tests and
+Markdown links.
+
+The archived binaries remain identified as ddf216e; they are not relabeled as
+binaries of the later merge. Subsequent main runtime/release builds remain
+separate CI runs and are not asserted as completed by this acceptance.
+
+## Distribution scope
+
+Both archives retain the NSS CLI, Necko helper and pinned runtime, NSS libraries,
+patches, all notice-referenced licenses, SDK contracts and integrity metadata.
+Keep the extracted bundle intact, including runtime/ and lib/. Linux AMD64 and
+ARM64 are the qualified platforms. No WAN/DPI or complete Firefox fingerprint
+equivalence is claimed. The reviewed version/tag publication policy is unchanged.

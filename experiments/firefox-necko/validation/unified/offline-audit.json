@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "status": "verified",
+  "commit": "ddf216ed288175a71471f2059c3539c3c1784e10",
+  "release_run": 40365922072,
+  "required_jobs": 9,
+  "passed_jobs": 9,
+  "publication": "skipped",
+  "checks": [
+    {
+      "platform": "linux-amd64",
+      "archive": "foxtunnel_0.0.0-ci_linux_amd64.tar.gz",
+      "sha256": "936b94e08a59822c76c7717f9c142311e45bb135a6bf5aea23312ca2fca52262",
+      "bytes": 187190341,
+      "manifest_files": 8302,
+      "native_status": "qualified"
+    },
+    {
+      "platform": "linux-arm64",
+      "archive": "foxtunnel_0.0.0-ci_linux_arm64.tar.gz",
+      "sha256": "44a72b877e5191a48fdfd78c7670a34f14a05733f9fc91966691697c2bf215c1",
+      "bytes": 181645404,
+      "manifest_files": 8301,
+      "native_status": "qualified"
+    }
+  ],
+  "source_lock_sha256": "0e50df6a76eb0d490415f5fbda1a0d6faab2f06ed02c4e233098a60919feab43",
+  "client_js_sha256": "637e8bf2d5b72790a150e4064f603ef8d78b214964287e83d667e569268de868"
+}
