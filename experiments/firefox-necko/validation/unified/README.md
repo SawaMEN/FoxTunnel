@@ -1,34 +1,32 @@
-# Unified NSS + Necko distributions: stage 6 candidate
+# Unified NSS + Necko distributions
 
-Progress **2/4**, overall **5/6**. Work is isolated on `xfd-release`, based on
-qualified stage 5. [Build and qualification run 40365922072](https://github.com/SawaMEN/FoxTunnel/actions/runs/40365922072)
-uses source `ddf216e`. No promotion or new published release is claimed.
+Stage 6: **3/4**, overall **5/6**; integration and promotion pending.
 
-1. Done: audit producer/consumer archive layout, platform and release boundaries.
-2. Done: implement both native architectures, original Necko manifest and ELF
-   verification before merging, safe root compatibility, empty-file support,
-   native installer/rollback, release-note checks and dual native CI index jobs.
-3. Pending: qualify the actual combined archives and their installed files.
-4. Pending: verify final assets/evidence and promote qualified work to `xfd`.
+[Run 40365922072](https://github.com/SawaMEN/FoxTunnel/actions/runs/40365922072)
+qualified source ddf216ed288175a71471f2059c3539c3c1784e10 on native Linux
+AMD64 and ARM64. All nine required jobs succeeded; publication was correctly
+skipped. The two verification reports and workflow evidence are retained here.
 
-Expected outputs are one full `foxtunnel_VERSION_linux_amd64.tar.gz` and one
-full `foxtunnel_VERSION_linux_arm64.tar.gz`. Both include an NSS-enabled main
-CLI, an owned Necko helper and its pinned runtime, NSS libraries, source patches,
-licenses and integrity metadata. The ARM64 archive no longer uses the old
-NSS-only filename. Original input bundles remain unchanged.
+Both actual combined archives passed deterministic reproduction, native NSS
+installation, unified installation, rollback, immutable reinstallation, helper
+verification, NSS SDK transfers, seven-carrier CLI/SDK tests, and native
+SNI/SPKI/node pin/TLS/H2 profile gates. The complete runtime resource and wire
+gates also passed. This is Linux qualification; no broader platform or
+fingerprint equivalence is claimed.
 
-The archive producer emits a canonical root. The consumer also accepts only the
-exact historical `foxtunnel-necko/.` directory alias, retaining traversal, link,
-duplicate, privileged-mode, size and count rejection. Empty regular marker files
-are accepted and hashed. Input Necko manifests, source/helper identities, runtime
-provenance and all ELF architectures are checked before output is generated.
+The archives were independently downloaded and verified offline against their
+checksums and complete manifests: 8302 files on AMD64 and 8301 on ARM64.
+See the per-platform reports for archive identities. These archives belong to
+ddf216e, before the subsequent installer fsync fix and integration with main.
 
-CI verifies archive reproducibility, native installation, rollback/reinstallation,
-actual executable identity, bundled NSS SDK transfers and installed unified
-CLI/SDK identity/profile tests on each architecture. Existing native and NSS
-regression gates remain dependencies. Candidate builds cannot publish; the
-existing reviewed version/tag publication policy is unchanged. `main` is untouched.
+The merge preserves the SOCKS5 cascade implementation already on main.
+A local preflight exposed Linux ETXTBSY when reopening a mapped executable for
+writing during fsync. POSIX sync now uses a read-only descriptor; the regression
+test holds a real executable running while syncing. Windows retains the
+existing writable descriptor. Local verification: 217 Python tests (2 expected
+skips), 26 JS tests, and Markdown links passed. Go integration runs in CI.
 
-The follow-up also retains every NSS notice-referenced license and SDK contract
-file. Existing archive files survive exclusive-creation refusal. The earlier
-build `40364764698` is superseded; only `ddf216e` can qualify this candidate.
+Both native archives contain the NSS main CLI, Necko helper and pinned runtime,
+NSS libraries, source patches, all notice-referenced licenses, SDK integration
+contracts and integrity metadata. Candidate builds cannot publish; reviewed
+version/tag publication policy is unchanged.

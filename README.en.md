@@ -36,3 +36,5 @@ NSS/Neqo do not guarantee a Firefox fingerprint or censorship resistance.
 [MIT license](LICENSE).
 
 XHTTP and advanced TCP Bond have a [supported stability contract](docs/FEATURES.md#стабильность-xhttp-и-tcp-bond); their opt-in defaults are preserved. Public Go API and Neqo retain their separate status.
+
+TCP/UDP and DNS cascades through a SOCKS5 exit: [configuration and limits](docs/CASCADE.md).

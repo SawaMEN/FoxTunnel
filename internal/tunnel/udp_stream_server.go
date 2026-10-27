@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
 	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
 )
 
@@ -154,9 +153,7 @@ func (s *Server) serveUDPStream(w http.ResponseWriter, r *http.Request) {
 				delete(flows, oldestKey)
 			}
 			dest := net.JoinHostPort(ip.String(), strconv.Itoa(int(packet.Port)))
-			conn, err := access.Dial(ctx, func(ctx context.Context) (net.Conn, error) {
-				return (&net.Dialer{Timeout: s.timeout()}).DialContext(ctx, "udp", dest)
-			})
+			conn, err := s.dialUDPTarget(ctx, dest)
 			if err != nil {
 				continue
 			}

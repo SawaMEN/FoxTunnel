@@ -1,0 +1,717 @@
+{
+  "run": 40365922072,
+  "commit": "ddf216ed288175a71471f2059c3539c3c1784e10",
+  "jobs": [
+    {
+      "id": 121723465753,
+      "name": "request",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T17:11:24Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Resolve reviewed version request",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121724696863,
+      "name": "nss (ubuntu-24.04-arm, arm64)",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T17:17:35Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install NSS dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build NSS archive and execute version check",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check called Go vulnerabilities in the NSS build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Test pinned Mozilla runtime and isolated NSS data transfer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install complete native NSS archive without changing host configuration",
+          "conclusion": "success"
+        },
+        {
+          "name": "Independent repeat build and versioned upgrade candidate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real packaged install update rollback payload and published-archive interop",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121724696922,
+      "name": "quality",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T17:13:27Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Validate source and release contract before packaging",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121724696923,
+      "name": "nss (ubuntu-24.04, amd64)",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T17:14:38Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install NSS dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build NSS archive and execute version check",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check called Go vulnerabilities in the NSS build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Test pinned Mozilla runtime and isolated NSS data transfer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install complete native NSS archive without changing host configuration",
+          "conclusion": "success"
+        },
+        {
+          "name": "Independent repeat build and versioned upgrade candidate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real packaged install update rollback payload and published-archive interop",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121724697183,
+      "name": "neqo / neqo",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T17:18:07Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install build tools and libclang",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned Rust",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build pinned bridge, runtime and license inventory",
+          "conclusion": "success"
+        },
+        {
+          "name": "Rust format, clippy and ABI tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "Neqo interop, trust and UDP fallback with race detector",
+          "conclusion": "success"
+        },
+        {
+          "name": "Repeat native lifecycle with strict cgo pointer checks",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify explicit backend reporting",
+          "conclusion": "success"
+        },
+        {
+          "name": "Comparable native CPU RSS throughput and allocations",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Update stage 5 paired H3 baseline and Go-side profiles",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Fresh pinned Firefox NaiveProxy FoxTunnel TLS H2 and decoded H3",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Retain provenance and dependency license inventory",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121724698526,
+      "name": "necko / runtime (arm64)",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T17:55:07Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Select compiled runtime for this verification",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install runtime libraries and diagnostic tools",
+          "conclusion": "success"
+        },
+        {
+          "name": "Extract and verify exact source and runtime hashes",
+          "conclusion": "success"
+        },
+        {
+          "name": "Basic xpcshell startup with bounded diagnostics",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "FX buffer and fingerprint audit unit regressions",
+          "conclusion": "success"
+        },
+        {
+          "name": "Native CONNECT, half-close and certificate trust gates",
+          "conclusion": "success"
+        },
+        {
+          "name": "Full Firefox wire comparison on the verified runtime",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Operational bounds, path outage and QUIC NAT rebinding",
+          "conclusion": "success"
+        },
+        {
+          "name": "Package and verify native Linux arm64 launcher",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real H2/H3 transfer and SIGTERM from packaged launcher",
+          "conclusion": "success"
+        },
+        {
+          "name": "Integrated main CLI and SDK native gates",
+          "conclusion": "success"
+        },
+        {
+          "name": "Managed engine Firefox wire comparison",
+          "conclusion": "success"
+        },
+        {
+          "name": "Sustained managed H2/H3 HTTP, Bond and UDP resources",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Sustained native resource measurements",
+          "conclusion": "success"
+        },
+        {
+          "name": "FX pinned pre-optimization paired control (60 seconds per protocol)",
+          "conclusion": "success"
+        },
+        {
+          "name": "FX current paired workload (60 seconds per protocol)",
+          "conclusion": "success"
+        },
+        {
+          "name": "FX resource efficiency report",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121724699014,
+      "name": "necko / runtime (amd64)",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T17:59:13Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Select compiled runtime for this verification",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install runtime libraries and diagnostic tools",
+          "conclusion": "success"
+        },
+        {
+          "name": "Extract and verify exact source and runtime hashes",
+          "conclusion": "success"
+        },
+        {
+          "name": "Basic xpcshell startup with bounded diagnostics",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "FX buffer and fingerprint audit unit regressions",
+          "conclusion": "success"
+        },
+        {
+          "name": "Native CONNECT, half-close and certificate trust gates",
+          "conclusion": "success"
+        },
+        {
+          "name": "Full Firefox wire comparison on the verified runtime",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Operational bounds, path outage and QUIC NAT rebinding",
+          "conclusion": "success"
+        },
+        {
+          "name": "Package and verify native Linux amd64 launcher",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real H2/H3 transfer and SIGTERM from packaged launcher",
+          "conclusion": "success"
+        },
+        {
+          "name": "Integrated main CLI and SDK native gates",
+          "conclusion": "success"
+        },
+        {
+          "name": "Managed engine Firefox wire comparison",
+          "conclusion": "success"
+        },
+        {
+          "name": "Sustained managed H2/H3 HTTP, Bond and UDP resources",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Sustained native resource measurements",
+          "conclusion": "success"
+        },
+        {
+          "name": "FX pinned pre-optimization paired control (60 seconds per protocol)",
+          "conclusion": "success"
+        },
+        {
+          "name": "FX current paired workload (60 seconds per protocol)",
+          "conclusion": "success"
+        },
+        {
+          "name": "FX resource efficiency report",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121750902502,
+      "name": "index (ubuntu-24.04, amd64)",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T18:06:08Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Validate native input archives and combine matching architectures",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real NSS SDK transfers from the combined library directory",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real unified CLI SDK identity and profile gates",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record successful tests of the actual installed archive",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121750902934,
+      "name": "index (ubuntu-24.04-arm, arm64)",
+      "conclusion": "success",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T18:04:58Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Validate native input archives and combine matching architectures",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real NSS SDK transfers from the combined library directory",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real unified CLI SDK identity and profile gates",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record successful tests of the actual installed archive",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-go@v5",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 121754562899,
+      "name": "publish",
+      "conclusion": "skipped",
+      "head_sha": "ddf216ed288175a71471f2059c3539c3c1784e10",
+      "completed_at": "2026-10-26T18:06:09Z",
+      "steps": []
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 12674940979,
+      "name": "unified-arm64-release-assets",
+      "size_in_bytes": 180982956,
+      "digest": "sha256:84c6282b189876222b8d3f91e8f09538066221adc914b08c97a4bf8fdffca9b1"
+    },
+    {
+      "id": 12674636217,
+      "name": "unified-amd64-release-assets",
+      "size_in_bytes": 186561981,
+      "digest": "sha256:785c6b96aec54b7192a7a420e4f37b915f78765b13aa59e78e99721ea8c06841"
+    }
+  ]
+}

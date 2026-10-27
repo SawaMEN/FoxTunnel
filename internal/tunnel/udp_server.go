@@ -53,9 +53,7 @@ func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dest := net.JoinHostPort(ip.String(), strconv.Itoa(int(packet.Port)))
-	conn, err := access.Dial(ctx, func(ctx context.Context) (net.Conn, error) {
-		return (&net.Dialer{}).DialContext(ctx, "udp", dest)
-	})
+	conn, err := s.dialUDPTarget(ctx, dest)
 	if err != nil {
 		status := http.StatusBadGateway
 		if errors.Is(err, access.ErrLimited) || errors.Is(err, access.ErrQuota) {
@@ -101,7 +99,7 @@ func (s *Server) resolveUDP(ctx context.Context, host string) (netip.Addr, error
 		if host == "" || strings.ContainsAny(host, "/\\\x00\r\n\t @?#") {
 			return netip.Addr{}, errors.New("invalid UDP target")
 		}
-		resolver := s.Resolver
+		resolver := s.destinationResolver()
 		if resolver == nil {
 			resolver = net.DefaultResolver
 		}

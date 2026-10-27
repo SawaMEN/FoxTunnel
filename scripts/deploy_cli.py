@@ -70,7 +70,9 @@ def sync_bundle(path):
     # durable. This prevents a durable pointer to merely cached bundle files.
     for child in path.rglob('*'):
         if child.is_file():
-            with child.open('r+b') as stream:
+            # Linux refuses write opens while an executable is mapped (ETXTBSY).
+            # No writes remain here; fsync only needs a readable descriptor.
+            with child.open('rb' if os.name != 'nt' else 'r+b') as stream:
                 os.fsync(stream.fileno())
     for directory in sorted((p for p in path.rglob('*') if p.is_dir()), key=lambda p: len(p.parts), reverse=True):
         sync_directory(directory)

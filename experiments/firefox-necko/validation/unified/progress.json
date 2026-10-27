@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "stage": 6,
-  "status": "native-archive-qualification-in-progress",
-  "stage_checks_complete": 2,
+  "status": "native-archives-qualified-integration-pending",
+  "stage_checks_complete": 3,
   "stage_checks_total": 4,
   "overall_stages_complete": 5,
   "overall_stages_total": 6,
@@ -11,9 +11,9 @@
   "release_run": 40365922072,
   "steps": [
     "Archive/layout/platform audit complete",
-    "Dual-architecture merge, offline integrity checks, install/rollback and native CI wiring implemented",
-    "Pending: build and exercise actual AMD64/ARM64 combined archives",
-    "Pending: final artifact verification, evidence and promotion to xfd"
+    "Dual-architecture secure merge, install and CI complete",
+    "Actual AMD64/ARM64 archives qualified natively and independently verified offline",
+    "Evidence recorded; integration with current main and promotion pending"
   ],
   "local_checks": [
     "216 Python tests passed, 2 expected skips",
@@ -22,9 +22,17 @@
     "AMD64 and ARM64 installer fixtures passed",
     "Release notes validate both full unified archives and reject old partial ARM64 layout",
     "All NSS notice-referenced license paths and SDK integration files retained",
-    "Refused exclusive archive creation preserves an existing archive unchanged"
+    "Refused exclusive archive creation preserves an existing archive unchanged",
+    "217 Python tests passed, 2 expected skips after installer fsync regression fix",
+    "26 JavaScript tests passed",
+    "Markdown links valid"
   ],
-  "main": "Not modified",
+  "main": "Current main a65a0ed merged without conflicts into candidate; remote main not yet changed",
   "publish": "Candidate branch resolves publish=false; no tag/release requested or published",
-  "superseded_run": 40364764698
+  "superseded_run": 40364764698,
+  "integration_changes": [
+    "Preserve existing SOCKS5 cascade changes from main",
+    "Read-only POSIX fsync avoids ETXTBSY while an executable is mapped; Windows keeps writable descriptor"
+  ],
+  "qualification_scope": "Archive evidence is for ddf216e; subsequent installer fix and merge require integration checks"
 }
