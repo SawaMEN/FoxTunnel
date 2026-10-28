@@ -48,6 +48,13 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y pkg-config libclang-dev gcc g++ binutils unzip libnss3-tools libgtk-3-0t64 libdbus-glib-1-2 libasound2t64 libxt6
       - name: Install pinned Rust
         run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt,clippy
+      - name: Restore pinned Neqo Rust build cache
+        uses: actions/cache@v4
+        with:
+          # Includes the isolated patched Cargo checkout and compiled intermediates.
+          # The build script validates pinned source/runtime hashes after restore.
+          path: rust/neqo-bridge/target
+          key: neqo-amd64-rust1.99.1-${{ hashFiles('rust/neqo-bridge/Cargo.lock', 'rust/neqo-bridge/Cargo.toml', 'scripts/neqo.lock.json', 'rust/patches/neqo-classic-connect-half-close.patch') }}
       - name: Build pinned bridge, runtime and license inventory
         run: python3 scripts/build_neqo.py
       - name: Rust format, clippy and ABI tests
