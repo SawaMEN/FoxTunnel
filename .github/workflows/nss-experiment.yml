@@ -26,6 +26,11 @@ on:
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/nss-experiment.yml'
+concurrency:
+  # Cancel superseded commits/PRs; never cancel a called Neqo release gate.
+  group: nss-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   nss:
     runs-on: ubuntu-24.04
