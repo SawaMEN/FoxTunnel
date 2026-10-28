@@ -46,7 +46,7 @@ jobs:
           import json, sys
           from pathlib import Path
           audit = json.loads(Path(sys.argv[1]).read_text())
-          diff = audit['comparisons_to_firefox']['vetroff']
+          diff = audit['comparisons_to_firefox']['foxtunnel']
           assert not diff['metadata_equal']
           assert diff['tls']['counts']['different'] > 0
           assert diff['http2']['counts']['different'] > 0
