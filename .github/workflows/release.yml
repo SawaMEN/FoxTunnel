@@ -25,9 +25,13 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
         run: python3 scripts/release_request.py
   legacy-wire:
+    # Full native/release verification runs only for an explicit publish request.
+    if: needs.request.outputs.publish == 'true'
     needs: [request]
     uses: ./.github/workflows/wire-compatibility.yml
   quality:
+    # Full native/release verification runs only for an explicit publish request.
+    if: needs.request.outputs.publish == 'true'
     needs: [request]
     runs-on: ubuntu-24.04
     steps:
@@ -46,6 +50,8 @@ jobs:
           go test -race ./... -count=1 -timeout=120s
           cd integration/external && go test -race ./... -count=1 -timeout=60s
   nss:
+    # Full native/release verification runs only for an explicit publish request.
+    if: needs.request.outputs.publish == 'true'
     needs: [request]
     strategy:
       fail-fast: false
@@ -131,9 +137,13 @@ jobs:
           path: dist/*
           if-no-files-found: error
   neqo:
+    # Full native/release verification runs only for an explicit publish request.
+    if: needs.request.outputs.publish == 'true'
     needs: [request]
     uses: ./.github/workflows/neqo-experiment.yml
   necko:
+    # Full native/release verification runs only for an explicit publish request.
+    if: needs.request.outputs.publish == 'true'
     needs: [request]
     uses: ./.github/workflows/necko-runtime-test.yml
     with:
