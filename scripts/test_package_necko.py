@@ -69,6 +69,21 @@ class PackageTests(unittest.TestCase):
                     manifest = bundle.package(runtime, provenance, launcher, root / 'bundle', cli)
                     self.assertEqual(manifest['platform'], 'linux-arm64')
 
+    def test_main_cli_is_packaged_as_vetroff_on_both_architectures(self):
+        for target in ('linux-amd64', 'linux-arm64'):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                runtime, provenance, launcher = self.fixture(root, target)
+                cli = root / 'main-cli'
+                cli.write_bytes(launcher.read_bytes())
+                out = root / 'bundle'
+                manifest = bundle.package(runtime, provenance, launcher, out, cli)
+                self.assertIn('vetroff', manifest['files'])
+                self.assertEqual(bundle.digest(out / 'vetroff'), manifest['files']['vetroff'])
+                self.assertTrue((out / 'vetroff').stat().st_mode & 0o111)
+                self.assertNotIn('foxtunnel', manifest['files'])
+                self.assertFalse((out / 'foxtunnel').exists())
+
     def test_recursive_output_paths_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
