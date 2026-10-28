@@ -1,23 +1,10 @@
-# Планы, исследования и история
+# История и измерения
 
-[На главную](../README.md) · [Первый запуск](START.md) · [Справочник](CONFIGURATION.md) · [Разработка](DEVELOPMENT.md)
+[Документация](README.md)
 
-Для настройки текущей сборки достаточно руководств выше. Номера старых
-этапов относятся к разным планам; они не являются номерами релиза или
-показателем готовности всего продукта. Исторические результаты сохраняются
-с исходным сценарием и ограничениями.
+- [Релизы](https://github.com/SawaMEN/VetroffProxy/releases) и [заметки по версиям](releases/).
+- [Исходные измерения](measurements/) и [реестр evidence](evidence/registry.json).
+- [Старая документация и планы](https://github.com/SawaMEN/VetroffProxy/tree/34ca713bd8234db7e26f2d3a24dbcaa684913d1b/docs).
 
-| Материал | Что в нём |
-|---|---|
-| [Обновление ветки update](UPDATE.md) | Восемь этапов; длительные испытания отменены |
-| [Исправления после Firefox comparison](UPDATE-FIXES.md) | Resumption, параметры H3, UDP storage и состояние проверок |
-| [Основной план реализации](https://github.com/SawaMEN/FoxTunnel/blob/935f2c205b272cf35c7f51a873c86c438d25d03d/docs/IMPLEMENTATION-PLAN.md) | Отдельная программа из десяти этапов |
-| [Лабораторная дорожная карта](https://github.com/SawaMEN/FoxTunnel/blob/935f2c205b272cf35c7f51a873c86c438d25d03d/docs/ROADMAP-LAB-ONLY.md) | Прежние эксперименты и границы выводов |
-| [NSS/Neqo и измерения](https://github.com/SawaMEN/FoxTunnel/blob/935f2c205b272cf35c7f51a873c86c438d25d03d/docs/NATIVE-BACKENDS.md) | Закреплённые версии, методы, ресурсы и wire-параметры |
-| [Firefox workload](measurements/firefox-stage6/README.md) | Нагрузка, отмена и переподключение; исходные JSON до исправлений |
-| [Оптимизация H3](measurements/UPDATE-H3.md) | Сохранённое сравнение Go allocations этапа 5 |
-| [Архив исходных измерений](measurements/) | Датированные результаты и hashes |
-| [История выпусков](releases/) | Заметки о конкретных версиях; не инструкция установки текущей |
-
-Текущие интерфейсы встраивания находятся в [контракте интеграции](INTEGRATION.md),
-SDK, сборка и проверки — в [руководстве разработчика](DEVELOPMENT.md).
+Старые этапы и результаты не отражают статус текущего выпуска.
+Актуальные инструкции: [запуск](START.md), [настройки](FEATURES.md), [разработка](DEVELOPMENT.md).

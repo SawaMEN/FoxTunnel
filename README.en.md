@@ -1,42 +1,31 @@
 # VetroffProxy
 
-The project and CLI are **VetroffProxy** (`vetroff`). For compatibility, the Go module `github.com/SawaMEN/FoxTunnel`, package `foxtunnel`, `FOXTUNNEL_*` variables, `vetroff://` links and wire identifiers retain their existing names. Historical archives and measurement records retain their original names.
-
 [Русский](README.md)
 
-VetroffProxy is a Go tunnel protocol core. It carries TCP and UDP over HTTPS
-as a standalone process or Go library, without sing-box or Xray.
+TCP and UDP over HTTPS. The client exposes SOCKS5; the server forwards traffic.
+Use the `vetroff` CLI or Go library, without sing-box or Xray.
 
-The client exposes SOCKS5 on `127.0.0.1:1080`; the server forwards traffic to
-destinations. The host application owns TUN, routing and device DNS.
+## Quick start
 
-## Start
-
-Download a complete bundle from [Releases](https://github.com/SawaMEN/FoxTunnel/releases)
-or build the Go version with Go 1.26.10+:
+You need a server, domain and TLS certificate. Download the full Linux bundle from
+[Releases](https://github.com/SawaMEN/VetroffProxy/releases) or build with Go 1.26.10+:
 
 ```sh
 go build -o vetroff ./cmd/vetroff
-./vetroff version --json
+./vetroff version
 ```
 
-- [Setup](docs/START.md) — server, client and troubleshooting (Russian).
-- [Options](docs/FEATURES.md) — transports, UDP, nodes and Bonding (Russian).
-- [Integration](docs/INTEGRATION.md) — Go API and process contract (English).
-- [Configuration and diagnostics](docs/CONFIGURATION.md) — check-config and doctor (Russian).
-- [Development](docs/DEVELOPMENT.md) — builds, tests and measurements (Russian).
-- [Operations](docs/OPERATIONS.md) — access, certificates and releases (Russian).
+Continue with [server and client setup](docs/START.md) (Russian).
 
-Branch `xfd` publishes one archive per Linux architecture. AMD64 combines an NSS-enabled
-CLI with the full verified Necko runtime; ARM64 keeps NSS without full Necko.
-The AMD64 CLI automatically selects Necko for compatible CONNECT sessions and NSS/Go
-for other features. Keep the full extracted directory, including `lib/` and `runtime/`.
-No GUI, APK, DMG or system VPN adapter is included.
+## Features
 
-The API and wire protocol remain experimental: pin a tested tag or commit.
-NSS/Neqo do not guarantee a Firefox fingerprint or censorship resistance.
-[MIT license](LICENSE).
+- HTTP/2, HTTP/3, WebSocket and XHTTP.
+- UDP, multiple nodes, Bonding and SOCKS5 cascades.
+- Go TLS/quic-go; NSS and Necko in the corresponding Linux builds.
 
-XHTTP and advanced TCP Bond have a [supported stability contract](docs/FEATURES.md#стабильность-xhttp-и-tcp-bond); their opt-in defaults are preserved. Public Go API and Neqo retain their separate status.
+[Documentation](docs/README.md) · [Options](docs/FEATURES.md) · [Go SDK](docs/INTEGRATION.md)
 
-TCP/UDP and DNS cascades through a SOCKS5 exit: [configuration and limits](docs/CASCADE.md).
+The host application owns TUN and routing. The protocol and SDK are experimental;
+a Firefox fingerprint or censorship resistance is not guaranteed.
+
+[MIT](LICENSE)
