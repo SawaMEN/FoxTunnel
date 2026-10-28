@@ -54,7 +54,7 @@ def check(tags=""):
         command += ["-tags", tags]
     # Both the SDK and process runtime must remain independent of lab tools.
     packages = subprocess.check_output(
-        command + [".", "./cmd/foxtunnel", "./processhost"], cwd=ROOT, text=True
+        command + [".", "./cmd/vetroffproxy", "./processhost"], cwd=ROOT, text=True
     ).splitlines()
     for package in packages:
         if any(under(package.lower(), p.lower()) for p in HOST_MODULES):

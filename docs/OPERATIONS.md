@@ -12,8 +12,8 @@
 исключив одиночные логин/пароль. Формат политики и команды проверки:
 
 ```sh
-./foxtunnel access --help
-./foxtunnel server --help
+./vetroffproxy access --help
+./vetroffproxy server --help
 ```
 
 Сохраняйте ledger учёта при перезапуске и обновлении. На Linux учёт сохраняется
@@ -27,7 +27,7 @@ Unix SIGINT/SIGTERM останавливают приём и закрывают 
 
 ## Сертификаты
 
-FoxTunnel не выпускает и не продлевает сертификаты автоматически.
+VetroffProxy не выпускает и не продлевает сертификаты автоматически.
 
 1. Замените цепочку PEM и ключ по прежним путям, сохранив владельца и права.
 2. На Unix отправьте серверу `kill -HUP SERVER_PID` после замены обоих файлов.
@@ -45,12 +45,12 @@ SIGHUP также независимо перечитывает access policy; �
 
 | Target | Архив | Содержимое |
 |---|---|---|
-| Linux amd64 | `foxtunnel_VERSION_linux_amd64.tar.gz` | NSS-enabled CLI, `lib/`, `runtime/` (полный Necko), проверяемый manifest |
-| Linux arm64 | `foxtunnel_VERSION_linux_arm64_nss.tar.gz` | NSS CLI, `lib/`, метаданные и лицензии |
+| Linux amd64 | `vetroffproxy_VERSION_linux_amd64.tar.gz` | NSS-enabled CLI, `lib/`, `runtime/` (полный Necko), проверяемый manifest |
+| Linux arm64 | `vetroffproxy_VERSION_linux_arm64_nss.tar.gz` | NSS CLI, `lib/`, метаданные и лицензии |
 
 Не распаковывайте отдельные старые NSS/Necko архивы поверх единого каталога.
 В AMD64-пакете корень после распаковки — `foxtunnel-necko/`, запускайте
-`foxtunnel-necko/foxtunnel`. Сохраняйте все вложенные файлы.
+`foxtunnel-necko/vetroffproxy`. Сохраняйте все вложенные файлы.
 Базовые glibc/libgcc не входят; runtime Linux ориентирован на Ubuntu 24.04.
 В ARM64 полный Necko пока недоступен.
 
@@ -62,8 +62,8 @@ SIGHUP также независимо перечитывает access policy; �
 ожидаемым тегом/коммитом. Для выпусков, подписанных основным workflow:
 
 ```sh
-gh attestation verify "$REVIEWED_ARCHIVE" --repo SawaMEN/FoxTunnel \
-  --signer-workflow SawaMEN/FoxTunnel/.github/workflows/release.yml \
+gh attestation verify "$REVIEWED_ARCHIVE" --repo SawaMEN/VetroffProxy \
+  --signer-workflow SawaMEN/VetroffProxy/.github/workflows/release.yml \
   --source-digest "$EXPECTED_COMMIT" --source-ref "$EXPECTED_SOURCE_REF" \
   --deny-self-hosted-runners
 ```

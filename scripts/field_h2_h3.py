@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Stage-8 real-path H2/NSS vs H3/Neqo field probe.
 
-Requires an independently deployed, trusted FoxTunnel server listening on
+Requires an independently deployed, trusted VetroffProxy server listening on
 TCP and UDP at the SAME origin, plus a controlled TCP echo target reachable
 from its exit. This script provisions NEITHER server and does not claim that
 running on loopback proves an external network path.
 
-Credentials are read from FOXTUNNEL_USER / FOXTUNNEL_PASSWORD by the FoxTunnel
+Credentials are read from FOXTUNNEL_USER / FOXTUNNEL_PASSWORD by the VetroffProxy
 subprocesses, never accepted as command-line flags or written to reports.
 """
 from __future__ import annotations
@@ -81,13 +81,13 @@ def wait_local(port: int, process: subprocess.Popen, seconds: float) -> None:
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         if process.poll() is not None:
-            raise RuntimeError("FoxTunnel client stopped before opening SOCKS (logs kept private)")
+            raise RuntimeError("VetroffProxy client stopped before opening SOCKS (logs kept private)")
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=0.2):
                 return
         except OSError:
             time.sleep(0.1)
-    raise TimeoutError("local FoxTunnel SOCKS listener not ready")
+    raise TimeoutError("local VetroffProxy SOCKS listener not ready")
 
 
 def route_evidence(status: dict, route: str, minimum: int) -> dict:
@@ -129,7 +129,7 @@ def sanitized_samples(rows: list[dict]) -> list[dict]:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--binary", type=Path, required=True, help="built Mozilla Linux amd64 FoxTunnel executable")
+    p.add_argument("--binary", type=Path, required=True, help="built Mozilla Linux amd64 VetroffProxy executable")
     p.add_argument("--server", type=server_url, required=True, help="trusted HTTPS origin, with both TCP/H2 and UDP/H3")
     p.add_argument("--ca-cert", type=Path, help="optional local CA PEM, not stored in report")
     p.add_argument("--sni", help="verified TLS DNS hostname when --server is an IP address")
@@ -205,7 +205,7 @@ def stop(process: subprocess.Popen) -> None:
 
 def measure(args: argparse.Namespace) -> tuple[dict, bool]:
     preflight(args)
-    with tempfile.TemporaryDirectory(prefix="foxtunnel-field8-") as directory:
+    with tempfile.TemporaryDirectory(prefix="vetroffproxy-field8-") as directory:
         private = Path(directory)
         h2_log, h3_log = private / "h2.log", private / "h3.log"
         result_path = private / "raw.json"
@@ -240,7 +240,7 @@ def measure(args: argparse.Namespace) -> tuple[dict, bool]:
                 h2_out.flush()
                 h3_out.flush()
                 if any(p.poll() is not None for p in running):
-                    raise RuntimeError("FoxTunnel client exited unexpectedly")
+                    raise RuntimeError("VetroffProxy client exited unexpectedly")
                 h2_status = latest_status(h2_log)
                 h3_status = latest_status(h3_log)
             raw = json.loads(result_path.read_text(encoding="utf-8"))
@@ -260,7 +260,7 @@ def measure(args: argparse.Namespace) -> tuple[dict, bool]:
     binary_hash = hashlib.sha256(args.binary.read_bytes()).hexdigest()
     report = {
         "schema": 1,
-        "kind": "foxtunnel-stage8-field-h2-h3",
+        "kind": "vetroffproxy-stage8-field-h2-h3",
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "passed": success,
         "scenario": args.scenario,

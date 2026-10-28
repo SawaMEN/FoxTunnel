@@ -64,14 +64,14 @@ def package(runtime, provenance, launcher, out, cli=None):
         if cli is not None:
             if not cli.is_file() or cli.is_symlink():
                 raise ValueError('regular compiled CLI required')
-            shutil.copyfile(cli, staging / 'foxtunnel')
-            (staging / 'foxtunnel').chmod(0o755)
+            shutil.copyfile(cli, staging / 'vetroffproxy')
+            (staging / 'vetroffproxy').chmod(0o755)
         shutil.copyfile(launcher, staging / 'foxtunnel-necko')
         (staging / 'foxtunnel-necko').chmod(0o755)
         shutil.copyfile(provenance, staging / 'provenance.json')
         shutil.copyfile(source, staging / 'source-lock.json')
         (staging / 'licenses').mkdir()
-        shutil.copyfile(ROOT / 'LICENSE', staging / 'licenses/FoxTunnel-MIT.txt')
+        shutil.copyfile(ROOT / 'LICENSE', staging / 'licenses/VetroffProxy-MIT.txt')
         shutil.copyfile(ROOT / 'experiments/firefox-necko/LICENSES.go.txt', staging / 'licenses/Go-dependencies.txt')
         shutil.copyfile(ROOT / 'experiments/firefox-necko/LICENSE.mozilla', staging / 'licenses/Mozilla.txt')
         shutil.copyfile(ROOT / 'experiments/firefox-necko/LICENSES.mozilla.html', staging / 'licenses/Mozilla.html')
@@ -115,7 +115,7 @@ def main():
     parser.add_argument('--launcher', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--archive', type=Path)
-    parser.add_argument('--cli', type=Path, help='main FoxTunnel CLI with owned Necko engine')
+    parser.add_argument('--cli', type=Path, help='main VetroffProxy CLI with owned Necko engine')
     args = parser.parse_args()
     if args.archive and args.archive.exists():
         parser.error('archive destination already exists')

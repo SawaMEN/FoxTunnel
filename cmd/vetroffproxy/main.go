@@ -58,7 +58,7 @@ func main() {
 		}
 		return
 	case "version":
-		fs := i18n.NewFlagSet("foxtunnel version")
+		fs := i18n.NewFlagSet("vetroffproxy version")
 		asJSON := fs.Bool("json", false, i18n.Text("print machine-readable build information"))
 		i18n.Parse(fs, os.Args[2:])
 		info := buildinfo.Current()
@@ -67,11 +67,11 @@ func main() {
 				log.Fatal(err)
 			}
 		} else {
-			fmt.Printf("FoxTunnel %s (%s %s/%s, %s, %s)\n", info.Version, info.Commit, info.GOOS, info.GOARCH, info.BuildFlavor, info.ProtocolDraft)
+			fmt.Printf("VetroffProxy %s (%s %s/%s, %s, %s)\n", info.Version, info.Commit, info.GOOS, info.GOARCH, info.BuildFlavor, info.ProtocolDraft)
 		}
 
 	case "setup":
-		fs := i18n.NewFlagSet("foxtunnel setup")
+		fs := i18n.NewFlagSet("vetroffproxy setup")
 		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict (strict generates a direct single-node profile)")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (setup generates a random route by default)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
@@ -98,7 +98,7 @@ func main() {
 		fmt.Println(i18n.Text("configuration created: server.json, connection.txt and node.json (secrets not printed)"))
 		return
 	case "cluster-add":
-		fs := i18n.NewFlagSet("foxtunnel cluster-add")
+		fs := i18n.NewFlagSet("vetroffproxy cluster-add")
 		config := fs.String("config", "", i18n.Text("private server configuration JSON"))
 		node := fs.String("node-file", "", i18n.Text("public node identity JSON to add or update"))
 		i18n.Parse(fs, os.Args[2:])
@@ -108,7 +108,7 @@ func main() {
 		fmt.Println(i18n.Text("cluster updated; new sessions receive the change on refresh"))
 		return
 	case "server":
-		fs := i18n.NewFlagSet("foxtunnel server")
+		fs := i18n.NewFlagSet("vetroffproxy server")
 		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict (TCP/UDP; incompatible with bond/discovery)")
 		eventsJSON := fs.Bool("events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
 		stdinEOF := fs.Bool("shutdown-on-stdin-eof", false, "gracefully stop when the host closes stdin")
@@ -300,7 +300,7 @@ func main() {
 		return
 
 	case "client", "share":
-		fs := i18n.NewFlagSet("foxtunnel " + os.Args[1])
+		fs := i18n.NewFlagSet("vetroffproxy " + os.Args[1])
 		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict; a connection profile owns this setting")
 		eventsJSON, stdinEOF := new(bool), new(bool)
 		if os.Args[1] == "client" {
@@ -728,7 +728,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, i18n.Text("usage: foxtunnel <version|setup|server|client|share|cluster-add|access|check-config|doctor> [flags] (credentials: environment or vetroff link)"))
+	fmt.Fprintln(os.Stderr, i18n.Text("usage: vetroffproxy <version|setup|server|client|share|cluster-add|access|check-config|doctor> [flags] (credentials: environment or vetroff link)"))
 	os.Exit(2)
 }
 

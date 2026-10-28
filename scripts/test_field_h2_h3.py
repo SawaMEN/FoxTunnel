@@ -18,7 +18,7 @@ class FieldH2H3Validation(unittest.TestCase):
 
     def test_cli_supports_verified_name_for_numeric_ip(self):
         args = f.build_parser().parse_args([
-            "--binary", "foxtunnel", "--server", "https://127.0.0.1:8443",
+            "--binary", "vetroffproxy", "--server", "https://127.0.0.1:8443",
             "--sni", "localhost", "--target", "127.0.0.1:9000",
             "--out", "private.json",
         ])

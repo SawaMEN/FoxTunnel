@@ -44,7 +44,7 @@ jobs:
       - name: Independent external SDK consumer
         run: cd integration/external && go test -race ./... -count=1 -timeout=30s
       - name: Build
-        run: go build ./cmd/foxtunnel
+        run: go build ./cmd/vetroffproxy
       - name: Проверка известных уязвимостей Go
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
       - name: Фаззинг состава кластера

@@ -27,7 +27,7 @@ func readAccessPolicy(path string, relay bool) (access.Document, error) {
 	return d, nil
 }
 func accessCommand(args []string) error {
-	fs := i18n.NewFlagSet("foxtunnel access")
+	fs := i18n.NewFlagSet("vetroffproxy access")
 	file := fs.String("users-file", "", i18n.Text("private access policy JSON; reload with SIGHUP"))
 	state := fs.String("users-state", "", i18n.Text("durable access ledger in a private directory"))
 	i18n.Parse(fs, args)

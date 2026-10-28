@@ -1,4 +1,4 @@
-# FoxTunnel wire draft 0
+# VetroffProxy wire draft 0
 
 [Каталог документации](../DEVELOPMENT.md) · [Совместимость и версии](../DEVELOPMENT.md)
 
@@ -70,7 +70,7 @@ at most 64 KiB, including in-progress reads and delivery. Sequence starts at zer
 delivers exactly in order; duplicate/out-of-window/mixed-mode packets fail. ACK
 follows ordered delivery, not mere queuing. Missing/stalled bodies expire after
 30 seconds. Failed/ambiguous ACK closes the carrier without automatic HTTP replay.
-This is a FoxTunnel XHTTP-shaped subset; reference Xray interoperability/XMUX are
+This is a VetroffProxy XHTTP-shaped subset; reference Xray interoperability/XMUX are
 not established. Existing [native transport notes](../FEATURES.md) cover
 carrier details and limits.
 
@@ -158,7 +158,7 @@ bytes; maximum-size datagrams have separate boundary tests.
 
 The separate external Go module also implements a minimal standard-library
 HTTP/2 CONNECT peer, including version rejection, strict confirmation, data
-exchange and half-close, without using the FoxTunnel client or internal codecs.
+exchange and half-close, without using the VetroffProxy client or internal codecs.
 This checks the documented HTTP wire composition, not full cross-language or
 cross-version release certification. WSS/XHTTP/bond/cluster still require their
 own extension contracts and tests.

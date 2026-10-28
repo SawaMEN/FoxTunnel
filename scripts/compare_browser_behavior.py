@@ -75,27 +75,27 @@ def ordered_vectors(reference, candidate):
 
 
 def compare(profiles, cold_profiles):
-    if set(profiles) != {(s, p) for s in ('firefox', 'foxtunnel') for p in ('h2', 'h3')}:
+    if set(profiles) != {(s, p) for s in ('firefox', 'vetroffproxy') for p in ('h2', 'h3')}:
         raise ValueError('complete subject/protocol matrix required')
     for (subject, protocol), report in profiles.items():
         validate(report, protocol)
     cases = []
     for protocol in ('h2', 'h3'):
-        ref, candidate = (profiles[(s, protocol)] for s in ('firefox', 'foxtunnel'))
-        cases.append(dict(protocol=protocol, firefox=summary(ref), foxtunnel=summary(candidate)))
+        ref, candidate = (profiles[(s, protocol)] for s in ('firefox', 'vetroffproxy'))
+        cases.append(dict(protocol=protocol, firefox=summary(ref), vetroffproxy=summary(candidate)))
     # Preserve the actual order/presence of the selected TLS/H2 vectors on
     # every used H2 connection, including fresh connections after rotation.
     ordered = {subject: [dict(connection=c['id'], requests=c['requests'], resumed=c['session_resumed'],
                              hello={k: c['h2_wire']['hello'].get(k) for k in VECTORS},
                              initial_h2_settings=c['h2_wire']['initial_h2_settings'])
                          for c in profiles[(subject, 'h2')]['connections'] if c['requests']]
-               for subject in ('firefox', 'foxtunnel')}
+               for subject in ('firefox', 'vetroffproxy')}
     first = {s: next(c['h2_wire'] for c in profiles[(s, 'h2')]['connections'] if c['requests'].get('cold'))
-             for s in ('firefox', 'foxtunnel')}
-    h3 = [fingerprint_audit.field_row(field, cold_profiles[('firefox', 'h3')], cold_profiles[('foxtunnel', 'h3')])
+             for s in ('firefox', 'vetroffproxy')}
+    h3 = [fingerprint_audit.field_row(field, cold_profiles[('firefox', 'h3')], cold_profiles[('vetroffproxy', 'h3')])
           for field in fingerprint_audit.H3_FIELDS]
     return dict(schema=1, kind='firefox-foxtunnel-controlled-behavior-comparison', cases=cases,
-                ordered_h2_connections=ordered, first_h2_comparison=ordered_vectors(first['firefox'], first['foxtunnel']),
+                ordered_h2_connections=ordered, first_h2_comparison=ordered_vectors(first['firefox'], first['vetroffproxy']),
                 cold_h3_effective_comparison=h3,
                 h3_raw_presence='not_measured', h3_raw_order='not_measured',
                 scope='Same local GET payloads and cancellation/forced-reconnect schedule. Firefox bootstrap page is excluded. Server-observed TLS resumption is not a client feature claim. TLS/H2 selected vector order is raw; H3 fields are selected effective decoder values including defaults, not raw presence/order. Timing, browser background traffic, full Firefox networking behavior, WAN and DPI indistinguishability are not measured.')
@@ -107,9 +107,9 @@ def capture_behavior(endpoint, firefox, cert, key, ca, work, subject, protocol, 
     out, ready = work / (stem + '.json'), work / (stem + '-ready.json')
     args = [str(endpoint), '--protocol', protocol, '--cert', str(cert), '--key', str(key),
             '--ready', str(ready), '--out', str(out)]
-    if subject == 'foxtunnel':
+    if subject == 'vetroffproxy':
         args += ['--sample', 'nss' if protocol == 'h2' else 'neqo']
-    elif subject == 'foxtunnel-firefox-profile' and protocol == 'h2':
+    elif subject == 'vetroffproxy-firefox-profile' and protocol == 'h2':
         args += ['--sample', 'nss-firefox']
     with (work / (stem + '.log')).open('wb') as log:
         server = subprocess.Popen(args, env=env, stdout=log, stderr=log)

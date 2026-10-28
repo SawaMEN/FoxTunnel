@@ -1,8 +1,10 @@
-# FoxTunnel
+# VetroffProxy
+
+Название проекта и CLI — **VetroffProxy** (`vetroffproxy`). Для совместимости путь Go-модуля `github.com/SawaMEN/FoxTunnel`, пакет `foxtunnel`, переменные `FOXTUNNEL_*`, ссылки `vetroff://` и сетевые идентификаторы сохраняются. Старые архивы и результаты измерений сохраняют исходные имена.
 
 [English](README.en.md)
 
-FoxTunnel — ядро туннельного протокола на Go. Передаёт TCP и UDP через HTTPS,
+VetroffProxy — ядро туннельного протокола на Go. Передаёт TCP и UDP через HTTPS,
 работает как отдельный процесс или Go-библиотека. Не зависит от sing-box и Xray.
 
 Клиент предоставляет SOCKS5 на `127.0.0.1:1080`, сервер принимает соединения
@@ -14,8 +16,8 @@ FoxTunnel — ядро туннельного протокола на Go. Пер
 или соберите обычную Go-версию (Go 1.26.10+):
 
 ```sh
-go build -o foxtunnel ./cmd/foxtunnel
-./foxtunnel version --json
+go build -o vetroffproxy ./cmd/vetroffproxy
+./vetroffproxy version --json
 ```
 
 Далее — [настройка сервера и клиента](docs/START.md).

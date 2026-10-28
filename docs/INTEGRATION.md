@@ -1,13 +1,13 @@
 # Integration
 
-FoxTunnel provides a Go API and a supervised process interface. It is a protocol
+VetroffProxy provides a Go API and a supervised process interface. It is a protocol
 core; the host owns device networking and application UI. Pin a tested tag/commit.
 API schema 1, process schema 1 and wire `foxtunnel-draft-0` are separate versions.
 
 ## Distribution
 
 The xfd release distributes one artifact per Linux architecture. Linux AMD64
-contains an NSS-enabled `foxtunnel` CLI together with the verified Necko
+contains an NSS-enabled `vetroffproxy` CLI together with the verified Necko
 `runtime/`, helper and `lib/` in one archive. Linux ARM64 still ships NSS
 without the full Necko runtime. Keep the extracted bundle intact and use the
 executable inside `foxtunnel-necko/` on AMD64. Runtime baseline: Ubuntu 24.04
@@ -109,7 +109,7 @@ UDP delivery, ordering and application response validation remain the host's job
 Use a verified executable with a private connection file:
 
 ```sh
-./foxtunnel client --link-file /private/profile/connection.txt \
+./vetroffproxy client --link-file /private/profile/connection.txt \
   --listen 127.0.0.1:1080 --events-json --shutdown-on-stdin-eof
 ```
 
@@ -118,7 +118,7 @@ libraries into the host. See repository `examples/process-host/main.go`.
 
 ```go
 child, err := processhost.StartClient(ctx, processhost.ClientOptions{
-    Executable: "/verified/bundle/foxtunnel",
+    Executable: "/verified/bundle/vetroffproxy",
     LinkFile: "/private/profile/connection.txt",
 })
 if err != nil { return err }
@@ -158,7 +158,7 @@ These runtime flags can be combined with server `--config` or client `--link-fil
 A panel can supervise:
 
 ```sh
-./foxtunnel server --config /private/foxtunnel/server.json
+./vetroffproxy server --config /private/vetroffproxy/server.json
 ```
 
 The JSON schema is defined by repository `internal/bootstrap.ServerConfig`.
@@ -174,7 +174,7 @@ A Go server host must provide TLS 1.3, HTTP/2, certificates, listeners and clean
 The panel owns provisioning, private files, resource limits, updates and rollback.
 The VPN client owns TUN/TCP-IP adaptation, VpnService/NetworkExtension, outer-socket
 bypass, routing, DNS, IPv6, kill switch and reconnect. Avoid routing the outer
-FoxTunnel socket back into its own TUN. SOCKS5 alone does not capture device traffic;
+VetroffProxy socket back into its own TUN. SOCKS5 alone does not capture device traffic;
 its default listener has no authentication. Independent local credentials can be
 set through `FOXTUNNEL_SOCKS_USER` and `FOXTUNNEL_SOCKS_PASSWORD`.
 

@@ -1,4 +1,4 @@
-name: FoxTunnel security hardening (TLS trust, secrets, SOCKS and DPI evidence)
+name: VetroffProxy security hardening (TLS trust, secrets, SOCKS and DPI evidence)
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ on:
       - 'internal/profile/**'
       - 'internal/tunnel/**'
       - 'internal/tlsidentity/**'
-      - 'cmd/foxtunnel/**'
+      - 'cmd/vetroffproxy/**'
       - 'scripts/fingerprint_audit.py'
       - 'scripts/test_fingerprint_audit.py'
       - '.github/workflows/security-hardening.yml'
@@ -31,11 +31,11 @@ jobs:
           go-version: '1.26.10'
           cache: true
       - name: Validate formatting
-        run: test -z "$(gofmt -l internal/profile/secretfile*.go internal/tunnel/socks_auth*.go internal/tunnel/nodetrust*.go internal/tunnel/client.go internal/tunnel/identity.go cmd/foxtunnel/main.go cmd/foxtunnel/main_test.go)"
+        run: test -z "$(gofmt -l internal/profile/secretfile*.go internal/tunnel/socks_auth*.go internal/tunnel/nodetrust*.go internal/tunnel/client.go internal/tunnel/identity.go cmd/vetroffproxy/main.go cmd/vetroffproxy/main_test.go)"
       - name: Test all packages and TLS/SPKI/SOCKS secret regressions
         run: go test ./... -count=1 -timeout=120s
       - name: Test race safety and local authentication
-        run: go test -race ./internal/profile ./internal/tlsidentity ./internal/tunnel ./cmd/foxtunnel -count=1 -timeout=120s
+        run: go test -race ./internal/profile ./internal/tlsidentity ./internal/tunnel ./cmd/vetroffproxy -count=1 -timeout=120s
       - name: Repeat core security, trust, isolation and revocation contracts
         run: |
           go test -race ./internal/tunnel -run '^TestSecurityStage5|^TestVerifiedSNIAndPinGo$|^TestPinCannotReuse|^TestAccessRevocationIsolationAllTransports$|^TestAccessQuota' -count=3 -timeout=120s
@@ -43,16 +43,16 @@ jobs:
           (cd integration/external && go test -race ./... -run '^TestPublicTrust' -count=3 -timeout=60s)
       - name: Static checks
         run: go vet ./...
-      - name: Firefox/FoxTunnel fingerprint evidence contracts (NOT a DPI bypass guarantee)
+      - name: Firefox/VetroffProxy fingerprint evidence contracts (NOT a DPI bypass guarantee)
         run: |
           python3 -m unittest discover -s scripts -p 'test_fingerprint_audit.py' -v
           umask 077
           python3 scripts/fingerprint_audit.py \
             --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
-            --foxtunnel docs/measurements/2026-10-19/nss-firefox158-page.json \
-            --out /tmp/foxtunnel-security-fingerprint-${{ github.run_id }}.json
-          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert not d["comparisons_to_firefox"]["foxtunnel"]["metadata_equal"]; assert not d["all_three_and_both_protocols_measured"]' /tmp/foxtunnel-security-fingerprint-${{ github.run_id }}.json
-          rm -f /tmp/foxtunnel-security-fingerprint-${{ github.run_id }}.json
+            --vetroffproxy docs/measurements/2026-10-19/nss-firefox158-page.json \
+            --out /tmp/vetroffproxy-security-fingerprint-${{ github.run_id }}.json
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert not d["comparisons_to_firefox"]["vetroffproxy"]["metadata_equal"]; assert not d["all_three_and_both_protocols_measured"]' /tmp/vetroffproxy-security-fingerprint-${{ github.run_id }}.json
+          rm -f /tmp/vetroffproxy-security-fingerprint-${{ github.run_id }}.json
       - name: Limits
         run: |
           echo 'CI proves test contracts only: no external security audit or live DPI measurement.'

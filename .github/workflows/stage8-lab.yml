@@ -60,7 +60,7 @@ jobs:
           FOXTUNNEL_PASSWORD="$(openssl rand -hex 32)"
           python3 scripts/echo_server.py --host 127.0.0.1 --port 19000 >"$work/echo.log" 2>&1 &
           echo_pid=$!
-          "$work/foxtunnel" server \
+          "$work/vetroffproxy" server \
             --listen 127.0.0.1:18443 --h3-listen 127.0.0.1:18443 \
             --cert "$work/cert.pem" --key "$work/key.pem" \
             --allow-private >"$work/server.log" 2>&1 &
@@ -78,7 +78,7 @@ jobs:
               raise SystemExit('server did not open TCP listener')
           PY
           python3 scripts/field_h2_h3.py \
-            --binary "$work/foxtunnel" \
+            --binary "$work/vetroffproxy" \
             --server https://127.0.0.1:18443 --sni localhost --ca-cert "$work/cert.pem" \
             --target 127.0.0.1:19000 --rounds 3 --warmup 1 --parallel 2 \
             --bytes 131072 --timeout 15 \

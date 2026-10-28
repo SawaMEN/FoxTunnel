@@ -51,7 +51,7 @@ jobs:
           export FOXTUNNEL_USER=stage9-ci
           export FOXTUNNEL_PASSWORD
           FOXTUNNEL_PASSWORD="$(openssl rand -hex 32)"
-          python3 scripts/soak_h2_h3.py --binary "$work/foxtunnel" \
+          python3 scripts/soak_h2_h3.py --binary "$work/vetroffproxy" \
             --cert "$work/cert.pem" --key "$work/key.pem" \
             --seconds 75 --parallel 3 --bytes 131072 \
             --recovery-seconds 100 --minimum-success 98 \

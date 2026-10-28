@@ -1,8 +1,10 @@
-# FoxTunnel
+# VetroffProxy
+
+The project and CLI are **VetroffProxy** (`vetroffproxy`). For compatibility, the Go module `github.com/SawaMEN/FoxTunnel`, package `foxtunnel`, `FOXTUNNEL_*` variables, `vetroff://` links and wire identifiers retain their existing names. Historical archives and measurement records retain their original names.
 
 [Русский](README.md)
 
-FoxTunnel is a Go tunnel protocol core. It carries TCP and UDP over HTTPS
+VetroffProxy is a Go tunnel protocol core. It carries TCP and UDP over HTTPS
 as a standalone process or Go library, without sing-box or Xray.
 
 The client exposes SOCKS5 on `127.0.0.1:1080`; the server forwards traffic to
@@ -14,8 +16,8 @@ Download a complete bundle from [Releases](https://github.com/SawaMEN/FoxTunnel/
 or build the Go version with Go 1.26.10+:
 
 ```sh
-go build -o foxtunnel ./cmd/foxtunnel
-./foxtunnel version --json
+go build -o vetroffproxy ./cmd/vetroffproxy
+./vetroffproxy version --json
 ```
 
 - [Setup](docs/START.md) — server, client and troubleshooting (Russian).

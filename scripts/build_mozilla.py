@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build a versioned Linux/amd64 FoxTunnel Mozilla bundle (Go + NSS + Neqo).
+"""Build a versioned Linux/amd64 VetroffProxy Mozilla bundle (Go + NSS + Neqo).
 
 This is a separate, opt-in build artifact, NOT a GitHub Release. All inputs
 must be locked; the script never changes release requests or tags.
-It builds without running test suites or invoking the built FoxTunnel binary.
+It builds without running test suites or invoking the built VetroffProxy binary.
 """
 import argparse
 import datetime as dt
@@ -80,7 +80,7 @@ def package(argv):
     build_date = dt.datetime.fromtimestamp(epoch, dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     out = Path(argv.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    stem = f'foxtunnel_{argv.version[1:]}_linux_amd64_mozilla.tar.gz'
+    stem = f'vetroffproxy_{argv.version[1:]}_linux_amd64_mozilla.tar.gz'
     archive = out / stem
     metadata_file = out / (stem + '.metadata.json')
     if archive.exists() or metadata_file.exists():
@@ -113,10 +113,10 @@ def package(argv):
         ldflags = '-s -w -buildid= ' + ' '.join(
             '-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.' + key + '=' + val
             for key, val in values.items())
-        executable = staging / 'foxtunnel'
+        executable = staging / 'vetroffproxy'
         run([argv.go, 'build', '-mod=readonly', '-trimpath', '-buildvcs=false',
              '-tags', 'nss,neqo,mozilla', '-ldflags', ldflags,
-             '-o', executable, './cmd/foxtunnel'], env=env)
+             '-o', executable, './cmd/vetroffproxy'], env=env)
         # Dependency checks do not run the target executable or any test suite.
         mozilla_runtime.verify_loaded(executable, staging, runtime['libraries'], env)
         go_version = release.command([argv.go, 'env', 'GOVERSION'], env)
@@ -132,7 +132,7 @@ def package(argv):
             append_asset(files, name, content)
         append_asset(files, 'neqo-provenance.json', provenance)
         append_asset(files, 'rust-dependencies.json', dependency_manifest)
-        append_asset(files, 'foxtunnel', required_bytes(executable))
+        append_asset(files, 'vetroffproxy', required_bytes(executable))
         notices = files['THIRD_PARTY_NOTICES.txt'].decode()
         notices += ('Pinned Neqo 0.33.0 / Rust dependencies: rust-dependencies.json, '
                     'neqo-provenance.json and licenses/Rust-*.txt (mapped by rust-license-index.json).\n')
@@ -164,7 +164,7 @@ def package(argv):
                         item = tarfile.TarInfo(name)
                         item.size = len(content)
                         item.mtime = epoch
-                        item.mode = 0o755 if name == 'foxtunnel' else 0o644
+                        item.mode = 0o755 if name == 'vetroffproxy' else 0o644
                         tar.addfile(item, io.BytesIO(content))
     result = dict(schema=1, artifact=stem, version=argv.version,
                   target='linux/amd64/mozilla', commit=commit,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stage-4 real FoxTunnel socket smoke on CI loopback ONLY.
+# Stage-4 real VetroffProxy socket smoke on CI loopback ONLY.
 # Never present resulting numbers as independent VDS/WAN evidence.
 set -euo pipefail
 umask 077
@@ -12,7 +12,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-go build -o "$work/foxtunnel" ./cmd/foxtunnel
+go build -o "$work/vetroffproxy" ./cmd/vetroffproxy
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
   -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' \
   -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
@@ -28,18 +28,18 @@ python3 scripts/udp_echo_server.py --port 19002 >"$work/udp-echo2.log" 2>&1 &
 pids+=("$!")
 
 for port in 18443 18444; do
-  "$work/foxtunnel" server \
+  "$work/vetroffproxy" server \
     --listen "127.0.0.1:$port" --enable-udp --allow-private \
     --cert "$work/cert.pem" --key "$work/key.pem" \
     >"$work/server-$port.log" 2>&1 &
   pids+=("$!")
 done
 
-"$work/foxtunnel" client --server https://127.0.0.1:18443 \
+"$work/vetroffproxy" client --server https://127.0.0.1:18443 \
   --sni localhost --ca-cert "$work/cert.pem" --listen 127.0.0.1:11080 \
   --enable-udp --udp-stream >"$work/client-legacy.log" 2>&1 &
 pids+=("$!")
-"$work/foxtunnel" client --server https://127.0.0.1:18443 \
+"$work/vetroffproxy" client --server https://127.0.0.1:18443 \
   --fallback-server https://127.0.0.1:18444 \
   --sni localhost --ca-cert "$work/cert.pem" --listen 127.0.0.1:11081 \
   --enable-udp --udp-stream --udp-multi-node \

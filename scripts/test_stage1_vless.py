@@ -1,4 +1,4 @@
-"""Offline tests for the redacted Stage 1 FoxTunnel vs Xray/VLESS benchmark."""
+"""Offline tests for the redacted Stage 1 VetroffProxy vs Xray/VLESS benchmark."""
 from __future__ import annotations
 
 import json
@@ -21,7 +21,7 @@ def fake_report(day: int, scenario="small") -> dict:
                             "connect_ms": 10.0, "transfer_ms": 5.0, "completion_ms": 15.0,
                             "payload_mbps": speed,
                             "error_category": None, "integrity_failure": False})
-    return {"schema": 2, "kind": "foxtunnel-vless-stage1",
+    return {"schema": 2, "kind": "vetroffproxy-vless-stage1",
             "created_at_utc": f"2026-10-{day:02d}T10:00:00+00:00",
             "scenario": scenario, "environment": "wan",
             "wan_attested_by_operator": True,
@@ -111,7 +111,7 @@ class Stage1Tests(unittest.TestCase):
                 row["payload_mbps"] = 50
         result = gate.evaluate(reports)
         self.assertFalse(result["passed"])
-        self.assertIn("FoxTunnel median goodput below 90% VLESS", result["issues"])
+        self.assertIn("VetroffProxy median goodput below 90% VLESS", result["issues"])
         self.assertIn("at least three different UTC measurement days required", result["issues"])
 
     def test_gate_checks_ids_integrity_and_schema(self):
@@ -141,7 +141,7 @@ class Stage1Tests(unittest.TestCase):
                 row["transfer_ms"] = 50
                 row["completion_ms"] = 60
         result = gate.evaluate(reports)
-        self.assertIn("FoxTunnel p95 end-to-end latency above 110% VLESS", result["issues"])
+        self.assertIn("VetroffProxy p95 end-to-end latency above 110% VLESS", result["issues"])
 
     def test_gate_rejects_inconsistent_timing_or_unidentified_transport(self):
         reports = [fake_report(d) for d in (18, 19, 20)]

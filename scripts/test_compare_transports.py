@@ -1,4 +1,4 @@
-"""Offline tests for the independent FoxTunnel/VLESS measurement harness."""
+"""Offline tests for the independent VetroffProxy/VLESS measurement harness."""
 from __future__ import annotations
 
 import json
@@ -100,14 +100,14 @@ class BenchmarkTests(unittest.TestCase):
         proxy = f'127.0.0.1:{self.proxy.port}'
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / 'comparison.json'
-            args = ['--proxy', f'foxtunnel={proxy}', '--proxy', f'vless={proxy}',
+            args = ['--proxy', f'vetroffproxy={proxy}', '--proxy', f'vless={proxy}',
                     '--target', 'echo.example:9000', '--warmup', '1', '--rounds', '2',
                     '--parallel', '2', '--bytes', '131079', '--out', str(out)]
             self.assertEqual(bench.main(args), 0)
             document = json.loads(out.read_text())
             self.assertEqual(document['schema'], 1)
             self.assertEqual(len(document['samples']), 8)
-            self.assertEqual(document['summary']['foxtunnel']['successful'], 4)
+            self.assertEqual(document['summary']['vetroffproxy']['successful'], 4)
             self.assertEqual(document['summary']['vless']['failed'], 0)
             self.assertEqual(document['configuration']['target']['host'], 'echo.example')
             with self.assertRaises(SystemExit):

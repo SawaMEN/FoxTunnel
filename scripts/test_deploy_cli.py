@@ -149,8 +149,8 @@ class LauncherLifecycle(unittest.TestCase):
 
     def test_posix_launcher_retains_exec_argument_boundaries(self):
         with patch.object(deploy.sys, 'platform', 'linux'), patch.object(deploy.os, 'execv') as execute:
-            deploy.launch('/reviewed/foxtunnel', ['version', 'argument with spaces'])
-        execute.assert_called_once_with('/reviewed/foxtunnel', ['/reviewed/foxtunnel', 'version', 'argument with spaces'])
+            deploy.launch('/reviewed/vetroffproxy', ['version', 'argument with spaces'])
+        execute.assert_called_once_with('/reviewed/vetroffproxy', ['/reviewed/vetroffproxy', 'version', 'argument with spaces'])
 
 
 @unittest.skipUnless(os.environ.get('FOXTUNNEL_INSTALL_LAB_A') and os.environ.get('FOXTUNNEL_INSTALL_LAB_B'), 'native binaries supplied only by explicit installation lab')

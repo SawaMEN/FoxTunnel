@@ -11,7 +11,7 @@ on:
       - 'scripts/bond_stage4_lab_smoke.sh'
       - 'internal/bond/**'
       - 'internal/tunnel/**'
-      - 'cmd/foxtunnel/**'
+      - 'cmd/vetroffproxy/**'
   workflow_dispatch:
 
 permissions:
@@ -34,7 +34,7 @@ jobs:
         run: |
           go test -race ./internal/bond ./internal/tunnel -run '^Test(Adaptive|Traffic|UDPMultiNode|UDPIngress)' -count=1 -timeout=120s
           go vet ./...
-      - name: Real FoxTunnel HTTP/2 TCP and two-node UDP socket smoke (LOOPBACK ONLY)
+      - name: Real VetroffProxy HTTP/2 TCP and two-node UDP socket smoke (LOOPBACK ONLY)
         timeout-minutes: 10
         run: bash scripts/bond_stage4_lab_smoke.sh
       - name: Do not present CI as external WAN evidence

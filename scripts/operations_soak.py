@@ -128,7 +128,7 @@ def run(args):
     if len(set(ports.values())) != 3:
         raise RuntimeError('ephemeral port collision; retry')
     processes = {}
-    with tempfile.TemporaryDirectory(prefix='foxtunnel-operations-') as directory, EchoServer(('127.0.0.1', 0), Echo) as echo:
+    with tempfile.TemporaryDirectory(prefix='vetroffproxy-operations-') as directory, EchoServer(('127.0.0.1', 0), Echo) as echo:
         threading.Thread(target=echo.serve_forever, daemon=True).start()
         destination = bench.Address('127.0.0.1', echo.server_address[1])
         logs = []

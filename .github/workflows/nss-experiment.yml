@@ -45,6 +45,6 @@ jobs:
       - name: Vet NSS adapter
         run: go vet -tags nss ./...
       - name: Build NSS client
-        run: go build -tags nss -o /tmp/foxtunnel-nss ./cmd/foxtunnel
+        run: go build -tags nss -o /tmp/vetroffproxy-nss ./cmd/vetroffproxy
       - name: Проверка Go-уязвимостей сборки NSS
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -tags=nss ./...

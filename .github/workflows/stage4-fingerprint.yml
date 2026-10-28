@@ -40,13 +40,13 @@ jobs:
           out="$RUNNER_TEMP/fox-stage4-audit.json"
           python3 scripts/fingerprint_audit.py \
             --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
-            --foxtunnel docs/measurements/2026-10-19/nss-firefox158-page.json \
+            --vetroffproxy docs/measurements/2026-10-19/nss-firefox158-page.json \
             --out "$out"
           python3 - "$out" <<'PY'
           import json, sys
           from pathlib import Path
           audit = json.loads(Path(sys.argv[1]).read_text())
-          diff = audit['comparisons_to_firefox']['foxtunnel']
+          diff = audit['comparisons_to_firefox']['vetroffproxy']
           assert not diff['metadata_equal']
           assert diff['tls']['counts']['different'] > 0
           assert diff['http2']['counts']['different'] > 0

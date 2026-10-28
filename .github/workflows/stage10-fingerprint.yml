@@ -1,4 +1,4 @@
-name: Stage 10 Firefox FoxTunnel fingerprint evidence (no fake Naive)
+name: Stage 10 Firefox VetroffProxy fingerprint evidence (no fake Naive)
 
 on:
   push:
@@ -19,13 +19,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate conservative evidence classification
         run: python3 -m unittest discover -s scripts -p test_fingerprint_audit.py -v
-      - name: Compare historical Firefox 158 and pre-stage-3 FoxTunnel NSS
+      - name: Compare historical Firefox 158 and pre-stage-3 VetroffProxy NSS
         run: |
           umask 077
           mkdir -p stage10-report
           python3 scripts/fingerprint_audit.py \
             --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
-            --foxtunnel docs/measurements/2026-10-19/nss-firefox158-page.json \
+            --vetroffproxy docs/measurements/2026-10-19/nss-firefox158-page.json \
             --out stage10-report/historical-audit.json
       - uses: actions/upload-artifact@v4
         with:
@@ -64,11 +64,11 @@ jobs:
             --cert "$work/cert.pem" --key "$work/key.pem" \
             --sample nss --scenario page --tls-client-profile firefox-158 \
             --h2-receive-profile firefox-158 \
-            --source "FoxTunnel update NSS-3.130 stage10 local H2 GET" \
+            --source "VetroffProxy update NSS-3.130 stage10 local H2 GET" \
             --duration 2s --out stage10-report/current-nss-h2.json
           python3 scripts/fingerprint_audit.py \
             --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
-            --foxtunnel stage10-report/current-nss-h2.json \
+            --vetroffproxy stage10-report/current-nss-h2.json \
             --out stage10-report/current-nss-vs-historical-firefox.json
       - uses: actions/upload-artifact@v4
         with:

@@ -13,7 +13,7 @@ class Stage9Contracts(unittest.TestCase):
 
     def test_ci_argument_contract(self):
         args = soak.parser().parse_args([
-            "--binary", "foxtunnel", "--cert", "cert.pem",
+            "--binary", "vetroffproxy", "--cert", "cert.pem",
             "--key", "key.pem", "--out", "results.json",
             "--seconds", "75", "--parallel", "3",
             "--minimum-success", "98",

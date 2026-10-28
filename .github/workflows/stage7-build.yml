@@ -41,7 +41,7 @@ jobs:
           go-version: '1.26.10'
       - name: Compile Go CLI and SDK packages (no test execution)
         run: |
-          go build -mod=readonly ./cmd/foxtunnel
+          go build -mod=readonly ./cmd/vetroffproxy
           go build -mod=readonly ./...
 
   mozilla-amd64-bundle:

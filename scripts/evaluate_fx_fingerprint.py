@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Classify FoxTunnel/Firefox wire mismatches using Firefox-vs-Firefox controls.
+"""Classify VetroffProxy/Firefox wire mismatches using Firefox-vs-Firefox controls.
 
 This is a regression detector, NOT a claim of browser or DPI indistinguishability.
 A difference naturally observed in Firefox controls is *inconclusive*, not equal.

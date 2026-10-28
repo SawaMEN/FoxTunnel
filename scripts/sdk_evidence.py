@@ -17,7 +17,7 @@ EXPECTED |= {f'TestPublicTrustAndAuthorizationBeforeApplication/{c}/{refusal}'
              for c in ('h2-connect', 'h3-post') for refusal in ('hostname', 'credentials')}
 EXPECTED |= {'TestSDKRuntimeContract', 'TestSDKStatusLifecycle', 'TestSDKWatchCancellation',
              'TestSDKSOCKSCancellationIsolation', 'TestSDKProcessHost/h2-connect', 'TestSDKProcessHost/h3-post'}
-PACKAGE = 'example.com/independent-foxtunnel-consumer'
+PACKAGE = 'example.com/independent-vetroffproxy-consumer'
 MAX_BYTES = 8 * 1024 * 1024
 
 

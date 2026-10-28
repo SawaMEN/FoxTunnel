@@ -191,7 +191,7 @@ def export_licenses(out, env):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--out', type=Path, default=CRATE / 'target/foxtunnel-build')
+    parser.add_argument('--out', type=Path, default=CRATE / 'target/vetroffproxy-build')
     parser.add_argument('--nss-source', type=Path)
     parser.add_argument('--mozilla-runtime', type=Path)
     parser.add_argument('--nspr-include', type=Path)
@@ -226,13 +226,13 @@ def main():
     pc.mkdir(exist_ok=True)
     # Use public header declarations from the pinned checkout. Rust's bindgen
     # allowlist controls generated symbols; private .h folders are not vendored.
-    (pc / 'nss.pc').write_text('Name: nss\nDescription: FoxTunnel pinned Mozilla NSS\nVersion: 3.130\nLibs: -L' + str(runtime / 'lib') + ' -lssl3 -lsmime3 -lnss3 -lnssutil3 -lplds4 -lplc4 -lnspr4\nCflags: ' + ' '.join('-I' + str(p) for p in include) + '\n')
+    (pc / 'nss.pc').write_text('Name: nss\nDescription: VetroffProxy pinned Mozilla NSS\nVersion: 3.130\nLibs: -L' + str(runtime / 'lib') + ' -lssl3 -lsmime3 -lnss3 -lnssutil3 -lplds4 -lplc4 -lnspr4\nCflags: ' + ' '.join('-I' + str(p) for p in include) + '\n')
     env = os.environ.copy()
     env['PKG_CONFIG_PATH'] = str(pc) + os.pathsep + env.get('PKG_CONFIG_PATH', '')
     env['LD_LIBRARY_PATH'] = str(runtime / 'lib') + os.pathsep + env.get('LD_LIBRARY_PATH', '')
     env['CGO_LDFLAGS'] = '-L' + str(runtime / 'lib') + ' ' + env.get('CGO_LDFLAGS', '')
     # Go's TCP bridge also probes nspr independently via pkg-config.
-    (pc / 'nspr.pc').write_text('Name: nspr\nDescription: FoxTunnel pinned Mozilla NSPR\nVersion: 4.39\nLibs: -L' + str(runtime / 'lib') + ' -lplds4 -lplc4 -lnspr4\nCflags: -I' + str(nspr) + '\n')
+    (pc / 'nspr.pc').write_text('Name: nspr\nDescription: VetroffProxy pinned Mozilla NSPR\nVersion: 4.39\nLibs: -L' + str(runtime / 'lib') + ' -lplds4 -lplc4 -lnspr4\nCflags: -I' + str(nspr) + '\n')
     if env.get('CARGO_TARGET_DIR'):
         raise ValueError('unset CARGO_TARGET_DIR: the ABI link path is crate target/release')
     prepare_patched_neqo(out, env, lock)

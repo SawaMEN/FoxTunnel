@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Conservative FoxTunnel vs VLESS Stage 1 gate: three matched WAN days.
+"""Conservative VetroffProxy vs VLESS Stage 1 gate: three matched WAN days.
 
 Input must be redacted stage1_vless.py reports. Review topology, process
 identity and VLESS configuration manually: software cannot attest them.
@@ -15,7 +15,7 @@ import statistics
 import sys
 from pathlib import Path
 
-KIND = "foxtunnel-vless-stage1"
+KIND = "vetroffproxy-vless-stage1"
 
 
 def finite_nonnegative(x) -> bool:
@@ -123,11 +123,11 @@ def evaluate(reports: list[dict]) -> dict:
         if any(r["integrity_failures"] for r in (fox, vless)):
             issues.append("verified echo integrity failure")
         if scenario == "bulk" and (speed is None or speed < .9):
-            issues.append("FoxTunnel median goodput below 90% VLESS")
+            issues.append("VetroffProxy median goodput below 90% VLESS")
         if scenario == "small" and (completion is None or completion > 1.1):
-            issues.append("FoxTunnel p95 end-to-end latency above 110% VLESS")
+            issues.append("VetroffProxy p95 end-to-end latency above 110% VLESS")
         if scenario == "bulk" and (latency is None or latency > 1.1):
-            issues.append("FoxTunnel p95 CONNECT latency above 110% VLESS")
+            issues.append("VetroffProxy p95 CONNECT latency above 110% VLESS")
         resource = report.get("resources")
         cpu_ratio = mem_ratio = None
         if isinstance(resource, dict) and set(resource) == {"fox", "vless"}:
@@ -143,9 +143,9 @@ def evaluate(reports: list[dict]) -> dict:
                 issues.append("CPU/RSS comparison missing or unusable")
             else:
                 if cpu_ratio > 1.2:
-                    issues.append("FoxTunnel CPU use above 120% VLESS")
+                    issues.append("VetroffProxy CPU use above 120% VLESS")
                 if mem_ratio > 1.2:
-                    issues.append("FoxTunnel RSS above 120% VLESS")
+                    issues.append("VetroffProxy RSS above 120% VLESS")
         detail.append({"utc_day": day.astimezone(dt.timezone.utc).date().isoformat(),
                        "fox": fox, "vless": vless,
                        "fox_to_vless": {"goodput_ratio": speed,
@@ -156,7 +156,7 @@ def evaluate(reports: list[dict]) -> dict:
         issues.append("at least three different UTC measurement days required")
     if len(reports) < 3:
         issues.append("at least three matched reports required")
-    return {"schema": 2, "kind": "foxtunnel-vless-stage1-gate",
+    return {"schema": 2, "kind": "vetroffproxy-vless-stage1-gate",
             "scenario": scenario, "passed": not issues,
             "wan_verified_by_tool": False, "issues": sorted(set(issues)),
             "days_observed": len(days), "measurements": detail,

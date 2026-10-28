@@ -88,7 +88,7 @@ def extract_regular(archive_path, dest, prefix=""):
 def merge_files(necko, nss):
     if not (necko / "manifest.json").is_file():
         raise ValueError("Necko manifest missing")
-    if not (nss / "foxtunnel").is_file() or not (nss / "build.json").is_file():
+    if not (nss / "vetroffproxy").is_file() or not (nss / "build.json").is_file():
         raise ValueError("NSS CLI and metadata required")
     metadata = release_verify.read_json(nss / "build.json")
     arch = metadata.get("goarch")
@@ -96,7 +96,7 @@ def merge_files(necko, nss):
         raise ValueError("native NSS build required")
     platform = "linux-" + arch
     necko_bundle.verify(necko, platform)
-    verify_elf(nss / "foxtunnel", platform)
+    verify_elf(nss / "vetroffproxy", platform)
     if metadata.get("runtime", {}).get("mozilla", {}).get("libraries") is None:
         raise ValueError("NSS runtime provenance missing")
     if not (necko / "foxtunnel-necko").is_file() or not (necko / "runtime/xpcshell").is_file():
@@ -129,8 +129,8 @@ def merge_files(necko, nss):
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, target)
-    shutil.copyfile(nss / "foxtunnel", necko / "foxtunnel")
-    (necko / "foxtunnel").chmod(0o755)
+    shutil.copyfile(nss / "vetroffproxy", necko / "vetroffproxy")
+    (necko / "vetroffproxy").chmod(0o755)
 
     manifest = json.loads((necko / "manifest.json").read_text())
     if manifest.get("schema") != 1 or manifest.get("platform") != platform:
@@ -183,14 +183,14 @@ def merge(necko_archive, nss_archive, output, version, commit, arch="amd64"):
     release_verify.verify(argparse.Namespace(
         version=version, commit=commit, input=str(nss_archive.parent),
         target="linux/" + arch + "/nss"))
-    expected = "foxtunnel_" + version[1:] + "_linux_" + arch + "_nss.tar.gz"
+    expected = "vetroffproxy_" + version[1:] + "_linux_" + arch + "_nss.tar.gz"
     if nss_archive.name != expected:
         raise ValueError("NSS archive name/version mismatch")
-    if output.name != "foxtunnel_" + version[1:] + "_linux_" + arch + ".tar.gz":
+    if output.name != "vetroffproxy_" + version[1:] + "_linux_" + arch + ".tar.gz":
         raise ValueError("unified output name/version/architecture mismatch")
     if output.exists():
         raise ValueError("refusing to replace an existing unified archive")
-    with tempfile.TemporaryDirectory(prefix="foxtunnel-unify-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="vetroffproxy-unify-") as tmp:
         tmp = Path(tmp)
         necko, nss = tmp / "necko", tmp / "nss"
         necko.mkdir()

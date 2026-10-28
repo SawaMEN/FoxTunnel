@@ -6,7 +6,7 @@
 
 | Путь | Назначение |
 |---|---|
-| `cmd/foxtunnel/` | CLI ядра |
+| `cmd/vetroffproxy/` | CLI ядра |
 | `foxtunnel*.go`, `processhost/` | Публичные API |
 | `internal/tunnel/` | Клиент, сервер, SOCKS5 и транспорты |
 | `internal/access/` | Управление доступом и учёт |
@@ -21,7 +21,7 @@
 Из корня репозитория, Go 1.26.10+:
 
 ```sh
-go build -o foxtunnel ./cmd/foxtunnel
+go build -o vetroffproxy ./cmd/vetroffproxy
 go test -race ./... -count=1 -timeout=120s
 go vet ./...
 go mod tidy -diff
@@ -35,7 +35,7 @@ NSS-сборка на Linux требует C-компилятор, pkg-config, N
 
 ```sh
 sudo apt-get install libnss3-dev libnspr4-dev pkg-config
-go build -tags nss -o foxtunnel ./cmd/foxtunnel
+go build -tags nss -o vetroffproxy ./cmd/vetroffproxy
 go test -race -tags nss ./... -count=1 -timeout=240s
 ```
 
@@ -43,8 +43,8 @@ go test -race -tags nss ./... -count=1 -timeout=240s
 
 ```sh
 python3 scripts/build_neqo.py
-. rust/neqo-bridge/target/foxtunnel-build/env.sh
-go build -tags nss,neqo -o foxtunnel ./cmd/foxtunnel
+. rust/neqo-bridge/target/vetroffproxy-build/env.sh
+go build -tags nss,neqo -o vetroffproxy ./cmd/vetroffproxy
 go test -race -tags nss,neqo ./... -count=1 -timeout=120s
 ```
 
@@ -94,7 +94,7 @@ fingerprint-инструменты в runtime не разрешены. Пров�
 | Инструмент | Проверка |
 |---|---|
 | `fingerprint_audit.py` | Сопоставление выбранных TLS/H2/H3 метаданных |
-| `capture_native_wire.py` | Общий стенд Firefox/NaiveProxy/FoxTunnel |
+| `capture_native_wire.py` | Общий стенд Firefox/NaiveProxy/VetroffProxy |
 | `native_backend_metrics.py` | CPU/RSS и loopback-обмен backend-вариантов |
 | `field_h2_h3.py`, `bond_stage4_field.py` | Внешние echo-измерения |
 | `soak_h2_h3.py`, `operations_soak.py` | Нагрузка и восстановление |

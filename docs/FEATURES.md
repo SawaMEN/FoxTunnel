@@ -5,9 +5,9 @@
 Полный список флагов текущей сборки:
 
 ```sh
-./foxtunnel setup --help
-./foxtunnel server --help
-./foxtunnel client --help
+./vetroffproxy setup --help
+./vetroffproxy server --help
+./vetroffproxy client --help
 ```
 
 ## Транспорты
@@ -70,7 +70,7 @@ UDP выключен по умолчанию. Для нового сервера
 команде `setup`, затем включите его у клиента:
 
 ```sh
-./foxtunnel client --link-file connection.txt --enable-udp
+./vetroffproxy client --link-file connection.txt --enable-udp
 ```
 
 Это SOCKS5 UDP ASSOCIATE с запросом/ответом через HTTPS. Для постоянной
@@ -141,7 +141,7 @@ Bonding, discovery и hub среди разрешённых входов. Явн
 Общий `experimental: true` относится к выпуску/SDK и другим возможностям.
 
 XHTTP использует HTTPS/H2 с Go TLS либо Linux NSS и собственный внутренний
-HTTP/2 FoxTunnel. Это не VLESS и не обещание совместимости с Xray.
+HTTP/2 VetroffProxy. Это не VLESS и не обещание совместимости с Xray.
 Bond поддерживается поверх H2 CONNECT/POST, WSS, всех трёх XHTTP и Go H3.
 Go-матрица проверяется на Linux/macOS/Windows, NSS — на Linux; статус backend
 Neqo этим не меняется.

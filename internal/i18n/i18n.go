@@ -99,7 +99,7 @@ var translations = map[string]string{
 	"choose either --link or --link-file":                                                    "Выберите только --link или --link-file",
 	"connection link cannot be combined with connection-setting flags":                       "Ссылку нельзя сочетать с параметрами настройки подключения",
 	"cannot read connection link file":                                                       "Не удалось прочитать файл ссылки подключения",
-	"usage: foxtunnel <version|setup|server|client|share|cluster-add|access> [flags] (credentials: environment or vetroff link)": "Использование: foxtunnel <version|setup|server|client|share|cluster-add|access> [параметры] (учётные данные: окружение или ссылка vetroff://)",
+	"usage: vetroffproxy <version|setup|server|client|share|cluster-add|access> [flags] (credentials: environment or vetroff link)": "Использование: vetroffproxy <version|setup|server|client|share|cluster-add|access> [параметры] (учётные данные: окружение или ссылка vetroff://)",
 
 	"ACKed-data throughput and queue-aware bond scheduling (requires --bond)": "Распределение bond-блоков по подтверждённой скорости и очереди (нужен --bond)",
 	"persistent bond channels and small-write batching (requires --bond)":     "Постоянные bond-каналы и объединение мелких записей (нужен --bond)",
@@ -144,7 +144,7 @@ var translations = map[string]string{
 	"--fallback-attempt-timeout must be positive":                                                  "--fallback-attempt-timeout должен быть больше нуля",
 	"--connect-timeout must be positive":                                                           "--connect-timeout должен быть больше нуля",
 	"SOCKS5 listener: %s":                                                                          "SOCKS5 слушает: %s",
-	"usage: foxtunnel <server|client> [flags] (FOXTUNNEL_USER and FOXTUNNEL_PASSWORD must be set)": "Использование: foxtunnel <server|client> [параметры] (задайте FOXTUNNEL_USER и FOXTUNNEL_PASSWORD)",
+	"usage: vetroffproxy <server|client> [flags] (FOXTUNNEL_USER and FOXTUNNEL_PASSWORD must be set)": "Использование: vetroffproxy <server|client> [параметры] (задайте FOXTUNNEL_USER и FOXTUNNEL_PASSWORD)",
 	"listen on loopback for one ClientHello (closes before TLS completes)":                         "Принять один ClientHello на локальном IP (без завершения TLS)",
 	"capture the current Go TLS ClientHello without using network":                                 "Получить текущий ClientHello Go TLS без сетевого подключения",
 	"read fingerprint from JSON file":                                                              "Прочитать отпечаток из JSON-файла",
