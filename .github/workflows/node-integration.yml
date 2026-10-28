@@ -30,6 +30,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # Cancel superseded commits/PRs; never cancel a called Neqo release gate.
+  group: routing-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify-node-routing:
     runs-on: ubuntu-24.04
