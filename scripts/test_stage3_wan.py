@@ -29,7 +29,7 @@ def fake_report(day: int, scenario: str) -> dict:
                 "integrity_failure": False,
             })
     return {
-        "schema": 2, "kind": "foxtunnel-stage3-3way",
+        "schema": 2, "kind": "vetroff-stage3-3way",
         "started_at_utc": f"2026-10-{day:02d}T10:00:00+00:00",
         "finished_at_utc": f"2026-10-{day:02d}T10:01:00+00:00",
         "created_at_utc": f"2026-10-{day:02d}T10:01:00+00:00",
@@ -242,7 +242,7 @@ class Stage3WanTests(unittest.TestCase):
             gate.evaluate(doc)
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / "fake.json"
-            p.write_text('{"schema":99,"kind":"foxtunnel-stage3-3way"}')
+            p.write_text('{"schema":99,"kind":"vetroff-stage3-3way"}')
             with self.assertRaisesRegex(ValueError, "not a stage3"):
                 gate.load(p)
 

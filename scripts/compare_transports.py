@@ -171,7 +171,7 @@ def summarize(rows: list[dict]) -> dict:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--proxy', action='append', required=True, metavar='NAME=HOST:PORT',
-                        help='repeat for FoxTunnel and VLESS/Xray SOCKS5 inbounds')
+                        help='repeat for VetroffProxy and VLESS/Xray SOCKS5 inbounds')
     parser.add_argument('--target', required=True, metavar='HOST:PORT',
                         help='a controlled TCP echo server reachable from both exits; target DNS is remote')
     parser.add_argument('--rounds', type=int, default=10, help='measured rounds per proxy (1-1000)')

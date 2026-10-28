@@ -112,7 +112,7 @@ jobs:
           python3 scripts/stage3_profile.py \
             --variant "$FT_VARIANT" --scenario "$FT_SCENARIO" \
             --benchtime 250ms \
-            --out "$RUNNER_TEMP/foxtunnel-stage3-$FT_VARIANT-$FT_SCENARIO"
+            --out "$RUNNER_TEMP/vetroff-stage3-$FT_VARIANT-$FT_SCENARIO"
       - name: Verify local private pprof metadata
         env:
           FT_VARIANT: ${{ matrix.variant }}
@@ -122,7 +122,7 @@ jobs:
           import json, os
           from pathlib import Path
           d = Path(os.environ['RUNNER_TEMP']) / (
-              'foxtunnel-stage3-' + os.environ['FT_VARIANT'] + '-' + os.environ['FT_SCENARIO'])
+              'vetroff-stage3-' + os.environ['FT_VARIANT'] + '-' + os.environ['FT_SCENARIO'])
           result = json.loads((d / 'summary.json').read_text())
           assert result['environment'] == 'loopback'
           assert result['variant'] == os.environ['FT_VARIANT']

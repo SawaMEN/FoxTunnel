@@ -88,9 +88,9 @@ jobs:
             rm -rf "$work"
           }
           trap cleanup EXIT
-          package="dist/foxtunnel_${RELEASE_VERSION#v}_linux_amd64_mozilla.tar.gz"
+          package="dist/vetroff_${RELEASE_VERSION#v}_linux_amd64_mozilla.tar.gz"
           tar -xzf "$package" -C "$work"
-          "$work/foxtunnel" version --json > "$work/version.json"
+          "$work/vetroff" version --json > "$work/version.json"
           python3 - "$work/version.json" "$RELEASE_VERSION" "$GITHUB_SHA" <<'PY'
           import json, sys
           v = json.load(open(sys.argv[1]))
@@ -107,7 +107,7 @@ jobs:
           python3 scripts/echo_server.py --host 127.0.0.1 --port 19000 \
             > "$work/echo.log" 2>&1 &
           echo_pid=$!
-          "$work/foxtunnel" server --listen 127.0.0.1:18443 \
+          "$work/vetroff" server --listen 127.0.0.1:18443 \
             --h3-listen 127.0.0.1:18443 --cert "$work/cert.pem" \
             --key "$work/key.pem" --allow-private > "$work/server.log" 2>&1 &
           server_pid=$!
@@ -122,7 +122,7 @@ jobs:
           else:
               raise SystemExit("release server TCP listener was not ready")
           PY
-          python3 scripts/field_h2_h3.py --binary "$work/foxtunnel" \
+          python3 scripts/field_h2_h3.py --binary "$work/vetroff" \
             --server https://127.0.0.1:18443 --sni localhost \
             --ca-cert "$work/cert.pem" --target 127.0.0.1:19000 \
             --rounds 3 --warmup 1 --parallel 2 --bytes 131072 \
@@ -148,7 +148,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          (cd dist && sha256sum foxtunnel_*_linux_amd64_mozilla.tar.gz > SHA256SUMS)
+          (cd dist && sha256sum vetroff_*_linux_amd64_mozilla.tar.gz > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
           name: stage11-verified-mozilla-release-assets
@@ -192,7 +192,7 @@ jobs:
             --commit "$GITHUB_SHA" --input dist
           (cd dist && sha256sum --check SHA256SUMS)
           gh release create "$RELEASE_VERSION" \
-            dist/foxtunnel_*_linux_amd64_mozilla.tar.gz \
+            dist/vetroff_*_linux_amd64_mozilla.tar.gz \
             --target "$GITHUB_SHA" --prerelease \
-            --title "FoxTunnel $RELEASE_VERSION (experimental Mozilla Linux amd64)" \
+            --title "VetroffProxy $RELEASE_VERSION (experimental Mozilla Linux amd64)" \
             --notes-file "docs/releases/$RELEASE_VERSION.md"

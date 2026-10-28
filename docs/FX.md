@@ -7,7 +7,7 @@ Firefox и снижение нагрузки на память при перед
 ## 1. Контроль fingerprint (опциональный строгий gate)
 
 Из существующих тестов сохраняются независимые отчёты:
-- `compare_necko_firefox.py`: FoxTunnel против Firefox CONNECT;
+- `compare_necko_firefox.py`: VetroffProxy против Firefox CONNECT;
 - `analyze_firefox_self.py`: контроль Firefox против Firefox на том же runtime;
 - `evaluate_fx_fingerprint.py`: классификация отличий с учётом вариативности
   Firefox. Неодинаковые поля **никогда** не нормализуются до «равно».
@@ -57,7 +57,7 @@ FOXTUNNEL_XPCSHELL=/path/to/runtime/xpcshell \
 Workflow `necko-runtime-test.yml` теперь запускается при push в `fx`
 и сохраняет `fx-audit.json` рядом с исходными wire-измерениями.
 До получения новых native результатов нельзя количественно утверждать,
-что FoxTunnel стал быстрее, экономнее или менее отличимым от Firefox.
+что VetroffProxy стал быстрее, экономнее или менее отличимым от Firefox.
 
 ## FX: последующие измерения и оптимизация вывода
 
@@ -70,7 +70,7 @@ Workflow `necko-runtime-test.yml` теперь запускается при pus
 
 Сравнитель fingerprint теперь сохраняет частоты расхождений для каждого
 наблюдаемого поля и помечает `persistent_under_variable_control`, если
-FoxTunnel расходится в каждом повторе, даже когда контроль Firefox сам по
+VetroffProxy расходится в каждом повторе, даже когда контроль Firefox сам по
 себе вариативен. Этот статус означает **проверить**, а не «доказано
 отличие». Поля HPACK и TLS по-прежнему не подгоняются вручную.
 

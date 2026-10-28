@@ -88,7 +88,7 @@ Malformed/duplicate fields or unsupported required capabilities produce HTTP
 produces HTTP 426. These errors do not echo arbitrary input, credentials or
 supported-version lists and do not permit downgrade. No HTTP/1 Upgrade exchange
 is performed. Authentication failure uses the ordinary cover handler and exposes
-no protocol confirmation; public/rejected cover requests have FoxTunnel headers
+no protocol confirmation; public/rejected cover requests have VetroffProxy headers
 removed.
 
 A strict client rejects a missing, duplicate, malformed or different confirmed

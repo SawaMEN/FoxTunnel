@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          go build -o "$RUNNER_TEMP/stage10-cli" ./cmd/foxtunnel
+          go build -o "$RUNNER_TEMP/stage10-cli" ./cmd/vetroff
           go run ./integration/operations-cert --out "$RUNNER_TEMP/stage10-cert"
           python3 scripts/operations_soak.py --binary "$RUNNER_TEMP/stage10-cli" --cert "$RUNNER_TEMP/stage10-cert/cert.pem" --key "$RUNNER_TEMP/stage10-cert/key.pem" --seconds 600 --parallel 3 --recovery-seconds 30 --out stage10-report/resources.json
       - uses: actions/upload-artifact@v4

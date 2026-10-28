@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage 1 FoxTunnel vs Xray/VLESS: redacted matched SOCKS5 TCP echo measurements.
+"""Stage 1 VetroffProxy vs Xray/VLESS: redacted matched SOCKS5 TCP echo measurements.
 
 Both fully configured clients must already be running with local SOCKS5
 listeners. The controlled echo target must be reachable through both exits.
@@ -99,7 +99,7 @@ class ResourceSampler:
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--fox-socks", required=True, help="FoxTunnel local SOCKS5 HOST:PORT")
+    p.add_argument("--fox-socks", required=True, help="VetroffProxy local SOCKS5 HOST:PORT")
     p.add_argument("--vless-socks", required=True, help="Xray/VLESS local SOCKS5 HOST:PORT")
     p.add_argument("--target", required=True, help="controlled echo destination HOST:PORT")
     p.add_argument("--scenario", required=True, choices=("small", "bulk"))
@@ -115,7 +115,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--bytes", type=int, help="override 1024 (small) or 33554432 (bulk)")
     p.add_argument("--timeout", type=float, default=30)
     p.add_argument("--budget-seconds", type=int, default=1800)
-    p.add_argument("--fox-pid", type=int, help="running FoxTunnel client PID for Linux CPU/RSS")
+    p.add_argument("--fox-pid", type=int, help="running VetroffProxy client PID for Linux CPU/RSS")
     p.add_argument("--vless-pid", type=int, help="running Xray client PID for Linux CPU/RSS")
     p.add_argument("--out", required=True, type=Path, help="new sanitized JSON report (mode 0600)")
     return p
@@ -192,7 +192,7 @@ def measure(a: argparse.Namespace) -> dict:
         raise ValueError("unexpected benchmark report")
     clean = [sanitize(row) for row in raw["samples"]]
     return {
-        "schema": 2, "kind": "foxtunnel-vless-stage1",
+        "schema": 2, "kind": "vetroff-vless-stage1",
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "scenario": a.scenario, "environment": a.environment,
         "wan_attested_by_operator": a.environment == "wan" and a.confirm_independent_vds,

@@ -34,7 +34,7 @@ def main():
     notes = ROOT / 'docs/releases' / (args.version + '.md')
     # Validate version before constructing/reading a source filename.
     contract.validate_version(args.version)
-    text = notes.read_text() if notes.is_file() else 'Experimental FoxTunnel protocol core for host integration.\n'
+    text = notes.read_text() if notes.is_file() else 'Experimental VetroffProxy protocol core for host integration.\n'
     write_exclusive(args.out, render(args.input, args.version, args.commit, text), 0o600)
 
 

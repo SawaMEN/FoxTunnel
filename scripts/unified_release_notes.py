@@ -13,16 +13,16 @@ from private_files import write_exclusive
 def render(folder, version, commit):
     release_verify.validate_version(version)
     names = (
-        "foxtunnel_" + version[1:] + "_linux_amd64.tar.gz",
-        "foxtunnel_" + version[1:] + "_linux_arm64.tar.gz",
+        "vetroff_" + version[1:] + "_linux_amd64.tar.gz",
+        "vetroff_" + version[1:] + "_linux_arm64.tar.gz",
     )
     if {p.name for p in folder.glob("*.tar.gz")} != set(names):
         raise ValueError("expected exactly one Linux archive per architecture")
     for name in names:
-        with tempfile.TemporaryDirectory(prefix="foxtunnel-notes-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="vetroff-notes-") as tmp:
             unified_archive.unpack(folder / name, Path(tmp), version, commit)
     lines = [
-        "# FoxTunnel " + version,
+        "# VetroffProxy " + version,
         "",
         "Unified Linux distribution with one download per architecture.",
         "AMD64: a single NSS-enabled CLI and the complete verified Necko runtime.",

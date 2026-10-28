@@ -33,19 +33,19 @@ class CandidateEvidence(unittest.TestCase):
             with mock.patch('urllib.request.urlopen', return_value=io.BytesIO(b'bad')):
                 with self.assertRaisesRegex(ValueError, 'digest'):
                     candidate.fetch_legacy(dict(filename='old.tar.gz', url='https://invalid.test', size=3, sha256='0'*64), Path(tmp))
-            self.assertFalse((Path(tmp)/'foxtunnel-legacy').exists())
+            self.assertFalse((Path(tmp)/'vetroff-legacy').exists())
 
     def test_legacy_archive_links_are_not_extracted(self):
         raw=io.BytesIO()
         with tarfile.open(fileobj=raw,mode='w:gz') as archive:
-            info=tarfile.TarInfo('foxtunnel');info.type=tarfile.SYMTYPE;info.linkname='/outside'
+            info=tarfile.TarInfo('vetroff');info.type=tarfile.SYMTYPE;info.linkname='/outside'
             archive.addfile(info)
         data=raw.getvalue()
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch('urllib.request.urlopen',return_value=io.BytesIO(data)):
                 with self.assertRaisesRegex(ValueError,'unsafe'):
                     candidate.fetch_legacy(dict(filename='old.tar.gz',url='https://invalid.test',size=len(data),sha256=hashlib.sha256(data).hexdigest()),Path(tmp))
-            self.assertFalse((Path(tmp)/'foxtunnel-legacy').exists())
+            self.assertFalse((Path(tmp)/'vetroff-legacy').exists())
 
     def test_notes_require_complete_verified_archives(self):
         fixture=test_release.ReleaseContract();fixture.setUp();self.addCleanup(fixture.doCleanups)

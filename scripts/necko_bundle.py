@@ -48,7 +48,7 @@ def verify(directory, platform=None, source=None, client=None):
     if observed != hashes:
         raise ValueError('Necko bundle manifest mismatch')
     for name in ('foxtunnel-necko', 'runtime/xpcshell', 'runtime/libxul.so', 'runtime/libnss3.so',
-                 *[n for n in ('foxtunnel', 'lib/libnss3.so') if n in observed]):
+                 *[n for n in ('vetroff', 'lib/libnss3.so') if n in observed]):
         verify_elf(directory / name, target)
     for field in ('source_lock_sha256', 'client_js_sha256'):
         if not isinstance(manifest[field], str) or not contract.HASH.fullmatch(manifest[field]):

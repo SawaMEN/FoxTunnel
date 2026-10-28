@@ -20,7 +20,7 @@ def fixture(day: int, fox_rtt: float = 10.5, vless_rtt: float = 10.0) -> dict:
                          "ok": True, "rtt_ms": rtt, "error_category": None,
                          "integrity_failure": False})
     return {
-        "schema": 1, "kind": "foxtunnel-vless-stage1-udp",
+        "schema": 1, "kind": "vetroff-vless-stage1-udp",
         "created_at_utc": f"2026-10-{day:02}T11:00:00+00:00",
         "environment": "wan", "wan_attested_by_operator": True,
         "configuration": {"rounds": 20, "parallel": 1, "warmup": 1,
@@ -67,13 +67,13 @@ class UDPStage1Tests(unittest.TestCase):
             if r["proxy"] == "fox":
                 r["rtt_ms"] = 20
         verdict = gate.evaluate(reports)
-        self.assertIn("FoxTunnel UDP echo p95 above 110% VLESS", verdict["issues"])
+        self.assertIn("VetroffProxy UDP echo p95 above 110% VLESS", verdict["issues"])
         reports = [fixture(x) for x in (18, 19, 20)]
         fox = next(r for r in reports[0]["samples"] if r["proxy"] == "fox")
         fox.update(ok=False, rtt_ms=None, error_category="TimeoutError")
         verdict = gate.evaluate(reports)
         self.assertIn("UDP echo success rate below 99%", verdict["issues"])
-        self.assertIn("FoxTunnel UDP failed-echo rate above VLESS by >1 pp", verdict["issues"])
+        self.assertIn("VetroffProxy UDP failed-echo rate above VLESS by >1 pp", verdict["issues"])
 
     def test_fails_integrity_mismatch(self):
         reports = [fixture(x) for x in (18, 19, 20)]

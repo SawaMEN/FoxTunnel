@@ -40,16 +40,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: foxtunnel
+          path: vetroff
       - name: Source preparation tests
-        working-directory: foxtunnel
+        working-directory: vetroff
         run: |
           python3 -m unittest discover -s scripts -p test_build_necko.py -v
           python3 -m unittest discover -s scripts -p test_necko_platform.py -v
           python3 -c 'import sys; sys.path.insert(0, "scripts"); from necko_platform import host_platform; assert host_platform() == "linux-${{ matrix.arch }}"'
       - name: Read locked Gecko revision
         id: lock
-        working-directory: foxtunnel
+        working-directory: vetroff
         run: |
           python3 - <<'PY'
           import json, os
@@ -84,44 +84,44 @@ jobs:
         run: python3 mach --no-interactive bootstrap --application-choice=browser --no-agentic-tools
       - name: Build pinned Gecko with reviewed source patches
         id: build
-        working-directory: foxtunnel
+        working-directory: vetroff
         run: python3 scripts/build_necko.py --source ../gecko --out ../necko-build --jobs 3
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.10'
-          cache-dependency-path: foxtunnel/go.sum
+          cache-dependency-path: vetroff/go.sum
       - name: Native H2 and H3 cold handoff and binary transfer
-        working-directory: foxtunnel
+        working-directory: vetroff
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECTHandoff$' -v -count=1 -timeout=80s
       - name: Native H2 and H3 half-close gate
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        working-directory: foxtunnel
+        working-directory: vetroff
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECT$' -v -count=1 -timeout=80s
       - name: Reject invalid proxy certificates before credentials
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        working-directory: foxtunnel
+        working-directory: vetroff
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoTrustBeforeCredentials$' -v -count=1 -timeout=60s
       - name: Local TCP FIN and reverse H2/H3 half-close gates
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        working-directory: foxtunnel
+        working-directory: vetroff
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^Test(GeckoLocalHalfClose|GeckoReverseHalfClose|ReverseHalfClosePeers)$' -v -count=3 -timeout=180s
       - name: Concurrent streams, cancellation and H3-only failure policy
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        working-directory: foxtunnel
+        working-directory: vetroff
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGecko(ConcurrentCONNECT|Cancellation|H3NoTCPFallback)$' -v -count=3 -timeout=120s
       - name: Full Firefox versus Necko helper wire measurements
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        working-directory: foxtunnel
+        working-directory: vetroff
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
           FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
@@ -138,7 +138,7 @@ jobs:
           retention-days: 14
       - name: Operational idle/drain bounds and sustained resource gate
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        working-directory: foxtunnel
+        working-directory: vetroff
         env:
           FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
           FOXTUNNEL_SOAK_SECONDS: '60'
@@ -170,8 +170,8 @@ jobs:
         with:
           name: necko-source-provenance${{ matrix.suffix }}
           path: |
-            foxtunnel/experiments/firefox-necko/gecko.lock.json
-            foxtunnel/experiments/firefox-necko/patches/
+            vetroff/experiments/firefox-necko/gecko.lock.json
+            vetroff/experiments/firefox-necko/patches/
             necko-build/provenance.json
             necko-build/mozconfig
           if-no-files-found: error

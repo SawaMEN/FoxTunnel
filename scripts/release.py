@@ -42,7 +42,7 @@ def licenses(go, env):
     cmd = [go, 'list', '-buildvcs=false', '-mod=readonly', '-deps', '-json']
     if env['CGO_ENABLED'] == '1':
         cmd += ['-tags', 'nss']
-    raw = command(cmd + ['./cmd/foxtunnel'], env)
+    raw = command(cmd + ['./cmd/vetroff'], env)
     modules, decoder = {}, json.JSONDecoder()
     while raw:
         pkg, end = decoder.raw_decode(raw)
@@ -52,7 +52,7 @@ def licenses(go, env):
             modules[m['Path']] = m
     goroot = Path(command([go, 'env', 'GOROOT'], env))
     files = {'LICENSE': (ROOT / 'LICENSE').read_bytes(), 'licenses/Go-LICENSE': (goroot / 'LICENSE').read_bytes()}
-    notices = ['FoxTunnel: MIT, see LICENSE.', 'Go runtime: licenses/Go-LICENSE.']
+    notices = ['VetroffProxy: MIT, see LICENSE.', 'Go runtime: licenses/Go-LICENSE.']
     for name, module in sorted(modules.items()):
         base, found = Path(module.get('Replace', module)['Dir']), False
         for filename in ('LICENSE', 'LICENSE.txt', 'LICENSE.md', 'COPYING'):
@@ -65,7 +65,7 @@ def licenses(go, env):
         if not found:
             raise ValueError('missing linked-module license: ' + name)
     if env['CGO_ENABLED'] == '1':
-        notices.append('Unmodified Mozilla NSS/NSPR/SQLite libraries are bundled in lib/. See licenses/Mozilla-about-license.html for their licenses and notices. Source form is available at the exact URL and SHA-256 in mozilla-runtime.json; those libraries are not covered by FoxTunnel MIT LICENSE.')
+        notices.append('Unmodified Mozilla NSS/NSPR/SQLite libraries are bundled in lib/. See licenses/Mozilla-about-license.html for their licenses and notices. Source form is available at the exact URL and SHA-256 in mozilla-runtime.json; those libraries are not covered by VetroffProxy MIT LICENSE.')
     files['THIRD_PARTY_NOTICES.txt'] = ('\n'.join(notices) + '\n').encode()
     return files
 
@@ -91,23 +91,23 @@ def build(a):
     out = Path(a.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
     ext = '.tar.gz'
-    archive = out / f'foxtunnel_{a.version[1:]}_{a.os}_{a.arch}_{a.backend}{ext}'
+    archive = out / f'vetroff_{a.version[1:]}_{a.os}_{a.arch}_{a.backend}{ext}'
     metadata = out / (archive.name + '.metadata.json')
     if archive.exists() or metadata.exists():
         raise ValueError('refusing to replace an existing versioned artifact')
     variant = ''
     fields = {'Version': a.version, 'Commit': commit, 'BuildDate': date, 'Variant': variant, 'Dirty': str(dirty).lower()}
     ldflags = '-s -w -buildid= ' + ' '.join('-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.' + k + '=' + v for k, v in fields.items())
-    with tempfile.TemporaryDirectory(prefix='foxtunnel-release-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='vetroff-release-') as tmp:
         runtime_files, runtime_info = {}, {}
         if a.backend == 'nss':
             runtime_files, runtime_info = mozilla_runtime.prepare(a.arch, tmp, a.mozilla_archive)
             env['CGO_LDFLAGS'] = env.get('CGO_LDFLAGS', '') + ' -Wl,--disable-new-dtags -Wl,-rpath,$ORIGIN/lib'
-        executable = Path(tmp) / 'foxtunnel'
+        executable = Path(tmp) / 'vetroff'
         cmd = [a.go, 'build', '-mod=readonly', '-trimpath', '-buildvcs=false', '-ldflags', ldflags, '-o', str(executable)]
         if a.backend == 'nss':
             cmd += ['-tags', 'nss']
-        subprocess.run(cmd + ['./cmd/foxtunnel'], cwd=ROOT, env=env, check=True)
+        subprocess.run(cmd + ['./cmd/vetroff'], cwd=ROOT, env=env, check=True)
         info = {}
         if a.backend == 'nss':
             env = mozilla_runtime.verify_loaded(executable, Path(tmp), runtime_info['libraries'], env)

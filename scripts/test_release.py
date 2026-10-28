@@ -21,7 +21,7 @@ class ReleaseContract(unittest.TestCase):
         for target in sorted(release.TARGETS):
             goos, arch, flavor = target.split('/')
             suffix = '.tar.gz'
-            name = 'foxtunnel_0.1.0-alpha.1_' + target.replace('/', '_') + suffix
+            name = 'vetroff_0.1.0-alpha.1_' + target.replace('/', '_') + suffix
             runtime = dict(kind='cgo-disabled')
             if flavor == 'nss':
                 provenance = dict(schema=1, firefox_version='158.0', nss_version='3.130',
@@ -52,7 +52,7 @@ class ReleaseContract(unittest.TestCase):
         build = {k: v for k, v in p.items() if k not in verify.ARCHIVE_FIELDS}
         files = {'build.json': json.dumps(build).encode(), 'LICENSE': b'MIT',
                  'THIRD_PARTY_NOTICES.txt': b'notices', 'licenses/Go-LICENSE': b'BSD',
-                 'foxtunnel': b'fixture executable, never run'}
+                 'vetroff': b'fixture executable, never run'}
         files.update(release.integration_files())
         if p['build_flavor'] == 'nss':
             files.update({'mozilla-runtime.json': json.dumps(p['runtime']['mozilla']).encode(),
@@ -97,7 +97,7 @@ class ReleaseContract(unittest.TestCase):
         release.index(self.args)
         self.verify_args.target = 'linux/arm64/nss'
         selected = json.loads(self.entries[self.find(self.verify_args.target)].read_text())['filename']
-        for p in self.root.glob('foxtunnel_*'):
+        for p in self.root.glob('vetroff_*'):
             if p.name != selected:
                 p.unlink()
         verify.verify(self.verify_args)
@@ -167,7 +167,7 @@ class ReleaseContract(unittest.TestCase):
         self.expect_index_error('embedded build.json')
 
     def test_missing_binary_rejected(self):
-        self.pack(0, lambda files: files.pop('foxtunnel'))
+        self.pack(0, lambda files: files.pop('vetroff'))
         self.expect_index_error('required archive member')
 
     def test_changed_library_and_provenance_rejected(self):

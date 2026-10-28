@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Stage-4 field/lab probes for FoxTunnel SOCKS5 TCP and UDP, stdlib only.
+"""Stage-4 field/lab probes for VetroffProxy SOCKS5 TCP and UDP, stdlib only.
 
-Tests existing, independently started FoxTunnel clients. Does NOT provision
+Tests existing, independently started VetroffProxy clients. Does NOT provision
 VDS, inspect TLS payloads, discover providers, run privileged netem, or
 prove that --environment wan actually traversed independent networks.
 No URLs, targets, credentials, raw exceptions or IPs are written to reports.
@@ -264,7 +264,7 @@ def run(a: argparse.Namespace) -> dict:
     rows.sort(key=lambda row: (row["proxy"], row["flow"], row["round"]))
     grouped = {name: summarize([r for r in rows if r["proxy"] == name], a.mode)
                for name, _ in proxies}
-    return {"schema": 1, "kind": "foxtunnel-stage4-field", "created_at_utc":
+    return {"schema": 1, "kind": "vetroff-stage4-field", "created_at_utc":
             dt.datetime.now(dt.timezone.utc).isoformat(),
             "environment": a.environment,
             "external_topology": "user-attested-unverified" if a.environment == "wan" else "lab",

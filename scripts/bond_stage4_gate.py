@@ -22,7 +22,7 @@ MIN_DAILY_SAMPLES = 5
 
 def load_report(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("schema") != 1 or data.get("kind") != "foxtunnel-stage4-field":
+    if data.get("schema") != 1 or data.get("kind") != "vetroff-stage4-field":
         raise ValueError("unknown stage-4 report schema")
     if data.get("environment") not in ("lab", "wan"):
         raise ValueError("unknown measurement environment")

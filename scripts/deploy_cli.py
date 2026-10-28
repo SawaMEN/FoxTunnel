@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline, per-user FoxTunnel deployment with verified staging and rollback.
+"""Offline, per-user VetroffProxy deployment with verified staging and rollback.
 
 Accepts a locally reviewed Go binary or an existing Linux NSS release archive.
 The expected SHA-256 must come from a trusted source; hashes are NOT signatures.
@@ -164,7 +164,7 @@ class Deployment:
                 raise ValueError('installed release was modified')
         if seen != set(record['files']):
             raise ValueError('installed release is incomplete')
-        executable = 'foxtunnel.exe' if target()[0] == 'windows' else 'foxtunnel'
+        executable = 'vetroff.exe' if target()[0] == 'windows' else 'vetroff'
         if executable not in seen:
             raise ValueError('installed executable absent')
         return path / executable, record
@@ -189,9 +189,9 @@ class Deployment:
             package = stage / 'bundle'
             package.mkdir(mode=0o700)
             goos, arch = target()
-            executable = 'foxtunnel.exe' if goos == 'windows' else 'foxtunnel'
+            executable = 'vetroff.exe' if goos == 'windows' else 'vetroff'
             unified = archive and goos == 'linux' and arch in ('amd64', 'arm64') and source.name == (
-                f'foxtunnel_{version[1:]}_linux_{arch}.tar.gz')
+                f'vetroff_{version[1:]}_linux_{arch}.tar.gz')
             if unified:
                 unified_archive.unpack(snapshot, package, version, commit, archive_name=source.name)
             elif archive:
@@ -312,7 +312,7 @@ def main(argv=None):
             executable, _ = deployment.bundle(state['active'])
             forward = args.args[1:] if args.args[:1] == ['--'] else args.args
             if not forward:
-                raise ValueError('provide FoxTunnel arguments after --')
+                raise ValueError('provide VetroffProxy arguments after --')
             return launch(executable, forward)
         print(json.dumps({key: record[key] for key in ('identity', 'version', 'commit', 'goos', 'goarch', 'build_flavor')}, sort_keys=True))
         return 0

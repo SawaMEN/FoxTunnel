@@ -3,9 +3,9 @@ name: XHTTP and Bond stability
 on:
   push:
     branches: [main]
-    paths: ['internal/**', 'cmd/foxtunnel/**', 'go.*', '.github/workflows/stable-xhttp-bond.yml']
+    paths: ['internal/**', 'cmd/vetroff/**', 'go.*', '.github/workflows/stable-xhttp-bond.yml']
   pull_request:
-    paths: ['internal/**', 'cmd/foxtunnel/**', 'go.*', '.github/workflows/stable-xhttp-bond.yml']
+    paths: ['internal/**', 'cmd/vetroff/**', 'go.*', '.github/workflows/stable-xhttp-bond.yml']
   workflow_dispatch:
 
 permissions:

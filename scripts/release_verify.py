@@ -111,7 +111,7 @@ def validate_metadata(p, version, commit):
         raise ValueError('invalid build date')
     dt.datetime.strptime(stamp, '%Y-%m-%dT%H:%M:%SZ')
     suffix = '.tar.gz'
-    if p.get('filename') != f'foxtunnel_{version[1:]}_{goos}_{arch}_{flavor}{suffix}':
+    if p.get('filename') != f'vetroff_{version[1:]}_{goos}_{arch}_{flavor}{suffix}':
         raise ValueError('archive filename does not match target/version')
     if not isinstance(p.get('sha256'), str) or not HASH.fullmatch(p['sha256']):
         raise ValueError('invalid archive hash')
@@ -178,7 +178,7 @@ def inspect_archive(path, metadata):
     if path.stat().st_size != metadata['size'] or sha(path) != metadata['sha256']:
         raise ValueError('archive hash/size mismatch')
     hashes, documents, seen, total = {}, {}, set(), 0
-    executable = 'foxtunnel'
+    executable = 'vetroff'
     libraries = metadata['runtime'].get('mozilla', {}).get('libraries', {})
     allowed = {executable, 'build.json', 'LICENSE', 'THIRD_PARTY_NOTICES.txt'}
     if metadata.get('product') == 'protocol-core':
@@ -272,10 +272,10 @@ def verify(a):
         raise ValueError('unsupported requested target')
     base = Path(a.input)
     if a.target:
-        target_filename = f"foxtunnel_{a.version[1:]}_{a.target.replace('/', '_')}.tar.gz"
+        target_filename = f"vetroff_{a.version[1:]}_{a.target.replace('/', '_')}.tar.gz"
         archives = [base / target_filename]
     else:
-        archives = sorted(base.glob(f'foxtunnel_{a.version[1:]}_*.tar.gz'))
+        archives = sorted(base.glob(f'vetroff_{a.version[1:]}_*.tar.gz'))
     if not archives:
         raise ValueError('no release archives found')
     seen = set()

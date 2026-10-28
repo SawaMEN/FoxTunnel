@@ -30,9 +30,9 @@ jobs:
           persist-credentials: false
       - name: Build real previous client/server executable
         working-directory: .compat-legacy
-        run: go build -mod=readonly -buildvcs=false -o "$RUNNER_TEMP/foxtunnel-legacy" ./cmd/foxtunnel
+        run: go build -mod=readonly -buildvcs=false -o "$RUNNER_TEMP/vetroff-legacy" ./cmd/foxtunnel
       - name: Test both directions and strict refusal using actual old processes
         working-directory: integration/external
         env:
-          FOXTUNNEL_LEGACY_BINARY: ${{ runner.temp }}/foxtunnel-legacy
+          FOXTUNNEL_LEGACY_BINARY: ${{ runner.temp }}/vetroff-legacy
         run: go test -race -v ./... -run '^TestWireLegacyBinaryCompatibility$' -count=1 -timeout=90s

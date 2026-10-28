@@ -41,7 +41,7 @@ def ratio(a, b):
 
 def load(path: Path) -> dict:
     doc = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(doc, dict) or doc.get("schema") != 2 or doc.get("kind") != "foxtunnel-stage3-3way":
+    if not isinstance(doc, dict) or doc.get("schema") != 2 or doc.get("kind") != "vetroff-stage3-3way":
         raise ValueError("not a stage3 three-way sanitized report")
     return doc
 
@@ -110,7 +110,7 @@ def evaluate(reports: list[dict]) -> dict:
     seen = {scenario: set() for scenario in SCENARIOS}
     measurements = []
     for report in reports:
-        if report.get("schema") != 2 or report.get("kind") != "foxtunnel-stage3-3way":
+        if report.get("schema") != 2 or report.get("kind") != "vetroff-stage3-3way":
             raise ValueError("invalid report kind/schema")
         scenario = report.get("scenario")
         if scenario not in SCENARIOS:
@@ -224,7 +224,7 @@ def evaluate(reports: list[dict]) -> dict:
     if seen["small"] != seen["bulk"]:
         issues.append("small and bulk must cover matching UTC days")
     return {
-        "schema": 1, "kind": "foxtunnel-stage3-3way-gate",
+        "schema": 1, "kind": "vetroff-stage3-3way-gate",
         "passed": not issues, "issues": sorted(set(issues)),
         "wan_verified_by_tool": False,
         "baseline_sha": common["baseline_sha"], "candidate_sha": common["candidate_sha"],

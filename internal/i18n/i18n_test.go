@@ -22,7 +22,7 @@ func TestLanguageSelectionAndHelp(t *testing.T) {
 	if !strings.Contains(sentinel.Error(), "Прокси") {
 		t.Fatal("sentinel language was frozen before selection")
 	}
-	fs := NewFlagSet("foxtunnel client")
+	fs := NewFlagSet("vetroff client")
 	fs.String("server", "", Text("remote HTTPS proxy URL"))
 	var out bytes.Buffer
 	PrintUsage(&out, fs)

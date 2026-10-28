@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare FoxTunnel vs Xray/VLESS UDP using two local SOCKS5 UDP associations.
+"""Compare VetroffProxy vs Xray/VLESS UDP using two local SOCKS5 UDP associations.
 
 The existing Stage 4 socket harness provides verified nonce-tagged UDP echoes.
 Operator-provided proxy modes and WAN topology are not automatically verified.
@@ -28,7 +28,7 @@ ERROR_TYPES = {"ConnectionError", "TimeoutError", "OSError", "ValueError",
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--fox-socks", required=True, help="FoxTunnel local SOCKS5 HOST:PORT")
+    p.add_argument("--fox-socks", required=True, help="VetroffProxy local SOCKS5 HOST:PORT")
     p.add_argument("--vless-socks", required=True, help="Xray local SOCKS5 HOST:PORT")
     p.add_argument("--target", required=True, help="the SAME controlled UDP echo target for both")
     p.add_argument("--fox-transport", choices=FOX_TRANSPORTS)
@@ -102,7 +102,7 @@ def run(a: argparse.Namespace) -> dict:
     if len(rows) != 2 * a.rounds * a.parallel:
         raise ValueError("incomplete UDP report")
     return {
-        "schema": 1, "kind": "foxtunnel-vless-stage1-udp",
+        "schema": 1, "kind": "vetroff-vless-stage1-udp",
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "environment": a.environment,
         "wan_attested_by_operator": a.environment == "wan" and a.confirm_independent_vds,

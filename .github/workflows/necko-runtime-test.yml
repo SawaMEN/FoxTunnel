@@ -17,7 +17,7 @@ on:
       - 'internal/tunnel/**'
       - 'internal/transportengine/**'
       - 'internal/buildinfo/**'
-      - 'cmd/foxtunnel/**'
+      - 'cmd/vetroff/**'
       - 'experiments/firefox-necko/client.js'
       - 'experiments/firefox-necko/gecko.lock.json'
       - 'experiments/firefox-necko/patches/**'
@@ -183,7 +183,7 @@ jobs:
           python3 -m unittest discover -s scripts -p test_package_necko.py -v
           stamp="-s -w -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Version=$RELEASE_VERSION -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Commit=$GITHUB_SHA -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Dirty=false"
           go build -trimpath -ldflags="$stamp" -o necko-launcher ./experiments/firefox-necko/cmd/foxtunnel-necko
-          go build -trimpath -ldflags="$stamp" -o necko-main-cli ./cmd/foxtunnel
+          go build -trimpath -ldflags="$stamp" -o necko-main-cli ./cmd/vetroff
           python3 scripts/collect_necko_licenses.py --out /tmp/necko-notices.txt
           cmp /tmp/necko-notices.txt experiments/firefox-necko/LICENSES.go.txt
           provenance=$(find runtime-provenance -name provenance.json -type f)

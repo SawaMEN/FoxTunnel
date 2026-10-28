@@ -48,7 +48,7 @@ func (r *configReport) add(code, message string, err error) {
 }
 
 func checkConfigCommand(args []string, out io.Writer) error {
-	fs := flag.NewFlagSet("foxtunnel check-config", flag.ContinueOnError)
+	fs := flag.NewFlagSet("vetroff check-config", flag.ContinueOnError)
 	// Flag parser errors echo user input; return fixed messages instead.
 	fs.SetOutput(io.Discard)
 	server := fs.String("config", "", "private server JSON file")
@@ -59,7 +59,7 @@ func checkConfigCommand(args []string, out io.Writer) error {
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.SetOutput(out)
-			fmt.Fprintln(out, "usage: foxtunnel check-config (--config FILE | --link-file FILE) [--json]")
+			fmt.Fprintln(out, "usage: vetroff check-config (--config FILE | --link-file FILE) [--json]")
 			fs.PrintDefaults()
 			return nil
 		}

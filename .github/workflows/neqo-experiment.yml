@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          source rust/neqo-bridge/target/vetroff-build/env.sh
           cd rust/neqo-bridge
           cargo fmt --all --check
           cargo clippy --locked --all-targets -- -D warnings
@@ -34,7 +34,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          source rust/neqo-bridge/target/vetroff-build/env.sh
           python3 scripts/check_core_boundaries.py --tags nss,neqo
           go vet -tags nss,neqo ./...
           go test -race -tags nss,neqo ./... -count=1 -timeout=180s
@@ -46,15 +46,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          source rust/neqo-bridge/target/vetroff-build/env.sh
           GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/neqo -run '^TestStage6|^TestUpdate|^TestEarlyResponse' -count=5 -timeout=120s
           GOEXPERIMENT=cgocheck2 go test -race -tags nss,neqo ./internal/nsstls -run '^TestConcurrentCloseUnblocksRead$|^TestHandshakeCancellation$|^TestStage3NSS' -count=8 -timeout=120s
       - name: Verify explicit backend reporting
         shell: bash
         run: |
           set -euo pipefail
-          source rust/neqo-bridge/target/foxtunnel-build/env.sh
-          go build -tags nss,neqo -o /tmp/foxtunnel-neqo ./cmd/foxtunnel
+          source rust/neqo-bridge/target/vetroff-build/env.sh
+          go build -tags nss,neqo -o /tmp/foxtunnel-neqo ./cmd/vetroff
           /tmp/foxtunnel-neqo version --json > /tmp/neqo-version.json
           python3 - <<'PY'
           import json
@@ -66,7 +66,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          source rust/neqo-bridge/target/vetroff-build/env.sh
           python3 -m unittest discover -s scripts -p test_build_neqo.py
           python3 -m unittest discover -s scripts -p test_native_backend_metrics.py
           go test -c -tags nss,neqo -o /tmp/native-backend.test ./internal/tunnel
@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          source rust/neqo-bridge/target/vetroff-build/env.sh
           python3 -m unittest discover -s scripts -p 'test_update_h3_*.py' -v
           cc -O2 -Wall -Wextra -Werror scripts/native_resource_runner.c -o /tmp/native-resource-runner
           python3 scripts/update_h3_profile.py --binary /tmp/native-backend.test --versions /tmp/neqo-version.json --resource-runner /tmp/native-resource-runner --out /tmp/update-h3-profile.json
@@ -94,11 +94,11 @@ jobs:
             /tmp/update-h3-profile.json
           if-no-files-found: error
           retention-days: 14
-      - name: Fresh pinned Firefox NaiveProxy FoxTunnel TLS H2 and decoded H3
+      - name: Fresh pinned Firefox NaiveProxy VetroffProxy TLS H2 and decoded H3
         shell: bash
         run: |
           set -euo pipefail
-          source rust/neqo-bridge/target/foxtunnel-build/env.sh
+          source rust/neqo-bridge/target/vetroff-build/env.sh
           go build -tags nss,neqo -o /tmp/native-wire-capture ./experiments/wire-capture
           go test -race -tags nss,neqo ./experiments/browser-compare -count=1 -timeout=60s
           python3 -m unittest discover -s scripts -p test_compare_browser_behavior.py -v
@@ -118,7 +118,7 @@ jobs:
           path: |
             scripts/neqo.lock.json
             rust/neqo-bridge/Cargo.lock
-            rust/neqo-bridge/target/foxtunnel-build/provenance.json
-            rust/neqo-bridge/target/foxtunnel-build/rust-dependencies.json
-            rust/neqo-bridge/target/foxtunnel-build/licenses/
-            rust/neqo-bridge/target/foxtunnel-build/mozilla-runtime/licenses/
+            rust/neqo-bridge/target/vetroff-build/provenance.json
+            rust/neqo-bridge/target/vetroff-build/rust-dependencies.json
+            rust/neqo-bridge/target/vetroff-build/licenses/
+            rust/neqo-bridge/target/vetroff-build/mozilla-runtime/licenses/

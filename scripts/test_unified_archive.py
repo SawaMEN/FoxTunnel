@@ -24,7 +24,7 @@ def prepare(root, arch="amd64"):
         "dirty": False, "runtime": {"kind": "bundled-nss", "mozilla": mozilla},
     }))
     merge.merge_files(necko, nss)
-    archive = root / ("foxtunnel_0.0.0-ci_linux_"+arch+".tar.gz")
+    archive = root / ("vetroff_0.0.0-ci_linux_"+arch+".tar.gz")
     merge.make_archive(necko, archive)
     return archive
 
@@ -75,10 +75,10 @@ class UnifiedDeploymentTests(unittest.TestCase):
             with tarfile.open(archive) as tf:
                 tf.extractall(extracted, filter="data")
             bundle = extracted / "foxtunnel-necko"
-            (bundle / "foxtunnel").write_bytes(b"tampered")
+            (bundle / "vetroff").write_bytes(b"tampered")
             # Extracted manifest must never authorize modified files.
             manifest = json.loads((bundle / "manifest.json").read_text())
-            self.assertNotEqual(merge.sha(bundle / "foxtunnel"), manifest["files"]["foxtunnel"])
+            self.assertNotEqual(merge.sha(bundle / "vetroff"), manifest["files"]["vetroff"])
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ on:
       - 'scripts/test_deploy_cli.py'
       - 'scripts/operations_soak.py'
       - 'integration/operations-cert/**'
-      - 'cmd/foxtunnel/**'
+      - 'cmd/vetroff/**'
       - 'internal/tunnel/**'
       - 'internal/tlsidentity/**'
       - 'go.mod'
@@ -21,7 +21,7 @@ on:
       - 'scripts/test_deploy_cli.py'
       - 'scripts/operations_soak.py'
       - 'integration/operations-cert/**'
-      - 'cmd/foxtunnel/**'
+      - 'cmd/vetroff/**'
       - 'internal/tunnel/**'
       - 'internal/tlsidentity/**'
       - 'go.mod'
@@ -56,24 +56,24 @@ jobs:
         with:
           python-version: '3.12'
       - name: Native lifecycle, certificate renewal and listener release
-        run: go test -race ./cmd/foxtunnel ./internal/tlsidentity ./internal/tunnel -run 'TestServerCertificateReloadAndShutdownH2H3|TestProcessSIGTERMAndCertificateSIGHUP|TestClientSIGTERMClosesIncompleteSOCKS|TestCertificateReloadRetainsLastValidPair|TestServeContextStopsActiveAndIncompleteConnections|TestH3BlackholedSetupRecoversOnNewPathAndPreservesExistingStream|TestH3DeadlineRetiresPoolWithoutReplayOrClosingLiveBody|TestH3CallerCancellationAndHTTPRejectionDoNotRetirePool|TestH3AlreadyCancelledRequestDoesNotCreatePool|TestH3LateOldDeadlineDoesNotRetireNewPool|TestH3IdleCleanupPreservesActiveDuplexBody' -count=1 -timeout=90s
+        run: go test -race ./cmd/vetroff ./internal/tlsidentity ./internal/tunnel -run 'TestServerCertificateReloadAndShutdownH2H3|TestProcessSIGTERMAndCertificateSIGHUP|TestClientSIGTERMClosesIncompleteSOCKS|TestCertificateReloadRetainsLastValidPair|TestServeContextStopsActiveAndIncompleteConnections|TestH3BlackholedSetupRecoversOnNewPathAndPreservesExistingStream|TestH3DeadlineRetiresPoolWithoutReplayOrClosingLiveBody|TestH3CallerCancellationAndHTTPRejectionDoNotRetirePool|TestH3AlreadyCancelledRequestDoesNotCreatePool|TestH3LateOldDeadlineDoesNotRetireNewPool|TestH3IdleCleanupPreservesActiveDuplexBody' -count=1 -timeout=90s
       - name: Build two reviewed native installation candidates
         shell: bash
         run: |
           set -euo pipefail
           commit=$(git rev-parse HEAD)
           for revision in 1 2; do
-            go build -buildvcs=false -o "foxtunnel-lab-$revision.exe" \
+            go build -buildvcs=false -o "vetroff-lab-$revision.exe" \
               -ldflags "-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Version=v0.0.0-stage7.$revision -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Commit=$commit -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Dirty=false" \
-              ./cmd/foxtunnel
+              ./cmd/vetroff
           done
-          ./foxtunnel-lab-2.exe version --json
+          ./vetroff-lab-2.exe version --json
       - name: Native install, update, refused update, rollback and recovery
         shell: bash
         run: |
           set -euo pipefail
-          export FOXTUNNEL_INSTALL_LAB_A="foxtunnel-lab-1.exe"
-          export FOXTUNNEL_INSTALL_LAB_B="foxtunnel-lab-2.exe"
+          export FOXTUNNEL_INSTALL_LAB_A="vetroff-lab-1.exe"
+          export FOXTUNNEL_INSTALL_LAB_B="vetroff-lab-2.exe"
           export FOXTUNNEL_INSTALL_LAB_COMMIT
           FOXTUNNEL_INSTALL_LAB_COMMIT=$(git rev-parse HEAD)
           python -m unittest discover -s scripts -p test_deploy_cli.py -v
@@ -85,7 +85,7 @@ jobs:
           set -euo pipefail
           go run -buildvcs=false ./integration/operations-cert --out operations-cert
           mkdir operations-report
-          python scripts/operations_soak.py --binary foxtunnel-lab-2.exe \
+          python scripts/operations_soak.py --binary vetroff-lab-2.exe \
             --cert operations-cert/cert.pem --key operations-cert/key.pem \
             --seconds "$FOXTUNNEL_SOAK_SECONDS" --parallel 3 --recovery-seconds 30 \
             --out operations-report/report.json

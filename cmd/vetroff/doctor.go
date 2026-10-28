@@ -62,7 +62,7 @@ func (r *doctorReport) add(stage string, started time.Time, reason string, err e
 }
 
 func doctorCommand(parent context.Context, args []string, out io.Writer) error {
-	fs := flag.NewFlagSet("foxtunnel doctor", flag.ContinueOnError)
+	fs := flag.NewFlagSet("vetroff doctor", flag.ContinueOnError)
 	fs.SetOutput(io.Discard) // Never echo invalid values, paths or flag names.
 	o := doctorOptions{}
 	fs.StringVar(&o.linkFile, "link-file", "", "private client profile file")
@@ -76,7 +76,7 @@ func doctorCommand(parent context.Context, args []string, out io.Writer) error {
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.SetOutput(out)
-			fmt.Fprintln(out, "usage: foxtunnel doctor --link-file FILE --target HOST:PORT [--network tcp|udp] [--json]")
+			fmt.Fprintln(out, "usage: vetroff doctor --link-file FILE --target HOST:PORT [--network tcp|udp] [--json]")
 			fs.PrintDefaults()
 			return nil
 		}

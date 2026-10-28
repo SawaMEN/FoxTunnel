@@ -14,7 +14,7 @@ from pathlib import Path
 import statistics
 import sys
 
-KIND = "foxtunnel-vless-stage1-udp"
+KIND = "vetroff-vless-stage1-udp"
 FOX = ("h2-connect", "h2-post", "h3-post", "wss",
        "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up")
 VLESS = ("reality-vision", "xhttp", "other")
@@ -132,9 +132,9 @@ def evaluate(reports: list[dict]) -> dict:
         if fox["integrity_failures"] or vless["integrity_failures"]:
             issues.append("UDP echo integrity error")
         if rtt_ratio is None or rtt_ratio > 1.1:
-            issues.append("FoxTunnel UDP echo p95 above 110% VLESS")
+            issues.append("VetroffProxy UDP echo p95 above 110% VLESS")
         if fox["failure_percent"] > vless["failure_percent"] + 1:
-            issues.append("FoxTunnel UDP failed-echo rate above VLESS by >1 pp")
+            issues.append("VetroffProxy UDP failed-echo rate above VLESS by >1 pp")
         rows_out.append({
             "utc_day": day, "fox": fox, "vless": vless,
             "fox_to_vless_rtt_p95_ratio": rtt_ratio,
@@ -142,7 +142,7 @@ def evaluate(reports: list[dict]) -> dict:
     if len(reports) < 3 or len(days) < 3:
         issues.append("at least three distinct UTC days of matched UDP measurements required")
     return {
-        "schema": 1, "kind": "foxtunnel-vless-stage1-udp-gate",
+        "schema": 1, "kind": "vetroff-vless-stage1-udp-gate",
         "passed": not issues, "wan_verified_by_tool": False,
         "days_observed": len(days), "issues": sorted(set(issues)),
         "measurements": rows_out,

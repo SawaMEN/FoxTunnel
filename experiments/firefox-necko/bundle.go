@@ -108,7 +108,7 @@ func verifyBundlePlatform(directory, platform string) (string, error) {
 		}
 	}
 	// Every ELF must match the native architecture, including secondary libraries.
-	requiredELF := map[string]bool{"runtime/xpcshell": true, "runtime/libxul.so": true, "runtime/libnss3.so": true, "foxtunnel-necko": true, "foxtunnel": true, "lib/libnss3.so": true}
+	requiredELF := map[string]bool{"runtime/xpcshell": true, "runtime/libxul.so": true, "runtime/libnss3.so": true, "foxtunnel-necko": true, "foxtunnel": true, "vetroff": true, "lib/libnss3.so": true}
 	machine := uint16(62)
 	if platform == "linux-arm64" {
 		machine = 183
