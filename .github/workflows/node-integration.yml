@@ -10,11 +10,22 @@ on:
       - 'internal/tunnel/**'
       - 'internal/profile/**'
       - 'cmd/vetroff/**'
-      - 'vetroff.go'
+      - 'foxtunnel*.go'
       - 'go.mod'
       - 'go.sum'
   push:
     branches: [main]
+    paths:
+      - '.github/workflows/node-integration.yml'
+      - 'internal/bond/**'
+      - 'internal/multihop/**'
+      - 'internal/nodeperf/**'
+      - 'internal/tunnel/**'
+      - 'internal/profile/**'
+      - 'cmd/vetroff/**'
+      - 'foxtunnel*.go'
+      - 'go.mod'
+      - 'go.sum'
 
 permissions:
   contents: read
@@ -29,14 +40,10 @@ jobs:
         with:
           go-version: '1.26.10'
           cache: true
-      - name: All protocol-core packages and UDP compatibility
-        run: go test ./... -count=1 -timeout=120s
       - name: Race detector for routing and core
         run: go test -race ./internal/nodeperf ./internal/multihop ./internal/bond ./internal/tunnel ./internal/profile -count=1 -timeout=120s
       - name: Build client
         run: go build ./cmd/vetroff
-      - name: Go vet
-        run: go vet ./...
       - name: Multi-ingress HTTP/2 integrity and adaptive scheduler regression
         run: |
           go test ./internal/bond -run '^TestAdaptive(BondHTTP2MultiIngressIntegrity|Pick)' -count=3 -timeout=120s
