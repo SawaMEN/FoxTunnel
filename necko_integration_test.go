@@ -35,6 +35,14 @@ func TestIntegratedNecko(t *testing.T) {
 	if bundle == "" {
 		t.Skip("set FOXTUNNEL_NECKO_BUNDLE to a verified bundle with the main CLI")
 	}
+	cli := filepath.Join(bundle, "vetroff")
+	info, err := os.Stat(cli)
+	if err != nil {
+		t.Fatalf("packaged VetroffProxy CLI %q is missing: %v", cli, err)
+	}
+	if !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
+		t.Fatalf("packaged VetroffProxy CLI %q must be an executable regular file", cli)
+	}
 	for _, mode := range []string{"h2-connect", "h3-connect", "h2-post", "h3-post", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up"} {
 		t.Run(mode, func(t *testing.T) {
 			handler, err := ft.NewServer(ft.ServerConfig{Credentials: ft.Credentials{Username: "u", Password: "p"}, AllowPrivateDestinations: true, EnableUDP: true, Padding: true})
@@ -310,7 +318,7 @@ func TestIntegratedNecko(t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 					defer cancel()
-					cmd := exec.CommandContext(ctx, filepath.Join(bundle, "foxtunnel"), "client", "--engine", "necko", "--necko-bundle", bundle, "--server", proxy.URL, "--ca-cert", ca, "--transport", mode, "--listen", "127.0.0.1:0", "--events-json", "--shutdown-on-stdin-eof")
+					cmd := exec.CommandContext(ctx, cli, "client", "--engine", "necko", "--necko-bundle", bundle, "--server", proxy.URL, "--ca-cert", ca, "--transport", mode, "--listen", "127.0.0.1:0", "--events-json", "--shutdown-on-stdin-eof")
 					if useIdentity {
 						cmd.Args = append(cmd.Args, "--sni", "identity.invalid", "--pin-sha256", identityPin)
 						if mode != "h3-connect" && mode != "h3-post" {
