@@ -80,7 +80,7 @@ def package(runtime, provenance, launcher, out, cli=None):
         (staging / 'SOURCE.txt').write_text(
             'Mozilla runtime source: ' + lock['repository'] + '\nRevision: ' + lock['revision'] +
             '\nApply the included source-patches according to source-lock.json.\n'
-            'Helper source: https://github.com/SawaMEN/FoxTunnel/tree/main/experiments/firefox-necko\n'
+            'Helper source: https://github.com/SawaMEN/VetroffProxy/tree/main/experiments/firefox-necko\n'
             'This bundle is an opt-in experimental ' + target + ' distribution.\n')
         files = {p.relative_to(staging).as_posix(): digest(p)
                  for p in sorted(staging.rglob('*')) if p.is_file()}
