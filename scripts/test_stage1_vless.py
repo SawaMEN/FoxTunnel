@@ -21,7 +21,7 @@ def fake_report(day: int, scenario="small") -> dict:
                             "connect_ms": 10.0, "transfer_ms": 5.0, "completion_ms": 15.0,
                             "payload_mbps": speed,
                             "error_category": None, "integrity_failure": False})
-    return {"schema": 2, "kind": "vetroffproxy-vless-stage1",
+    return {"schema": 2, "kind": "vetroff-vless-stage1",
             "created_at_utc": f"2026-10-{day:02d}T10:00:00+00:00",
             "scenario": scenario, "environment": "wan",
             "wan_attested_by_operator": True,

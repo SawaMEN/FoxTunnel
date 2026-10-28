@@ -75,7 +75,7 @@ def document(mode="tcp", day=1, label="legacy", value=10.0, rate=100.0,
         else:
             row.update(rtt_ms=value if ok else None)
         rows.append(row)
-    return {"schema": 1, "kind": "vetroffproxy-stage4-field", "mode": mode,
+    return {"schema": 1, "kind": "vetroff-stage4-field", "mode": mode,
             "created_at_utc": f"2026-10-0{day}T10:00:00+00:00",
             "environment": "wan", "external_topology": "user-attested-unverified",
             "scenario": scenario,

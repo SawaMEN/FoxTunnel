@@ -264,7 +264,7 @@ def run(a: argparse.Namespace) -> dict:
     rows.sort(key=lambda row: (row["proxy"], row["flow"], row["round"]))
     grouped = {name: summarize([r for r in rows if r["proxy"] == name], a.mode)
                for name, _ in proxies}
-    return {"schema": 1, "kind": "vetroffproxy-stage4-field", "created_at_utc":
+    return {"schema": 1, "kind": "vetroff-stage4-field", "created_at_utc":
             dt.datetime.now(dt.timezone.utc).isoformat(),
             "environment": a.environment,
             "external_topology": "user-attested-unverified" if a.environment == "wan" else "lab",

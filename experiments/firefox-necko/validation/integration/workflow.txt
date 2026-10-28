@@ -783,7 +783,7 @@
 2026-10-23T20:46:20.1475185Z ##[group]Run python3 -m unittest discover -s scripts -p test_package_necko.py -v
 2026-10-23T20:46:20.1475573Z [36;1mpython3 -m unittest discover -s scripts -p test_package_necko.py -v[0m
 2026-10-23T20:46:20.1475948Z [36;1mgo build -trimpath -ldflags='-s -w' -o necko-launcher ./experiments/firefox-necko/cmd/foxtunnel-necko[0m
-2026-10-23T20:46:20.1476312Z [36;1mgo build -trimpath -ldflags='-s -w' -o necko-main-cli ./cmd/vetroffproxy[0m
+2026-10-23T20:46:20.1476312Z [36;1mgo build -trimpath -ldflags='-s -w' -o necko-main-cli ./cmd/vetroff[0m
 2026-10-23T20:46:20.1476616Z [36;1mpython3 scripts/collect_necko_licenses.py --out /tmp/necko-notices.txt[0m
 2026-10-23T20:46:20.1476950Z [36;1mcmp /tmp/necko-notices.txt experiments/firefox-necko/LICENSES.go.txt[0m
 2026-10-23T20:46:20.1477278Z [36;1mprovenance=$(find runtime-provenance -name provenance.json -type f)[0m

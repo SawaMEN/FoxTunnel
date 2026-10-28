@@ -11,7 +11,7 @@ on:
       - 'scripts/bond_stage4_lab_smoke.sh'
       - 'internal/bond/**'
       - 'internal/tunnel/**'
-      - 'cmd/vetroffproxy/**'
+      - 'cmd/vetroff/**'
   workflow_dispatch:
 
 permissions:

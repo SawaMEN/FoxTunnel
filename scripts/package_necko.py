@@ -64,8 +64,8 @@ def package(runtime, provenance, launcher, out, cli=None):
         if cli is not None:
             if not cli.is_file() or cli.is_symlink():
                 raise ValueError('regular compiled CLI required')
-            shutil.copyfile(cli, staging / 'vetroffproxy')
-            (staging / 'vetroffproxy').chmod(0o755)
+            shutil.copyfile(cli, staging / 'vetroff')
+            (staging / 'vetroff').chmod(0o755)
         shutil.copyfile(launcher, staging / 'foxtunnel-necko')
         (staging / 'foxtunnel-necko').chmod(0o755)
         shutil.copyfile(provenance, staging / 'provenance.json')

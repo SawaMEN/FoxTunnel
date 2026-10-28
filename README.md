@@ -1,6 +1,6 @@
 # VetroffProxy
 
-Название проекта и CLI — **VetroffProxy** (`vetroffproxy`). Для совместимости путь Go-модуля `github.com/SawaMEN/FoxTunnel`, пакет `foxtunnel`, переменные `FOXTUNNEL_*`, ссылки `vetroff://` и сетевые идентификаторы сохраняются. Старые архивы и результаты измерений сохраняют исходные имена.
+Название проекта и CLI — **VetroffProxy** (`vetroff`). Для совместимости путь Go-модуля `github.com/SawaMEN/FoxTunnel`, пакет `foxtunnel`, переменные `FOXTUNNEL_*`, ссылки `vetroff://` и сетевые идентификаторы сохраняются. Старые архивы и результаты измерений сохраняют исходные имена.
 
 [English](README.en.md)
 
@@ -16,8 +16,8 @@ VetroffProxy — ядро туннельного протокола на Go. П�
 или соберите обычную Go-версию (Go 1.26.10+):
 
 ```sh
-go build -o vetroffproxy ./cmd/vetroffproxy
-./vetroffproxy version --json
+go build -o vetroff ./cmd/vetroff
+./vetroff version --json
 ```
 
 Далее — [настройка сервера и клиента](docs/START.md).

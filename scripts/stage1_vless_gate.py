@@ -15,7 +15,7 @@ import statistics
 import sys
 from pathlib import Path
 
-KIND = "vetroffproxy-vless-stage1"
+KIND = "vetroff-vless-stage1"
 
 
 def finite_nonnegative(x) -> bool:
@@ -156,7 +156,7 @@ def evaluate(reports: list[dict]) -> dict:
         issues.append("at least three different UTC measurement days required")
     if len(reports) < 3:
         issues.append("at least three matched reports required")
-    return {"schema": 2, "kind": "vetroffproxy-vless-stage1-gate",
+    return {"schema": 2, "kind": "vetroff-vless-stage1-gate",
             "scenario": scenario, "passed": not issues,
             "wan_verified_by_tool": False, "issues": sorted(set(issues)),
             "days_observed": len(days), "measurements": detail,

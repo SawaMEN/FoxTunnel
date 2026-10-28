@@ -28,7 +28,7 @@
 сборка CLI, проверка границ protocol-core и Markdown-ссылок прошли локально.
 После добавления проверок просроченного сертификата, несовпадающего ключа
 и повреждённого журнала повторно прошли новые `TestCheckConfig*` с `-race`
-и `go vet ./cmd/vetroffproxy`. После публикации этапа прошли
+и `go vet ./cmd/vetroff`. После публикации этапа прошли
 [Go CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39624353932),
 [NSS CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39624353846) и
 [Neqo CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39624353894).
@@ -36,9 +36,9 @@
 Команды:
 
 ```sh
-./vetroffproxy check-config --config server-config/server.json
-./vetroffproxy check-config --link-file connection.txt --json
-./vetroffproxy check-config --link-file connection.txt --ca-cert local-ca.pem --engine mozilla
+./vetroff check-config --config server-config/server.json
+./vetroff check-config --link-file connection.txt --json
+./vetroff check-config --link-file connection.txt --ca-cert local-ca.pem --engine mozilla
 ```
 
 Укажите ровно один файл. Клиентский профиль должен быть приватным обычным
@@ -93,9 +93,9 @@ H2/H3, доверие CA/SNI/pin, ошибку учётных данных, не
 [Neqo CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39626671735).
 
 ```sh
-./vetroffproxy doctor --link-file connection.txt --target echo.example.com:9000
-./vetroffproxy doctor --link-file connection.txt --target echo.example.com:9001 --network udp --json
-./vetroffproxy doctor --link-file connection.txt --target echo.example.com:9000 --server-index 1 --timeout 10s
+./vetroff doctor --link-file connection.txt --target echo.example.com:9000
+./vetroff doctor --link-file connection.txt --target echo.example.com:9001 --network udp --json
+./vetroff doctor --link-file connection.txt --target echo.example.com:9000 --server-index 1 --timeout 10s
 ```
 
 `--target` обязателен: это доступный с сервера **echo-сервис под вашим
@@ -210,13 +210,13 @@ TLS и авторизация по-прежнему проверяются не�
 Для новой прямой конфигурации:
 
 ```sh
-./vetroffproxy setup --server https://vpn.example.com \
+./vetroff setup --server https://vpn.example.com \
   --cert /path/to/fullchain.pem --key /path/to/privkey.pem \
   --protocol-policy strict --out strict-config
-./vetroffproxy check-config --config strict-config/server.json
-./vetroffproxy server --config strict-config/server.json
-./vetroffproxy client --link-file strict-config/connection.txt
-./vetroffproxy doctor --link-file strict-config/connection.txt --target echo.example.com:9000 --json
+./vetroff check-config --config strict-config/server.json
+./vetroff server --config strict-config/server.json
+./vetroff client --link-file strict-config/connection.txt
+./vetroff doctor --link-file strict-config/connection.txt --target echo.example.com:9000 --json
 ```
 
 Для частного CA добавьте `--ca-cert` при setup и запуске/диагностике клиента.

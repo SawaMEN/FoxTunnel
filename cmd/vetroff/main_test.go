@@ -99,7 +99,7 @@ func TestCLIHelper(t *testing.T) {
 	}
 	for i, arg := range os.Args {
 		if arg == "--" {
-			os.Args = append([]string{"vetroffproxy"}, os.Args[i+1:]...)
+			os.Args = append([]string{"vetroff"}, os.Args[i+1:]...)
 			main()
 			os.Exit(0)
 		}

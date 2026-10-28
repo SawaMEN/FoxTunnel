@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def collect(go):
     deps = subprocess.check_output([go, 'list', '-deps', '-f',
         '{{if .Module}}{{.Module.Path}}|{{.Module.Dir}}{{end}}',
-        './experiments/firefox-necko/cmd/foxtunnel-necko', './cmd/vetroffproxy'], cwd=ROOT, text=True)
+        './experiments/firefox-necko/cmd/foxtunnel-necko', './cmd/vetroff'], cwd=ROOT, text=True)
     goroot = Path(subprocess.check_output([go, 'env', 'GOROOT'], text=True).strip())
     modules = dict(line.split('|', 1) for line in deps.splitlines() if '|' in line)
     notices = ['Go standard library\n' + (goroot / 'LICENSE').read_text()]

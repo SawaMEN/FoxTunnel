@@ -19,8 +19,8 @@ class UnifiedNotesTests(unittest.TestCase):
             self.assertIn('ARM64: a single NSS-enabled CLI and the complete verified Necko runtime.',result)
             self.assertIn('linux_arm64.tar.gz',result)
             with self.assertRaises(ValueError):notes.render(out,VERSION,'b'*40)
-            arm=out/'vetroffproxy_0.0.0-ci_linux_arm64.tar.gz'
-            arm.rename(out/'vetroffproxy_0.0.0-ci_linux_arm64_nss.tar.gz')
+            arm=out/'vetroff_0.0.0-ci_linux_arm64.tar.gz'
+            arm.rename(out/'vetroff_0.0.0-ci_linux_arm64_nss.tar.gz')
             with self.assertRaises(ValueError):notes.render(out,VERSION,COMMIT)
 
 

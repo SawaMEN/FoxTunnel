@@ -25,7 +25,7 @@ SHA = re.compile(r"[0-9a-f]{64}\Z")
 COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 MAX_FILES = 1024
 REQUIRED = {
-    "vetroffproxy", "build.json", "LICENSE", "THIRD_PARTY_NOTICES.txt",
+    "vetroff", "build.json", "LICENSE", "THIRD_PARTY_NOTICES.txt",
     "mozilla-runtime.json", "neqo-provenance.json",
     "rust-dependencies.json", "rust-license-index.json",
     "integration.json", "INTEGRATION.md",
@@ -64,7 +64,7 @@ def validate_bundle(archive: Path, metadata: Path, tag: str, commit: str) -> dic
     validate_version(tag)
     if not isinstance(commit, str) or not COMMIT.fullmatch(commit):
         raise ValueError("commit must be a trusted full SHA-1")
-    expected_archive = f"vetroffproxy_{tag[1:]}_linux_amd64_mozilla.tar.gz"
+    expected_archive = f"vetroff_{tag[1:]}_linux_amd64_mozilla.tar.gz"
     if archive.name != expected_archive or metadata.name != expected_archive + ".metadata.json":
         raise ValueError("unexpected archive or metadata filename")
     if archive.is_symlink() or metadata.is_symlink():
@@ -96,9 +96,9 @@ def validate_bundle(archive: Path, metadata: Path, tag: str, commit: str) -> dic
             folded.add(name.casefold())
             if not member.isfile() or member.mode & 0o7000:
                 raise ValueError("symbolic link, special file or privileged mode in archive")
-            if name == "vetroffproxy" and member.mode & 0o111 != 0o111:
+            if name == "vetroff" and member.mode & 0o111 != 0o111:
                 raise ValueError("missing binary executable permission")
-            if name != "vetroffproxy" and member.mode & 0o111:
+            if name != "vetroff" and member.mode & 0o111:
                 raise ValueError("unexpected executable asset")
             if not 0 < member.size <= MAX_MEMBER or total + member.size > MAX_TOTAL:
                 raise ValueError("oversized asset or decompressed bundle")
@@ -192,7 +192,7 @@ def main() -> int:
     p.add_argument("--input", default="dist", type=Path)
     p.add_argument("--report", type=Path, help="optional new owner-only verification result")
     args = p.parse_args()
-    filename = f"vetroffproxy_{args.version[1:]}_linux_amd64_mozilla.tar.gz"
+    filename = f"vetroff_{args.version[1:]}_linux_amd64_mozilla.tar.gz"
     try:
         if args.report is not None and args.report.exists():
             raise ValueError("refuse overwrite of verification report")

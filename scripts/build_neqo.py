@@ -191,7 +191,7 @@ def export_licenses(out, env):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--out', type=Path, default=CRATE / 'target/vetroffproxy-build')
+    parser.add_argument('--out', type=Path, default=CRATE / 'target/vetroff-build')
     parser.add_argument('--nss-source', type=Path)
     parser.add_argument('--mozilla-runtime', type=Path)
     parser.add_argument('--nspr-include', type=Path)

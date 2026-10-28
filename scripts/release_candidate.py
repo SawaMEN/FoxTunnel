@@ -22,7 +22,7 @@ from private_files import write_exclusive
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / 'scripts/release-compat.lock.json'
 MAX_EVENTS = 8 << 20
-PACKAGE = 'example.com/independent-vetroffproxy-consumer'
+PACKAGE = 'example.com/independent-vetroff-consumer'
 PAYLOAD_CASES = {'TestReleaseProcessHost/h2-connect', 'TestReleaseProcessHost/h3-post'}
 LEGACY_CASES = {'TestWireLegacyBinaryCompatibility/legacy-compatible-server',
                 'TestWireLegacyBinaryCompatibility/strict-server'}
@@ -75,7 +75,7 @@ def fetch_legacy(item, folder):
             require(total <= item['size'] <= 16 << 20, 'legacy download exceeds pin')
             output.write(block)
     require(total == item['size'] and deploy_cli.digest(archive) == item['sha256'], 'legacy digest mismatch')
-    executable = folder / 'vetroffproxy-legacy'
+    executable = folder / 'vetroff-legacy'
     total, count, seen = 0, 0, set()
     with tarfile.open(archive, 'r|gz') as source:
         for entry in source:
@@ -86,7 +86,7 @@ def fetch_legacy(item, folder):
                     and 0 <= entry.size <= contract.MAX_MEMBER and total <= contract.MAX_TOTAL,
                     'unsafe legacy archive')
             seen.add(entry.name)
-            if entry.name == 'vetroffproxy':
+            if entry.name == 'vetroff':
                 with source.extractfile(entry) as input_file, executable.open('xb') as output:
                     while block := input_file.read(1 << 20):
                         output.write(block)
@@ -122,7 +122,7 @@ def main():
             del env[key]
     results = []
     lock = contract.read_json(LOCK)
-    with tempfile.TemporaryDirectory(prefix='vetroffproxy-release-gate-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='vetroff-release-gate-') as tmp:
         work = Path(tmp)
         manager = deploy_cli.Deployment(work / 'installation')
         config = manager.config / 'preserved-profile'

@@ -84,11 +84,11 @@
 В обычной Go-сборке:
 
 ```sh
-./vetroffproxy setup --transport h3-connect \
+./vetroff setup --transport h3-connect \
   --server https://vpn.example.com --cert /path/fullchain.pem \
   --key /path/privkey.pem --out server-config
-./vetroffproxy server --config server-config/server.json
-./vetroffproxy client --link-file server-config/connection.txt
+./vetroff server --config server-config/server.json
+./vetroff client --link-file server-config/connection.txt
 ```
 
 На сервере должны быть доступны TCP и UDP на указанном порту. Генератор
@@ -97,7 +97,7 @@
 В сборке `-tags nss,neqo` явно выбирайте Mozilla backend:
 
 ```sh
-./vetroffproxy client --server https://vpn.example.com \
+./vetroff client --server https://vpn.example.com \
   --engine mozilla --transport h3-connect --h3-fallback none
 ```
 

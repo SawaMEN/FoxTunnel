@@ -5,9 +5,9 @@
 Полный список флагов текущей сборки:
 
 ```sh
-./vetroffproxy setup --help
-./vetroffproxy server --help
-./vetroffproxy client --help
+./vetroff setup --help
+./vetroff server --help
+./vetroff client --help
 ```
 
 ## Транспорты
@@ -70,7 +70,7 @@ UDP выключен по умолчанию. Для нового сервера
 команде `setup`, затем включите его у клиента:
 
 ```sh
-./vetroffproxy client --link-file connection.txt --enable-udp
+./vetroff client --link-file connection.txt --enable-udp
 ```
 
 Это SOCKS5 UDP ASSOCIATE с запросом/ответом через HTTPS. Для постоянной

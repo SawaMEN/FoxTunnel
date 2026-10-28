@@ -6,7 +6,7 @@
 
 | Путь | Назначение |
 |---|---|
-| `cmd/vetroffproxy/` | CLI ядра |
+| `cmd/vetroff/` | CLI ядра |
 | `foxtunnel*.go`, `processhost/` | Публичные API |
 | `internal/tunnel/` | Клиент, сервер, SOCKS5 и транспорты |
 | `internal/access/` | Управление доступом и учёт |
@@ -21,7 +21,7 @@
 Из корня репозитория, Go 1.26.10+:
 
 ```sh
-go build -o vetroffproxy ./cmd/vetroffproxy
+go build -o vetroff ./cmd/vetroff
 go test -race ./... -count=1 -timeout=120s
 go vet ./...
 go mod tidy -diff
@@ -35,7 +35,7 @@ NSS-сборка на Linux требует C-компилятор, pkg-config, N
 
 ```sh
 sudo apt-get install libnss3-dev libnspr4-dev pkg-config
-go build -tags nss -o vetroffproxy ./cmd/vetroffproxy
+go build -tags nss -o vetroff ./cmd/vetroff
 go test -race -tags nss ./... -count=1 -timeout=240s
 ```
 
@@ -43,8 +43,8 @@ go test -race -tags nss ./... -count=1 -timeout=240s
 
 ```sh
 python3 scripts/build_neqo.py
-. rust/neqo-bridge/target/vetroffproxy-build/env.sh
-go build -tags nss,neqo -o vetroffproxy ./cmd/vetroffproxy
+. rust/neqo-bridge/target/vetroff-build/env.sh
+go build -tags nss,neqo -o vetroff ./cmd/vetroff
 go test -race -tags nss,neqo ./... -count=1 -timeout=120s
 ```
 

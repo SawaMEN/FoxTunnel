@@ -157,12 +157,12 @@ func TestBundleArchitectureCannotBeRelabeledOrMixed(t *testing.T) {
 			if _, err := verifyBundlePlatform(root, other); err == nil {
 				t.Fatal("accepted other architecture")
 			}
-			for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "foxtunnel-necko", "foxtunnel", "vetroffproxy", "lib/libnss3.so", "runtime/other-library.so"} {
+			for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "foxtunnel-necko", "foxtunnel", "vetroff", "lib/libnss3.so", "runtime/other-library.so"} {
 				t.Run(name, func(t *testing.T) {
 					mixed := testBundlePlatform(t, platform)
 					donor := testBundlePlatform(t, other)
 					donorName := name
-					if name == "foxtunnel" || name == "vetroffproxy" || name == "lib/libnss3.so" || name == "runtime/other-library.so" {
+					if name == "foxtunnel" || name == "vetroff" || name == "lib/libnss3.so" || name == "runtime/other-library.so" {
 						donorName = "foxtunnel-necko"
 					}
 					data, err := os.ReadFile(filepath.Join(donor, donorName))

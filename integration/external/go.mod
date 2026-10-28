@@ -1,4 +1,4 @@
-module example.com/independent-vetroffproxy-consumer
+module example.com/independent-vetroff-consumer
 
 go 1.26.10
 

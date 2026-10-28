@@ -192,7 +192,7 @@ def measure(a: argparse.Namespace) -> dict:
         raise ValueError("unexpected benchmark report")
     clean = [sanitize(row) for row in raw["samples"]]
     return {
-        "schema": 2, "kind": "vetroffproxy-vless-stage1",
+        "schema": 2, "kind": "vetroff-vless-stage1",
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "scenario": a.scenario, "environment": a.environment,
         "wan_attested_by_operator": a.environment == "wan" and a.confirm_independent_vds,

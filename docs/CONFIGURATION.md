@@ -7,12 +7,12 @@
 Полный список флагов конкретной сборки выводит сама программа:
 
 ```sh
-./vetroffproxy version --json
-./vetroffproxy setup --help
-./vetroffproxy server --help
-./vetroffproxy client --help
-./vetroffproxy check-config --help
-./vetroffproxy doctor --help
+./vetroff version --json
+./vetroff setup --help
+./vetroff server --help
+./vetroff client --help
+./vetroff check-config --help
+./vetroff doctor --help
 ```
 
 ## Источник настроек
@@ -30,9 +30,9 @@
 ## Проверка без сети
 
 ```sh
-./vetroffproxy check-config --config server-config/server.json --json
-./vetroffproxy check-config --link-file connection.txt --json
-./vetroffproxy check-config --link-file connection.txt --ca-cert ca.pem --json
+./vetroff check-config --config server-config/server.json --json
+./vetroff check-config --link-file connection.txt --json
+./vetroff check-config --link-file connection.txt --ca-cert ca.pem --json
 ```
 
 Команда не открывает listener, не разрешает DNS и не подключается к серверу.
@@ -49,8 +49,8 @@ JSON schema 1 содержит фиксированные коды провер�
 Замените адрес ниже адресом своего echo-сервиса, разрешённым server policy:
 
 ```sh
-./vetroffproxy doctor --link-file connection.txt --target echo.example.net:9000 --json
-./vetroffproxy doctor --link-file connection.txt --target echo.example.net:9000 --network udp --timeout 15s --json
+./vetroff doctor --link-file connection.txt --target echo.example.net:9000 --json
+./vetroff doctor --link-file connection.txt --target echo.example.net:9000 --network udp --timeout 15s --json
 ```
 
 Probe отправляет 32 случайных байта и проверяет точный ответ. UDP требует

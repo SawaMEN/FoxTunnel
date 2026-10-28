@@ -143,7 +143,7 @@ def measure(a: argparse.Namespace) -> dict:
     if len(samples) != 3 * a.rounds * a.parallel:
         raise ValueError("incomplete measurement set")
     return {
-        "schema": 2, "kind": "vetroffproxy-stage3-3way",
+        "schema": 2, "kind": "vetroff-stage3-3way",
         "created_at_utc": finished_at_utc,
         "started_at_utc": started_at_utc,
         "finished_at_utc": finished_at_utc,

@@ -207,7 +207,7 @@ def run(args) -> tuple[dict, bool]:
     if not sys.platform.startswith("linux") or not Path("/proc/self/status").is_file():
         raise RuntimeError("Linux /proc is required for memory measurement")
 
-    with tempfile.TemporaryDirectory(prefix="vetroffproxy-stage9-") as directory:
+    with tempfile.TemporaryDirectory(prefix="vetroff-stage9-") as directory:
         private = Path(directory)
         processes = {}
         control = {}
@@ -277,7 +277,7 @@ def run(args) -> tuple[dict, bool]:
     passed = (load_pass and resource_pass and trust_pass and all(outage.values())
               and recovery["passed"] and all(r["observed"] for r in route.values()) and alive)
     report = {
-        "schema": 1, "kind": "vetroffproxy-stage9-local-soak",
+        "schema": 1, "kind": "vetroff-stage9-local-soak",
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "passed": passed, "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
         "scope": "one Linux host, IPv4 loopback server + echo; NOT independent field",

@@ -22,7 +22,7 @@ def qualify(a):
     # Verify the NSS archive independently, before executing its CLI.
     contract.verify(argparse.Namespace(input=str(a.nss.parent), version=a.version,
                                       commit=a.commit, target='linux/'+a.arch+'/nss'))
-    with tempfile.TemporaryDirectory(prefix='vetroffproxy-unified-check-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='vetroff-unified-check-') as tmp:
         root = Path(tmp)
         unpacked = root / 'bundle'
         unpacked.mkdir()

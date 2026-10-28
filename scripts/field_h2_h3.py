@@ -205,7 +205,7 @@ def stop(process: subprocess.Popen) -> None:
 
 def measure(args: argparse.Namespace) -> tuple[dict, bool]:
     preflight(args)
-    with tempfile.TemporaryDirectory(prefix="vetroffproxy-field8-") as directory:
+    with tempfile.TemporaryDirectory(prefix="vetroff-field8-") as directory:
         private = Path(directory)
         h2_log, h3_log = private / "h2.log", private / "h3.log"
         result_path = private / "raw.json"
@@ -260,7 +260,7 @@ def measure(args: argparse.Namespace) -> tuple[dict, bool]:
     binary_hash = hashlib.sha256(args.binary.read_bytes()).hexdigest()
     report = {
         "schema": 1,
-        "kind": "vetroffproxy-stage8-field-h2-h3",
+        "kind": "vetroff-stage8-field-h2-h3",
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "passed": success,
         "scenario": args.scenario,

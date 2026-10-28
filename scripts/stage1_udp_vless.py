@@ -102,7 +102,7 @@ def run(a: argparse.Namespace) -> dict:
     if len(rows) != 2 * a.rounds * a.parallel:
         raise ValueError("incomplete UDP report")
     return {
-        "schema": 1, "kind": "vetroffproxy-vless-stage1-udp",
+        "schema": 1, "kind": "vetroff-vless-stage1-udp",
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "environment": a.environment,
         "wan_attested_by_operator": a.environment == "wan" and a.confirm_independent_vds,

@@ -16,8 +16,8 @@ TLS-сертификатом для этого домена. Сертифика�
 Обычная сборка из исходников требует Go 1.26.10+ и не включает NSS/Neqo:
 
 ```sh
-go build -o vetroffproxy ./cmd/vetroffproxy
-./vetroffproxy version --json
+go build -o vetroff ./cmd/vetroff
+./vetroff version --json
 ```
 
 ## Сервер
@@ -25,14 +25,14 @@ go build -o vetroffproxy ./cmd/vetroffproxy
 Замените домен и пути на свои. Каталог `server-config` ещё не должен существовать.
 
 ```sh
-./vetroffproxy setup \
+./vetroff setup \
   --server https://vpn.example.com \
-  --cert /etc/ssl/vetroffproxy/fullchain.pem \
-  --key /etc/ssl/vetroffproxy/privkey.pem \
+  --cert /etc/ssl/vetroff/fullchain.pem \
+  --key /etc/ssl/vetroff/privkey.pem \
   --out server-config
 
-./vetroffproxy check-config --config server-config/server.json
-./vetroffproxy server --config server-config/server.json
+./vetroff check-config --config server-config/server.json
+./vetroff server --config server-config/server.json
 ```
 
 `setup` создаёт:
@@ -55,8 +55,8 @@ go build -o vetroffproxy ./cmd/vetroffproxy
 к файлу его владельцем.
 
 ```sh
-./vetroffproxy check-config --link-file connection.txt
-./vetroffproxy client --link-file connection.txt
+./vetroff check-config --link-file connection.txt
+./vetroff client --link-file connection.txt
 ```
 
 Укажите в приложении SOCKS5 `127.0.0.1:1080` и DNS через прокси.

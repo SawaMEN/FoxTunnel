@@ -1,6 +1,6 @@
 # VetroffProxy
 
-The project and CLI are **VetroffProxy** (`vetroffproxy`). For compatibility, the Go module `github.com/SawaMEN/FoxTunnel`, package `foxtunnel`, `FOXTUNNEL_*` variables, `vetroff://` links and wire identifiers retain their existing names. Historical archives and measurement records retain their original names.
+The project and CLI are **VetroffProxy** (`vetroff`). For compatibility, the Go module `github.com/SawaMEN/FoxTunnel`, package `foxtunnel`, `FOXTUNNEL_*` variables, `vetroff://` links and wire identifiers retain their existing names. Historical archives and measurement records retain their original names.
 
 [Русский](README.md)
 
@@ -16,8 +16,8 @@ Download a complete bundle from [Releases](https://github.com/SawaMEN/FoxTunnel/
 or build the Go version with Go 1.26.10+:
 
 ```sh
-go build -o vetroffproxy ./cmd/vetroffproxy
-./vetroffproxy version --json
+go build -o vetroff ./cmd/vetroff
+./vetroff version --json
 ```
 
 - [Setup](docs/START.md) — server, client and troubleshooting (Russian).

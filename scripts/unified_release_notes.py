@@ -13,13 +13,13 @@ from private_files import write_exclusive
 def render(folder, version, commit):
     release_verify.validate_version(version)
     names = (
-        "vetroffproxy_" + version[1:] + "_linux_amd64.tar.gz",
-        "vetroffproxy_" + version[1:] + "_linux_arm64.tar.gz",
+        "vetroff_" + version[1:] + "_linux_amd64.tar.gz",
+        "vetroff_" + version[1:] + "_linux_arm64.tar.gz",
     )
     if {p.name for p in folder.glob("*.tar.gz")} != set(names):
         raise ValueError("expected exactly one Linux archive per architecture")
     for name in names:
-        with tempfile.TemporaryDirectory(prefix="vetroffproxy-notes-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="vetroff-notes-") as tmp:
             unified_archive.unpack(folder / name, Path(tmp), version, commit)
     lines = [
         "# VetroffProxy " + version,

@@ -20,7 +20,7 @@ def fixture(day: int, fox_rtt: float = 10.5, vless_rtt: float = 10.0) -> dict:
                          "ok": True, "rtt_ms": rtt, "error_category": None,
                          "integrity_failure": False})
     return {
-        "schema": 1, "kind": "vetroffproxy-vless-stage1-udp",
+        "schema": 1, "kind": "vetroff-vless-stage1-udp",
         "created_at_utc": f"2026-10-{day:02}T11:00:00+00:00",
         "environment": "wan", "wan_attested_by_operator": True,
         "configuration": {"rounds": 20, "parallel": 1, "warmup": 1,

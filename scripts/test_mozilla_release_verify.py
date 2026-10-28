@@ -15,7 +15,7 @@ COMMIT = "a" * 40
 
 class MozillaReleaseVerifyContracts(unittest.TestCase):
     def make(self, path, *, tamper=False, member_name="LICENSE"):
-        filename = f"vetroffproxy_{TAG[1:]}_linux_amd64_mozilla.tar.gz"
+        filename = f"vetroff_{TAG[1:]}_linux_amd64_mozilla.tar.gz"
         archive = path / filename
         data = b"test-data"
         with tarfile.open(archive, "w:gz") as tar:

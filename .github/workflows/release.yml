@@ -77,7 +77,7 @@ jobs:
           CGO_LDFLAGS='-Wl,--disable-new-dtags -Wl,-rpath,$ORIGIN/lib' go test -c -tags nss -o "$package/sdk.test" .
           docker run --rm --network none --read-only --tmpfs /tmp -v "$package:/release:ro" ubuntu:24.04 sh -ec '
             if ldconfig -p | grep -Eq "libnss3|libnspr4"; then exit 1; fi
-            /release/vetroffproxy version --json
+            /release/vetroff version --json
             /release/sdk.test -test.run "^TestPublicNSS" -test.timeout=60s
           '
       - name: Install complete native NSS archive without changing host configuration
@@ -174,9 +174,9 @@ jobs:
           python3 scripts/release.py verify --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
           (cd necko-release && sha256sum --check SHA256SUMS)
           mkdir -p published
-          archive="published/vetroffproxy_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}.tar.gz"
-          python3 scripts/merge_necko_nss.py --arch "$RELEASE_ARCH" --necko "necko-release/foxtunnel-necko-linux-${RELEASE_ARCH}.tar.gz" --nss "dist/vetroffproxy_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --out "$archive" --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
-          python3 scripts/qualify_unified.py --archive "$archive" --nss "dist/vetroffproxy_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --arch "$RELEASE_ARCH" --install "$RUNNER_TEMP/unified-install" --report "published/linux-${RELEASE_ARCH}-verification.json"
+          archive="published/vetroff_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}.tar.gz"
+          python3 scripts/merge_necko_nss.py --arch "$RELEASE_ARCH" --necko "necko-release/foxtunnel-necko-linux-${RELEASE_ARCH}.tar.gz" --nss "dist/vetroff_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --out "$archive" --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
+          python3 scripts/qualify_unified.py --archive "$archive" --nss "dist/vetroff_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --arch "$RELEASE_ARCH" --install "$RUNNER_TEMP/unified-install" --report "published/linux-${RELEASE_ARCH}-verification.json"
           (cd published && sha256sum *.tar.gz > "SHA256SUMS-linux-${RELEASE_ARCH}")
       - name: Real NSS SDK transfers from the combined library directory
         shell: bash

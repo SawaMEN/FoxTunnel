@@ -130,7 +130,7 @@ def run(a: argparse.Namespace) -> dict:
         if os.name == "posix" and p.stat().st_mode & 0o077:
             raise RuntimeError("profile has overly broad access permissions")
     report = {
-        "schema": 1, "kind": "vetroffproxy-stage3-local-profile",
+        "schema": 1, "kind": "vetroff-stage3-local-profile",
         "variant": a.variant, "scenario": a.scenario,
         "go_version": toolchain.stdout.decode("utf-8", "replace").strip(),
         "benchtime": a.benchtime, "benchmark": result,

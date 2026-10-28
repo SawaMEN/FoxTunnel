@@ -7,7 +7,7 @@ API schema 1, process schema 1 and wire `foxtunnel-draft-0` are separate version
 ## Distribution
 
 The xfd release distributes one artifact per Linux architecture. Linux AMD64
-contains an NSS-enabled `vetroffproxy` CLI together with the verified Necko
+contains an NSS-enabled `vetroff` CLI together with the verified Necko
 `runtime/`, helper and `lib/` in one archive. Linux ARM64 still ships NSS
 without the full Necko runtime. Keep the extracted bundle intact and use the
 executable inside `foxtunnel-necko/` on AMD64. Runtime baseline: Ubuntu 24.04
@@ -109,7 +109,7 @@ UDP delivery, ordering and application response validation remain the host's job
 Use a verified executable with a private connection file:
 
 ```sh
-./vetroffproxy client --link-file /private/profile/connection.txt \
+./vetroff client --link-file /private/profile/connection.txt \
   --listen 127.0.0.1:1080 --events-json --shutdown-on-stdin-eof
 ```
 
@@ -118,7 +118,7 @@ libraries into the host. See repository `examples/process-host/main.go`.
 
 ```go
 child, err := processhost.StartClient(ctx, processhost.ClientOptions{
-    Executable: "/verified/bundle/vetroffproxy",
+    Executable: "/verified/bundle/vetroff",
     LinkFile: "/private/profile/connection.txt",
 })
 if err != nil { return err }
@@ -158,7 +158,7 @@ These runtime flags can be combined with server `--config` or client `--link-fil
 A panel can supervise:
 
 ```sh
-./vetroffproxy server --config /private/vetroffproxy/server.json
+./vetroff server --config /private/vetroff/server.json
 ```
 
 The JSON schema is defined by repository `internal/bootstrap.ServerConfig`.

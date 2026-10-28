@@ -9,8 +9,8 @@ on:
       - 'internal/nodeperf/**'
       - 'internal/tunnel/**'
       - 'internal/profile/**'
-      - 'cmd/vetroffproxy/**'
-      - 'vetroffproxy.go'
+      - 'cmd/vetroff/**'
+      - 'vetroff.go'
       - 'go.mod'
       - 'go.sum'
   push:
@@ -34,7 +34,7 @@ jobs:
       - name: Race detector for routing and core
         run: go test -race ./internal/nodeperf ./internal/multihop ./internal/bond ./internal/tunnel ./internal/profile -count=1 -timeout=120s
       - name: Build client
-        run: go build ./cmd/vetroffproxy
+        run: go build ./cmd/vetroff
       - name: Go vet
         run: go vet ./...
       - name: Multi-ingress HTTP/2 integrity and adaptive scheduler regression

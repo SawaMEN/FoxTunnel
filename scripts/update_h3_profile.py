@@ -97,7 +97,7 @@ def main():
                 samples.append(dict(variant=variant, scenario=scenario, repeat=repeat,
                                     **metrics.measure(binary, variant, scenario, resource_runner)))
     summaries = summarize(samples)
-    with tempfile.TemporaryDirectory(prefix='vetroffproxy-h3-profile-') as temp:
+    with tempfile.TemporaryDirectory(prefix='vetroff-h3-profile-') as temp:
         profiles = [profile(binary, v, s, Path(temp)) for v in VARIANTS for s in metrics.SCENARIOS]
     if digest != hashlib.sha256(binary.read_bytes()).hexdigest():
         raise ValueError('measured binary changed')

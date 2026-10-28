@@ -14,7 +14,7 @@ from pathlib import Path
 import statistics
 import sys
 
-KIND = "vetroffproxy-vless-stage1-udp"
+KIND = "vetroff-vless-stage1-udp"
 FOX = ("h2-connect", "h2-post", "h3-post", "wss",
        "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up")
 VLESS = ("reality-vision", "xhttp", "other")
@@ -142,7 +142,7 @@ def evaluate(reports: list[dict]) -> dict:
     if len(reports) < 3 or len(days) < 3:
         issues.append("at least three distinct UTC days of matched UDP measurements required")
     return {
-        "schema": 1, "kind": "vetroffproxy-vless-stage1-udp-gate",
+        "schema": 1, "kind": "vetroff-vless-stage1-udp-gate",
         "passed": not issues, "wan_verified_by_tool": False,
         "days_observed": len(days), "issues": sorted(set(issues)),
         "measurements": rows_out,

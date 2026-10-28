@@ -22,7 +22,7 @@ class MergeTests(unittest.TestCase):
             (necko / 'runtime' / name).write_bytes(binary)
         (necko / 'runtime/platform.ini').write_text('pinned runtime')
         (necko / "foxtunnel-necko").write_bytes(binary)
-        (necko / "vetroffproxy").write_bytes(binary)
+        (necko / "vetroff").write_bytes(binary)
         (necko / 'source-lock.json').write_bytes((package_necko.ROOT / 'experiments/firefox-necko/gecko.lock.json').read_bytes())
         lock = json.loads((necko / 'source-lock.json').read_text())
         runtime = {p.name: merge.sha(p) for p in (necko/'runtime').iterdir()}
@@ -31,7 +31,7 @@ class MergeTests(unittest.TestCase):
         (nss / "lib").mkdir(parents=True)
         (nss / "licenses").mkdir(parents=True)
         (nss / "lib/libnss3.so").write_bytes(binary)
-        (nss / "vetroffproxy").write_bytes(binary + b'NSS CLI')
+        (nss / "vetroff").write_bytes(binary + b'NSS CLI')
         (nss / "build.json").write_text(json.dumps({
             "build_flavor": "nss", "goarch": arch,
             "runtime": {"mozilla": {"libraries": {"libnss3.so": merge.sha(nss / 'lib/libnss3.so')}}}
@@ -56,7 +56,7 @@ class MergeTests(unittest.TestCase):
             root = Path(tmp)
             necko, nss = self.fixture(root)
             manifest = merge.merge_files(necko, nss)
-            self.assertEqual((necko / "vetroffproxy").read_bytes(), (nss / "vetroffproxy").read_bytes())
+            self.assertEqual((necko / "vetroff").read_bytes(), (nss / "vetroff").read_bytes())
             for name, digest in manifest["files"].items():
                 self.assertEqual(merge.sha(necko / name), digest, name)
             self.assertIn("lib/libnss3.so", manifest["files"])

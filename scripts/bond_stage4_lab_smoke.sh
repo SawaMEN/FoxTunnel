@@ -12,7 +12,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-go build -o "$work/vetroffproxy" ./cmd/vetroffproxy
+go build -o "$work/vetroff" ./cmd/vetroff
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
   -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' \
   -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
@@ -28,18 +28,18 @@ python3 scripts/udp_echo_server.py --port 19002 >"$work/udp-echo2.log" 2>&1 &
 pids+=("$!")
 
 for port in 18443 18444; do
-  "$work/vetroffproxy" server \
+  "$work/vetroff" server \
     --listen "127.0.0.1:$port" --enable-udp --allow-private \
     --cert "$work/cert.pem" --key "$work/key.pem" \
     >"$work/server-$port.log" 2>&1 &
   pids+=("$!")
 done
 
-"$work/vetroffproxy" client --server https://127.0.0.1:18443 \
+"$work/vetroff" client --server https://127.0.0.1:18443 \
   --sni localhost --ca-cert "$work/cert.pem" --listen 127.0.0.1:11080 \
   --enable-udp --udp-stream >"$work/client-legacy.log" 2>&1 &
 pids+=("$!")
-"$work/vetroffproxy" client --server https://127.0.0.1:18443 \
+"$work/vetroff" client --server https://127.0.0.1:18443 \
   --fallback-server https://127.0.0.1:18444 \
   --sni localhost --ca-cert "$work/cert.pem" --listen 127.0.0.1:11081 \
   --enable-udp --udp-stream --udp-multi-node \
