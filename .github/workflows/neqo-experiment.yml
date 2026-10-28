@@ -28,6 +28,11 @@ on:
       - '.github/workflows/neqo-experiment.yml'
   workflow_call:
   workflow_dispatch:
+concurrency:
+  # Cancel superseded commits/PRs; never cancel a called Neqo release gate.
+  group: neqo-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.workflow == 'Mozilla Neqo client experiment' }}
+
 jobs:
   neqo:
     runs-on: ubuntu-24.04
