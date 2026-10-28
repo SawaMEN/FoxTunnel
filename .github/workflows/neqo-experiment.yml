@@ -104,7 +104,7 @@ jobs:
           python3 -m unittest discover -s scripts -p test_compare_browser_behavior.py -v
           go build -tags nss,neqo -o /tmp/browser-compare ./experiments/browser-compare
           python3 scripts/capture_native_wire.py --endpoint /tmp/native-wire-capture --behavior-endpoint /tmp/browser-compare --out /tmp/native-wire-observations
-          python3 scripts/fingerprint_audit.py --firefox /tmp/native-wire-observations/firefox-h2.json --vetroffproxy /tmp/native-wire-observations/vetroffproxy-h2.json --naive /tmp/native-wire-observations/naive-h2.json --firefox-quic /tmp/native-wire-observations/firefox-h3.json --vetroffproxy-quic /tmp/native-wire-observations/foxtunnel-h3.json --naive-quic /tmp/native-wire-observations/naive-h3.json --out /tmp/native-wire-observations/comparison.json
+          python3 scripts/fingerprint_audit.py --firefox /tmp/native-wire-observations/firefox-h2.json --foxtunnel /tmp/native-wire-observations/foxtunnel-h2.json --naive /tmp/native-wire-observations/naive-h2.json --firefox-quic /tmp/native-wire-observations/firefox-h3.json --foxtunnel-quic /tmp/native-wire-observations/foxtunnel-h3.json --naive-quic /tmp/native-wire-observations/naive-h3.json --out /tmp/native-wire-observations/comparison.json
       - uses: actions/upload-artifact@v4
         with:
           name: native-wire-observations

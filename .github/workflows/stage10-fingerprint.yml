@@ -25,7 +25,7 @@ jobs:
           mkdir -p stage10-report
           python3 scripts/fingerprint_audit.py \
             --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
-            --vetroffproxy docs/measurements/2026-10-19/nss-firefox158-page.json \
+            --foxtunnel docs/measurements/2026-10-19/nss-firefox158-page.json \
             --out stage10-report/historical-audit.json
       - uses: actions/upload-artifact@v4
         with:
@@ -68,7 +68,7 @@ jobs:
             --duration 2s --out stage10-report/current-nss-h2.json
           python3 scripts/fingerprint_audit.py \
             --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
-            --vetroffproxy stage10-report/current-nss-h2.json \
+            --foxtunnel stage10-report/current-nss-h2.json \
             --out stage10-report/current-nss-vs-historical-firefox.json
       - uses: actions/upload-artifact@v4
         with:

@@ -51,10 +51,10 @@ def read(path):
         raise ValueError('wrong observation schema')
     if data.get('transport') not in ('h2-connect', 'h3-connect'):
         raise ValueError('unsupported transport')
-    if len(data['connections']) != 4 or {c['subject'] for c in data['connections']} != {'firefox', 'vetroffproxy'}:
+    if len(data['connections']) != 4 or {c['subject'] for c in data['connections']} != {'firefox', 'foxtunnel'}:
         raise ValueError('unexpected subject or connection count')
     subjects = {}
-    for name in ('firefox', 'vetroffproxy'):
+    for name in ('firefox', 'foxtunnel'):
         connections = [c for c in data['connections'] if c['subject'] == name]
         if len(connections) != 2:
             raise ValueError('expected two connections per subject')
@@ -84,7 +84,7 @@ def report(paths, minimum=1):
             runtimes, sources = data['runtime_sha256'], data['source_sha256']
         if runtimes != data['runtime_sha256'] or sources != data['source_sha256']:
             raise ValueError('mixed runtime or source versions')
-        rows = checks(subjects['firefox'], subjects['vetroffproxy'])
+        rows = checks(subjects['firefox'], subjects['foxtunnel'])
         result['observations'].append(dict(file=path.name, sha256=digest,
             transport=data['transport'], checks=rows,
             differences=[row['field'] for row in rows if row['status'] == 'different']))
@@ -97,7 +97,7 @@ def report(paths, minimum=1):
     variability = {}
     for mode in ('h2-connect', 'h3-connect'):
         variability[mode] = {}
-        for subject in ('firefox', 'vetroffproxy'):
+        for subject in ('firefox', 'foxtunnel'):
             phases = [[], []]
             for path in sorted(paths):
                 data, subjects, _ = read(path)
