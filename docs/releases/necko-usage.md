@@ -1,4 +1,4 @@
-## Unified Mozilla Linux release (branch xfd)
+## VetroffProxy: Linux installation
 
 Linux amd64: download a single `vetroff_VERSION_linux_amd64.tar.gz` archive.
 It contains one NSS-enabled VetroffProxy CLI, the full verified Necko runtime,
@@ -20,8 +20,8 @@ Run `./foxtunnel-necko/vetroff version --json` to inspect compiled backends.
 Go SDK consumers can use `Engine: "auto"` and `NeckoBundle` pointing to the
 extracted directory. Empty Engine in the SDK preserves legacy behavior.
 
-Linux arm64: one `vetroff_VERSION_linux_arm64_nss.tar.gz` archive with NSS,
-without full Necko support. Both archives require signature/provenance verification
+Linux arm64: one `vetroff_VERSION_linux_arm64.tar.gz` archive with NSS and the
+complete Necko runtime, matching the AMD64 distribution. Both archives require signature/provenance verification
 against the published release and tested source commit.
 Full Necko remains experimental, supports TCP H2/H3 CONNECT only, and has not
 been demonstrated indistinguishable from Firefox or reliable on arbitrary networks.

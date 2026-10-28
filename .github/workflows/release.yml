@@ -24,6 +24,9 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: python3 scripts/release_request.py
+  legacy-wire:
+    needs: [request]
+    uses: ./.github/workflows/wire-compatibility.yml
   quality:
     needs: [request]
     runs-on: ubuntu-24.04
@@ -208,7 +211,7 @@ jobs:
           retention-days: 30
   publish:
     if: github.event_name == 'push' && needs.request.outputs.publish == 'true'
-    needs: [request, index, neqo]
+    needs: [request, index, neqo, legacy-wire]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -270,5 +273,12 @@ jobs:
             tag_flags=(--target "$GITHUB_SHA")
           fi
           python3 scripts/unified_release_notes.py --input dist --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/verified-release-notes.md"
+          if [ -f "docs/releases/$RELEASE_TAG.md" ]; then
+            cat "docs/releases/$RELEASE_TAG.md" >> "$RUNNER_TEMP/verified-release-notes.md"
+          fi
           cat docs/releases/necko-usage.md >> "$RUNNER_TEMP/verified-release-notes.md"
-          gh release create "$RELEASE_TAG" dist/*.tar.gz "${tag_flags[@]}" --prerelease --title "VetroffProxy $RELEASE_TAG" --notes-file "$RUNNER_TEMP/verified-release-notes.md"
+          release_flags=(--latest)
+          if [[ "$RELEASE_TAG" == *-* ]]; then
+            release_flags=(--prerelease)
+          fi
+          gh release create "$RELEASE_TAG" dist/*.tar.gz "${tag_flags[@]}" "${release_flags[@]}" --title "VetroffProxy $RELEASE_TAG" --notes-file "$RUNNER_TEMP/verified-release-notes.md"

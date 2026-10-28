@@ -35,6 +35,22 @@ class CandidateEvidence(unittest.TestCase):
                     candidate.fetch_legacy(dict(filename='old.tar.gz', url='https://invalid.test', size=3, sha256='0'*64), Path(tmp))
             self.assertFalse((Path(tmp)/'vetroff-legacy').exists())
 
+    def test_original_foxtunnel_executable_is_extracted_from_pinned_archive(self):
+        payload = b'original pinned executable'
+        raw = io.BytesIO()
+        with tarfile.open(fileobj=raw, mode='w:gz') as archive:
+            entry = tarfile.TarInfo('foxtunnel')
+            entry.size = len(payload)
+            archive.addfile(entry, io.BytesIO(payload))
+        data = raw.getvalue()
+        item = dict(filename='old.tar.gz', url='https://invalid.test', size=len(data),
+                    sha256=hashlib.sha256(data).hexdigest())
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch('urllib.request.urlopen', return_value=io.BytesIO(data)):
+                executable = candidate.fetch_legacy(item, Path(tmp))
+            self.assertEqual(executable.read_bytes(), payload)
+            self.assertEqual(executable.stat().st_mode & 0o777, 0o700)
+
     def test_legacy_archive_links_are_not_extracted(self):
         raw=io.BytesIO()
         with tarfile.open(fileobj=raw,mode='w:gz') as archive:

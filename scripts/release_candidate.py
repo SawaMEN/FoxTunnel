@@ -86,7 +86,7 @@ def fetch_legacy(item, folder):
                     and 0 <= entry.size <= contract.MAX_MEMBER and total <= contract.MAX_TOTAL,
                     'unsafe legacy archive')
             seen.add(entry.name)
-            if entry.name == 'vetroff':
+            if entry.name == 'foxtunnel':
                 with source.extractfile(entry) as input_file, executable.open('xb') as output:
                     while block := input_file.read(1 << 20):
                         output.write(block)

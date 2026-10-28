@@ -38,7 +38,7 @@ def render(folder, version, commit):
         lines.append("| " + name + " | " + release_verify.sha(file) + " | " + str(file.stat().st_size) + " |")
     lines.extend(("", "Verify GitHub artifact attestations for this repository, source commit and release workflow.",
                   "Keep the full extracted bundle, including runtime/ and lib/.",
-                  "This is an experimental prerelease, not proof of DPI indistinguishability.", ""))
+                  "The protocol/runtime remain experimental; the version number does not establish DPI indistinguishability.", ""))
     return "\n".join(lines)
 
 
