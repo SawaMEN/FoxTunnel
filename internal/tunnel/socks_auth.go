@@ -18,7 +18,7 @@ func (c *Client) ValidateSOCKSAuth() error {
 	}
 	if len(user) == 0 || len(user) > 255 || len(pass) == 0 || len(pass) > 255 ||
 		strings.ContainsAny(user, "\x00\r\n") {
-		return errors.New("FOXTUNNEL_SOCKS_USER and FOXTUNNEL_SOCKS_PASSWORD must both be valid 1..255-byte credentials")
+		return errors.New("VETROFF_SOCKS_USER and VETROFF_SOCKS_PASSWORD must both be valid 1..255-byte credentials")
 	}
 	return nil
 }

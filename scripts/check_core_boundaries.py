@@ -9,7 +9,7 @@ from pathlib import Path
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE = "github.com/SawaMEN/FoxTunnel"
+MODULE = "github.com/SawaMEN/VetroffProxy"
 REMOVED_PATHS = (
     "internal/nativetun",
     "scripts/linux_native_vpn.py",

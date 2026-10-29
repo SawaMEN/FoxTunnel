@@ -18,7 +18,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/SawaMEN/FoxTunnel/internal/safejson"
+	"github.com/SawaMEN/VetroffProxy/internal/safejson"
 )
 
 //go:embed gecko.lock.json
@@ -94,7 +94,7 @@ func verifyBundlePlatform(directory, platform string) (string, error) {
 	if m.Schema != 1 || m.HelperProtocol != BundleProtocol || m.Platform != platform || (platform != "linux-amd64" && platform != "linux-arm64") || m.SourceLockSHA256 != digestBytes(sourceLock) || m.ClientJSSHA256 != digestBytes(clientScript) || len(m.Files) == 0 || len(m.Files) > 20000 {
 		return "", invalid
 	}
-	for _, required := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "runtime/platform.ini", "provenance.json", "source-lock.json", "foxtunnel-necko"} {
+	for _, required := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "runtime/platform.ini", "provenance.json", "source-lock.json", "vetroff-necko"} {
 		if len(m.Files[required]) != 64 {
 			return "", invalid
 		}
@@ -108,7 +108,7 @@ func verifyBundlePlatform(directory, platform string) (string, error) {
 		}
 	}
 	// Every ELF must match the native architecture, including secondary libraries.
-	requiredELF := map[string]bool{"runtime/xpcshell": true, "runtime/libxul.so": true, "runtime/libnss3.so": true, "foxtunnel-necko": true, "foxtunnel": true, "vetroff": true, "lib/libnss3.so": true}
+	requiredELF := map[string]bool{"runtime/xpcshell": true, "runtime/libxul.so": true, "runtime/libnss3.so": true, "vetroff-necko": true, "vetroff": true, "lib/libnss3.so": true}
 	machine := uint16(62)
 	if platform == "linux-arm64" {
 		machine = 183

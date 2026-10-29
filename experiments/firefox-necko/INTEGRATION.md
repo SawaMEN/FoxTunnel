@@ -6,9 +6,9 @@ it on shutdown. A separate manual launcher is no longer required. TLS, HTTP/2,
 HTTP/3 and QUIC remain in Mozilla; the Go adapter handles local IPC only.
 
 Stage 1 is qualified on Linux amd64 at helper commit `290923c` using source
-build [40129737449](https://github.com/SawaMEN/FoxTunnel/actions/runs/40129737449).
+build [40129737449](https://github.com/SawaMEN/VetroffProxy/actions/runs/40129737449).
 The packaged native gate passed three consecutive runs in
-[40133136426](https://github.com/SawaMEN/FoxTunnel/actions/runs/40133136426).
+[40133136426](https://github.com/SawaMEN/VetroffProxy/actions/runs/40133136426).
 The six-step qualification record below defines the supported scope.
 
 Current qualification: **5/6 stages complete**, including native identity and
@@ -17,13 +17,13 @@ The stage-specific records below preserve earlier scope and limitations.
 
 ## Main CLI
 
-The runtime CI package includes both `foxtunnel` and the standalone
-`foxtunnel-necko`, the complete native runtime and integrity metadata.
+The runtime CI package includes both `vetroff` and the standalone
+`vetroff-necko`, the complete native runtime and integrity metadata.
 
 ```sh
-export FOXTUNNEL_USER='your-user'
-export FOXTUNNEL_PASSWORD='your-password'
-./foxtunnel client --engine necko --transport h3-connect \
+export VETROFF_USER='your-user'
+export VETROFF_PASSWORD='your-password'
+./vetroff client --engine necko --transport h3-connect \
   --server https://proxy.example.com --listen 127.0.0.1:1080
 ```
 
@@ -38,11 +38,11 @@ SIGTERM, Ctrl-C and `--shutdown-on-stdin-eof` stop and join the helper.
 ## SDK
 
 ```go
-client, err := foxtunnel.NewClient(foxtunnel.ClientConfig{
+client, err := vetroff.NewClient(vetroff.ClientConfig{
     Engine: "necko",
-    NeckoBundle: "/opt/foxtunnel/version-1",
+    NeckoBundle: "/opt/vetroff/version-1",
     ServerURL: "https://proxy.example.com",
-    Credentials: foxtunnel.Credentials{Username: user, Password: password},
+    Credentials: vetroff.Credentials{Username: user, Password: password},
     Transport: "h3-connect",
 })
 if err != nil { return err }
@@ -66,14 +66,14 @@ helper port from bypassing main-CLI local SOCKS authentication.
 Qualified native carriers are H2/H3 TCP CONNECT, H2 POST and all three XHTTP
 modes. H2 UDP v1/v2, Multi-Node, Bond RPC/persistent lanes, authenticated discovery,
 configured fallback origins and new-connection balancing use the native HTTP
-adapter. Padding and strict FoxTunnel negotiation are supported on H2 POST and
+adapter. Padding and strict Vetroff negotiation are supported on H2 POST and
 XHTTP; raw CONNECT rejects them because it cannot carry their extension headers.
 
 H3 POST/UDP/Bond, SPKI/SNI overrides, per-node pins, native ARM64 and manual
 TLS/QUIC/HTTP profiles remain outside this qualification and are rejected where
 applicable. Hostname and certificate-chain checks remain in NSS. Additional CA files are supported. Setup time is 100 ms through
 120 seconds; the default is 15 seconds. Native idle/drain limits still apply.
-Legacy and NSS/Neqo `mozilla` selections remain explicit independent engines;
+Builtin and NSS/Neqo `mozilla` selections remain explicit independent engines;
 `necko` requires the verified Linux amd64 runtime, without native Go build tags.
 
 ## Firefox comparison
@@ -82,7 +82,7 @@ The comparison now includes an independent control: two fresh full Firefox
 processes use the same pinned libxul, proxy, trust and binary CONNECT workload.
 Raw differences are retained, including order, frame lengths and HPACK hashes.
 
-In the final CI repetitions, managed FoxTunnel versus Firefox had raw H2
+In the final CI repetitions, managed Vetroff versus Firefox had raw H2
 HPACK/HEADERS and frame-order differences in 1/3 runs. The standalone helper had
 them in 3/3 runs; Firefox versus Firefox had them in 2/3 runs. Decoded headers
 agreed throughout. All three comparisons had extension-order/JA3 differences in
@@ -113,14 +113,14 @@ exact tested commit, retained observations and CI run.
 The first extension to the native Necko engine is an authenticated, bounded
 single-datagram IPC operation that posts the existing `udp-v1` wire packet
 through Gecko's own H2/TLS stack. The local UDP ASSOCIATE socket and reply
-source checks remain owned by FoxTunnel Go. It is deliberately not QUIC
+source checks remain owned by Vetroff Go. It is deliberately not QUIC
 DATAGRAM. UDP stream-v2 is provided by the separate adapter below. Native H2
 streaming, Bond and XHTTP are now qualified; H3 UDP remains a later stage.
 
 ### Qualified native H2 UDP v2 bridge
 
 The private `OpenUDPStream` adapter now requests a single native H2 POST to
-`/.well-known/foxtunnel-udp-stream-v2`. Authenticated IPC command `0xf1` receives
+`/.well-known/vetroff-udp-stream-v2`. Authenticated IPC command `0xf1` receives
 an acknowledgement only after native H2 response headers; following bytes are
 BE16-framed RFC1928 packets. Both directions validate complete packets and stop
 reading while downstream writes are pending. Async upload/download pipes are
@@ -169,7 +169,7 @@ proxy-switch race. Ordinary POST/GET requests bypass the system proxy.
 
 The adapter is wired into H2 POST, all three XHTTP carriers, UDP stream-v2,
 UDP multi-node, static/adaptive Bond (RPC and persistent lanes), discovery and
-new-connection balancing. XHTTP's inner FoxTunnel HTTP/2 envelope is still an
+new-connection balancing. XHTTP's inner Vetroff HTTP/2 envelope is still an
 application protocol implemented in Go; its outer HTTPS carrier uses Mozilla.
 Padding and strict draft negotiation can use H2 POST or XHTTP; the existing raw
 CONNECT handoff cannot forward their extension headers and rejects those options.
@@ -226,7 +226,7 @@ binary upload/headers, 1-MiB GET, interactive small GET delivery, alternate-orig
 selection with separate CA roots, terminal CA rejection versus retryable network
 outage, adaptive Bond RPC with discovery and first-path loss, and XHTTP packet-up
 with a custom Path/Host, padding, strict negotiation, detached setup context and
-binary half-close. These native tests run with `FOXTUNNEL_XPCSHELL`; persistent
+binary half-close. These native tests run with `VETROFF_XPCSHELL`; persistent
 lanes, UDP v2/multi-node, H2 POST and XHTTP streaming still require the rebuilt
 API and packaged-bundle gates. Ordinary fixtures never stand in for those gates.
 
@@ -247,7 +247,7 @@ without a response Content-Type; typed server responses keep their own MIME type
 Overall completion: **2 of 6 stages complete** (stages 1 and 2).
 
 Stage 2: **4 of 4 checks complete**, qualified at helper commit `b5d86cc` in
-[native runtime run 40224778052](https://github.com/SawaMEN/FoxTunnel/actions/runs/40224778052)
+[native runtime run 40224778052](https://github.com/SawaMEN/VetroffProxy/actions/runs/40224778052)
 using compiled source run `40199106358`. CLI/SDK gates passed three times,
 all seven managed resource modes passed, and both 300-second CONNECT and paired
 baseline/current gates passed. The [sustained-resource record](validation/endurance/README.md)
@@ -404,8 +404,8 @@ assembly remains stage 6; no unified release is claimed by stage-1 completion.
 Stage 3 is complete: **4 of 4 steps**, **3 of 6 stages overall**.
 Qualified code is `7d4eee64c0acd83daefdaa4c3bd8ab87558bb247` on top of the
 stage-2 baseline. The native C++ build at `bee2e2d` passed in source run
-[40234429164](https://github.com/SawaMEN/FoxTunnel/actions/runs/40234429164).
-Runtime run [40234867279](https://github.com/SawaMEN/FoxTunnel/actions/runs/40234867279)
+[40234429164](https://github.com/SawaMEN/VetroffProxy/actions/runs/40234429164).
+Runtime run [40234867279](https://github.com/SawaMEN/VetroffProxy/actions/runs/40234867279)
 verified that exact source lock and binary hashes before running the packaged
 CLI and SDK. The retained [acceptance record](validation/h3/acceptance.json)
 binds these runs to source/helper hashes and artifact digests.
@@ -442,10 +442,10 @@ remain stages 4 through 6. `main` is unchanged.
 Stage 4 is complete: **4 of 4 steps**, **4 of 6 stages overall**.
 Qualified implementation: `24d74d081f209ba931b70500d8ba407c54fe83cf`.
 Both native source jobs passed in
-[run 40264186586](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186586),
+[run 40264186586](https://github.com/SawaMEN/VetroffProxy/actions/runs/40264186586),
 and both full runtime qualification jobs passed in
-[run 40264186589](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186589).
-[General CI 40264186549](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186549)
+[run 40264186589](https://github.com/SawaMEN/VetroffProxy/actions/runs/40264186589).
+[General CI 40264186549](https://github.com/SawaMEN/VetroffProxy/actions/runs/40264186549)
 also passed. The [acceptance record](validation/arm64/acceptance.json) binds the
 exact source/helper hashes, platforms, tests and resource reports; see the
 [qualification evidence](validation/arm64/README.md).
@@ -492,7 +492,7 @@ bridge or Android/macOS Necko. `main` is unchanged.
 
 Stage 5 is **4/4 complete**; overall completion is **5/6 stages**. Native code
 `23c4eb68b18c2f8b2298c37431e81e71a2c84b8e` is qualified on Linux AMD64 and ARM64
-by [runtime run 40321468060](https://github.com/SawaMEN/FoxTunnel/actions/runs/40321468060).
+by [runtime run 40321468060](https://github.com/SawaMEN/VetroffProxy/actions/runs/40321468060).
 Both jobs passed the complete gate set. See the
 [acceptance record](validation/identity/README.md) and
 [verified results](validation/identity/verified-results.json).

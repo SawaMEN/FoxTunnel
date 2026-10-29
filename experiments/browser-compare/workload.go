@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 )

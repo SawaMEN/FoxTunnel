@@ -10,7 +10,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/fingerprint"
+	"github.com/SawaMEN/VetroffProxy/internal/fingerprint"
 	"net"
 )
 

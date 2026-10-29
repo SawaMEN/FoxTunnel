@@ -48,17 +48,17 @@
       "sha256": "f3b591faca8cabe244d3c779f591e79ac9f96ec40d0abf9efda4bdd0340e6591"
     },
     {
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "protocol": "h2",
-      "path": "foxtunnel-h2.json",
+      "path": "vetroff-h2.json",
       "sha256": "f8dda06d2f90b2ee5b1f0e04b6d5bb7be29e6de7ca6b792abaaac66abc695700"
     },
     {
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "protocol": "h3",
-      "path": "foxtunnel-h3.json",
+      "path": "vetroff-h3.json",
       "sha256": "e64e99a8a187cb37c106e1ab2f522ac61eb02079e8f05f15aa06271128eae139"
     }
   ],
-  "scope": "Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for FoxTunnel. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained."
+  "scope": "Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for Vetroff. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained."
 }

@@ -8,9 +8,9 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/safejson"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/safejson"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 )
 
 const maxNodePinsFile = 16 << 10

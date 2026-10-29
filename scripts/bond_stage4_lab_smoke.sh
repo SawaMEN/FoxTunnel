@@ -17,9 +17,9 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
   -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' \
   -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
 
-export FOXTUNNEL_USER=stage4-local
-export FOXTUNNEL_PASSWORD
-FOXTUNNEL_PASSWORD="$(openssl rand -hex 32)"
+export VETROFF_USER=stage4-local
+export VETROFF_PASSWORD
+VETROFF_PASSWORD="$(openssl rand -hex 32)"
 python3 scripts/echo_server.py --port 19000 >"$work/tcp-echo.log" 2>&1 &
 pids+=("$!")
 python3 scripts/udp_echo_server.py --port 19001 >"$work/udp-echo1.log" 2>&1 &
@@ -37,7 +37,7 @@ done
 
 "$work/vetroff" client --server https://127.0.0.1:18443 \
   --sni localhost --ca-cert "$work/cert.pem" --listen 127.0.0.1:11080 \
-  --enable-udp --udp-stream >"$work/client-legacy.log" 2>&1 &
+  --enable-udp --udp-stream >"$work/client-builtin.log" 2>&1 &
 pids+=("$!")
 "$work/vetroff" client --server https://127.0.0.1:18443 \
   --fallback-server https://127.0.0.1:18444 \
@@ -61,13 +61,13 @@ for port in ports:
 PY
 
 python3 scripts/bond_stage4_field.py --mode tcp --environment lab \
-  --scenario tcp-small --proxy legacy=127.0.0.1:11080 \
+  --scenario tcp-small --proxy builtin=127.0.0.1:11080 \
   --proxy adaptive=127.0.0.1:11081 \
   --target 127.0.0.1:19000 --bytes 8192 --rounds 4 --parallel 2 \
   --timeout 5 --warmup 1 --out "$work/tcp-lab.json"
 
 python3 scripts/bond_stage4_field.py --mode udp --environment lab \
-  --scenario udp-multi --proxy legacy=127.0.0.1:11080 \
+  --scenario udp-multi --proxy builtin=127.0.0.1:11080 \
   --proxy adaptive=127.0.0.1:11081 \
   --target 127.0.0.1:19001 --target 127.0.0.1:19002 \
   --rounds 4 --parallel 2 --timeout 5 --warmup 1 \

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	ft "github.com/SawaMEN/FoxTunnel"
+	ft "github.com/SawaMEN/VetroffProxy"
 )
 
 func TestSDKRuntimeContract(t *testing.T) {

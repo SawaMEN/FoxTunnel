@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"encoding/pem"
-	"github.com/SawaMEN/FoxTunnel/internal/webprofile"
+	"github.com/SawaMEN/VetroffProxy/internal/webprofile"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -38,7 +38,7 @@ func TestComparisonCLIProducesReportEvenWhenStrictFails(t *testing.T) {
 	old := os.Args
 	t.Cleanup(func() { os.Args = old })
 	out := filepath.Join(t.TempDir(), "comparison.json")
-	os.Args = []string{"ft-webprofile", "--input", "../../docs/measurements/2026-10-18/foxtunnel-nss-3.130-xhttp.json", "--compare", "../../docs/measurements/2026-10-18/firefox-158-linux.json", "--comparison-out", out, "--out", filepath.Join(t.TempDir(), "profile.json"), "--strict"}
+	os.Args = []string{"ft-webprofile", "--input", "../../docs/measurements/2026-10-18/vetroff-nss-3.130-xhttp.json", "--compare", "../../docs/measurements/2026-10-18/firefox-158-linux.json", "--comparison-out", out, "--out", filepath.Join(t.TempDir(), "profile.json"), "--strict"}
 	if e := run(); e == nil {
 		t.Fatal("strict comparison hid differences")
 	}

@@ -19,10 +19,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/bootstrap"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 )
 
 func startPolicyProcess(t *testing.T, args []string, credentials bool) processEvent {
@@ -148,7 +148,7 @@ func TestProtocolPolicyCLITransportMatrix(t *testing.T) {
 
 func TestProtocolPolicyServerJSONAndFlagAdmission(t *testing.T) {
 	for _, fromConfig := range []bool{false, true} {
-		for _, policy := range []string{"legacy", "strict"} {
+		for _, policy := range []string{"builtin", "strict"} {
 			t.Run(policy+"/config="+strconv.FormatBool(fromConfig), func(t *testing.T) {
 				ready, ca := policyCLIServer(t, policy, fromConfig)
 				roots := x509.NewCertPool()
@@ -164,14 +164,14 @@ func TestProtocolPolicyServerJSONAndFlagAdmission(t *testing.T) {
 				}
 				target := closed.Addr().String()
 				closed.Close()
-				for _, offer := range []string{"", contract.ProtocolDraft, "foxtunnel-draft-999"} {
+				for _, offer := range []string{"", contract.ProtocolDraft, "vetroff-draft-999"} {
 					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 					req, _ := http.NewRequestWithContext(ctx, http.MethodConnect, "https://"+ready.TCPListen, nil)
 					req.Host = target // Never resolve/dial an external target.
 					req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("demo-user:example-only-password")))
 					if offer != "" {
-						req.Header.Set("X-FoxTunnel-Version", offer)
-						req.Header.Set("X-FoxTunnel-Require", "tcp")
+						req.Header.Set("X-Vetroff-Version", offer)
+						req.Header.Set("X-Vetroff-Require", "tcp")
 					}
 					resp, err := tr.RoundTrip(req)
 					if err != nil {
@@ -181,14 +181,14 @@ func TestProtocolPolicyServerJSONAndFlagAdmission(t *testing.T) {
 					io.Copy(io.Discard, resp.Body)
 					resp.Body.Close()
 					cancel()
-					if offer == "foxtunnel-draft-999" || policy == "strict" && offer == "" {
+					if offer == "vetroff-draft-999" || policy == "strict" && offer == "" {
 						if resp.StatusCode != http.StatusUpgradeRequired {
 							t.Fatal("missing/future version was not rejected", resp.StatusCode)
 						}
 					} else if resp.StatusCode == http.StatusUpgradeRequired {
-						t.Fatal("compatible/legacy request was rejected as incompatible")
+						t.Fatal("compatible/builtin request was rejected as incompatible")
 					}
-					if offer == contract.ProtocolDraft && resp.Header.Get("X-FoxTunnel-Version") != contract.ProtocolDraft {
+					if offer == contract.ProtocolDraft && resp.Header.Get("X-Vetroff-Version") != contract.ProtocolDraft {
 						t.Fatal("server lost compatible version confirmation")
 					}
 				}
@@ -248,18 +248,18 @@ func TestProtocolPolicyCLINeverDowngradesOrLeaksQueuedPayload(t *testing.T) {
 			finished := make(chan struct{}, 1)
 			peer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				calls.Add(1)
-				if r.Header.Get("X-FoxTunnel-Version") != contract.ProtocolDraft {
+				if r.Header.Get("X-Vetroff-Version") != contract.ProtocolDraft {
 					t.Error("CLI did not send a strict offer")
 				}
 				if confirmation != "missing" {
 					version, capabilities := contract.ProtocolDraft, "tcp"
 					if confirmation == "future" {
-						version = "foxtunnel-draft-999"
+						version = "vetroff-draft-999"
 					} else {
 						capabilities = "udp-v1"
 					}
-					w.Header().Set("X-FoxTunnel-Version", version)
-					w.Header().Set("X-FoxTunnel-Capabilities", capabilities)
+					w.Header().Set("X-Vetroff-Version", version)
+					w.Header().Set("X-Vetroff-Capabilities", capabilities)
 				}
 				w.WriteHeader(http.StatusOK)
 				w.(http.Flusher).Flush()
@@ -314,7 +314,7 @@ func TestProtocolPolicyDoctorAndCheckConfig(t *testing.T) {
 			f.save(t)
 			report, err, _ := callDoctor(t, f, target)
 			if err == nil || report.OK || report.Checks[len(report.Checks)-1].Reason != "protocol_negotiation_failed" {
-				t.Fatal("legacy doctor accepted a strict server")
+				t.Fatal("builtin doctor accepted a strict server")
 			}
 		})
 	}
@@ -334,8 +334,8 @@ func TestProtocolPolicyCLIRejectsTyposConflictsAndBond(t *testing.T) {
 	f.config.ProtocolPolicy = contract.ProtocolStrict
 	f.save(t)
 	for _, args := range [][]string{
-		{"client", "--link-file", f.path, "--protocol-policy", "legacy"},
-		{"share", "--link-file", f.path, "--protocol-policy", "legacy"},
+		{"client", "--link-file", f.path, "--protocol-policy", "builtin"},
+		{"share", "--link-file", f.path, "--protocol-policy", "builtin"},
 		{"client", "--server", f.node.URL, "--protocol-policy", "strict", "--bond", "--discover"},
 		{"server", "--protocol-policy", "strict", "--bond-hub"},
 	} {

@@ -18,11 +18,11 @@ import (
 	"testing"
 	"time"
 
-	ft "github.com/SawaMEN/FoxTunnel"
+	ft "github.com/SawaMEN/VetroffProxy"
 	"github.com/quic-go/quic-go/http3"
 )
 
-// Only exported FoxTunnel APIs are available in this independent module.
+// Only exported Vetroff APIs are available in this independent module.
 func publicProxy(t *testing.T, udp ...bool) (string, string, ft.Credentials, *atomic.Int64) {
 	t.Helper()
 	creds := ft.Credentials{Username: "external-sdk", Password: "laboratory-only-not-an-operator-secret"}

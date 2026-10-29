@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
 )
 
 func TestSmartBondDiscoveryRequiresDirectHubAndRelay(t *testing.T) {

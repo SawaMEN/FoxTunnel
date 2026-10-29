@@ -14,10 +14,10 @@
  }
 +
 +NS_IMETHODIMP
-+nsNSSCertificateDB::RegisterFoxTunnelPolicy(
++nsNSSCertificateDB::RegisterVetroffPolicy(
 +    const nsACString& aRouteHost, int32_t aRoutePort,
 +    const nsACString& aServerName, const nsACString& aPinSha256,
 +    const nsACString& aTlsProfile) {
-+  return CommonSocketControl::RegisterFoxTunnelPolicy(
++  return CommonSocketControl::RegisterVetroffPolicy(
 +      aRouteHost, aRoutePort, aServerName, aPinSha256, aTlsProfile);
 +}

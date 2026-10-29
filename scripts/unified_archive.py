@@ -21,7 +21,7 @@ def unpack(source, destination, version, commit, archive_name=None):
     if not matches:
         raise ValueError("not a version-matched native Linux unified archive")
     arch = matches.group(1)
-    merge_necko_nss.extract_regular(source, destination, prefix="foxtunnel-necko")
+    merge_necko_nss.extract_regular(source, destination, prefix="vetroff-necko")
     manifest = necko_bundle.verify(destination, "linux-" + arch)
     observed = manifest['files']
     needed = ("vetroff", "lib/libnss3.so", "mozilla-runtime.json", "nss-build.json",

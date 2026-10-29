@@ -10,7 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 	"io"
 	"net"
 	"net/http"
@@ -31,9 +31,9 @@ func TestGeckoBrowserFingerprint(t *testing.T) { browserFingerprint(t, false) }
 func TestGeckoFirefoxSelfComparison(t *testing.T) { browserFingerprint(t, true) }
 
 func browserFingerprint(t *testing.T, self bool) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	runtime, err := filepath.Abs(runtime)
 	if err != nil {
@@ -132,7 +132,7 @@ func browserFingerprint(t *testing.T, self bool) {
 			_, portText, _ := net.SplitHostPort(address)
 			port, _ := strconv.Atoi(portText)
 			var browserVersion string
-			subjects := []string{"firefox", "foxtunnel"}
+			subjects := []string{"firefox", "vetroff"}
 			if self {
 				subjects = []string{"firefox-a", "firefox-b"}
 			}
@@ -177,7 +177,7 @@ func browserFingerprint(t *testing.T, self bool) {
 					stderr := new(lockedBuffer)
 					var finished <-chan struct{}
 					var dial func(string) (net.Conn, error)
-					if bundle := os.Getenv("FOXTUNNEL_FINGERPRINT_BUNDLE"); bundle != "" {
+					if bundle := os.Getenv("VETROFF_FINGERPRINT_BUNDLE"); bundle != "" {
 						managed, e := NewManaged(bundle, cfg)
 						if e != nil {
 							t.Fatal(e)
@@ -244,7 +244,7 @@ func browserFingerprint(t *testing.T, self bool) {
 				"reconnect_policy":     "server closes each connection 200ms after its second tunnel completes; both clients pause before request three; process TLS cache remains alive",
 				"quic_parameter_scope": "selected effective peer parameters including decoder defaults; no raw parameter order/presence claim",
 				"limitations":          []string{"TLS 1.3-only loopback fixture; explicit H3 proxy and custom lab root", "Both clients disable socket process because raw handoff requires it", "ClientHello excludes randoms, SNI value, tickets and key bytes; QUIC record_version is zero", "HPACK digests cover fixture header bytes; credentials and destination values are not serialized", "H3 decoded headers/settings are recorded; QPACK instruction bytes are not measured", "FIN packets may be retransmitted; frame counts are not packet-shape parity", "No DPI indistinguishability or production-readiness claim"}}
-			if !self && os.Getenv("FOXTUNNEL_FINGERPRINT_BUNDLE") != "" {
+			if !self && os.Getenv("VETROFF_FINGERPRINT_BUNDLE") != "" {
 				result["candidate_mode"] = "managed-bundle"
 			}
 			if self {
@@ -255,7 +255,7 @@ func browserFingerprint(t *testing.T, self bool) {
 			if e != nil {
 				t.Fatal(e)
 			}
-			if out := os.Getenv("FOXTUNNEL_FINGERPRINT_OUT"); out != "" {
+			if out := os.Getenv("VETROFF_FINGERPRINT_OUT"); out != "" {
 				if self {
 					out = filepath.Join(out, "firefox-self")
 				}

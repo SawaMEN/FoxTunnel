@@ -3,7 +3,7 @@ package profile
 import (
 	"crypto/x509"
 	"encoding/base64"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 	"reflect"
 	"strings"
 	"testing"
@@ -133,10 +133,10 @@ func TestNativeTransportProfiles(t *testing.T) {
 	if _, err := Encode(c); err == nil {
 		t.Fatal("unimplemented XHTTP accepted")
 	}
-	legacy := "vetroff://" + base64.RawURLEncoding.EncodeToString([]byte(`{"v":1,"servers":["https://main.example"],"username":"alice","password":"secret"}`))
-	parsed, err := Decode(legacy)
+	builtin := "vetroff://" + base64.RawURLEncoding.EncodeToString([]byte(`{"v":1,"servers":["https://main.example"],"username":"alice","password":"secret"}`))
+	parsed, err := Decode(builtin)
 	if err != nil || parsed.Transport != "h2-connect" {
-		t.Fatal("legacy default changed", err)
+		t.Fatal("builtin default changed", err)
 	}
 }
 

@@ -3,7 +3,7 @@
 package neqo
 
 /*
-#cgo LDFLAGS: -L${SRCDIR}/../../rust/neqo-bridge/target/release -lfoxtunnel_neqo -lssl3 -lsmime3 -lnss3 -lnssutil3 -lplds4 -lplc4 -lnspr4 -ldl -lm -lpthread
+#cgo LDFLAGS: -L${SRCDIR}/../../rust/neqo-bridge/target/release -lvetroff_neqo -lssl3 -lsmime3 -lnss3 -lnssutil3 -lplds4 -lplc4 -lnspr4 -ldl -lm -lpthread
 #include "bridge.h"
 #include "build_stamp.h"
 */

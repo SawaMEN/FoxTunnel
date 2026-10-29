@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 func TestNativeTransports(t *testing.T) { testNativeTransports(t, "go") }

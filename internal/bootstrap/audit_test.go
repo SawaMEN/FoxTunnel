@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
 )
 
 func TestAuditSetupAdvertisedPort(t *testing.T) {

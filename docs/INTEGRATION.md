@@ -2,15 +2,15 @@
 
 [Документация](README.md) · [Полный контракт API](reference/SDK.md)
 
-Для совместимости модуль остаётся `github.com/SawaMEN/FoxTunnel`, пакет — `foxtunnel`.
+Go-модуль — `github.com/SawaMEN/VetroffProxy`, пакет — `vetroff`.
 Закрепляйте проверенный тег/коммит. TUN, маршрутизация и DNS принадлежат приложению-хосту.
 
 ## Go
 
 ```go
-client, err := foxtunnel.NewClient(foxtunnel.ClientConfig{
+client, err := vetroff.NewClient(vetroff.ClientConfig{
     ServerURL: "https://vpn.example.com",
-    Credentials: foxtunnel.Credentials{Username: "user", Password: secret},
+    Credentials: vetroff.Credentials{Username: "user", Password: secret},
 })
 if err != nil { return err }
 defer client.Close()
@@ -38,4 +38,4 @@ UDP: `ExchangeUDP` — запрос/ответ, `OpenUDP` — постоянна
 Закрытие stdin запрашивает остановку; после завершения дождитесь выхода процесса.
 
 Схемы, UDP-лимиты, lifecycle, ошибки и обязанности хоста — в [SDK-контракте](reference/SDK.md).
-Имена `FOXTUNNEL_*`, `vetroff://` и wire identifiers сохранены для совместимости.
+Имена `VETROFF_*`, `vetroff://` и wire identifiers используются без прежних алиасов.

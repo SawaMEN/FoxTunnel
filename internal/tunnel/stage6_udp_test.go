@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 func TestStage6UDPReplyBindsDestination(t *testing.T) {

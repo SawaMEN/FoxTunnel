@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // MaxUDPDatagram includes the SOCKS address header, not just Payload.

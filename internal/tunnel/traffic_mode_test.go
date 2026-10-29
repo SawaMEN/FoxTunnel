@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
 )
 
 func TestBondTrafficConfigurationPropagation(t *testing.T) {
@@ -65,7 +65,7 @@ func TestBondTrafficRejectsUnsafeConfigurations(t *testing.T) {
 		{"throughput", false, false},
 		{"latency", false, false},
 		{"invalid", true, false},
-		{"legacy", false, true},
+		{"builtin", false, true},
 	} {
 		t.Run(tc.mode, func(t *testing.T) {
 			if err := validateBondTraffic(tc.mode, tc.adaptive); (err == nil) != tc.valid {

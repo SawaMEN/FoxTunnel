@@ -69,7 +69,7 @@ go version go1.26.9 linux/amd64
     udp_test.go:149: 256 KiB echo, 5ms per direction, drop each 17th datagram: 700.260074ms; dropped=42
 --- PASS: TestRealQUICDatagramLossAndDelay (0.71s)
 PASS
-ok  	github.com/SawaMEN/FoxTunnel/internal/neqo	4.737s
+ok  	github.com/SawaMEN/VetroffProxy/internal/neqo	4.737s
 === RUN   TestNeqoNativeSOCKSLargeHalfClose
 --- PASS: TestNeqoNativeSOCKSLargeHalfClose (0.71s)
 === RUN   TestNeqoBlockedUDPFallbackH2AndNoFallback
@@ -155,7 +155,7 @@ ok  	github.com/SawaMEN/FoxTunnel/internal/neqo	4.737s
 === RUN   TestQUICSettingsValidationRollback
 --- PASS: TestQUICSettingsValidationRollback (0.00s)
 PASS
-ok  	github.com/SawaMEN/FoxTunnel/internal/tunnel	4.138s
+ok  	github.com/SawaMEN/VetroffProxy/internal/tunnel	4.138s
 === RUN   TestPublicNeqoContextAndPin
 === RUN   TestPublicNeqoContextAndPin/h3
 === RUN   TestPublicNeqoContextAndPin/fallback
@@ -175,4 +175,4 @@ ok  	github.com/SawaMEN/FoxTunnel/internal/tunnel	4.138s
     --- PASS: TestPublicNeqoContextAndPin/h3 (0.09s)
     --- PASS: TestPublicNeqoContextAndPin/fallback (0.07s)
 PASS
-ok  	github.com/SawaMEN/FoxTunnel	1.582s
+ok  	github.com/SawaMEN/VetroffProxy	1.582s

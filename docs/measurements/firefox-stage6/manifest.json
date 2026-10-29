@@ -48,15 +48,15 @@
       "sha256": "1d6f8d07281ceea6411c20b3d87399c8b54c97e20588354f331181b4aacceead"
     },
     {
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "protocol": "h2",
-      "path": "foxtunnel-h2.json",
+      "path": "vetroff-h2.json",
       "sha256": "84da291f0b474e737da8ba3eb84d848e226fd17dd178fafffde1a163c76f95ea"
     },
     {
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "protocol": "h3",
-      "path": "foxtunnel-h3.json",
+      "path": "vetroff-h3.json",
       "sha256": "0336762a956fe1f1de376150336da362eddfae0b85dc38f54d7d92036bc6d56d"
     }
   ],
@@ -74,15 +74,15 @@
       "sha256": "714cb2c66d26f7f9f74575dd6d83af6d3f8dfe4a5740729abeaad03d80149161"
     },
     {
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "protocol": "h2",
-      "path": "foxtunnel-h2-behavior.json",
+      "path": "vetroff-h2-behavior.json",
       "sha256": "b0e455ba4cb21ff912f45686f168e0482fa77d56c11201e13a9b416a2980e391"
     },
     {
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "protocol": "h3",
-      "path": "foxtunnel-h3-behavior.json",
+      "path": "vetroff-h3-behavior.json",
       "sha256": "70af4b05c18e3cd30993f89c0f90daf8e71fec88ec2237c2713d99b69ba54913"
     }
   ],
@@ -96,5 +96,5 @@
     "neqo.lock.json": "a1ce49763fb99f821b0069009f576a4cca3b41105d288cb3990777907c51c75f"
   },
   "behavior_endpoint_sha256": "6a5077743f8e5ecad3b814d50c66165da92a2fb831094b2443b0267da05969a2",
-  "scope": "Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for FoxTunnel. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained."
+  "scope": "Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for Vetroff. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained."
 }

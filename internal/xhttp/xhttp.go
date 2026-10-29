@@ -1,5 +1,5 @@
 // Package xhttp implements bounded streaming HTTP carriers. It carries bytes,
-// not VLESS: FoxTunnel runs its own authenticated HTTP/2 session inside it.
+// not VLESS: Vetroff runs its own authenticated HTTP/2 session inside it.
 package xhttp
 
 import (

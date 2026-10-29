@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 func httpIPCFixture(t *testing.T, serve func(net.Conn) error) *Managed {
@@ -54,7 +54,7 @@ func httpIPCFixture(t *testing.T, serve func(net.Conn) error) *Managed {
 			return
 		}
 		name, e := read(int(b[1]))
-		if e != nil || string(name) != "foxtunnel" {
+		if e != nil || string(name) != "vetroff" {
 			finished <- errors.New("IPC username")
 			return
 		}
@@ -221,7 +221,7 @@ func TestManagedHTTPTruncationIsNotEOF(t *testing.T) {
 // An H2 reset after response bytes must propagate as an interrupted stream.
 // Bond can replay its sequence-numbered record; malformed IPC is still fatal.
 func TestGeckoManagedHTTPInterruptedBody(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("verified native bundle required")
 	}
@@ -302,7 +302,7 @@ func TestManagedHTTPParentCancellation(t *testing.T) {
 // Requires the actual pinned, packaged libxul. The server deliberately flushes
 // headers before reading any upload byte to catch normalization deadlocks.
 func TestGeckoManagedHTTP(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("verified native bundle required")
 	}
@@ -358,7 +358,7 @@ type flushingWriter struct{ http.ResponseWriter }
 // any response headers. Gecko must not replay the finite body on a fresh TCP
 // connection: the protocol layer owns acknowledgement and safe retry policy.
 func TestGeckoManagedHTTPNoReplay(t *testing.T) {
-	bundle, runtime := os.Getenv("FOXTUNNEL_NECKO_BUNDLE"), os.Getenv("FOXTUNNEL_XPCSHELL")
+	bundle, runtime := os.Getenv("VETROFF_NECKO_BUNDLE"), os.Getenv("VETROFF_XPCSHELL")
 	if bundle == "" && runtime == "" {
 		t.Skip("explicit native runtime required")
 	}
@@ -462,7 +462,7 @@ func testGeckoManagedHTTPNoReplay(t *testing.T, bundle, runtime, operation strin
 // Response headers must be observable while an empty native response pipe is
 // still open. Neither that wakeup nor a later cancellation may synthesize EOF.
 func TestGeckoManagedHTTPHeadersOnly(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("verified early-response-header runtime required")
 	}
@@ -565,7 +565,7 @@ func TestManagedHTTPSetupFailureCategories(t *testing.T) {
 // This gate does not need the new streaming-upload API: CONNECT uses native
 // transport handoff. It also tests the per-channel proxy selection in IPC.
 func TestGeckoManagedHTTPConnect(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
 		t.Skip("explicit native research runtime required")
 	}
@@ -663,7 +663,7 @@ func (b *observedHTTPBody) Close() error {
 }
 
 func TestGeckoManagedHTTPGetAndTrust(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
 		t.Skip("explicit native research runtime required")
 	}
@@ -713,7 +713,7 @@ func TestGeckoManagedHTTPGetAndTrust(t *testing.T) {
 }
 
 func TestGeckoManagedHTTPAlternateOriginAndOutage(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
 		t.Skip("explicit native research runtime required")
 	}
@@ -768,7 +768,7 @@ func TestGeckoManagedHTTPAlternateOriginAndOutage(t *testing.T) {
 }
 
 func TestGeckoManagedHTTPFixedUpload(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
 		t.Skip("explicit native research runtime required")
 	}
@@ -806,7 +806,7 @@ func TestGeckoManagedHTTPFixedUpload(t *testing.T) {
 }
 
 func TestGeckoManagedHTTPInteractiveDownload(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
 		t.Skip("explicit native research runtime required")
 	}

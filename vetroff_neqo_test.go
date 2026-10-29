@@ -1,6 +1,6 @@
 //go:build neqo && nss && cgo && linux && amd64
 
-package foxtunnel_test
+package vetroff_test
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	ft "github.com/SawaMEN/FoxTunnel"
+	ft "github.com/SawaMEN/VetroffProxy"
 )
 
 func TestPublicNeqoContextAndPin(t *testing.T) {

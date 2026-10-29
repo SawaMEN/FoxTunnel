@@ -48,9 +48,9 @@ jobs:
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
             -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' \
             -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
-          export FOXTUNNEL_USER=stage9-ci
-          export FOXTUNNEL_PASSWORD
-          FOXTUNNEL_PASSWORD="$(openssl rand -hex 32)"
+          export VETROFF_USER=stage9-ci
+          export VETROFF_PASSWORD
+          VETROFF_PASSWORD="$(openssl rand -hex 32)"
           python3 scripts/soak_h2_h3.py --binary "$work/vetroff" \
             --cert "$work/cert.pem" --key "$work/key.pem" \
             --seconds 75 --parallel 3 --bytes 131072 \

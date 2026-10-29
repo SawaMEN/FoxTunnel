@@ -9,7 +9,7 @@ FIELDS = {'schema', 'helper_protocol', 'platform', 'source_lock_sha256',
           'client_js_sha256', 'files'}
 REQUIRED = {'runtime/xpcshell', 'runtime/libxul.so', 'runtime/libnss3.so',
             'runtime/platform.ini', 'provenance.json', 'source-lock.json',
-            'foxtunnel-necko'}
+            'vetroff-necko'}
 
 
 def verify(directory, platform=None, source=None, client=None):
@@ -47,7 +47,7 @@ def verify(directory, platform=None, source=None, client=None):
                 verify_elf(path, target)
     if observed != hashes:
         raise ValueError('Necko bundle manifest mismatch')
-    for name in ('foxtunnel-necko', 'runtime/xpcshell', 'runtime/libxul.so', 'runtime/libnss3.so',
+    for name in ('vetroff-necko', 'runtime/xpcshell', 'runtime/libxul.so', 'runtime/libnss3.so',
                  *[n for n in ('vetroff', 'lib/libnss3.so') if n in observed]):
         verify_elf(directory / name, target)
     for field in ('source_lock_sha256', 'client_js_sha256'):

@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/bootstrap"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
 )
 
 func TestSetupCLIAndServerConfig(t *testing.T) {
@@ -94,7 +94,7 @@ func TestShareSingleCoordinator(t *testing.T) {
 
 // main contains exit paths; exercise it in an isolated copy of the test binary.
 func TestCLIHelper(t *testing.T) {
-	if os.Getenv("FOXTUNNEL_TEST_HELPER") != "1" {
+	if os.Getenv("VETROFF_TEST_HELPER") != "1" {
 		return
 	}
 	for i, arg := range os.Args {
@@ -109,14 +109,14 @@ func TestCLIHelper(t *testing.T) {
 func helperEnv(credentials bool) []string {
 	var env []string
 	for _, value := range os.Environ() {
-		if strings.HasPrefix(value, "FOXTUNNEL_USER=") || strings.HasPrefix(value, "FOXTUNNEL_PASSWORD=") || strings.HasPrefix(value, "FOXTUNNEL_SOCKS_") || strings.HasPrefix(value, "FOXTUNNEL_TEST_HELPER=") {
+		if strings.HasPrefix(value, "VETROFF_USER=") || strings.HasPrefix(value, "VETROFF_PASSWORD=") || strings.HasPrefix(value, "VETROFF_SOCKS_") || strings.HasPrefix(value, "VETROFF_TEST_HELPER=") {
 			continue
 		}
 		env = append(env, value)
 	}
-	env = append(env, "FOXTUNNEL_TEST_HELPER=1")
+	env = append(env, "VETROFF_TEST_HELPER=1")
 	if credentials {
-		env = append(env, "FOXTUNNEL_USER=demo-user", "FOXTUNNEL_PASSWORD=example-only-password")
+		env = append(env, "VETROFF_USER=demo-user", "VETROFF_PASSWORD=example-only-password")
 	}
 	return env
 }
@@ -239,13 +239,13 @@ func TestSOCKSLocalAndNetworkSafetyCLI(t *testing.T) {
 		t.Fatalf("public SOCKS5 without auth/explicit opt-in accepted: %q %v", out, err)
 	}
 	withAuth := helperCommand(ctx, base...)
-	withAuth.Env = append(helperEnv(true), "FOXTUNNEL_SOCKS_USER=local", "FOXTUNNEL_SOCKS_PASSWORD=local-only-password")
+	withAuth.Env = append(helperEnv(true), "VETROFF_SOCKS_USER=local", "VETROFF_SOCKS_PASSWORD=local-only-password")
 	if out, err := withAuth.CombinedOutput(); err == nil || !strings.Contains(string(out), "socks-allow-lan") {
 		t.Fatalf("public SOCKS5 without explicit opt-in accepted: %q %v", out, err)
 	}
 	missing := helperCommand(ctx, "client", "--server", "https://example.org")
-	missing.Env = append(helperEnv(true), "FOXTUNNEL_SOCKS_USER=local")
-	if out, err := missing.CombinedOutput(); err == nil || !strings.Contains(string(out), "FOXTUNNEL_SOCKS_") {
+	missing.Env = append(helperEnv(true), "VETROFF_SOCKS_USER=local")
+	if out, err := missing.CombinedOutput(); err == nil || !strings.Contains(string(out), "VETROFF_SOCKS_") {
 		t.Fatalf("incomplete SOCKS credentials accepted: %q %v", out, err)
 	}
 }
@@ -268,7 +268,7 @@ func TestVersionMachineContract(t *testing.T) {
 	if err = json.Unmarshal(output, &info); err != nil {
 		t.Fatal(err)
 	}
-	if info.Schema != 1 || info.Version == "" || info.Protocol != "foxtunnel-draft-0" || (info.Flavor != "go" && info.Flavor != "nss") {
+	if info.Schema != 1 || info.Version == "" || info.Protocol != "vetroff-draft-0" || (info.Flavor != "go" && info.Flavor != "nss") {
 		t.Fatal("invalid version contract", string(output))
 	}
 	if strings.Contains(string(output), "example-only-password") {

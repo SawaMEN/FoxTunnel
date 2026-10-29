@@ -85,7 +85,7 @@ def package(argv):
     metadata_file = out / (stem + '.metadata.json')
     if archive.exists() or metadata_file.exists():
         raise ValueError('refusing to replace an existing Mozilla build')
-    with tempfile.TemporaryDirectory(prefix='foxtunnel-mozilla-bundle-') as d:
+    with tempfile.TemporaryDirectory(prefix='vetroff-mozilla-bundle-') as d:
         staging = Path(d)
         runtime_files, runtime = mozilla_runtime.prepare('amd64', staging, argv.mozilla_archive)
         native_out = staging / 'native'
@@ -111,7 +111,7 @@ def package(argv):
         values = {'Version': argv.version, 'Commit': commit, 'BuildDate': build_date,
                   'Variant': '', 'Dirty': 'false'}
         ldflags = '-s -w -buildid= ' + ' '.join(
-            '-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.' + key + '=' + val
+            '-X github.com/SawaMEN/VetroffProxy/internal/buildinfo.' + key + '=' + val
             for key, val in values.items())
         executable = staging / 'vetroff'
         run([argv.go, 'build', '-mod=readonly', '-trimpath', '-buildvcs=false',
@@ -143,8 +143,8 @@ def package(argv):
             schema=1, product='protocol-core', integration_schema=1,
             version=argv.version, commit=commit, build_date=build_date,
             target='linux/amd64/mozilla', goos='linux', goarch='amd64',
-            build_flavor='mozilla', protocol_draft='foxtunnel-draft-0', experimental=True,
-            engine='mozilla', default_engine='legacy', go_version=go_version,
+            build_flavor='mozilla', protocol_draft='vetroff-draft-0', experimental=True,
+            engine='mozilla', default_engine='builtin', go_version=go_version,
             tls_backends=['go', 'nss'], quic_backends=['quic-go', 'neqo'],
             nss_version=runtime['nss_version'], neqo_version=lock['neqo_version'],
             neqo_revision=lock['neqo_commit'], rust_toolchain=lock['rust_toolchain'],

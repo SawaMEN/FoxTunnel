@@ -3,9 +3,9 @@
 Status: **4/4 checks complete, 3/6 stages complete**. Qualified code:
 `7d4eee64c0acd83daefdaa4c3bd8ab87558bb247`.
 
-- [Source build](https://github.com/SawaMEN/FoxTunnel/actions/runs/40234429164):
+- [Source build](https://github.com/SawaMEN/VetroffProxy/actions/runs/40234429164):
   real pinned Gecko C++ build, source lock and all source-workflow gates passed.
-- [Runtime qualification](https://github.com/SawaMEN/FoxTunnel/actions/runs/40234867279):
+- [Runtime qualification](https://github.com/SawaMEN/VetroffProxy/actions/runs/40234867279):
   exact compiled runtime/provenance verification, packaged main CLI/SDK,
   mandatory native tests, resource bounds and wire comparisons passed.
 - [Acceptance and hashes](acceptance.json), [artifact metadata](artifacts.json),

@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
 )
 
 const accessAlice = "alice-random-test-credential-0123456789"
@@ -201,7 +201,7 @@ func TestAccessBondOwnerAndUniquePayloadAccounting(t *testing.T) {
 		req, _ := http.NewRequest("POST", c.ServerURL.String()+bond.Path, bytes.NewReader(body))
 		req.Header.Set("Proxy-Authorization", basicAuth(name, pass))
 		if hubID != "" {
-			req.Header.Set("X-FoxTunnel-Bond-Hub", hubID)
+			req.Header.Set("X-Vetroff-Bond-Hub", hubID)
 		}
 		if lane {
 			req.Header.Set(bond.LaneHeader, bond.LaneVersion)
@@ -333,7 +333,7 @@ func TestAccessManagedRelayCannotBypassExitQuota(t *testing.T) {
 		req, _ := http.NewRequest("POST", endpoint.URL+bond.Path, bytes.NewReader(body))
 		req.Header.Set("Proxy-Authorization", basicAuth("alice", accessAlice))
 		if identity != "" {
-			req.Header.Set("X-FoxTunnel-Bond-Hub", identity)
+			req.Header.Set("X-Vetroff-Bond-Hub", identity)
 		}
 		resp, err := client.transport.RoundTrip(req)
 		if err != nil {

@@ -14,7 +14,7 @@ import (
 
 // A real child executable exercises bounded pipe parsing and process reaping.
 func TestMain(m *testing.M) {
-	mode := os.Getenv("FOX_PROCESSHOST_FIXTURE")
+	mode := os.Getenv("VETROFFTEST_PROCESSHOST_FIXTURE")
 	if mode == "" {
 		os.Exit(m.Run())
 	}
@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	}
 	holdPipe := func() {
 		child := exec.Command(os.Args[0])
-		child.Env = append(os.Environ(), "FOX_PROCESSHOST_FIXTURE=pipe-holder")
+		child.Env = append(os.Environ(), "VETROFFTEST_PROCESSHOST_FIXTURE=pipe-holder")
 		child.Stdout = os.Stdout
 		if err := child.Start(); err != nil {
 			os.Exit(9)
@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 		if mode == "version" {
 			schema = 99
 		}
-		fmt.Printf(`{"schema":1,"product":"protocol-core","integration_schema":1,"sdk_schema":1,"process_schema":%d,"protocol_draft":"foxtunnel-draft-0"}`+"\n", schema)
+		fmt.Printf(`{"schema":1,"product":"protocol-core","integration_schema":1,"sdk_schema":1,"process_schema":%d,"protocol_draft":"vetroff-draft-0"}`+"\n", schema)
 		if mode == "version-descendant" {
 			holdPipe()
 		}
@@ -74,7 +74,7 @@ func TestMain(m *testing.M) {
 func TestHostRejectsIncompatibleOrUnboundedRecords(t *testing.T) {
 	for _, mode := range []string{"version", "oversize", "remote", "port", "sequence", "stuck"} {
 		t.Run(mode, func(t *testing.T) {
-			t.Setenv("FOX_PROCESSHOST_FIXTURE", mode)
+			t.Setenv("VETROFFTEST_PROCESSHOST_FIXTURE", mode)
 			link := filepath.Join(t.TempDir(), "connection.txt")
 			os.WriteFile(link, []byte("fixture"), 0600)
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -102,7 +102,7 @@ func TestHostRejectsIncompatibleOrUnboundedRecords(t *testing.T) {
 }
 
 func TestAuditVersionChildCannotRetainStartupPipe(t *testing.T) {
-	t.Setenv("FOX_PROCESSHOST_FIXTURE", "version-descendant")
+	t.Setenv("VETROFFTEST_PROCESSHOST_FIXTURE", "version-descendant")
 	file := filepath.Join(t.TempDir(), "link")
 	if err := os.WriteFile(file, []byte("fixture"), 0600); err != nil {
 		t.Fatal(err)
@@ -122,7 +122,7 @@ func TestAuditVersionChildCannotRetainStartupPipe(t *testing.T) {
 	}
 }
 func TestAuditShutdownClosesDescendantHeldOutput(t *testing.T) {
-	t.Setenv("FOX_PROCESSHOST_FIXTURE", "shutdown-descendant")
+	t.Setenv("VETROFFTEST_PROCESSHOST_FIXTURE", "shutdown-descendant")
 	file := filepath.Join(t.TempDir(), "link")
 	if err := os.WriteFile(file, []byte("fixture"), 0600); err != nil {
 		t.Fatal(err)

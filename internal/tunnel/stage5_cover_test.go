@@ -152,7 +152,7 @@ func TestStage5CoverUnauthorizedTunnelMetadataIsolation(t *testing.T) {
 			r.ProtoMajor = 2
 			r.Header = http.Header{
 				"Proxy-Authorization": {"Basic fake-secret-for-cover"},
-				"X-FoxTunnel-Padding": {"secret-metadata"},
+				"X-Vetroff-Padding":   {"secret-metadata"},
 			}
 			w := httptest.NewRecorder()
 			s.ServeHTTP(w, r)

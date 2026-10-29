@@ -3,7 +3,7 @@ module example.com/independent-vetroff-consumer
 go 1.26.10
 
 require (
-	github.com/SawaMEN/FoxTunnel v0.0.0
+	github.com/SawaMEN/VetroffProxy v0.0.0
 	github.com/quic-go/quic-go v0.64.0
 )
 
@@ -16,4 +16,4 @@ require (
 	golang.org/x/text v0.43.0 // indirect
 )
 
-replace github.com/SawaMEN/FoxTunnel => ../..
+replace github.com/SawaMEN/VetroffProxy => ../..

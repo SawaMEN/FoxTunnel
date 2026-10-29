@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
 )
 
 func TestProtocolPolicyStrictSetup(t *testing.T) {
@@ -34,15 +34,15 @@ func TestProtocolPolicyStrictSetup(t *testing.T) {
 	}
 }
 
-func TestProtocolPolicySetupPreservesLegacyAndRejectsInvalid(t *testing.T) {
-	o := fixture(t, "legacy.example")
-	o.ProtocolPolicy = contract.ProtocolLegacy
+func TestProtocolPolicySetupPreservesDirectAndRejectsInvalid(t *testing.T) {
+	o := fixture(t, "builtin.example")
+	o.ProtocolPolicy = contract.ProtocolDirect
 	if err := Generate(o); err != nil {
 		t.Fatal(err)
 	}
 	data, _ := os.ReadFile(filepath.Join(o.Output, "server.json"))
 	if bytes.Contains(data, []byte("protocol_policy")) {
-		t.Fatal("legacy setup changed old server JSON format")
+		t.Fatal("builtin setup changed old server JSON format")
 	}
 	for _, mode := range []contract.ProtocolPolicy{"unknown", contract.ProtocolStrict} {
 		bad := fixture(t, "bad.example")
@@ -67,7 +67,7 @@ func TestProtocolPolicyServerRejectsMalformedAndBond(t *testing.T) {
 	}
 	path := filepath.Join(o.Output, "server.json")
 	base, _ := os.ReadFile(path)
-	for _, value := range []string{`null`, `""`, `"auto"`, `true`, `1`, `[]`, `"STRICT"`, `"strict", "protocol_policy": "legacy"`} {
+	for _, value := range []string{`null`, `""`, `"auto"`, `true`, `1`, `[]`, `"STRICT"`, `"strict", "protocol_policy": "builtin"`} {
 		data := bytes.Replace(base, []byte(`"protocol_policy": "strict"`), []byte(`"protocol_policy": `+value), 1)
 		if bytes.Equal(base, data) {
 			t.Fatal("fixture policy replacement failed")
@@ -76,7 +76,7 @@ func TestProtocolPolicyServerRejectsMalformedAndBond(t *testing.T) {
 			t.Fatal(err)
 		}
 		if _, err := ReadServer(path); err == nil {
-			t.Fatal("malformed server policy silently became legacy")
+			t.Fatal("malformed server policy silently became builtin")
 		}
 	}
 	var c ServerConfig

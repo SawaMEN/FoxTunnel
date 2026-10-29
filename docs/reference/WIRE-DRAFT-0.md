@@ -5,10 +5,10 @@
 > **Статус:** экспериментальная спецификация формата обмена. Не является обещанием совместимости независимых реализаций или будущих версий.
 
 Status: experimental description of the current implementation, not a final RFC.
-Identifier: `foxtunnel-draft-0`. Legacy requests carry no version header.
+Identifier: `vetroff-draft-0`. Legacy requests carry no version header.
 The optional [version/capability negotiation](WIRE-NEGOTIATION.md) extension
 carries this identifier inside authenticated HTTPS. Strict peers must confirm
-it before accepting the response. Zero-value SDK configuration preserves legacy
+it before accepting the response. Zero-value SDK configuration preserves builtin
 mode; pin compatible releases in that mode. Binary metadata is not negotiation.
 An incompatible payload change requires a new wire identifier and explicit
 implementation support; the current implementation supports only draft 0.
@@ -51,9 +51,9 @@ private/loopback/link-local destinations are denied unless explicitly enabled.
 
 | Selected mode | Outer request / transport | Inner stream |
 |---|---|---|
-| h2-post | H2 POST `/.well-known/foxtunnel-stream-v1`, `X-FoxTunnel-Target: host:port` | upload/download bodies; authenticated server maps to CONNECT |
+| h2-post | H2 POST `/.well-known/vetroff-stream-v1`, `X-Vetroff-Target: host:port` | upload/download bodies; authenticated server maps to CONNECT |
 | h3-post | Same POST fields over QUIC/H3 using Go TLS | same stream semantics |
-| wss | verified H1 WebSocket at `/.well-known/foxtunnel-ws-v1`, no compression | plaintext H2 connection inside WS binary stream |
+| wss | verified H1 WebSocket at `/.well-known/vetroff-ws-v1`, no compression | plaintext H2 connection inside WS binary stream |
 | xhttp-stream-one | duplex H2 POST to shared configured XHTTP prefix | plaintext authenticated H2 connection |
 | xhttp-stream-up | POST upload plus GET download on prefix + UUID | same |
 | xhttp-packet-up | GET download; numbered fixed-length POST uploads | same, ordered reassembly |
@@ -76,7 +76,7 @@ carrier details and limits.
 
 ## Optional initial-v1 padding
 
-Client requests `X-FoxTunnel-Padding: initial-v1`; enabled server echoes exactly
+Client requests `X-Vetroff-Padding: initial-v1`; enabled server echoes exactly
 that value before any payload. Missing/unknown/mismatched negotiation fails.
 Each direction independently frames its first eight nonempty records, then
 passes remaining bytes through unchanged. Record encoding:
@@ -117,7 +117,7 @@ slash, backslash, `@`, `?`, and `#`. Domain names resolve at the authenticated
 exit. Replies contain the resolved numeric IP and the original destination
 port. A client must not resolve that hostname locally to check a reply.
 
-**One-shot v1:** POST `/.well-known/foxtunnel-udp-v1`. One raw packet in the
+**One-shot v1:** POST `/.well-known/vetroff-udp-v1`. One raw packet in the
 request, at most one raw response packet in HTTP 200. A target read timeout is
 HTTP 204 without a packet. Each request has a separate connected UDP socket
 and a timeout of min(server dial timeout, 3 seconds). This is request/response,
@@ -125,7 +125,7 @@ not a persistent NAT association. HTTP 400 rejects malformed packets, 413
 rejects oversized request bodies, 502 reports resolution/dial/send/read failure,
 429 reports managed access limits, and 503 reports tunnel capacity.
 
-**Stream v2:** POST `/.well-known/foxtunnel-udp-stream-v2`. Both bodies contain
+**Stream v2:** POST `/.well-known/vetroff-udp-stream-v2`. Both bodies contain
 zero or more frames: a 2-byte length L followed by one complete packet.
 L must be 1..1232 and the packet itself must pass the rules above. Length zero,
 oversize, truncation, reserved/fragment fields or invalid destinations terminate

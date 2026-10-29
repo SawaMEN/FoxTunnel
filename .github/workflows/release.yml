@@ -4,7 +4,7 @@ on:
     branches: [main, xfd, xfd-release]
     tags: ['v[0-9]*']
   pull_request:
-    paths: ['cmd/**', 'internal/**', 'foxtunnel*.go', 'scripts/**', 'LICENSE', 'go.*', '.github/workflows/release.yml', '.github/release-request.json', 'docs/releases/**', 'docs/INTEGRATION.md', 'integration/contract.json']
+    paths: ['cmd/**', 'internal/**', 'vetroff*.go', 'scripts/**', 'LICENSE', 'go.*', '.github/workflows/release.yml', '.github/release-request.json', 'docs/releases/**', 'docs/INTEGRATION.md', 'integration/contract.json']
 permissions:
   contents: read
   actions: read
@@ -24,7 +24,7 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: python3 scripts/release_request.py
-  legacy-wire:
+  builtin-wire:
     # Full native/release verification runs only for an explicit publish request.
     if: needs.request.outputs.publish == 'true'
     needs: [request]
@@ -172,7 +172,7 @@ jobs:
           merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
-          name: foxtunnel-necko-linux-${{ matrix.arch }}
+          name: vetroff-necko-linux-${{ matrix.arch }}
           path: necko-release
       - name: Validate native input archives and combine matching architectures
         env:
@@ -188,7 +188,7 @@ jobs:
           (cd necko-release && sha256sum --check SHA256SUMS)
           mkdir -p published
           archive="published/vetroff_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}.tar.gz"
-          python3 scripts/merge_necko_nss.py --arch "$RELEASE_ARCH" --necko "necko-release/foxtunnel-necko-linux-${RELEASE_ARCH}.tar.gz" --nss "dist/vetroff_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --out "$archive" --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
+          python3 scripts/merge_necko_nss.py --arch "$RELEASE_ARCH" --necko "necko-release/vetroff-necko-linux-${RELEASE_ARCH}.tar.gz" --nss "dist/vetroff_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --out "$archive" --version "$RELEASE_TAG" --commit "$GITHUB_SHA"
           python3 scripts/qualify_unified.py --archive "$archive" --nss "dist/vetroff_${RELEASE_TAG#v}_linux_${RELEASE_ARCH}_nss.tar.gz" --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --arch "$RELEASE_ARCH" --install "$RUNNER_TEMP/unified-install" --report "published/linux-${RELEASE_ARCH}-verification.json"
           (cd published && sha256sum *.tar.gz > "SHA256SUMS-linux-${RELEASE_ARCH}")
       - name: Real NSS SDK transfers from the combined library directory
@@ -202,7 +202,7 @@ jobs:
         run: |
           set -euo pipefail
           bundle=$(python3 -c 'import json, pathlib; print(json.loads(pathlib.Path("published/linux-${{ matrix.arch }}-verification.json").read_text())["installed_bundle"])')
-          FOXTUNNEL_NECKO_BUNDLE="$bundle" LD_LIBRARY_PATH="$bundle/lib" go test -race -tags nss . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManagedHTTP(Identity|NativeProfiles|NodePins))' -v -count=1 -timeout=600s
+          VETROFF_NECKO_BUNDLE="$bundle" LD_LIBRARY_PATH="$bundle/lib" go test -race -tags nss . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManagedHTTP(Identity|NativeProfiles|NodePins))' -v -count=1 -timeout=600s
       - name: Record successful tests of the actual installed archive
         run: |
           python3 - <<'PYREPORT'
@@ -221,7 +221,7 @@ jobs:
           retention-days: 30
   publish:
     if: github.event_name == 'push' && needs.request.outputs.publish == 'true'
-    needs: [request, index, neqo, legacy-wire]
+    needs: [request, index, neqo]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

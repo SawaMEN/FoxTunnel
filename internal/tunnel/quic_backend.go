@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
 )
 
 type quicSettings struct {

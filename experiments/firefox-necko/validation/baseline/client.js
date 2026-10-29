@@ -89,7 +89,7 @@ if (typeof Components !== "undefined") {
     const f = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
     f.initWithPath(path); return f;
   };
-  const root = Services.env.get("FOXTUNNEL_FIREFOX_ROOT");
+  const root = Services.env.get("VETROFF_FIREVETROFF_ROOT");
   if (!root) throw new Error("private Firefox runtime directory required");
   const profile = localFile(root + "/profile");
   Services.dirsvc.registerProvider({
@@ -98,7 +98,7 @@ if (typeof Components !== "undefined") {
       return null;
     }, QueryInterface: ChromeUtils.generateQI(["nsIDirectoryServiceProvider"]),
   });
-  Services.obs.notifyObservers(null, "profile-do-change", "foxtunnel");
+  Services.obs.notifyObservers(null, "profile-do-change", "vetroff");
   const input = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
   input.init(localFile(root + "/config.json"), -1, 0, 0);
   const cfg = JSON.parse(NetUtil.readInputStreamToString(input, input.available(), { charset: "UTF-8" }));
@@ -150,8 +150,8 @@ if (typeof Components !== "undefined") {
   const proxyFlags = Ci.nsIProxyInfo.ALWAYS_TUNNEL_VIA_PROXY | Ci.nsIProxyInfo.TRANSPARENT_PROXY_RESOLVES_HOST;
   const proxy = cfg.transport === "h3-connect"
     ? pps.newMASQUEProxyInfo(cfg.proxy_host, cfg.proxy_port,
-        "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null)
-    : pps.newProxyInfo("https", cfg.proxy_host, cfg.proxy_port, cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null);
+        "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "vetroff-firefox", proxyFlags, 0, null)
+    : pps.newProxyInfo("https", cfg.proxy_host, cfg.proxy_port, cfg.authorization, "vetroff-firefox", proxyFlags, 0, null);
   const filter = {
     applyFilter(uri, previous, callback) { callback.onProxyFilterResult(proxy); },
     QueryInterface: ChromeUtils.generateQI(["nsIProtocolProxyFilter"]),
@@ -372,7 +372,7 @@ if (typeof Components !== "undefined") {
           const chunk = await local.read(); if (chunk === null) return;
           parser.push(chunk); auth = parser.authentication();
         }
-        if (auth.user !== "foxtunnel" || auth.password !== cfg.socks_token) {
+        if (auth.user !== "vetroff" || auth.password !== cfg.socks_token) {
           await local.write(Uint8Array.from([1, 1])); return;
         }
         await local.write(Uint8Array.from([1, 0]));
@@ -414,7 +414,7 @@ if (typeof Components !== "undefined") {
     listen: `127.0.0.1:${server.port}`, pid: Services.appinfo.processID, process_tag: root.split("/").pop(), version: Services.appinfo.platformVersion }));
   // Standalone xpcshell has no browser event loop. All callbacks above run on
   // this thread; native socket work remains on Gecko's networking threads.
-  Services.tm.spinEventLoopUntil("FoxTunnel Firefox networking", () => stopped);
+  Services.tm.spinEventLoopUntil("Vetroff Firefox networking", () => stopped);
   for (const session of sessions) session.close();
   for (const session of draining) session.close();
   clearInterval(sweep); if (stats !== null) clearInterval(stats);

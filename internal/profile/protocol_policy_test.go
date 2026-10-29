@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
 )
 
 func TestProtocolPolicyLegacyExportsAndStrictRoundTrip(t *testing.T) {
@@ -14,14 +14,14 @@ func TestProtocolPolicyLegacyExportsAndStrictRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.ProtocolPolicy = contract.ProtocolLegacy
+	c.ProtocolPolicy = contract.ProtocolDirect
 	legacyLink, err := Encode(c)
 	if err != nil || legacyLink != oldLink {
-		t.Fatal("explicit legacy changed the old profile format")
+		t.Fatal("explicit builtin changed the old profile format")
 	}
 	data, _ := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(legacyLink, Scheme+"://"))
 	if strings.Contains(string(data), "protocol_policy") {
-		t.Fatal("legacy link gained a field rejected by old clients")
+		t.Fatal("builtin link gained a field rejected by old clients")
 	}
 	c.ProtocolPolicy = contract.ProtocolStrict
 	strictLink, err := Encode(c)
@@ -42,7 +42,7 @@ func TestProtocolPolicyRejectsMalformedAndAmbiguousProfiles(t *testing.T) {
 			t.Fatal("invalid policy was accepted or echoed")
 		}
 	}
-	for _, fields := range []string{`"protocol_policy":"strict","protocol_policy":"legacy"`, `"protocol_policy":"strict","Protocol_policy":"legacy"`} {
+	for _, fields := range []string{`"protocol_policy":"strict","protocol_policy":"builtin"`, `"protocol_policy":"strict","Protocol_policy":"builtin"`} {
 		link := Scheme + "://" + base64.RawURLEncoding.EncodeToString([]byte(`{`+base+`,`+fields+`}`))
 		if _, err := Decode(link); err == nil {
 			t.Fatal("ambiguous policy silently disabled strict")

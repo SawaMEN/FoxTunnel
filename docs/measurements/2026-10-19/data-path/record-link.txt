@@ -1,6 +1,6 @@
 goos: linux
 goarch: amd64
-pkg: github.com/SawaMEN/FoxTunnel/internal/bond
+pkg: github.com/SawaMEN/VetroffProxy/internal/bond
 cpu: INTEL(R) XEON(R) PLATINUM 8573C
 BenchmarkBondRecordLink/loopback/rpc-8         	      20	  17785105 ns/op	  58.96 MB/s	     56117 CPU-us/op	        65.40 HTTP/op	         0 cgo/op	        28.59 p95-ms	     40208 process-peak-KiB	 6668640 B/op	   10231 allocs/op
 BenchmarkBondRecordLink/loopback/rpc-8         	      20	  17249409 ns/op	  60.79 MB/s	     57378 CPU-us/op	        64.35 HTTP/op	         0 cgo/op	        25.87 p95-ms	     40208 process-peak-KiB	 6574018 B/op	   10038 allocs/op
@@ -21,4 +21,4 @@ BenchmarkBondRecordLink/recordRTT20ms_ACKloss17/lanes-8       	      20	 1152640
 BenchmarkBondRecordLink/recordRTT20ms_ACKloss17/lanes-8       	      20	 115814430 ns/op	   9.05 MB/s	     54453 CPU-us/op	         6.550 HTTP/op	         0 cgo/op	       127.9 p95-ms	     47788 process-peak-KiB	 4283784 B/op	    6412 allocs/op
 BenchmarkBondRecordLink/recordRTT20ms_ACKloss17/lanes-8       	      20	 121165245 ns/op	   8.65 MB/s	     55883 CPU-us/op	         7.600 HTTP/op	         0 cgo/op	       124.7 p95-ms	     47788 process-peak-KiB	 4522642 B/op	    6594 allocs/op
 PASS
-ok  	github.com/SawaMEN/FoxTunnel/internal/bond	34.623s
+ok  	github.com/SawaMEN/VetroffProxy/internal/bond	34.623s

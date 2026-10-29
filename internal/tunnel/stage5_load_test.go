@@ -13,7 +13,7 @@ import (
 
 func TestStage5CoverConcurrencyBudgetAndTunnelIsolation(t *testing.T) {
 	for _, managed := range []bool{false, true} {
-		name := "legacy"
+		name := "builtin"
 		if managed {
 			name = "managed"
 		}

@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 	"github.com/quic-go/quic-go"
 )
 
@@ -26,9 +26,9 @@ import (
 // in one contract must not hide a failure in another. All I/O uses xpcshell,
 // an independent Go proxy and a real TCP destination.
 func TestGeckoConcurrentCONNECT(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
@@ -249,9 +249,9 @@ func TestSetupCancellationPeers(t *testing.T) {
 }
 
 func TestGeckoCancellation(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
@@ -291,9 +291,9 @@ func TestGeckoCancellation(t *testing.T) {
 }
 
 func TestGeckoH3NoTCPFallback(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	var requests atomic.Int32
 	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true}

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -58,10 +58,10 @@ func (s *Server) cover(w http.ResponseWriter, r *http.Request) {
 	defer s.activeCoverRequests.Add(-1)
 	public := r.Clone(r.Context())
 	for key := range public.Header {
-		// Do not forward any FoxTunnel wire metadata (or credentials) to a
+		// Do not forward any Vetroff wire metadata (or credentials) to a
 		// custom cover handler. Compare actual keys to handle noncanonical maps.
 		if strings.EqualFold(key, "Proxy-Authorization") ||
-			strings.HasPrefix(strings.ToLower(key), "x-foxtunnel-") {
+			strings.HasPrefix(strings.ToLower(key), "x-vetroff-") {
 			delete(public.Header, key)
 		}
 	}

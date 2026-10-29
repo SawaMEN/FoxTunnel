@@ -21,7 +21,7 @@ class MergeTests(unittest.TestCase):
         for name in ('xpcshell', 'libxul.so', 'libnss3.so'):
             (necko / 'runtime' / name).write_bytes(binary)
         (necko / 'runtime/platform.ini').write_text('pinned runtime')
-        (necko / "foxtunnel-necko").write_bytes(binary)
+        (necko / "vetroff-necko").write_bytes(binary)
         (necko / "vetroff").write_bytes(binary)
         (necko / 'source-lock.json').write_bytes((package_necko.ROOT / 'experiments/firefox-necko/gecko.lock.json').read_bytes())
         lock = json.loads((necko / 'source-lock.json').read_text())
@@ -68,7 +68,7 @@ class MergeTests(unittest.TestCase):
             first, second = root / "a.tar.gz", root / "b.tar.gz"
             self.assertEqual(merge.make_archive(necko, first), merge.make_archive(necko, second))
             with tarfile.open(first) as archive:
-                self.assertIn("foxtunnel-necko/lib/libnss3.so", archive.getnames())
+                self.assertIn("vetroff-necko/lib/libnss3.so", archive.getnames())
 
     def test_existing_output_is_never_deleted_and_sdk_contract_is_kept(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -104,7 +104,7 @@ class MergeTests(unittest.TestCase):
                     necko,nss=self.fixture(Path(tmp),arch)
                     if fault=='mixed':
                         p=necko/'runtime/libxul.so';data=bytearray(p.read_bytes());struct.pack_into('<H',data,18,183 if arch=='amd64' else 62);p.write_bytes(data);self.rehash(necko,arch)
-                    elif fault=='tamper':(necko/'foxtunnel-necko').write_bytes(b'changed')
+                    elif fault=='tamper':(necko/'vetroff-necko').write_bytes(b'changed')
                     elif fault=='extra':(necko/'extra').write_text('injected')
                     elif fault=='source':
                         p=necko/'provenance.json';d=json.loads(p.read_text());d['source']['revision']='wrong';p.write_text(json.dumps(d));self.rehash(necko,arch)
@@ -117,29 +117,29 @@ class MergeTests(unittest.TestCase):
             root=Path(tmp);necko,_=self.fixture(root)
             (necko/'runtime/empty').touch();self.rehash(necko)
             path=root/'native.tar.gz';package_necko.archive(necko,path)
-            with tarfile.open(path) as tar:self.assertEqual(tar.getnames()[0],'foxtunnel-necko')
-            out=root/'out';out.mkdir();merge.extract_regular(path,out,prefix='foxtunnel-necko')
+            with tarfile.open(path) as tar:self.assertEqual(tar.getnames()[0],'vetroff-necko')
+            out=root/'out';out.mkdir();merge.extract_regular(path,out,prefix='vetroff-necko')
             self.assertTrue((out/'runtime/empty').is_file())
             import necko_bundle
             necko_bundle.verify(out,'linux-amd64')
 
-    def test_only_exact_legacy_root_directory_alias_is_accepted(self):
-        for name,kind,good in [('foxtunnel-necko/.','dir',True),('foxtunnel-necko/.','file',False),('foxtunnel-necko/./child','file',False),('foxtunnel-necko/../child','file',False)]:
+    def test_root_directory_aliases_are_rejected(self):
+        for name,kind,good in [('vetroff-necko/.','dir',False),('vetroff-necko/.','file',False),('vetroff-necko/./child','file',False),('vetroff-necko/../child','file',False)]:
             with self.subTest(name=name,kind=kind), tempfile.TemporaryDirectory() as tmp:
                 root=Path(tmp);path=root/'a.tar.gz'
                 with tarfile.open(path,'w:gz') as tar:
                     m=tarfile.TarInfo(name);m.type=tarfile.DIRTYPE if kind=='dir' else tarfile.REGTYPE;tar.addfile(m)
-                    m=tarfile.TarInfo('foxtunnel-necko/empty');tar.addfile(m,io.BytesIO(b''))
+                    m=tarfile.TarInfo('vetroff-necko/empty');tar.addfile(m,io.BytesIO(b''))
                 out=root/'out';out.mkdir()
-                if good:merge.extract_regular(path,out,prefix='foxtunnel-necko')
+                if good:merge.extract_regular(path,out,prefix='vetroff-necko')
                 else:
-                    with self.assertRaises(ValueError):merge.extract_regular(path,out,prefix='foxtunnel-necko')
+                    with self.assertRaises(ValueError):merge.extract_regular(path,out,prefix='vetroff-necko')
 
     def test_refuse_path_traversal_and_links(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for name, kind in (("foxtunnel-necko/../outside", "file"),
-                               ("foxtunnel-necko/evil", "symlink")):
+            for name, kind in (("vetroff-necko/../outside", "file"),
+                               ("vetroff-necko/evil", "symlink")):
                 path = root / (kind + ".tar.gz")
                 with tarfile.open(path, "w:gz") as tar:
                     info = tarfile.TarInfo(name)
@@ -153,7 +153,7 @@ class MergeTests(unittest.TestCase):
                         tar.addfile(info, io.BytesIO(data))
                 (root / "dest").mkdir(exist_ok=True)
                 with self.assertRaises(ValueError):
-                    merge.extract_regular(path, root / "dest", prefix="foxtunnel-necko")
+                    merge.extract_regular(path, root / "dest", prefix="vetroff-necko")
                 self.assertFalse((root / "outside").exists())
 
 

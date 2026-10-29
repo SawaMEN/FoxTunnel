@@ -2,8 +2,8 @@
 package buildinfo
 
 import (
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
 	"runtime"
 )
 
@@ -55,7 +55,7 @@ func Current() Info {
 	if NSSAvailable {
 		defaultBackend = "nss"
 	}
-	engines := []string{"legacy"}
+	engines := []string{"builtin"}
 	if runtime.GOOS == "linux" && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64") {
 		engines = append(engines, "necko")
 	}

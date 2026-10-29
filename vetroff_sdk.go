@@ -1,4 +1,4 @@
-package foxtunnel
+package vetroff
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
 )
 
 // SDKSchema versions the exported integration semantics, independently of the

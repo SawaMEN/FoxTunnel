@@ -2,7 +2,7 @@
 
 package buildinfo
 
-import "github.com/SawaMEN/FoxTunnel/internal/nsstls"
+import "github.com/SawaMEN/VetroffProxy/internal/nsstls"
 
 const Flavor = "nss"
 const NSSAvailable = true

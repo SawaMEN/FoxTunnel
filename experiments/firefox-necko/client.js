@@ -160,7 +160,7 @@ async function pumpHTTPDownload(source, destination, progress = () => {}) {
   }
 }
 
-// FoxTunnel UDP stream-v2 uses BE16-sized, complete RFC1928 UDP packets.
+// Vetroff UDP stream-v2 uses BE16-sized, complete RFC1928 UDP packets.
 // Keep this codec independent of XPCOM for deterministic fuzz and fragment
 // testing. The native streaming adapter below uses bounded async pipes.
 const MAX_NATIVE_UDP_DATAGRAM = 1232;
@@ -379,7 +379,7 @@ if (typeof Components !== "undefined") {
     const f = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
     f.initWithPath(path); return f;
   };
-  const root = Services.env.get("FOXTUNNEL_FIREFOX_ROOT");
+  const root = Services.env.get("VETROFF_FIREVETROFF_ROOT");
   if (!root) throw new Error("private Firefox runtime directory required");
   const profile = localFile(root + "/profile");
   Services.dirsvc.registerProvider({
@@ -388,7 +388,7 @@ if (typeof Components !== "undefined") {
       return null;
     }, QueryInterface: ChromeUtils.generateQI(["nsIDirectoryServiceProvider"]),
   });
-  Services.obs.notifyObservers(null, "profile-do-change", "foxtunnel");
+  Services.obs.notifyObservers(null, "profile-do-change", "vetroff");
   const input = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(Ci.nsIFileInputStream);
   input.init(localFile(root + "/config.json"), -1, 0, 0);
   const cfg = JSON.parse(NetUtil.readInputStreamToString(input, input.available(), { charset: "UTF-8" }));
@@ -425,8 +425,8 @@ if (typeof Components !== "undefined") {
     // Identity belongs only to the primary origin, never an alternate node.
     const {serverName: sni, pin, tlsProfile} = nativeRoutePolicy(cfg, host, port);
     if (sni || pin || tlsProfile) {
-      if (typeof nativeCertDB.registerFoxTunnelPolicy !== "function") throw new Error("native identity API required");
-      nativeCertDB.registerFoxTunnelPolicy(host, port, sni, pin, tlsProfile);
+      if (typeof nativeCertDB.registerVetroffPolicy !== "function") throw new Error("native identity API required");
+      nativeCertDB.registerVetroffPolicy(host, port, sni, pin, tlsProfile);
     }
   }
   registerEndpoint(cfg.proxy_host, cfg.proxy_port);
@@ -468,8 +468,8 @@ if (typeof Components !== "undefined") {
   const proxyFlags = Ci.nsIProxyInfo.ALWAYS_TUNNEL_VIA_PROXY | Ci.nsIProxyInfo.TRANSPARENT_PROXY_RESOLVES_HOST;
   const proxy = cfg.transport === "h3-connect"
     ? pps.newMASQUEProxyInfo(cfg.proxy_host, cfg.proxy_port,
-        "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null)
-    : pps.newProxyInfo("https", cfg.proxy_host, cfg.proxy_port, cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null);
+        "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "vetroff-firefox", proxyFlags, 0, null)
+    : pps.newProxyInfo("https", cfg.proxy_host, cfg.proxy_port, cfg.authorization, "vetroff-firefox", proxyFlags, 0, null);
   const channelProxies = new WeakMap();
   const filter = {
     applyFilter(channel, previous, callback) {
@@ -621,8 +621,8 @@ if (typeof Components !== "undefined") {
         registerEndpoint(endpoint.host, endpoint.port === -1 ? 443 : endpoint.port);
         const port = endpoint.port === -1 ? 443 : endpoint.port;
         const selectedProxy = cfg.transport === "h3-connect"
-          ? pps.newMASQUEProxyInfo(endpoint.host, port, "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null)
-          : pps.newProxyInfo("https", endpoint.host, port, cfg.authorization, "foxtunnel-firefox", proxyFlags, 0, null);
+          ? pps.newMASQUEProxyInfo(endpoint.host, port, "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "vetroff-firefox", proxyFlags, 0, null)
+          : pps.newProxyInfo("https", endpoint.host, port, cfg.authorization, "vetroff-firefox", proxyFlags, 0, null);
         channelProxies.set(channel, selectedProxy);
       }
       const internal = channel.QueryInterface(Ci.nsIHttpChannelInternal);
@@ -679,7 +679,7 @@ if (typeof Components !== "undefined") {
     return new Promise((resolve, reject) => {
       session.udpSetupPhase = 8; // fixed numeric diagnostics only; no URLs/secrets
       const host = cfg.proxy_host.includes(":") ? `[${cfg.proxy_host}]` : cfg.proxy_host;
-      const target = `https://${host}:${cfg.proxy_port}/.well-known/foxtunnel-udp-v1`;
+      const target = `https://${host}:${cfg.proxy_port}/.well-known/vetroff-udp-v1`;
       const channel = NetUtil.newChannel({
         uri: target, loadUsingSystemPrincipal: true,
         securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |
@@ -786,7 +786,7 @@ if (typeof Components !== "undefined") {
     return new Promise((resolve, reject) => {
       const host = cfg.proxy_host.includes(":") ? `[${cfg.proxy_host}]` : cfg.proxy_host;
       const channel = NetUtil.newChannel({
-        uri: `https://${host}:${cfg.proxy_port}/.well-known/foxtunnel-udp-stream-v2`,
+        uri: `https://${host}:${cfg.proxy_port}/.well-known/vetroff-udp-stream-v2`,
         loadUsingSystemPrincipal: true,
         securityFlags: Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL |
           Ci.nsILoadInfo.SEC_DONT_FOLLOW_REDIRECTS | Ci.nsILoadInfo.SEC_COOKIES_OMIT,
@@ -1014,7 +1014,7 @@ if (typeof Components !== "undefined") {
           const chunk = await local.read(); if (chunk === null) return;
           parser.push(chunk); auth = parser.authentication();
         }
-        if (auth.user !== "foxtunnel" || auth.password !== cfg.socks_token) {
+        if (auth.user !== "vetroff" || auth.password !== cfg.socks_token) {
           await local.write(Uint8Array.from([1, 1])); return;
         }
         await local.write(Uint8Array.from([1, 0]));
@@ -1129,7 +1129,7 @@ if (typeof Components !== "undefined") {
     listen: `127.0.0.1:${server.port}`, pid: Services.appinfo.processID, process_tag: root.split("/").pop(), version: Services.appinfo.platformVersion }));
   // Standalone xpcshell has no browser event loop. All callbacks above run on
   // this thread; native socket work remains on Gecko's networking threads.
-  Services.tm.spinEventLoopUntil("FoxTunnel Firefox networking", () => stopped);
+  Services.tm.spinEventLoopUntil("Vetroff Firefox networking", () => stopped);
   for (const session of sessions) session.close();
   for (const session of draining) session.close();
   clearInterval(sweep); if (stats !== null) clearInterval(stats);

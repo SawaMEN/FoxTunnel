@@ -36,7 +36,7 @@
 2026-10-23T16:40:01.4461176Z Complete job name: runtime
 2026-10-23T16:40:01.5370914Z ##[group]Run actions/checkout@v4
 2026-10-23T16:40:01.5372424Z with:
-2026-10-23T16:40:01.5373341Z   repository: SawaMEN/FoxTunnel
+2026-10-23T16:40:01.5373341Z   repository: SawaMEN/Vetroff
 2026-10-23T16:40:01.5381240Z   token: ***
 2026-10-23T16:40:01.5382357Z   ssh-strict: true
 2026-10-23T16:40:01.5383267Z   ssh-user: git
@@ -51,18 +51,18 @@
 2026-10-23T16:40:01.5392063Z   set-safe-directory: true
 2026-10-23T16:40:01.5393154Z   allow-unsafe-pr-checkout: false
 2026-10-23T16:40:01.5394453Z ##[endgroup]
-2026-10-23T16:40:01.6522275Z Syncing repository: SawaMEN/FoxTunnel
+2026-10-23T16:40:01.6522275Z Syncing repository: SawaMEN/Vetroff
 2026-10-23T16:40:01.6526235Z ##[group]Getting Git version info
-2026-10-23T16:40:01.6528705Z Working directory is '/home/runner/work/FoxTunnel/FoxTunnel'
+2026-10-23T16:40:01.6528705Z Working directory is '/home/runner/work/Vetroff/Vetroff'
 2026-10-23T16:40:01.6532030Z [command]/usr/bin/git version
 2026-10-23T16:40:01.6557008Z git version 2.55.0
 2026-10-23T16:40:01.6575990Z ##[endgroup]
 2026-10-23T16:40:01.6587220Z Temporarily overriding HOME='/home/runner/work/_temp/39026816-0511-42e6-b7df-d9e28cae6fec' before making global git config changes
 2026-10-23T16:40:01.6591618Z Adding repository directory to the temporary git global config as a safe directory
-2026-10-23T16:40:01.6595556Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/FoxTunnel/FoxTunnel
-2026-10-23T16:40:01.6645756Z Deleting the contents of '/home/runner/work/FoxTunnel/FoxTunnel'
+2026-10-23T16:40:01.6595556Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Vetroff/Vetroff
+2026-10-23T16:40:01.6645756Z Deleting the contents of '/home/runner/work/Vetroff/Vetroff'
 2026-10-23T16:40:01.6651300Z ##[group]Initializing the repository
-2026-10-23T16:40:01.6662527Z [command]/usr/bin/git init /home/runner/work/FoxTunnel/FoxTunnel
+2026-10-23T16:40:01.6662527Z [command]/usr/bin/git init /home/runner/work/Vetroff/Vetroff
 2026-10-23T16:40:01.6745941Z hint: Using 'master' as the name for the initial branch. This default branch name
 2026-10-23T16:40:01.6748874Z hint: will change to "main" in Git 3.0. To configure the initial branch name
 2026-10-23T16:40:01.6751471Z hint: to use in all of your new repositories, which will suppress this warning,
@@ -76,8 +76,8 @@
 2026-10-23T16:40:01.6764574Z hint: 	git branch -m <name>
 2026-10-23T16:40:01.6765854Z hint:
 2026-10-23T16:40:01.6767547Z hint: Disable this message with "git config set advice.defaultBranchName false"
-2026-10-23T16:40:01.6770242Z Initialized empty Git repository in /home/runner/work/FoxTunnel/FoxTunnel/.git/
-2026-10-23T16:40:01.6775586Z [command]/usr/bin/git remote add origin https://github.com/SawaMEN/FoxTunnel
+2026-10-23T16:40:01.6770242Z Initialized empty Git repository in /home/runner/work/Vetroff/Vetroff/.git/
+2026-10-23T16:40:01.6775586Z [command]/usr/bin/git remote add origin https://github.com/SawaMEN/VetroffProxy
 2026-10-23T16:40:01.6809826Z ##[endgroup]
 2026-10-23T16:40:01.6812535Z ##[group]Disabling automatic garbage collection
 2026-10-23T16:40:01.6815261Z [command]/usr/bin/git config --local gc.auto 0
@@ -93,7 +93,7 @@
 2026-10-23T16:40:01.7682181Z ##[endgroup]
 2026-10-23T16:40:01.7684359Z ##[group]Fetching the repository
 2026-10-23T16:40:01.7691246Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +212c2ac36de1e2638faf6ffc6784d80eb3f05cbb:refs/remotes/origin/firefox
-2026-10-23T16:40:03.4257402Z From https://github.com/SawaMEN/FoxTunnel
+2026-10-23T16:40:03.4257402Z From https://github.com/SawaMEN/VetroffProxy
 2026-10-23T16:40:03.4258245Z  * [new ref]         212c2ac36de1e2638faf6ffc6784d80eb3f05cbb -> origin/firefox
 2026-10-23T16:40:03.4261053Z ##[endgroup]
 2026-10-23T16:40:03.4262070Z ##[group]Determining the checkout info
@@ -130,7 +130,7 @@
 2026-10-23T16:40:05.1362171Z   github-token: ***
 2026-10-23T16:40:05.1362400Z   path: runtime-archive
 2026-10-23T16:40:05.1362627Z   merge-multiple: false
-2026-10-23T16:40:05.1362853Z   repository: SawaMEN/FoxTunnel
+2026-10-23T16:40:05.1362853Z   repository: SawaMEN/Vetroff
 2026-10-23T16:40:05.1363089Z ##[endgroup]
 2026-10-23T16:40:05.2827407Z Downloading single artifact
 2026-10-23T16:40:05.2900380Z (node:2322) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
@@ -138,9 +138,9 @@
 2026-10-23T16:40:05.3090890Z (node:2322) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
 2026-10-23T16:40:05.5477773Z Preparing to download the following artifacts:
 2026-10-23T16:40:05.5478889Z - necko-linux-amd64-runtime (ID: 12501945687, Size: 157414215, Expected Digest: sha256:2e17ec90f97a8c08c2d0820888f6fa53169da1ad0778e971fe36498034ae9d66)
-2026-10-23T16:40:05.5525906Z Downloading artifact '12501945687' from 'SawaMEN/FoxTunnel'
+2026-10-23T16:40:05.5525906Z Downloading artifact '12501945687' from 'SawaMEN/Vetroff'
 2026-10-23T16:40:05.7443397Z Redirecting to blob download url: https://productionresultssa2.blob.core.windows.net/actions-results/d117bdaa-35ee-8680-ad42-f3c20c0a321a/workflow-job-run-be6ce129-16a1-5823-bead-be7878a69cbd/artifacts/211009bdb33e3adc37f146df8e205ff44889127f06d467535fea4c397551f2fe.zip
-2026-10-23T16:40:05.7445520Z Starting download of artifact to: /home/runner/work/FoxTunnel/FoxTunnel/runtime-archive
+2026-10-23T16:40:05.7445520Z Starting download of artifact to: /home/runner/work/Vetroff/Vetroff/runtime-archive
 2026-10-23T16:40:05.9353696Z (node:2322) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
 2026-10-23T16:40:08.9493450Z SHA256 digest of downloaded artifact is 2e17ec90f97a8c08c2d0820888f6fa53169da1ad0778e971fe36498034ae9d66
 2026-10-23T16:40:08.9500153Z Artifact download completed successfully.
@@ -153,7 +153,7 @@
 2026-10-23T16:40:08.9697166Z   github-token: ***
 2026-10-23T16:40:08.9697391Z   path: runtime-provenance
 2026-10-23T16:40:08.9697620Z   merge-multiple: false
-2026-10-23T16:40:08.9697850Z   repository: SawaMEN/FoxTunnel
+2026-10-23T16:40:08.9697850Z   repository: SawaMEN/Vetroff
 2026-10-23T16:40:08.9698086Z ##[endgroup]
 2026-10-23T16:40:09.1104584Z Downloading single artifact
 2026-10-23T16:40:09.1167112Z (node:2335) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
@@ -161,9 +161,9 @@
 2026-10-23T16:40:09.1362421Z (node:2335) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
 2026-10-23T16:40:09.3621364Z Preparing to download the following artifacts:
 2026-10-23T16:40:09.3622419Z - necko-source-provenance (ID: 12500704133, Size: 22284, Expected Digest: sha256:5280fab1d97e90a826849ef188c833381c7caa037713ed3c4da32c38c7e0ee9f)
-2026-10-23T16:40:09.3651682Z Downloading artifact '12500704133' from 'SawaMEN/FoxTunnel'
+2026-10-23T16:40:09.3651682Z Downloading artifact '12500704133' from 'SawaMEN/Vetroff'
 2026-10-23T16:40:09.6153813Z Redirecting to blob download url: https://productionresultssa2.blob.core.windows.net/actions-results/d117bdaa-35ee-8680-ad42-f3c20c0a321a/workflow-job-run-be6ce129-16a1-5823-bead-be7878a69cbd/artifacts/0777babc2701abf9a4507124a90d04b3de4ee8bf5294058a7f051ea363159919.zip
-2026-10-23T16:40:09.6155512Z Starting download of artifact to: /home/runner/work/FoxTunnel/FoxTunnel/runtime-provenance
+2026-10-23T16:40:09.6155512Z Starting download of artifact to: /home/runner/work/Vetroff/Vetroff/runtime-provenance
 2026-10-23T16:40:09.7766852Z (node:2335) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
 2026-10-23T16:40:09.8075768Z SHA256 digest of downloaded artifact is 5280fab1d97e90a826849ef188c833381c7caa037713ed3c4da32c38c7e0ee9f
 2026-10-23T16:40:09.8077035Z Artifact download completed successfully.
@@ -319,7 +319,7 @@
 2026-10-23T16:40:22.0589350Z [36;1mexit "$result"[0m
 2026-10-23T16:40:22.0627874Z shell: /usr/bin/bash -e {0}
 2026-10-23T16:40:22.0628140Z env:
-2026-10-23T16:40:22.0628420Z   LD_LIBRARY_PATH: /home/runner/work/FoxTunnel/FoxTunnel/runtime
+2026-10-23T16:40:22.0628420Z   LD_LIBRARY_PATH: /home/runner/work/Vetroff/Vetroff/runtime
 2026-10-23T16:40:22.0628768Z   MOZ_DISABLE_SOCKET_PROCESS: 1
 2026-10-23T16:40:22.0629001Z ##[endgroup]
 2026-10-23T16:40:22.7965509Z [2872] Sandbox: CanCreateUserNamespace() unshare(CLONE_NEWPID): EPERM
@@ -352,7 +352,7 @@
 2026-10-23T16:40:31.8775811Z (node:2905) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
 2026-10-23T16:40:32.8266021Z Received 61973877 of 61973877 (100.0%), 74.5 MBs/sec
 2026-10-23T16:40:32.8266588Z Cache Size: ~59 MB (61973877 B)
-2026-10-23T16:40:32.8404482Z [command]/usr/bin/tar -xf /home/runner/work/_temp/f1460998-4252-4628-a962-51087ee2ca8e/cache.tzst -P -C /home/runner/work/FoxTunnel/FoxTunnel --use-compress-program unzstd
+2026-10-23T16:40:32.8404482Z [command]/usr/bin/tar -xf /home/runner/work/_temp/f1460998-4252-4628-a962-51087ee2ca8e/cache.tzst -P -C /home/runner/work/Vetroff/Vetroff --use-compress-program unzstd
 2026-10-23T16:40:33.1624866Z Cache restored successfully
 2026-10-23T16:40:33.1660862Z Cache restored from key: setup-go-Linux-x64-ubuntu24-go-1.26.10-476c3f4e9e9bdaa69131eefcaed2c68197f96c26a9a2819a1c3db963f344dcdc
 2026-10-23T16:40:33.1685694Z go version go1.26.10 linux/amd64
@@ -385,7 +385,7 @@
 2026-10-23T16:40:33.1834201Z GOHOSTARCH='amd64'
 2026-10-23T16:40:33.1834432Z GOHOSTOS='linux'
 2026-10-23T16:40:33.1834678Z GOINSECURE=''
-2026-10-23T16:40:33.1834956Z GOMOD='/home/runner/work/FoxTunnel/FoxTunnel/go.mod'
+2026-10-23T16:40:33.1834956Z GOMOD='/home/runner/work/Vetroff/Vetroff/go.mod'
 2026-10-23T16:40:33.1835305Z GOMODCACHE='/home/runner/go/pkg/mod'
 2026-10-23T16:40:33.1835583Z GONOPROXY=''
 2026-10-23T16:40:33.1835797Z GONOSUMDB=''
@@ -410,10 +410,10 @@
 2026-10-23T16:40:33.1999704Z [36;1mgo test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s[0m
 2026-10-23T16:40:33.2049926Z shell: /usr/bin/bash -e {0}
 2026-10-23T16:40:33.2050327Z env:
-2026-10-23T16:40:33.2050819Z   FOXTUNNEL_XPCSHELL: /home/runner/work/FoxTunnel/FoxTunnel/runtime/xpcshell
+2026-10-23T16:40:33.2050819Z   VETROFF_XPCSHELL: /home/runner/work/Vetroff/Vetroff/runtime/xpcshell
 2026-10-23T16:40:33.2051408Z ##[endgroup]
 2026-10-23T16:40:56.5054091Z === RUN   TestGeckoPackagedLauncher
-2026-10-23T16:40:56.5059196Z     bundle_native_test.go:19: set FOXTUNNEL_BUNDLE to the packaged launcher/runtime
+2026-10-23T16:40:56.5059196Z     bundle_native_test.go:19: set VETROFF_BUNDLE to the packaged launcher/runtime
 2026-10-23T16:40:56.5059984Z --- SKIP: TestGeckoPackagedLauncher (0.00s)
 2026-10-23T16:40:56.5060431Z === RUN   TestGeckoBrowserFingerprint
 2026-10-23T16:40:56.8621226Z === RUN   TestGeckoBrowserFingerprint/h2-connect
@@ -485,7 +485,7 @@
 2026-10-23T16:41:39.8724676Z     --- PASS: TestGeckoIdleAndDrainLimits/h2-connect (1.48s)
 2026-10-23T16:41:39.8725383Z     --- PASS: TestGeckoIdleAndDrainLimits/h3-connect (1.65s)
 2026-10-23T16:41:39.8726004Z === RUN   TestGeckoSoak
-2026-10-23T16:41:39.8727501Z     operations_test.go:243: set FOXTUNNEL_SOAK_SECONDS for sustained native load
+2026-10-23T16:41:39.8727501Z     operations_test.go:243: set VETROFF_SOAK_SECONDS for sustained native load
 2026-10-23T16:41:39.8728352Z --- SKIP: TestGeckoSoak (0.00s)
 2026-10-23T16:41:39.8729060Z === RUN   TestGeckoReverseHalfClose
 2026-10-23T16:41:39.8729837Z === RUN   TestGeckoReverseHalfClose/h2-connect
@@ -506,14 +506,14 @@
 2026-10-23T16:41:40.5297687Z         --- PASS: TestGeckoReverseHalfClose/h3-connect/buffered (0.11s)
 2026-10-23T16:41:40.5298222Z         --- PASS: TestGeckoReverseHalfClose/h3-connect/flow-control (0.11s)
 2026-10-23T16:41:40.5298558Z PASS
-2026-10-23T16:41:41.5328108Z ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	45.036s
+2026-10-23T16:41:41.5328108Z ok  	github.com/SawaMEN/VetroffProxy/experiments/firefox-necko	45.036s
 2026-10-23T16:41:41.7322894Z ##[group]Run go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -v -count=3 -timeout=180s
 2026-10-23T16:41:41.7323742Z [36;1mgo test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -v -count=3 -timeout=180s[0m
 2026-10-23T16:41:41.7324529Z [36;1mpython3 scripts/compare_necko_firefox.py --observations necko-fingerprint/observations --out necko-fingerprint/comparison.json[0m
 2026-10-23T16:41:41.7364541Z shell: /usr/bin/bash -e {0}
 2026-10-23T16:41:41.7364972Z env:
-2026-10-23T16:41:41.7365313Z   FOXTUNNEL_XPCSHELL: /home/runner/work/FoxTunnel/FoxTunnel/runtime/xpcshell
-2026-10-23T16:41:41.7365854Z   FOXTUNNEL_FINGERPRINT_OUT: /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations
+2026-10-23T16:41:41.7365313Z   VETROFF_XPCSHELL: /home/runner/work/Vetroff/Vetroff/runtime/xpcshell
+2026-10-23T16:41:41.7365854Z   VETROFF_FINGERPRINT_OUT: /home/runner/work/Vetroff/Vetroff/necko-fingerprint/observations
 2026-10-23T16:41:41.7366295Z ##[endgroup]
 2026-10-23T16:41:42.2230119Z === RUN   TestFingerprintRFC9001Initial
 2026-10-23T16:41:42.2240568Z --- PASS: TestFingerprintRFC9001Initial (0.00s)
@@ -521,11 +521,11 @@
 2026-10-23T16:41:42.2252324Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
 2026-10-23T16:41:42.2253201Z === RUN   TestGeckoBrowserFingerprint
 2026-10-23T16:41:42.5789534Z === RUN   TestGeckoBrowserFingerprint/h2-connect
-2026-10-23T16:41:47.5704787Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h2-connect-1792773707569985382.json
+2026-10-23T16:41:47.5704787Z     fingerprint_test.go:230: saved /home/runner/work/Vetroff/Vetroff/necko-fingerprint/observations/h2-connect-1792773707569985382.json
 2026-10-23T16:41:47.5706715Z     fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
 2026-10-23T16:41:47.5708112Z === RUN   TestGeckoBrowserFingerprint/h3-connect
 2026-10-23T16:41:47.5742549Z 2026/10/23 16:41:47 connection doesn't allow setting of receive buffer size. Not a *net.UDPConn?. See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
-2026-10-23T16:41:52.6908616Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h3-connect-1792773712690360159.json
+2026-10-23T16:41:52.6908616Z     fingerprint_test.go:230: saved /home/runner/work/Vetroff/Vetroff/necko-fingerprint/observations/h3-connect-1792773712690360159.json
 2026-10-23T16:41:52.6910057Z     fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
 2026-10-23T16:41:52.6912856Z --- PASS: TestGeckoBrowserFingerprint (10.47s)
 2026-10-23T16:41:52.6913576Z     --- PASS: TestGeckoBrowserFingerprint/h2-connect (4.99s)
@@ -536,10 +536,10 @@
 2026-10-23T16:41:52.6928857Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
 2026-10-23T16:41:52.6929619Z === RUN   TestGeckoBrowserFingerprint
 2026-10-23T16:41:53.0444167Z === RUN   TestGeckoBrowserFingerprint/h2-connect
-2026-10-23T16:41:58.1054855Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h2-connect-1792773718104952560.json
+2026-10-23T16:41:58.1054855Z     fingerprint_test.go:230: saved /home/runner/work/Vetroff/Vetroff/necko-fingerprint/observations/h2-connect-1792773718104952560.json
 2026-10-23T16:41:58.1059476Z     fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
 2026-10-23T16:41:58.1060493Z === RUN   TestGeckoBrowserFingerprint/h3-connect
-2026-10-23T16:42:03.1898826Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h3-connect-1792773723189336024.json
+2026-10-23T16:42:03.1898826Z     fingerprint_test.go:230: saved /home/runner/work/Vetroff/Vetroff/necko-fingerprint/observations/h3-connect-1792773723189336024.json
 2026-10-23T16:42:03.1900368Z     fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
 2026-10-23T16:42:03.1901487Z --- PASS: TestGeckoBrowserFingerprint (10.50s)
 2026-10-23T16:42:03.1902403Z     --- PASS: TestGeckoBrowserFingerprint/h2-connect (5.06s)
@@ -550,16 +550,16 @@
 2026-10-23T16:42:03.1919393Z --- PASS: TestFingerprintHPACKFragmentationAndReuse (0.00s)
 2026-10-23T16:42:03.1920940Z === RUN   TestGeckoBrowserFingerprint
 2026-10-23T16:42:03.5414271Z === RUN   TestGeckoBrowserFingerprint/h2-connect
-2026-10-23T16:42:08.5580829Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h2-connect-1792773728557525126.json
+2026-10-23T16:42:08.5580829Z     fingerprint_test.go:230: saved /home/runner/work/Vetroff/Vetroff/necko-fingerprint/observations/h2-connect-1792773728557525126.json
 2026-10-23T16:42:08.5583313Z     fingerprint_test.go:232: h2-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
 2026-10-23T16:42:08.5587376Z === RUN   TestGeckoBrowserFingerprint/h3-connect
-2026-10-23T16:42:13.5673407Z     fingerprint_test.go:230: saved /home/runner/work/FoxTunnel/FoxTunnel/necko-fingerprint/observations/h3-connect-1792773733566818348.json
+2026-10-23T16:42:13.5673407Z     fingerprint_test.go:230: saved /home/runner/work/Vetroff/Vetroff/necko-fingerprint/observations/h3-connect-1792773733566818348.json
 2026-10-23T16:42:13.5675191Z     fingerprint_test.go:232: h3-connect: 4 complete connections, four verified binary transfers per subject, Firefox 160.0a1
 2026-10-23T16:42:13.5676184Z --- PASS: TestGeckoBrowserFingerprint (10.38s)
 2026-10-23T16:42:13.5676971Z     --- PASS: TestGeckoBrowserFingerprint/h2-connect (5.02s)
 2026-10-23T16:42:13.5677713Z     --- PASS: TestGeckoBrowserFingerprint/h3-connect (5.01s)
 2026-10-23T16:42:13.5678295Z PASS
-2026-10-23T16:42:14.5707996Z ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	32.356s
+2026-10-23T16:42:14.5707996Z ok  	github.com/SawaMEN/VetroffProxy/experiments/firefox-necko	32.356s
 2026-10-23T16:42:14.6277523Z Repetitions: {'h2-connect': 3, 'h3-connect': 3}
 2026-10-23T16:42:14.6278602Z h2-connect-1792773707569985382.json differences: connection_1.hpack_blocks, connection_1.h2_frames
 2026-10-23T16:42:14.6279689Z h2-connect-1792773718104952560.json differences: none in recorded fields
@@ -590,12 +590,12 @@
 2026-10-23T16:42:15.3533635Z Finalizing artifact upload
 2026-10-23T16:42:15.8047589Z Artifact necko-firefox-fingerprint.zip successfully finalized. Artifact ID 12517271550
 2026-10-23T16:42:15.8048589Z Artifact necko-firefox-fingerprint has been successfully uploaded! Final size is 25512 bytes. Artifact ID is 12517271550
-2026-10-23T16:42:15.8054193Z Artifact download URL: https://github.com/SawaMEN/FoxTunnel/actions/runs/39988655835/artifacts/12517271550
+2026-10-23T16:42:15.8054193Z Artifact download URL: https://github.com/SawaMEN/VetroffProxy/actions/runs/39988655835/artifacts/12517271550
 2026-10-23T16:42:15.8171700Z ##[group]Run go test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s
 2026-10-23T16:42:15.8173290Z [36;1mgo test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s[0m
 2026-10-23T16:42:15.8214517Z shell: /usr/bin/bash -e {0}
 2026-10-23T16:42:15.8215014Z env:
-2026-10-23T16:42:15.8215442Z   FOXTUNNEL_XPCSHELL: /home/runner/work/FoxTunnel/FoxTunnel/runtime/xpcshell
+2026-10-23T16:42:15.8215442Z   VETROFF_XPCSHELL: /home/runner/work/Vetroff/Vetroff/runtime/xpcshell
 2026-10-23T16:42:15.8215956Z ##[endgroup]
 2026-10-23T16:42:16.3202711Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper
 2026-10-23T16:42:16.3217492Z === RUN   TestBundleRejectsCorruptionLinksAndIncompatibleHelper/runtime/xpcshell
@@ -737,14 +737,14 @@
 2026-10-23T16:42:37.5022300Z     --- PASS: TestGeckoIdleAndDrainLimits/h2-connect (1.46s)
 2026-10-23T16:42:37.5022870Z     --- PASS: TestGeckoIdleAndDrainLimits/h3-connect (1.65s)
 2026-10-23T16:42:37.5023316Z PASS
-2026-10-23T16:42:38.5049860Z ok  	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	22.193s
+2026-10-23T16:42:38.5049860Z ok  	github.com/SawaMEN/VetroffProxy/experiments/firefox-necko	22.193s
 2026-10-23T16:42:38.5169787Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
 2026-10-23T16:42:38.5170899Z [36;1mgo test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s[0m
 2026-10-23T16:42:38.5228028Z shell: /usr/bin/bash -e {0}
 2026-10-23T16:42:38.5228553Z env:
-2026-10-23T16:42:38.5229234Z   FOXTUNNEL_XPCSHELL: /home/runner/work/FoxTunnel/FoxTunnel/runtime/xpcshell
-2026-10-23T16:42:38.5230037Z   FOXTUNNEL_SOAK_SECONDS: 300
-2026-10-23T16:42:38.5230780Z   FOXTUNNEL_OPERATIONS_OUT: /home/runner/work/FoxTunnel/FoxTunnel/necko-operations
+2026-10-23T16:42:38.5229234Z   VETROFF_XPCSHELL: /home/runner/work/Vetroff/Vetroff/runtime/xpcshell
+2026-10-23T16:42:38.5230037Z   VETROFF_SOAK_SECONDS: 300
+2026-10-23T16:42:38.5230780Z   VETROFF_OPERATIONS_OUT: /home/runner/work/Vetroff/Vetroff/necko-operations
 2026-10-23T16:42:38.5231527Z ##[endgroup]
 2026-10-23T16:42:39.0135200Z === RUN   TestGeckoSoak
 2026-10-23T16:42:39.0136074Z === RUN   TestGeckoSoak/h2-connect
@@ -756,7 +756,7 @@
 2026-10-23T16:52:45.7264800Z     --- FAIL: TestGeckoSoak/h2-connect (303.29s)
 2026-10-23T16:52:45.7265493Z     --- FAIL: TestGeckoSoak/h3-connect (303.42s)
 2026-10-23T16:52:45.7266036Z FAIL
-2026-10-23T16:52:45.7337317Z FAIL	github.com/SawaMEN/FoxTunnel/experiments/firefox-necko	606.728s
+2026-10-23T16:52:45.7337317Z FAIL	github.com/SawaMEN/VetroffProxy/experiments/firefox-necko	606.728s
 2026-10-23T16:52:45.7360927Z FAIL
 2026-10-23T16:52:45.7443796Z ##[error]Process completed with exit code 1.
 2026-10-23T16:52:45.7526444Z ##[group]Run actions/upload-artifact@v4
@@ -782,7 +782,7 @@
 2026-10-23T16:52:46.5305221Z Finalizing artifact upload
 2026-10-23T16:52:47.1594725Z Artifact necko-operations.zip successfully finalized. Artifact ID 12517242728
 2026-10-23T16:52:47.1596255Z Artifact necko-operations has been successfully uploaded! Final size is 22643 bytes. Artifact ID is 12517242728
-2026-10-23T16:52:47.1602225Z Artifact download URL: https://github.com/SawaMEN/FoxTunnel/actions/runs/39988655835/artifacts/12517242728
+2026-10-23T16:52:47.1602225Z Artifact download URL: https://github.com/SawaMEN/VetroffProxy/actions/runs/39988655835/artifacts/12517242728
 2026-10-23T16:52:47.1729662Z ##[group]Run actions/upload-artifact@v4
 2026-10-23T16:52:47.1730088Z with:
 2026-10-23T16:52:47.1730412Z   name: necko-runtime-diagnostics
@@ -799,7 +799,7 @@ runtime-startup.stack
 2026-10-23T16:52:47.3297673Z (node:10464) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
 2026-10-23T16:52:47.3299158Z (Use `node --trace-deprecation ...` to show where the warning was created)
 2026-10-23T16:52:47.3350362Z Multiple search paths detected. Calculating the least common ancestor of all paths
-2026-10-23T16:52:47.3353960Z The least common ancestor is /home/runner/work/FoxTunnel/FoxTunnel. This will be the root directory of the artifact
+2026-10-23T16:52:47.3353960Z The least common ancestor is /home/runner/work/Vetroff/Vetroff. This will be the root directory of the artifact
 2026-10-23T16:52:47.3355037Z With the provided path, there will be 1 file uploaded
 2026-10-23T16:52:47.3361171Z Artifact name is valid!
 2026-10-23T16:52:47.3362162Z Root directory input is valid!
@@ -811,13 +811,13 @@ runtime-startup.stack
 2026-10-23T16:52:47.8136822Z Finalizing artifact upload
 2026-10-23T16:52:48.4624521Z Artifact necko-runtime-diagnostics.zip successfully finalized. Artifact ID 12517347564
 2026-10-23T16:52:48.4626202Z Artifact necko-runtime-diagnostics has been successfully uploaded! Final size is 239 bytes. Artifact ID is 12517347564
-2026-10-23T16:52:48.4633558Z Artifact download URL: https://github.com/SawaMEN/FoxTunnel/actions/runs/39988655835/artifacts/12517347564
+2026-10-23T16:52:48.4633558Z Artifact download URL: https://github.com/SawaMEN/VetroffProxy/actions/runs/39988655835/artifacts/12517347564
 2026-10-23T16:52:48.4808026Z Post job cleanup.
 2026-10-23T16:52:48.5598921Z [command]/usr/bin/git version
 2026-10-23T16:52:48.5635684Z git version 2.55.0
 2026-10-23T16:52:48.5667308Z Temporarily overriding HOME='/home/runner/work/_temp/f4e2424f-9815-4078-84c0-c7eb6e96a2b9' before making global git config changes
 2026-10-23T16:52:48.5668967Z Adding repository directory to the temporary git global config as a safe directory
-2026-10-23T16:52:48.5672620Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/FoxTunnel/FoxTunnel
+2026-10-23T16:52:48.5672620Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Vetroff/Vetroff
 2026-10-23T16:52:48.5708253Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
 2026-10-23T16:52:48.5739093Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
 2026-10-23T16:52:48.5956750Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader

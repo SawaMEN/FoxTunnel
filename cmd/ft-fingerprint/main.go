@@ -7,14 +7,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
 	"io"
 	"net"
 	"os"
 	"reflect"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/fingerprint"
+	"github.com/SawaMEN/VetroffProxy/internal/fingerprint"
 )
 
 func main() {

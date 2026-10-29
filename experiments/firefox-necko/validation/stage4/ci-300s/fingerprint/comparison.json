@@ -4,7 +4,7 @@
   "observations": [
     {
       "file": "h2-connect-1792775235693710200.json",
-      "sha256": "486ed49eec5b5552ff02daa9e9466fb521b7cf43fca7ae7a50b70bea00804196",
+      "sha256": "ed946294f202fc0c47718963384168b5c1955829e2413e86bccb50f5655cac1a",
       "transport": "h2-connect",
       "checks": [
         {
@@ -1947,7 +1947,7 @@
     },
     {
       "file": "h2-connect-1792775244988081110.json",
-      "sha256": "aa4878551be57f75c4becafdc9d679ff46d6708722c6cd08872253ff5fcf8822",
+      "sha256": "adf57e73010971bebf9d53d606caa7fe12e5cb774787a5cca44d025b4f00f9de",
       "transport": "h2-connect",
       "checks": [
         {
@@ -3890,7 +3890,7 @@
     },
     {
       "file": "h2-connect-1792775254389592722.json",
-      "sha256": "50c109d6f83094a85b1155a7238edbc53bb84844fe531ad980a411bd766e6f84",
+      "sha256": "f2422935b9d8c8eaf93a382877ec4f96a9470c14ebd483cb722e37b8e367a984",
       "transport": "h2-connect",
       "checks": [
         {
@@ -5830,7 +5830,7 @@
     },
     {
       "file": "h3-connect-1792775240218922443.json",
-      "sha256": "e1f9aa2e3cecd73e1fcf3f26990ec549956db5ee3fb69a903420497b072ab97b",
+      "sha256": "9bd92259e4959ab5b01cda7191ff02dea3cf56afc6437f84865c8f72ea37719a",
       "transport": "h3-connect",
       "checks": [
         {
@@ -6837,7 +6837,7 @@
     },
     {
       "file": "h3-connect-1792775249564928026.json",
-      "sha256": "ff0e84332929fe84352a08fc8c46bf4099c77f935e0200c41438454882f65724",
+      "sha256": "70bfa79c070ab02746c3e920616189a721ca1905f4076bc82696bafcccb27685",
       "transport": "h3-connect",
       "checks": [
         {
@@ -7844,7 +7844,7 @@
     },
     {
       "file": "h3-connect-1792775258847821389.json",
-      "sha256": "6afefc7318ba7a0d86ecc18732875e18853eed4b32ccdb4f46a716e6c5af9bfb",
+      "sha256": "bfa20424dcc30149131b3404107e945452009c5e7448e0573e5539f79c6e4919",
       "transport": "h3-connect",
       "checks": [
         {
@@ -8862,7 +8862,7 @@
           "distinct_sets": 1
         }
       ],
-      "foxtunnel": [
+      "vetroff": [
         {
           "distinct_orders": 1,
           "distinct_sets": 1
@@ -8884,7 +8884,7 @@
           "distinct_sets": 1
         }
       ],
-      "foxtunnel": [
+      "vetroff": [
         {
           "distinct_orders": 3,
           "distinct_sets": 1
@@ -8905,12 +8905,12 @@
   },
   "source_sha256": {
     "client.js": "c09dc383beb7ff6ba94a23633c4baf5ca11c9700874999797cfe0b000373b06b",
-    "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
-    "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+    "fingerprint/browser.js": "6734fe93d525f0460ab5c86f1682469287331321cbae331ffe59313730b006ae",
+    "fingerprint/browser.py": "7818c513c46de6269f1857f8d38ce9b7211305f2f526a70e9b85d4c449c9eedf",
     "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
-    "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+    "fingerprint_capture_test.go": "7d2e828aac1c5a53d2b2b8a0b629fac39656fb57118e5720a5cfedbe89c8ee3a",
     "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
-    "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
+    "fingerprint_quic_test.go": "004e2e849d32478c8da5447e4fc7a6cad916eac647c00cb1135fc5ea76252df1",
     "fingerprint_test.go": "5508af8a1ad8034ea2c61706503847cd7d1a27aaa344f14d6517220f53e62207",
     "gecko.lock.json": "f88ac666d42396979e74c6439fc0496f75ac0c50036a75ce9c02d656b17f5fd9"
   },

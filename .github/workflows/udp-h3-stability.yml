@@ -3,9 +3,9 @@ name: UDP and H3 stability
 on:
   push:
     branches: [main]
-    paths: ['internal/**', 'foxtunnel*.go', 'go.*', 'integration/external/**', '.github/workflows/udp-h3-stability.yml']
+    paths: ['internal/**', 'vetroff*.go', 'go.*', 'integration/external/**', '.github/workflows/udp-h3-stability.yml']
   pull_request:
-    paths: ['internal/**', 'foxtunnel*.go', 'go.*', 'integration/external/**', '.github/workflows/udp-h3-stability.yml']
+    paths: ['internal/**', 'vetroff*.go', 'go.*', 'integration/external/**', '.github/workflows/udp-h3-stability.yml']
   workflow_dispatch:
 
 permissions:

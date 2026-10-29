@@ -1,4 +1,4 @@
-// This is a DIFFERENT module. It cannot import FoxTunnel/internal packages.
+// This is a DIFFERENT module. It cannot import Vetroff/internal packages.
 package consumer_test
 
 import (
@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	ft "github.com/SawaMEN/FoxTunnel"
+	ft "github.com/SawaMEN/VetroffProxy"
 )
 
 func TestIndependentProject(t *testing.T) {
@@ -73,7 +73,7 @@ func TestPublicAccessController(t *testing.T) {
 	if err != nil || server == nil {
 		t.Fatal("public access API", err)
 	}
-	if _, err := ft.NewServer(ft.ServerConfig{Access: controller, Credentials: ft.Credentials{Username: "legacy", Password: "secret"}}); err == nil {
+	if _, err := ft.NewServer(ft.ServerConfig{Access: controller, Credentials: ft.Credentials{Username: "builtin", Password: "secret"}}); err == nil {
 		t.Fatal("mixed authorization accepted")
 	}
 	policy.Users[0].Disabled = true

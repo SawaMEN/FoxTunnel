@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 // Handler-level matrix: ProtoMajor=3 exercises routing decisions, not a
@@ -29,7 +29,7 @@ func TestStage5UnauthorizedRouteMatrix(t *testing.T) {
 		{"udp-stream", http.MethodPost, udpStreamPath},
 	}
 	for _, managed := range []bool{false, true} {
-		authMode := "legacy"
+		authMode := "builtin"
 		if managed {
 			authMode = "managed"
 		}
@@ -47,7 +47,7 @@ func TestStage5UnauthorizedRouteMatrix(t *testing.T) {
 								called++
 								for key := range r.Header {
 									if strings.EqualFold(key, "Proxy-Authorization") ||
-										strings.HasPrefix(strings.ToLower(key), "x-foxtunnel-") {
+										strings.HasPrefix(strings.ToLower(key), "x-vetroff-") {
 										t.Errorf("private field leaked into public cover: %q", key)
 									}
 								}
@@ -74,7 +74,7 @@ func TestStage5UnauthorizedRouteMatrix(t *testing.T) {
 								original = stage2Basic("alice", "invalid-password")
 								r.Header["Proxy-Authorization"] = []string{original, original}
 							}
-							r.Header.Set("X-FoxTunnel-Padding", "initial-v1")
+							r.Header.Set("X-Vetroff-Padding", "initial-v1")
 							r.Header.Set(targetHeader, "target.example:443")
 							result := httptest.NewRecorder()
 							s.ServeHTTP(result, r)
@@ -99,7 +99,7 @@ func TestStage5AuthenticatedLimitsAndPaddingAreNotCover(t *testing.T) {
 	for _, managed := range []bool{false, true} {
 		for _, proto := range []int{2, 3} {
 			for _, transport := range []string{"connect", "post"} {
-				t.Run(transport+"/"+string(rune('0'+proto))+"/"+map[bool]string{false: "legacy", true: "managed"}[managed], func(t *testing.T) {
+				t.Run(transport+"/"+string(rune('0'+proto))+"/"+map[bool]string{false: "builtin", true: "managed"}[managed], func(t *testing.T) {
 					called := 0
 					s := &Server{Username: "alice", Password: "secret", MaxTunnels: 1}
 					if managed {

@@ -5,7 +5,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/SawaMEN/FoxTunnel/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
 	"log"
 	"os"
 	"strings"

@@ -2,8 +2,8 @@
  * NOT an authenticated HTTP/3 transport: all certificate authentication is
  * rejected, and no request or proxy credential API is provided.
  * Handles are single-thread-owned; never call concurrently or after free. */
-#ifndef FOXTUNNEL_NEQO_H
-#define FOXTUNNEL_NEQO_H
+#ifndef VETROFF_NEQO_H
+#define VETROFF_NEQO_H
 
 #include <stddef.h>
 #include <stdint.h>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fresh isolated Firefox/NaiveProxy/FoxTunnel loopback connection observations.
+"""Fresh isolated Firefox/NaiveProxy/Vetroff loopback connection observations.
 
 Pinned executable archives; fresh browser DB; no user profile, pcap, key log or
 request headers retained. The endpoint never forwards to an external target.
@@ -115,7 +115,7 @@ def capture(endpoint, firefox, naive, cert, key, work, subject, protocol, env, c
     out, ready = work / f'{subject}-{protocol}.json', work / f'{subject}-{protocol}-ready.json'
     args = [str(endpoint), '--protocol', protocol, '--cert', str(cert), '--key', str(key),
             '--ready', str(ready), '--out', str(out)]
-    if subject == 'foxtunnel':
+    if subject == 'vetroff':
         args += ['--sample', 'nss' if protocol == 'h2' else 'neqo']
     with (work / f'{subject}-{protocol}-endpoint.log').open('wb') as log:
         server = subprocess.Popen(args, env=env, stdout=log, stderr=log)
@@ -164,7 +164,7 @@ def main():
         raise ValueError('output must be a new directory')
     lock = json.loads((ROOT / 'scripts/wire-capture.lock.json').read_text())
     mozilla = json.loads(mozilla_runtime.LOCK.read_text())
-    with tempfile.TemporaryDirectory(prefix='foxtunnel-wire-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='vetroff-wire-') as tmp:
         work = Path(tmp)
         env = dict(os.environ, MOZ_HEADLESS='1', MOZ_DISABLE_CONTENT_SANDBOX='1')
         archive = work / 'firefox.tar.xz'
@@ -213,7 +213,7 @@ def main():
         (work / 'empty-roots').mkdir()
         observations = []
         payloads = {}
-        for subject in ('firefox', 'naive', 'foxtunnel'):
+        for subject in ('firefox', 'naive', 'vetroff'):
             for protocol in ('h2', 'h3'):
                 raw = capture(args.endpoint.resolve(), firefox, naive, cert, key, work, subject, protocol, env, ca=ca)
                 name = f'{subject}-{protocol}.json'
@@ -224,7 +224,7 @@ def main():
         if args.behavior_endpoint is not None:
             import compare_browser_behavior
             behavior_profiles = {}
-            for subject in ('firefox', 'foxtunnel'):
+            for subject in ('firefox', 'vetroff'):
                 for protocol in ('h2', 'h3'):
                     raw = compare_browser_behavior.capture_behavior(args.behavior_endpoint.resolve(), firefox,
                         cert, key, ca, work, subject, protocol, env)
@@ -235,8 +235,8 @@ def main():
                         sha256=hashlib.sha256(raw).hexdigest()))
             comparison = compare_browser_behavior.compare(behavior_profiles,
                     {(subject, protocol): json.loads(payloads[f'{subject}-{protocol}.json'])
-                     for subject in ('firefox', 'foxtunnel') for protocol in ('h2', 'h3')})
-            subject = 'foxtunnel-firefox-profile'
+                     for subject in ('firefox', 'vetroff') for protocol in ('h2', 'h3')})
+            subject = 'vetroff-firefox-profile'
             raw = compare_browser_behavior.capture_behavior(args.behavior_endpoint.resolve(), firefox,
                 cert, key, ca, work, subject, 'h2', env)
             name = f'{subject}-h2-behavior.json'
@@ -262,7 +262,7 @@ def main():
                         lock_sha256={name: mozilla_runtime.digest(ROOT/'scripts'/name) for name in
                                      ('wire-capture.lock.json', 'mozilla-runtime.lock.json', 'neqo.lock.json')},
                         behavior_endpoint_sha256=mozilla_runtime.digest(args.behavior_endpoint) if args.behavior_endpoint else None,
-                        scope='Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for FoxTunnel. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained.')
+                        scope='Cold verified loopback connection startup, TLS1.3/H2 or QUICv1/H3. Native GET for Firefox, CONNECT for Naive, CONNECT/POST for Vetroff. Initial transport metadata only; no page/tunnel workload equivalence. Effective selected QUIC parameters include defaults; raw presence/order and CIDs excluded. No production credentials/profiles/keys retained.')
         args.out.mkdir(mode=0o700)
         for name, raw in payloads.items():
             write_exclusive(args.out / name, raw.decode(), 0o600)

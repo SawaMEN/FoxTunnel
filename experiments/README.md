@@ -9,7 +9,7 @@ integration bundles.
 |---|---|
 | [nss-clienthello](nss-clienthello/README.md) | Capture a native NSS ClientHello |
 | [neqo-ffi](neqo-ffi/README.md) | Standalone Rust/C UDP and certificate-rejection probe |
-| [wire-capture](wire-capture/README.md) | Controlled Firefox/NaiveProxy/FoxTunnel observations |
+| [wire-capture](wire-capture/README.md) | Controlled Firefox/NaiveProxy/Vetroff observations |
 | `../cmd/ft-fingerprint/`, `../cmd/ft-webprofile/` | TLS/H2 measurement tools |
 
 The runtime Neqo bridge lives separately in `../rust/neqo-bridge/`.

@@ -1,4 +1,4 @@
-package foxtunnel_test
+package vetroff_test
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	ft "github.com/SawaMEN/FoxTunnel"
+	ft "github.com/SawaMEN/VetroffProxy"
 )
 
 func endpoint(t *testing.T, mode string, padding bool, limit int, backend ...string) (*ft.Client, string) {

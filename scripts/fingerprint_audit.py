@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evidence-only Firefox / FoxTunnel / NaiveProxy TLS/H2 and QUIC/H3 audit.
+"""Evidence-only Firefox / Vetroff / NaiveProxy TLS/H2 and QUIC/H3 audit.
 
 Missing measurements never count as matches. There is no similarity score.
 Reports are exclusive-created owner-only files without source paths/secrets.
@@ -44,9 +44,9 @@ def ja3_expected(hello: dict) -> str:
             raise ValueError("invalid captured JA3 vector")
         return value
 
-    legacy = hello.get("legacy_version")
-    if type(legacy) is not int or not 0 <= legacy <= 65535:
-        raise ValueError("invalid TLS legacy version")
+    builtin = hello.get("legacy_version")
+    if type(builtin) is not int or not 0 <= builtin <= 65535:
+        raise ValueError("invalid TLS builtin version")
     cipher = uints("cipher_suites", required=True)
     extensions = uints("extensions", required=True)
     groups = uints("supported_groups")
@@ -61,7 +61,7 @@ def ja3_expected(hello: dict) -> str:
         return "-".join(str(v) for v in values
                         if not filter_grease or not grease(v))
 
-    return ",".join((str(legacy), vector(cipher, True),
+    return ",".join((str(builtin), vector(cipher, True),
                      vector(extensions, True), vector(groups, True),
                      vector(points, False)))
 
@@ -195,7 +195,7 @@ def compare(a_tls: dict | None, b_tls: dict | None,
 
 def report(args) -> dict:
     tls, quic, digests = {}, {}, {}
-    for name in ("firefox", "foxtunnel", "naive"):
+    for name in ("firefox", "vetroff", "naive"):
         path = getattr(args, name)
         qpath = getattr(args, name + "_quic")
         tls[name], quic[name] = None, None
@@ -206,7 +206,7 @@ def report(args) -> dict:
             quic[name], digests[name]["quic_h3"] = read_profile(qpath, "h3_quic")
     comparisons = {
         name: compare(tls["firefox"], tls[name], quic["firefox"], quic[name])
-        for name in ("foxtunnel", "naive")
+        for name in ("vetroff", "naive")
     }
     return {
         "schema": 1, "kind": "fox-stage10-fingerprint-audit",
@@ -215,13 +215,13 @@ def report(args) -> dict:
             name: {"tls_h2_observed": tls[name] is not None,
                    "quic_h3_observed": quic[name] is not None,
                    "sha256_of_capture": digests[name]}
-            for name in ("firefox", "foxtunnel", "naive")
+            for name in ("firefox", "vetroff", "naive")
         },
         "comparisons_to_firefox": comparisons,
         "scenario_equivalence_verified": False,
         "all_three_and_both_protocols_measured": all(
             tls[name] is not None and quic[name] is not None
-            for name in ("firefox", "foxtunnel", "naive")
+            for name in ("firefox", "vetroff", "naive")
         ),
         "limitations": [
             "Source captures may differ in version, workload, time, route and server.",
@@ -238,9 +238,9 @@ def report(args) -> dict:
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--firefox", required=True, type=Path)
-    p.add_argument("--foxtunnel", required=True, type=Path)
+    p.add_argument("--vetroff", required=True, type=Path)
     p.add_argument("--naive", type=Path, help="optional actually captured NaiveProxy TLS/H2 observation")
-    for name in ("firefox", "foxtunnel", "naive"):
+    for name in ("firefox", "vetroff", "naive"):
         p.add_argument("--" + name + "-quic", type=Path,
                        help="optional independent endpoint-decoded QUIC/H3 observation")
     p.add_argument("--out", required=True, type=Path)

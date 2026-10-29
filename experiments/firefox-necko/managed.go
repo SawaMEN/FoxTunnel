@@ -37,7 +37,7 @@ func NewManaged(bundle string, config Config) (*Managed, error) {
 }
 
 // newManagedRuntime is internal. Production callers must verify the bundle;
-// native research tests may explicitly supply FOXTUNNEL_XPCSHELL as Run does.
+// native research tests may explicitly supply VETROFF_XPCSHELL as Run does.
 func newManagedRuntime(runtimePath string, config Config) (*Managed, error) {
 	var err error
 	var token [16]byte
@@ -201,7 +201,7 @@ func (m *Managed) DialContext(ctx context.Context, network, address string) (net
 	if greeting != [2]byte{5, 2} {
 		return nil, errors.New("Necko local handshake failed")
 	}
-	auth := append([]byte{1, 9}, []byte("foxtunnel")...)
+	auth := append([]byte{1, 7}, []byte("vetroff")...)
 	auth = append(auth, byte(len(m.token)))
 	auth = append(auth, []byte(m.token)...)
 	if err = write(auth); err == nil {

@@ -8,7 +8,7 @@ loopback-сценариях число Go allocations/exchange снизилос�
 
 - База: `191871b51a00627ce79b28d6c103168da77ab84f`.
 - Проверенный код: `0a692304cbc79b9d5286ae9b667085bf5573a6c8`.
-- [CI с измерением](https://github.com/SawaMEN/FoxTunnel/actions/runs/39728855358),
+- [CI с измерением](https://github.com/SawaMEN/VetroffProxy/actions/runs/39728855358),
   artifact `update-h3-profile` (ID `12404606126`).
 - Go 1.26.10, Neqo 0.33.0, NSS 3.130; lock — `scripts/neqo.lock.json`.
 - Native архив общий для двух бинарников; версии и hashes записаны в JSON.
@@ -68,10 +68,10 @@ C/Rust не сохраняет адреса out-полей. Размер доп�
 
 ## Проверки и ограничения
 
-[Go CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39728855302),
-[NSS CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39728855269),
-[build audit](https://github.com/SawaMEN/FoxTunnel/actions/runs/39728855284) и
-[Neqo CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39728855358) прошли.
+[Go CI](https://github.com/SawaMEN/VetroffProxy/actions/runs/39728855302),
+[NSS CI](https://github.com/SawaMEN/VetroffProxy/actions/runs/39728855269),
+[build audit](https://github.com/SawaMEN/VetroffProxy/actions/runs/39728855284) и
+[Neqo CI](https://github.com/SawaMEN/VetroffProxy/actions/runs/39728855358) прошли.
 Neqo CI включает vet, полные root/external race-тесты с `nss,neqo`,
 interop/trust/UDP/cancellation/duplex/reset/backpressure и повторные lifecycle
 тесты. `GOEXPERIMENT=cgocheck2` вместе с race detector повторяет

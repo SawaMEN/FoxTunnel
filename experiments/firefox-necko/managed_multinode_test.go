@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 func TestGeckoManagedUDPMultiNode(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("new verified native streaming-upload bundle required")
 	}
@@ -40,7 +40,7 @@ func testGeckoManagedUDPMultiNode(t *testing.T, bundle, mode, ending string) {
 	makeEndpoint := func(index int) Config {
 		server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: true}
 		return nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/.well-known/foxtunnel-udp-stream-v2" {
+			if r.URL.Path == "/.well-known/vetroff-udp-stream-v2" {
 				expected := 2
 				if mode == "h3-connect" {
 					expected = 3

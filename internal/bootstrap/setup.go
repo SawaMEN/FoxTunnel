@@ -15,14 +15,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
-	"github.com/SawaMEN/FoxTunnel/internal/egress"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
-	"github.com/SawaMEN/FoxTunnel/internal/safejson"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/egress"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/safejson"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 type ServerConfig struct {
@@ -117,7 +117,7 @@ func Generate(o Options) error {
 	if o.ProtocolPolicy.Validate() != nil || o.ProtocolPolicy == contract.ProtocolStrict && o.JoinLinkFile != "" {
 		return ErrSetup
 	}
-	if o.ProtocolPolicy == contract.ProtocolLegacy {
+	if o.ProtocolPolicy == contract.ProtocolDirect {
 		o.ProtocolPolicy = "" // Preserve the old default JSON/profile format.
 	}
 	if o.JoinLinkFile != "" && (o.XHTTPPath != "" || o.XHTTPHost != "") {
@@ -254,7 +254,7 @@ func Generate(o Options) error {
 		config.H3Listen = listen
 	}
 	if o.JoinLinkFile == "" && xhttp.IsMode(linkConfig.Transport) && linkConfig.XHTTPPath == "" {
-		// The route is independent of the access secret. Joined/legacy profiles
+		// The route is independent of the access secret. Joined/builtin profiles
 		// retain their existing route rather than silently generating a new one.
 		var route [16]byte
 		if _, err := rand.Read(route[:]); err != nil {

@@ -49,7 +49,7 @@ func TestAdaptiveBondHTTP2MultiIngressIntegrity(t *testing.T) {
 	}
 	defer s.Close()
 
-	payload := bytes.Repeat([]byte("FoxTunnel-adaptive-bond-v1!"), 1<<15)
+	payload := bytes.Repeat([]byte("Vetroff-adaptive-bond-v1!"), 1<<15)
 	done := make(chan error, 1)
 	go func() {
 		_, err := s.Write(payload)

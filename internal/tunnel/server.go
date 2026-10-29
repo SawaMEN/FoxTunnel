@@ -5,13 +5,13 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/egress"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/egress"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 	"io"
 	"net"
 	"net/http"
@@ -26,11 +26,11 @@ import (
 // Server terminates authenticated native H2 CONNECT, H2/H3 POST and WSS.
 // It has no Firefox fingerprint parity. Padding is an opt-in experiment.
 type Server struct {
-	// RequireProtocolNegotiation rejects authenticated legacy TCP/UDP requests.
+	// RequireProtocolNegotiation rejects authenticated builtin TCP/UDP requests.
 	// Outer WSS/XHTTP handshakes and cluster/bond extensions are separate.
 	RequireProtocolNegotiation bool
 
-	// Access is mutually exclusive with legacy credentials; set before serving.
+	// Access is mutually exclusive with builtin credentials; set before serving.
 	Access *access.Controller
 
 	XHTTPSettings xhttp.Settings // Configure before serving; common cluster route.

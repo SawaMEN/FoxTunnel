@@ -10,7 +10,7 @@ import (
 	"math"
 	"net/http"
 
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
 	"sort"
 	"sync"
 	"time"

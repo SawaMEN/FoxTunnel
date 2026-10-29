@@ -24,7 +24,7 @@ func TestCoordinatorIdentityRejectsOtherExitBeforeDial(t *testing.T) {
 	binary.BigEndian.PutUint64(data[1:9], uint64(time.Now().Unix()))
 	data = append(data, []byte("example.org:443")...)
 	r := httptest.NewRequest("POST", "https://main.example"+Path, bytes.NewReader(data))
-	r.Header.Set("X-FoxTunnel-Bond-Hub", strings.Repeat("ab", 32))
+	r.Header.Set("X-Vetroff-Bond-Hub", strings.Repeat("ab", 32))
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
 	if w.Code != 409 || dialed.Load() {
@@ -47,7 +47,7 @@ func TestHubBoundsAndTombstones(t *testing.T) {
 		copy(body[headerSize:], data)
 		req := httptest.NewRequest(http.MethodPost, "https://example.org"+Path, bytes.NewReader(body))
 		if op != opOpen {
-			req.Header.Set("X-FoxTunnel-Bond-Hub", hex.EncodeToString(h.identity[:]))
+			req.Header.Set("X-Vetroff-Bond-Hub", hex.EncodeToString(h.identity[:]))
 		}
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, req)
@@ -123,7 +123,7 @@ func TestDifferentHubRejectedBeforeDial(t *testing.T) {
 	binary.BigEndian.PutUint64(body[1:9], uint64(time.Now().Unix()))
 	copy(body[headerSize:], "example.org:443")
 	r := httptest.NewRequest(http.MethodPost, "https://example.org"+Path, bytes.NewReader(body))
-	r.Header.Set("X-FoxTunnel-Bond-Hub", "wrong-instance")
+	r.Header.Set("X-Vetroff-Bond-Hub", "wrong-instance")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
 	if w.Code != 409 {

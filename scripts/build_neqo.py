@@ -240,7 +240,7 @@ def main():
     export_licenses(out, env)
     # Go's build cache does not watch external static archives. A local C
     # header makes the Rust archive part of the cgo package's source hash.
-    archive_hash=mozilla_runtime.digest(CRATE / 'target/release/libfoxtunnel_neqo.a')
+    archive_hash=mozilla_runtime.digest(CRATE / 'target/release/libvetroff_neqo.a')
     (ROOT / 'internal/neqo/build_stamp.h').write_text('#define FT_NEQO_ARCHIVE_SHA256 "' + archive_hash + '"\n')
     selected = {key: env[key] for key in ['PKG_CONFIG_PATH', 'LD_LIBRARY_PATH', 'CGO_LDFLAGS', 'CARGO_HOME']}
     (out / 'env.sh').write_text(''.join('export ' + key + '=' + shlex.quote(value) + '\n' for key, value in selected.items()))

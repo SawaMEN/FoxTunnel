@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
 )
 
 type clusterTransport func(*http.Request) (*http.Response, error)

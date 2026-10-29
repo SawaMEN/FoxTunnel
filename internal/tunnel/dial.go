@@ -3,7 +3,7 @@ package tunnel
 import (
 	"context"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
 	"net"
 	"net/netip"
 	"time"

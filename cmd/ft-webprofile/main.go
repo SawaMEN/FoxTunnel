@@ -1,4 +1,4 @@
-// ft-webprofile is a loopback-only Firefox/FoxTunnel measurement fixture.
+// ft-webprofile is a loopback-only Firefox/Vetroff measurement fixture.
 package main
 
 import (
@@ -17,10 +17,10 @@ import (
 	"time"
 
 	"crypto/x509"
-	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/webprofile"
+	"github.com/SawaMEN/VetroffProxy/internal/h2profile"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/webprofile"
 	"golang.org/x/net/proxy"
 )
 
@@ -38,7 +38,7 @@ func run() error {
 	out := fs.String("out", "", "JSON output, otherwise stdout")
 	source := fs.String("source", "", "browser/backend version, OS and scenario label")
 	duration := fs.Duration("duration", 3*time.Second, "post-handshake observation, at most 30s")
-	sample := fs.String("sample", "", "optional real FoxTunnel client: go or nss")
+	sample := fs.String("sample", "", "optional real Vetroff client: go or nss")
 	clientProfile := fs.String("tls-client-profile", "default", "NSS preferences: default or firefox-158 (NSS 3.130)")
 	scenario := fs.String("scenario", "tunnel", "sample workload: tunnel or page (direct H2 GET)")
 	comparisonOut := fs.String("comparison-out", "", "write field-by-field comparison JSON (requires --compare)")

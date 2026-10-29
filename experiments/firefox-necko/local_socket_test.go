@@ -16,9 +16,9 @@ import (
 // Isolate the local SOCKS socket's FIN contract from native HTTP stream EOF.
 // The independent TCP peer must see FIN, then still be able to upload to Gecko.
 func TestGeckoLocalHalfClose(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	script := filepath.Join(t.TempDir(), "local-half-close.js")
 	if err := os.WriteFile(script, []byte(localHalfCloseScript), 0600); err != nil {

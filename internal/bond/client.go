@@ -18,9 +18,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
-	"github.com/SawaMEN/FoxTunnel/internal/multihop"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/multihop"
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 )
@@ -51,14 +51,14 @@ type Client struct {
 	// AutoTune controls the bounded 4/8-slot pipeline from measured data.
 	// Requires Adaptive; disabled by default.
 	AutoTune bool
-	// TrafficMode is legacy (default), auto, latency or throughput.
-	// A non-legacy mode requires Adaptive and affects data operations only.
+	// TrafficMode is builtin (default), auto, latency or throughput.
+	// A non-builtin mode requires Adaptive and affects data operations only.
 	TrafficMode string
 	// Weights are relative configured capacities (1..100), not traffic quotas.
 	// ExpectedHub optionally pins the exit before the first destination dial.
 	Weights     []int
 	ExpectedHub string
-	// RouteMode is empty (legacy bond) or smart (direct hub vs one trusted relay).
+	// RouteMode is empty (builtin bond) or smart (direct hub vs one trusted relay).
 	RouteMode string
 	// DirectOrigin is the verified coordinator origin in smart mode.
 	DirectOrigin string
@@ -76,7 +76,7 @@ func (c *Client) reserve(tried []bool) (int, func(time.Duration, bool)) {
 	return index, func(elapsed time.Duration, failed bool) { complete(elapsed, failed, 0) }
 }
 
-// reserveFor schedules the specific Bond data operation; the legacy wrapper
+// reserveFor schedules the specific Bond data operation; the builtin wrapper
 // above preserves control-plane callers and existing tests.
 func (c *Client) reserveFor(tried []bool, op byte, payloadBytes int) (int, func(time.Duration, bool, int)) {
 	return c.reserveForClass(tried, op, payloadBytes, trafficUnspecified)
@@ -102,7 +102,7 @@ func (c *Client) reserveForClass(tried []bool, op byte, payloadBytes int, priori
 	start := int(c.next % uint64(len(tried)))
 	c.next++
 	if c.Adaptive && (op == opWrite || op == opRead) {
-		if priority == trafficLatency && c.TrafficMode != "" && c.TrafficMode != "legacy" {
+		if priority == trafficLatency && c.TrafficMode != "" && c.TrafficMode != "builtin" {
 			selected = c.pickLatency(tried, now)
 		} else {
 			selected = c.pickAdaptive(tried, op, payloadBytes, now)
@@ -283,9 +283,9 @@ func (c *Client) requestViaClass(ctx context.Context, transport http.RoundTrippe
 		req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
 		req.Header.Set("Content-Type", "application/octet-stream")
 		if hub != "" {
-			req.Header.Set("X-FoxTunnel-Bond-Hub", hub)
+			req.Header.Set("X-Vetroff-Bond-Hub", hub)
 		}
-		req.Header.Set("X-FoxTunnel-Bond-Wait", min(timeout/3, time.Second).String())
+		req.Header.Set("X-Vetroff-Bond-Wait", min(timeout/3, time.Second).String())
 		started := time.Now()
 		var resp *http.Response
 		if lanes, ok := transport.(*laneTransport); ok {
@@ -412,7 +412,7 @@ type Stream struct {
 
 func (c *Client) Open(ctx context.Context, target string) (*Stream, error) {
 	switch c.TrafficMode {
-	case "", "legacy":
+	case "", "builtin":
 	case "auto", "latency", "throughput":
 		if !c.Adaptive {
 			return nil, errors.New("bond traffic mode requires adaptive scheduling")

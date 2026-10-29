@@ -3,7 +3,7 @@
 
 WAN readiness requires 3 separate UTC days and >=5 good samples per day,
 matching controlled scenarios, no integrity errors, success>=99%, and no
-material regression vs legacy. Lab results validate the harness only.
+material regression vs builtin. Lab results validate the harness only.
 """
 from __future__ import annotations
 
@@ -148,7 +148,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--baseline", type=Path, action="append", required=True)
     p.add_argument("--candidate", type=Path, action="append", required=True)
-    p.add_argument("--baseline-label", default="legacy")
+    p.add_argument("--baseline-label", default="builtin")
     p.add_argument("--candidate-label", default="adaptive")
     p.add_argument("--allow-lab", action="store_true",
                    help="for unit-test/laboratory checks ONLY; never release-ready")

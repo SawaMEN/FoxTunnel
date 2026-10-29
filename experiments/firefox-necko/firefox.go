@@ -22,12 +22,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
-	"github.com/SawaMEN/FoxTunnel/internal/safejson"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/h2profile"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
+	"github.com/SawaMEN/VetroffProxy/internal/safejson"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 )
 
 //go:embed client.js
@@ -269,7 +269,7 @@ func runWithClient(ctx context.Context, runtimePath string, config Config, stdou
 			return errors.New("invalid Firefox CA certificate")
 		}
 	}
-	private, err := os.MkdirTemp("", "foxtunnel-firefox-")
+	private, err := os.MkdirTemp("", "vetroff-firefox-")
 	if err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func runWithClient(ctx context.Context, runtimePath string, config Config, stdou
 		return err
 	}
 	cmd := exec.CommandContext(ctx, runtimePath, "-g", filepath.Dir(runtimePath), "-a", filepath.Dir(runtimePath), "-f", script)
-	cmd.Env = append(os.Environ(), "FOXTUNNEL_FIREFOX_ROOT="+private,
+	cmd.Env = append(os.Environ(), "VETROFF_FIREVETROFF_ROOT="+private,
 		"LD_LIBRARY_PATH="+filepath.Dir(runtimePath),
 		// Gecko can initialize HTTP while loading its own chrome resources,
 		// before client.js sets prefs. Match Mozilla's standalone xpcshell

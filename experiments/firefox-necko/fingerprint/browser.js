@@ -14,8 +14,8 @@ const results = [];
   const flags = Ci.nsIProxyInfo.ALWAYS_TUNNEL_VIA_PROXY | Ci.nsIProxyInfo.TRANSPARENT_PROXY_RESOLVES_HOST;
   const proxy = cfg.transport === "h3-connect"
     ? pps.newMASQUEProxyInfo(cfg.proxy_host, cfg.proxy_port,
-        "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "foxtunnel-reference", flags, 0, null)
-    : pps.newProxyInfo("https", cfg.proxy_host, cfg.proxy_port, cfg.authorization, "foxtunnel-reference", flags, 0, null);
+        "/.well-known/masque/udp/{target_host}/{target_port}/", cfg.authorization, "vetroff-reference", flags, 0, null)
+    : pps.newProxyInfo("https", cfg.proxy_host, cfg.proxy_port, cfg.authorization, "vetroff-reference", flags, 0, null);
   const filter = {applyFilter(uri, previous, callback) {callback.onProxyFilterResult(proxy);},
     QueryInterface: ChromeUtils.generateQI(["nsIProtocolProxyFilter"])};
   pps.registerFilter(filter, 0);

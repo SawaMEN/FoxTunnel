@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 	"io"
 	"net"
 	"os"
@@ -163,7 +163,7 @@ func (r *networkRelay) rotate() error {
 	return nil
 }
 func TestGeckoNetworkRecovery(t *testing.T) {
-	if os.Getenv("FOXTUNNEL_XPCSHELL") == "" {
+	if os.Getenv("VETROFF_XPCSHELL") == "" {
 		t.Skip("native runtime required")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {

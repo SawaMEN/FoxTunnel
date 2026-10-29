@@ -18,7 +18,7 @@ SIGINT/SIGTERM останавливают процесс; переносимый
 ## Архивы и проверка
 
 Linux AMD64 и ARM64: `vetroff_VERSION_linux_ARCH.tar.gz`, CLI с NSS и полный Necko.
-Храните весь каталог `foxtunnel-necko/`, включая `lib/`, `runtime/` и метаданные.
+Храните весь каталог `vetroff-necko/`, включая `lib/`, `runtime/` и метаданные.
 Базовая среда — Ubuntu 24.04. Доступные файлы — в [Releases](https://github.com/SawaMEN/VetroffProxy/releases).
 
 Сверьте доверенную SHA-256 и provenance до запуска. Для подписанного workflow-архива:

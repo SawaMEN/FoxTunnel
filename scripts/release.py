@@ -97,7 +97,7 @@ def build(a):
         raise ValueError('refusing to replace an existing versioned artifact')
     variant = ''
     fields = {'Version': a.version, 'Commit': commit, 'BuildDate': date, 'Variant': variant, 'Dirty': str(dirty).lower()}
-    ldflags = '-s -w -buildid= ' + ' '.join('-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.' + k + '=' + v for k, v in fields.items())
+    ldflags = '-s -w -buildid= ' + ' '.join('-X github.com/SawaMEN/VetroffProxy/internal/buildinfo.' + k + '=' + v for k, v in fields.items())
     with tempfile.TemporaryDirectory(prefix='vetroff-release-') as tmp:
         runtime_files, runtime_info = {}, {}
         if a.backend == 'nss':
@@ -113,7 +113,7 @@ def build(a):
             env = mozilla_runtime.verify_loaded(executable, Path(tmp), runtime_info['libraries'], env)
         if native:
             info = json.loads(command([str(executable), 'version', '--json'], env))
-            for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], sdk_schema=1, process_schema=1, go_version=go_version, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', default_tls_backend='nss' if a.backend == 'nss' else 'go').items():
+            for k, v in dict(version=a.version, commit=commit, goos=a.os, goarch=env['GOARCH'], sdk_schema=1, process_schema=1, go_version=go_version, build_flavor=a.backend, dirty=dirty, protocol_draft='vetroff-draft-0', default_tls_backend='nss' if a.backend == 'nss' else 'go').items():
                 if info[k] != v:
                     raise ValueError('native metadata mismatch: ' + k)
         if a.backend == 'nss' and info.get('nss_version') != runtime_info['nss_version']:
@@ -121,7 +121,7 @@ def build(a):
         files = licenses(a.go, env)
         files.update(runtime_files)
         files.update(integration_files())
-        p = dict(schema=1, version=a.version, commit=commit, build_date=date, target=target, goos=a.os, goarch=env['GOARCH'], variant=variant, build_flavor=a.backend, dirty=dirty, protocol_draft='foxtunnel-draft-0', experimental=True, native_smoke_tested=native)
+        p = dict(schema=1, version=a.version, commit=commit, build_date=date, target=target, goos=a.os, goarch=env['GOARCH'], variant=variant, build_flavor=a.backend, dirty=dirty, protocol_draft='vetroff-draft-0', experimental=True, native_smoke_tested=native)
         p['product'] = 'protocol-core'
         p['integration_schema'] = 1
         p['sdk_schema'] = 1
@@ -156,7 +156,7 @@ def index(a):
         packages.append(read_json(path))
     commit = packages[0].get('commit') if packages else None
     release_set = dict(schema=1, version=a.version, commit=commit,
-                       protocol_draft='foxtunnel-draft-0', artifacts=packages)
+                       protocol_draft='vetroff-draft-0', artifacts=packages)
     validate_manifest(release_set, a.version, commit, expected)
     for p in packages:
         inspect_archive(base / p['filename'], p)

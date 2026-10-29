@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // udpIngressIndex consistently assigns an entire destination flow to a

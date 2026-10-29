@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // udpStream is exactly one authenticated, full-duplex HTTP/2 or HTTP/3

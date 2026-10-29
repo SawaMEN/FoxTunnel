@@ -19,7 +19,7 @@ import bond_stage4_field as udp
 import compare_transports as tcp
 
 ROOT = Path(__file__).resolve().parent
-FOX_TRANSPORTS = ("h2-connect", "h2-post", "h3-post", "wss", "xhttp-stream-one",
+VETROFF_TRANSPORTS = ("h2-connect", "h2-post", "h3-post", "wss", "xhttp-stream-one",
                   "xhttp-stream-up", "xhttp-packet-up")
 VLESS_TRANSPORTS = ("reality-vision", "xhttp", "other")
 ERROR_TYPES = {"ConnectionError", "TimeoutError", "OSError", "ValueError",
@@ -31,7 +31,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--fox-socks", required=True, help="VetroffProxy local SOCKS5 HOST:PORT")
     p.add_argument("--vless-socks", required=True, help="Xray local SOCKS5 HOST:PORT")
     p.add_argument("--target", required=True, help="the SAME controlled UDP echo target for both")
-    p.add_argument("--fox-transport", choices=FOX_TRANSPORTS)
+    p.add_argument("--fox-transport", choices=VETROFF_TRANSPORTS)
     p.add_argument("--vless-transport", choices=VLESS_TRANSPORTS)
     p.add_argument("--environment", choices=("lab", "wan"), required=True)
     p.add_argument("--confirm-independent-vds", action="store_true",

@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
 	"io"
 	"net"
 	"net/http"
@@ -13,18 +13,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 	"github.com/coder/websocket"
 	"golang.org/x/net/http2"
 )
 
-const postPath = "/.well-known/foxtunnel-stream-v1"
-const wsPath = "/.well-known/foxtunnel-ws-v1"
-const targetHeader = "X-FoxTunnel-Target"
+const postPath = "/.well-known/vetroff-stream-v1"
+const wsPath = "/.well-known/vetroff-ws-v1"
+const targetHeader = "X-Vetroff-Target"
 
 var errWSHandshake = i18n.Error("native WebSocket handshake rejected")
 

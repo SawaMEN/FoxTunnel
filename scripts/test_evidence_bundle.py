@@ -43,18 +43,18 @@ class EvidenceContracts(unittest.TestCase):
         self.assertTrue(result['all_six_captures_present'])
         self.assertTrue(all(v == 'observed' for v in result['coverage'].values()))
         self.assertEqual(result['independent_security_audit'], 'not_provided')
-        comparison = result['comparisons_to_firefox']['foxtunnel']
+        comparison = result['comparisons_to_firefox']['vetroff']
         self.assertGreater(comparison['tls']['counts']['different'], 0)
         self.assertFalse(comparison['metadata_equal'])
 
     def test_missing_captures_remain_unmeasured(self):
         self.registry['comparison']['naive_tls_h2'] = None
-        self.registry['comparison']['foxtunnel_quic_h3'] = None
+        self.registry['comparison']['vetroff_quic_h3'] = None
         self.save()
         result = evidence.validate(self.root)
         self.assertFalse(result['all_six_captures_present'])
         self.assertEqual(result['coverage']['naive_tls_h2'], 'not_measured')
-        self.assertEqual(result['coverage']['foxtunnel_quic_h3'], 'not_measured')
+        self.assertEqual(result['coverage']['vetroff_quic_h3'], 'not_measured')
 
     def test_modified_capture_requires_reviewed_hash(self):
         path = self.root / self.registry['observations'][0]['path']
@@ -84,12 +84,12 @@ class EvidenceContracts(unittest.TestCase):
         name = 'docs/measurements/unit-quic.json'
         (self.root / name).write_bytes(data)
         self.registry['observations'].append(dict(id='unit-quic', path=name, sha256=hashlib.sha256(data).hexdigest(),
-                                                 kind='quic_h3', subject='foxtunnel', scope='controlled-loopback', source_commit=None))
-        self.registry['comparison']['foxtunnel_quic_h3'] = 'unit-quic'
+                                                 kind='quic_h3', subject='vetroff', scope='controlled-loopback', source_commit=None))
+        self.registry['comparison']['vetroff_quic_h3'] = 'unit-quic'
         self.registry['comparison']['naive_quic_h3'] = None
         self.save()
         result = evidence.validate(self.root)
-        self.assertEqual(result['coverage']['foxtunnel_quic_h3'], 'observed')
+        self.assertEqual(result['coverage']['vetroff_quic_h3'], 'observed')
         self.assertFalse(result['all_six_captures_present'])
         raw['quic']['transport_parameters'].append({'id': 1, 'value': 5000})
         data = json.dumps(raw).encode()
@@ -148,7 +148,7 @@ class EvidenceContracts(unittest.TestCase):
             evidence.validate(self.root)
 
     def test_missing_quic_cannot_be_replaced_with_h2(self):
-        self.registry['comparison']['foxtunnel_quic_h3'] = 'foxtunnel-nss-h2'
+        self.registry['comparison']['vetroff_quic_h3'] = 'vetroff-nss-h2'
         self.save()
         with self.assertRaisesRegex(ValueError, 'identity mismatch'):
             evidence.validate(self.root)

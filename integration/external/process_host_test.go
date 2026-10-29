@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/processhost"
+	"github.com/SawaMEN/VetroffProxy/processhost"
 )
 
 func TestSDKProcessHost(t *testing.T) {
-	binary := os.Getenv("FOX_SDK_PROCESS_BINARY")
+	binary := os.Getenv("VETROFF_SDK_PROCESS_BINARY")
 	if binary == "" {
 		t.Skip("requires a built process runtime; CI evidence rejects this skip")
 	}
@@ -26,7 +26,7 @@ func TestSDKProcessHost(t *testing.T) {
 }
 
 func TestReleaseProcessHost(t *testing.T) {
-	binary := os.Getenv("FOX_RELEASE_PROCESS_BINARY")
+	binary := os.Getenv("VETROFF_RELEASE_PROCESS_BINARY")
 	if binary == "" {
 		t.Skip("requires an installed complete NSS release bundle")
 	}

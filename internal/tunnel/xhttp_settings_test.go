@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 func TestXHTTPSettings(t *testing.T) { testXHTTPSettings(t, "go") }

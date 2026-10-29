@@ -122,8 +122,8 @@ def recover_clients(names, trial, budget):
 
 def run(args):
     binary, cert, key = (p.resolve(strict=True) for p in (args.binary, args.cert, args.key))
-    env = {k: v for k, v in os.environ.items() if not k.startswith('FOXTUNNEL_')}
-    env.update(FOXTUNNEL_USER='operations-lab', FOXTUNNEL_PASSWORD=secrets.token_hex(32))
+    env = {k: v for k, v in os.environ.items() if not k.startswith('VETROFF_')}
+    env.update(VETROFF_USER='operations-lab', VETROFF_PASSWORD=secrets.token_hex(32))
     ports = {name: free_port() for name in ('server', 'h2', 'h3')}
     if len(set(ports.values())) != 3:
         raise RuntimeError('ephemeral port collision; retry')

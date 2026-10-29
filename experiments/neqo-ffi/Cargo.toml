@@ -1,5 +1,5 @@
 [package]
-name = "foxtunnel-neqo-ffi"
+name = "vetroff-neqo-ffi"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.90.0"
@@ -7,7 +7,7 @@ publish = false
 license = "MIT"
 
 [lib]
-name = "foxtunnel_neqo"
+name = "vetroff_neqo"
 crate-type = ["cdylib", "rlib"]
 
 # Pinned Neqo source revision; the generated Cargo.lock pins transitive crates.

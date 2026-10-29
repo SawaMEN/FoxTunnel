@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
 )
 
 type fakeNeqo struct {

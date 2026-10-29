@@ -30,7 +30,7 @@ jobs:
         run: go test -race ./internal/xhttp ./internal/bond -count=5 -timeout=240s
       - name: Real carrier resets half-close ACK loss and ingress failure
         env:
-          FOXTUNNEL_STABLE_MATRIX: full
+          VETROFF_STABLE_MATRIX: full
         run: go test -race -json ./internal/tunnel -run '^TestStableNativeBondModes$|^TestStage3TCPResetIsNotEOF$|^TestXHTTP' -count=1 -timeout=240s > stable-native.jsonl
       - name: Regression of duplex ingress exploration
         run: go test ./internal/bond -run '^TestAdaptiveBondHTTP2MultiIngressIntegrity$|^TestStableAdaptiveExploration' -count=100 -timeout=180s
@@ -53,7 +53,7 @@ jobs:
           go-version: '1.26.10'
       - name: Three-minute held XHTTP and smart adaptive Bond sessions
         env:
-          FOXTUNNEL_STABLE_SECONDS: '180'
+          VETROFF_STABLE_SECONDS: '180'
         run: go test -race -json ./internal/xhttp ./internal/bond -run '^TestStable.*Sustained$' -parallel=8 -count=1 -timeout=5m > stable-sustained.jsonl
       - uses: actions/upload-artifact@v4
         if: always()
@@ -76,7 +76,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y libnss3-dev libnspr4-dev pkg-config
       - name: Full native NSS carrier and Bond combinations
         env:
-          FOXTUNNEL_STABLE_MATRIX: full
+          VETROFF_STABLE_MATRIX: full
         run: go test -race -tags nss -json ./internal/tunnel -run '^TestStableNativeBondModesNSS$|^TestStage3TCPResetIsNotEOFWithNSS$|^TestXHTTPSettingsNSS$|^TestVerifiedSNIAndPinNSS$' -count=1 -timeout=240s > stable-nss.jsonl
       - uses: actions/upload-artifact@v4
         if: always()

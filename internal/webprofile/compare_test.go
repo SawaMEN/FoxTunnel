@@ -20,7 +20,7 @@ func TestComparisonSeparatesMozillaGaps(t *testing.T) {
 		return p
 	}
 	ref := load("firefox-158-linux.json")
-	candidate := load("foxtunnel-nss-firefox158-receive.json")
+	candidate := load("vetroff-nss-firefox158-receive.json")
 	result := Compare(ref, candidate)
 	if result.InitialMetadataEqual {
 		t.Fatal("known TLS/H2 gaps hidden")

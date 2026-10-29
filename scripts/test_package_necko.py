@@ -81,8 +81,6 @@ class PackageTests(unittest.TestCase):
                 self.assertIn('vetroff', manifest['files'])
                 self.assertEqual(bundle.digest(out / 'vetroff'), manifest['files']['vetroff'])
                 self.assertTrue((out / 'vetroff').stat().st_mode & 0o111)
-                self.assertNotIn('foxtunnel', manifest['files'])
-                self.assertFalse((out / 'foxtunnel').exists())
 
     def test_recursive_output_paths_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:

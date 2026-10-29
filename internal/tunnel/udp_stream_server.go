@@ -11,14 +11,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // UDP stream v2 is intentionally separate from the one-datagram POST v1.
 // An association multiplexes destinations over one authenticated request;
 // each destination has one connected UDP socket until idle, evicted or closed.
 const (
-	udpStreamPath     = "/.well-known/foxtunnel-udp-stream-v2"
+	udpStreamPath     = "/.well-known/vetroff-udp-stream-v2"
 	udpStreamLifetime = 10 * time.Minute
 	udpFlowIdle       = 30 * time.Second
 	udpStreamFlows    = 16

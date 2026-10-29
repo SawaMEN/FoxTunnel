@@ -53,7 +53,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cc -std=c11 -Wall -Wextra -Werror test_bridge.c -L target/debug -lfoxtunnel_neqo -Wl,-rpath,"$PWD/target/debug" -o target/debug/neqo-abi-test
+          cc -std=c11 -Wall -Wextra -Werror test_bridge.c -L target/debug -lvetroff_neqo -Wl,-rpath,"$PWD/target/debug" -o target/debug/neqo-abi-test
           ./target/debug/neqo-abi-test
       - name: Build UDP driver and loopback Go HTTP3 fixture
         shell: bash
@@ -61,7 +61,7 @@ jobs:
           set -euo pipefail
           cc -std=c11 -Wall -Wextra -Werror -O2 experiments/neqo-ffi/probe_udp.c \
             -I experiments/neqo-ffi \
-            -L experiments/neqo-ffi/target/debug -lfoxtunnel_neqo \
+            -L experiments/neqo-ffi/target/debug -lvetroff_neqo \
             -Wl,-rpath,"$PWD/experiments/neqo-ffi/target/debug" \
             -o /tmp/neqo-udp-probe
           go build -o /tmp/neqo-h3-fixture ./experiments/neqo-ffi/cmd/h3-fixture

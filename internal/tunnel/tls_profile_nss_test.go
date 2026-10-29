@@ -3,7 +3,7 @@
 package tunnel
 
 import (
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
 	"testing"
 )
 

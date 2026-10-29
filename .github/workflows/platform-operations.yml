@@ -64,7 +64,7 @@ jobs:
           commit=$(git rev-parse HEAD)
           for revision in 1 2; do
             go build -buildvcs=false -o "vetroff-lab-$revision.exe" \
-              -ldflags "-X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Version=v0.0.0-stage7.$revision -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Commit=$commit -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Dirty=false" \
+              -ldflags "-X github.com/SawaMEN/VetroffProxy/internal/buildinfo.Version=v0.0.0-stage7.$revision -X github.com/SawaMEN/VetroffProxy/internal/buildinfo.Commit=$commit -X github.com/SawaMEN/VetroffProxy/internal/buildinfo.Dirty=false" \
               ./cmd/vetroff
           done
           ./vetroff-lab-2.exe version --json
@@ -72,14 +72,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export FOXTUNNEL_INSTALL_LAB_A="vetroff-lab-1.exe"
-          export FOXTUNNEL_INSTALL_LAB_B="vetroff-lab-2.exe"
-          export FOXTUNNEL_INSTALL_LAB_COMMIT
-          FOXTUNNEL_INSTALL_LAB_COMMIT=$(git rev-parse HEAD)
+          export VETROFF_INSTALL_LAB_A="vetroff-lab-1.exe"
+          export VETROFF_INSTALL_LAB_B="vetroff-lab-2.exe"
+          export VETROFF_INSTALL_LAB_COMMIT
+          VETROFF_INSTALL_LAB_COMMIT=$(git rev-parse HEAD)
           python -m unittest discover -s scripts -p test_deploy_cli.py -v
       - name: Native H2/H3 process soak, resource budgets and restart recovery
         env:
-          FOXTUNNEL_SOAK_SECONDS: ${{ inputs.soak_seconds || (contains(github.event.pull_request.labels.*.name, 'operations-long') && '1800') || '180' }}
+          VETROFF_SOAK_SECONDS: ${{ inputs.soak_seconds || (contains(github.event.pull_request.labels.*.name, 'operations-long') && '1800') || '180' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -87,7 +87,7 @@ jobs:
           mkdir operations-report
           python scripts/operations_soak.py --binary vetroff-lab-2.exe \
             --cert operations-cert/cert.pem --key operations-cert/key.pem \
-            --seconds "$FOXTUNNEL_SOAK_SECONDS" --parallel 3 --recovery-seconds 30 \
+            --seconds "$VETROFF_SOAK_SECONDS" --parallel 3 --recovery-seconds 30 \
             --out operations-report/report.json
       - name: Retain aggregate operations evidence only
         if: always()

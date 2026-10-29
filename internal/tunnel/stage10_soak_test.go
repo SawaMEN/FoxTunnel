@@ -16,7 +16,7 @@ import (
 // Ordinary unit runs use two seconds; that is not long-soak evidence.
 func TestStage10LongLivedH2H3(t *testing.T) {
 	seconds := 2
-	if value := os.Getenv("FOXTUNNEL_LONG_STREAM_SECONDS"); value != "" {
+	if value := os.Getenv("VETROFF_LONG_STREAM_SECONDS"); value != "" {
 		var err error
 		seconds, err = strconv.Atoi(value)
 		if err != nil || seconds < 1 || seconds > 1800 {

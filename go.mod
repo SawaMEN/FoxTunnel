@@ -1,4 +1,4 @@
-module github.com/SawaMEN/FoxTunnel
+module github.com/SawaMEN/VetroffProxy
 
 go 1.26.10
 

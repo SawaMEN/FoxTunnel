@@ -7,6 +7,8 @@ TCP и UDP через HTTPS. Клиент поднимает SOCKS5, серве�
 
 ## Быстрый старт
 
+Инструкции относятся к main: новый namespace несовместим с опубликованным v0.1.0.
+
 Нужны сервер, домен и TLS-сертификат. Скачайте полный Linux-архив из
 [Releases](https://github.com/SawaMEN/VetroffProxy/releases) или соберите CLI:
 

@@ -8,11 +8,11 @@ import (
 	"os"
 	"time"
 
-	ft "github.com/SawaMEN/FoxTunnel"
+	ft "github.com/SawaMEN/VetroffProxy"
 )
 
 func main() {
-	client, err := ft.NewClient(ft.ClientConfig{ServerURL: os.Getenv("FOXTUNNEL_SERVER"), Credentials: ft.Credentials{Username: os.Getenv("FOXTUNNEL_USER"), Password: os.Getenv("FOXTUNNEL_PASSWORD")}, CACertFile: os.Getenv("FOXTUNNEL_CA"), Transport: "xhttp-packet-up"})
+	client, err := ft.NewClient(ft.ClientConfig{ServerURL: os.Getenv("VETROFF_SERVER"), Credentials: ft.Credentials{Username: os.Getenv("VETROFF_USER"), Password: os.Getenv("VETROFF_PASSWORD")}, CACertFile: os.Getenv("VETROFF_CA"), Transport: "xhttp-packet-up"})
 	if err != nil {
 		log.Fatal(err)
 	}

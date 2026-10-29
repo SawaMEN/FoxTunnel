@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 	"io"
 	"net"
 	"os"
@@ -53,9 +53,9 @@ func startOperationalHelper(t *testing.T, parent context.Context, cfg Config) *o
 
 func startOperationalHelperWithClient(t *testing.T, parent context.Context, cfg Config, script []byte) *operationalHelper {
 	t.Helper()
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	ctx, cancel := context.WithCancel(parent)
 	h := &operationalHelper{cancel: cancel, finished: make(chan struct{})}
@@ -151,7 +151,7 @@ func operationalRound(h *operationalHelper, target string, seed int) error {
 	return nil
 }
 func TestGeckoIdleAndDrainLimits(t *testing.T) {
-	if os.Getenv("FOXTUNNEL_XPCSHELL") == "" {
+	if os.Getenv("VETROFF_XPCSHELL") == "" {
 		t.Skip("native runtime required")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
@@ -244,15 +244,15 @@ func sampleProcess(pid int, start time.Time) (processSample, error) {
 // Opt-in sustained native gate. Resource figures are observations on the test
 // host; thresholds detect unbounded growth, not Internet throughput claims.
 func TestGeckoSoak(t *testing.T) {
-	duration := os.Getenv("FOXTUNNEL_SOAK_SECONDS")
+	duration := os.Getenv("VETROFF_SOAK_SECONDS")
 	if duration == "" {
-		t.Skip("set FOXTUNNEL_SOAK_SECONDS for sustained native load")
+		t.Skip("set VETROFF_SOAK_SECONDS for sustained native load")
 	}
 	seconds, e := strconv.Atoi(duration)
 	if e != nil || seconds < 10 || seconds > 3600 {
 		t.Fatal("soak seconds must be 10..3600")
 	}
-	variant := os.Getenv("FOXTUNNEL_SOAK_VARIANT")
+	variant := os.Getenv("VETROFF_SOAK_VARIANT")
 	if variant == "" {
 		variant = "current"
 	}
@@ -326,7 +326,7 @@ func TestGeckoSoak(t *testing.T) {
 				t.Fatal(e)
 			}
 			samples = append(samples, last)
-			if out := os.Getenv("FOXTUNNEL_OPERATIONS_OUT"); out != "" {
+			if out := os.Getenv("VETROFF_OPERATIONS_OUT"); out != "" {
 				os.MkdirAll(out, 0700)
 				data, _ := json.MarshalIndent(map[string]any{"schema": 1, "transport": mode, "duration_seconds": seconds, "rounds": rounds, "payload_bytes_per_round": 128 << 10, "parallel_streams": 8, "warmup_tunnels": 16, "samples": samples, "counters": final, "cpu_ticks_per_second": ticksPerSecond, "cpu_seconds": float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond, "average_cpu_percent": 100000 * float64(last.CPUTicks-first.CPUTicks) / ticksPerSecond / float64(last.AtMS-first.AtMS), "variant": variant, "client_js_sha256": digestBytes(script), "source_lock_sha256": digestBytes(sourceLock), "ci_run_id": os.Getenv("GITHUB_RUN_ID"), "runner_name": os.Getenv("RUNNER_NAME"), "scope": "loopback churn plus binary half-close; not a production throughput benchmark"}, "", "  ")
 				if e := os.WriteFile(filepath.Join(out, mode+"-soak.json"), append(data, '\n'), 0600); e != nil {

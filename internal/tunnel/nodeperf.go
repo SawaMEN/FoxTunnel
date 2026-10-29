@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
+	"github.com/SawaMEN/VetroffProxy/internal/nodeperf"
 )
 
 // meteredBody does not buffer data. It preserves Read and Close semantics and

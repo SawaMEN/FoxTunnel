@@ -14,7 +14,7 @@
   },
   "runtime_source_lock_verified": true,
   "local_native_checks": {
-    "command": "FOXTUNNEL_XPCSHELL=$RUNTIME/xpcshell FOXTUNNEL_FINGERPRINT_OUT=$OUT go test -race ./experiments/firefox-necko -run '^Test(Gecko|Fingerprint)' -v -count=3 -timeout=240s",
+    "command": "VETROFF_XPCSHELL=$RUNTIME/xpcshell VETROFF_FINGERPRINT_OUT=$OUT go test -race ./experiments/firefox-necko -run '^Test(Gecko|Fingerprint)' -v -count=3 -timeout=240s",
     "result": "passed",
     "duration_seconds": 100.688,
     "top_level_passes": {
@@ -38,7 +38,7 @@
     "Python source builder and comparison tests: 13 passed",
     "RFC 9001 Initial AEAD vector and HPACK continuation/dynamic-table tests passed"
   ],
-  "comparison_script_sha256": "ee0c1750d66d79c4ab8bdfb32f469b083299f22425eb0115fe84941894795adf",
+  "comparison_script_sha256": "8a15d34852362b600ba9f43be85f83c2025a842d3b2f2ddf0a09c926b4fda7db",
   "ci_verification": {
     "workflow_run": 39946382981,
     "job_id": 120389962230,

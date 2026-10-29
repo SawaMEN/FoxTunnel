@@ -4,9 +4,9 @@ Status: **4/4 steps complete, 4/6 stages overall**.
 Qualified implementation: `24d74d081f209ba931b70500d8ba407c54fe83cf`.
 
 Both native amd64 and ARM64 source jobs passed in
-[source run 40264186586](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186586).
+[source run 40264186586](https://github.com/SawaMEN/VetroffProxy/actions/runs/40264186586).
 Both runtime qualification jobs passed in
-[run 40264186589](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186589).
+[run 40264186589](https://github.com/SawaMEN/VetroffProxy/actions/runs/40264186589).
 They verified exact source locks, target architecture and binary hashes before
 executing packaged launchers, main CLI and SDK. General CI also passed.
 

@@ -13,7 +13,7 @@ profiles with a test CA, IPv4 loopback and verified localhost SNI.
 Firefox's content sandbox and third-party-root H3 fallback are adjusted only
 inside this isolated fixture.
 
-Firefox GET, NaiveProxy CONNECT and FoxTunnel CONNECT/POST differ. The comparable
+Firefox GET, NaiveProxy CONNECT and Vetroff CONNECT/POST differ. The comparable
 scope is cold connection startup, not full page or tunnel behavior.
 H3 values are decoded effective parameters, including defaults/sentinels;
 original presence/order and unknown parameters are not preserved.

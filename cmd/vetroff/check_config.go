@@ -11,15 +11,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/bootstrap"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/transportengine"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 )
 
 var errCheckConfig = errors.New("configuration check failed")
@@ -54,7 +54,7 @@ func checkConfigCommand(args []string, out io.Writer) error {
 	server := fs.String("config", "", "private server JSON file")
 	link := fs.String("link-file", "", "private client profile file (stdin is not supported)")
 	ca := fs.String("ca-cert", "", "additional client trusted certificate PEM")
-	engine := fs.String("engine", "legacy", "client engine: legacy or mozilla")
+	engine := fs.String("engine", "builtin", "client engine: builtin or mozilla")
 	jsonOutput := fs.Bool("json", false, "print a schema-1 JSON report")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {

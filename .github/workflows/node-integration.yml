@@ -10,7 +10,7 @@ on:
       - 'internal/tunnel/**'
       - 'internal/profile/**'
       - 'cmd/vetroff/**'
-      - 'foxtunnel*.go'
+      - 'vetroff*.go'
       - 'go.mod'
       - 'go.sum'
   push:
@@ -23,7 +23,7 @@ on:
       - 'internal/tunnel/**'
       - 'internal/profile/**'
       - 'cmd/vetroff/**'
-      - 'foxtunnel*.go'
+      - 'vetroff*.go'
       - 'go.mod'
       - 'go.sum'
 

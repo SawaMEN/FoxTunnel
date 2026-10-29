@@ -4,8 +4,8 @@ Status: **qualified — 4 of 4 checks complete**.
 Overall plan: **2 of 6 stages complete**. Linux amd64 only.
 
 Qualified helper/SDK code: `b5d86cc2928a0e82066a6b401a9fd83449cca5c9`.
-Compiled source: [40199106358](https://github.com/SawaMEN/FoxTunnel/actions/runs/40199106358).
-Successful final runtime verification: [40224778052](https://github.com/SawaMEN/FoxTunnel/actions/runs/40224778052).
+Compiled source: [40199106358](https://github.com/SawaMEN/VetroffProxy/actions/runs/40199106358).
+Successful final runtime verification: [40224778052](https://github.com/SawaMEN/VetroffProxy/actions/runs/40224778052).
 The machine-readable [acceptance record](acceptance.json) binds measurements to
 both the embedded helper and the exact source lock.
 

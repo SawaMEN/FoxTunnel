@@ -41,12 +41,12 @@ class BrowserBehaviorEvidence(unittest.TestCase):
             self.assertTrue(row['same_presence']);self.assertFalse(row['same_order'])
 
     def test_resumption_difference_is_observed_without_equivalence_score(self):
-        profiles={(s,p):self.report(p,resumed=s=='firefox') for s in ('firefox','foxtunnel') for p in ('h2','h3')}
-        cold={(s,'h3'):{} for s in ('firefox','foxtunnel')}
+        profiles={(s,p):self.report(p,resumed=s=='firefox') for s in ('firefox','vetroff') for p in ('h2','h3')}
+        cold={(s,'h3'):{} for s in ('firefox','vetroff')}
         result=behavior.compare(profiles,cold)
         for case in result['cases']:
             self.assertEqual(case['firefox']['resumed_connections'],2)
-            self.assertEqual(case['foxtunnel']['resumed_connections'],0)
+            self.assertEqual(case['vetroff']['resumed_connections'],0)
         self.assertEqual(result['h3_raw_order'],'not_measured')
         self.assertNotIn('score',result)
         del profiles[('firefox','h3')]

@@ -20,7 +20,7 @@ import (
 // These gates intentionally require the rebuilt verified bundle. Merely
 // rejecting a missing forceHTTP3 API on an old runtime is not H3 validation.
 func TestGeckoManagedHTTP3(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("verified H3-only native API bundle required")
 	}
@@ -91,7 +91,7 @@ func TestGeckoManagedHTTP3(t *testing.T) {
 }
 
 func TestGeckoManagedHTTP3NoTCPFallback(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("verified H3-only native API bundle required")
 	}
@@ -153,7 +153,7 @@ func TestGeckoManagedHTTP3NoTCPFallback(t *testing.T) {
 }
 
 func TestGeckoManagedHTTP3Trust(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("verified H3-only native API bundle required")
 	}

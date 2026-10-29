@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // A deliberately bounded one-request/one-response UDP relay. It does not
 // claim connectionless streaming semantics, NAT mapping, or UDP-over-QUIC.
-const udpPath = "/.well-known/foxtunnel-udp-v1"
+const udpPath = "/.well-known/vetroff-udp-v1"
 
 func (s *Server) serveUDP(w http.ResponseWriter, r *http.Request) {
 	if !s.acquireTunnel() {

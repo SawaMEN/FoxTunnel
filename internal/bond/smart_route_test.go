@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/multihop"
+	"github.com/SawaMEN/VetroffProxy/internal/multihop"
 )
 
 func TestSmartRoutePrefersMeasuredEndToEndRelay(t *testing.T) {

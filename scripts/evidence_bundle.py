@@ -17,11 +17,11 @@ from private_files import write_exclusive
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = 'docs/evidence/registry.json'
 MAX_BYTES = 4 * 1024 * 1024
-SUBJECTS = ('firefox', 'foxtunnel', 'naive')
+SUBJECTS = ('firefox', 'vetroff', 'naive')
 PROTOCOLS = ('tls_h2', 'quic_h3')
 LOCKS = ('go.mod', 'go.sum', 'integration/external/go.mod', 'integration/external/go.sum',
          'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock',
-         'scripts/neqo.lock.json', 'scripts/mozilla-runtime.lock.json', 'scripts/wire-capture.lock.json', 'scripts/release-compat.lock.json')
+         'scripts/neqo.lock.json', 'scripts/mozilla-runtime.lock.json', 'scripts/wire-capture.lock.json')
 
 
 def require(condition, reason):
@@ -146,7 +146,7 @@ def validate(root, manifest=MANIFEST):
         require(isinstance(raw, dict) and type(raw.get('schema')) is int and raw['schema'] == 1, 'invalid observation schema')
         require(entry['source_commit'] is None or commit(entry['source_commit']), 'invalid source commit')
         if entry['kind'] == 'native_operations':
-            require(entry['scope'] == 'native-loopback' and entry['subject'] == 'foxtunnel', 'invalid operations scope')
+            require(entry['scope'] == 'native-loopback' and entry['subject'] == 'vetroff', 'invalid operations scope')
             summary = operations(raw, entry['source_commit'])
         else:
             require(entry['scope'] in ('historical-loopback', 'controlled-loopback'), 'unsupported capture scope')
@@ -168,7 +168,7 @@ def validate(root, manifest=MANIFEST):
             require(key == entry['subject'] + '_' + entry['kind'], 'comparison identity mismatch')
             captures[key], coverage[key] = raw, 'observed'
     comparisons = {subject: fingerprints.compare(captures['firefox_tls_h2'], captures[subject + '_tls_h2'],
-                  captures['firefox_quic_h3'], captures[subject + '_quic_h3']) for subject in ('foxtunnel', 'naive')}
+                  captures['firefox_quic_h3'], captures[subject + '_quic_h3']) for subject in ('vetroff', 'naive')}
     return {'registry_sha256': sha(data), 'observations': summaries, 'coverage': coverage,
             'comparisons_to_firefox': comparisons, 'all_six_captures_present': all(v == 'observed' for v in coverage.values()),
             'integrity_checks_passed': True, 'independent_security_audit': 'not_provided',
@@ -184,7 +184,7 @@ def bundle(root, manifest=MANIFEST):
     require(commit(checked_out), 'invalid checkout identity')
     dirty = bool(subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain', '--untracked-files=normal'], text=True).strip())
     inventory = [{'path': name, 'sha256': sha(snapshot(root, name))} for name in LOCKS]
-    return {'schema': 1, 'kind': 'foxtunnel-audit-handoff', 'checkout_commit': checked_out, 'worktree_dirty': dirty,
+    return {'schema': 1, 'kind': 'vetroff-audit-handoff', 'checkout_commit': checked_out, 'worktree_dirty': dirty,
             'evidence': evidence, 'dependency_inputs': inventory,
             'dependency_scope': 'Reviewed lockfile digests only; not a resolved SBOM or vulnerability-scan result.',
             'review_guide': 'docs/DEVELOPMENT.md'}

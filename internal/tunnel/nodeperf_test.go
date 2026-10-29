@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
+	"github.com/SawaMEN/VetroffProxy/internal/nodeperf"
 )
 
 type nodePerfRoundTripper func(*http.Request) (*http.Response, error)

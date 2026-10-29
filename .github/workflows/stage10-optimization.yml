@@ -57,7 +57,7 @@ jobs:
           done
       - name: Ten-minute same-destination streams with bounded cancellation
         env:
-          FOXTUNNEL_LONG_STREAM_SECONDS: '600'
+          VETROFF_LONG_STREAM_SECONDS: '600'
         run: go test -race -json ./internal/tunnel -run '^TestStage10LongLivedH2H3$' -count=1 -timeout=12m > stage10-report/long-stream.jsonl
       - name: Ten-minute native process resource budgets and restart recovery
         shell: bash

@@ -68,7 +68,7 @@ func TestStage5CoverAndTunnelRealQUIC(t *testing.T) {
 		} else {
 			req.Header.Set("Proxy-Authorization", stage2Basic("alice", "incorrect"))
 		}
-		req.Header.Set("X-FoxTunnel-Padding", "initial-v1")
+		req.Header.Set("X-Vetroff-Padding", "initial-v1")
 		req.Header.Set(targetHeader, "private.example:443")
 		resp, err := public.Do(req)
 		if err != nil {

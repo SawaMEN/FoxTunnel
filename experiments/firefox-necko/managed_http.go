@@ -70,7 +70,7 @@ func (m *Managed) privateHTTPConn(ctx context.Context) (net.Conn, error) {
 	if answer != [2]byte{5, 2} {
 		return nil, errors.New("native HTTP IPC requires authentication")
 	}
-	auth := append([]byte{1, 9}, []byte("foxtunnel")...)
+	auth := append([]byte{1, 7}, []byte("vetroff")...)
 	auth = append(auth, byte(len(m.token)))
 	auth = append(auth, []byte(m.token)...)
 	if err = writeHTTPBytes(c, auth); err != nil {

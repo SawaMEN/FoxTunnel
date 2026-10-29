@@ -7,8 +7,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
 	"io"
 	"net"
 	"net/http"
@@ -20,14 +20,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
-	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/h2profile"
+	"github.com/SawaMEN/VetroffProxy/internal/nodeperf"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 // Client exposes local SOCKS5 TCP over the selected native HTTPS transport.
@@ -35,7 +35,7 @@ import (
 type Client struct {
 	managed *managedTransport
 	// RequireProtocolNegotiation rejects peers without draft/capability confirmation.
-	// Set before concurrent use. False preserves explicitly chosen legacy behavior.
+	// Set before concurrent use. False preserves explicitly chosen builtin behavior.
 	RequireProtocolNegotiation bool
 
 	ServerURL  *url.URL
@@ -46,7 +46,7 @@ type Client struct {
 	// Configure before Serve; zero uses 256.
 	MaxConnections int
 	// Optional credentials for the LOCAL SOCKS5 listener, never forwarded
-	// to remote FoxTunnel nodes. Configure before Serve.
+	// to remote Vetroff nodes. Configure before Serve.
 	SOCKSUsername string
 	SOCKSPassword string
 	// AllowPublicSOCKS permits a non-loopback listener only when local
@@ -88,9 +88,9 @@ type Client struct {
 	BondAdaptive bool
 	// BondAutoTune opts into bounded 4/8-slot tuning from measured throughput.
 	BondAutoTune bool
-	// BondTraffic is legacy (default), auto, latency, or throughput.
+	// BondTraffic is builtin (default), auto, latency, or throughput.
 	BondTraffic string
-	// BondRoute: legacy (default) or smart (discovered direct hub + relay).
+	// BondRoute: builtin (default) or smart (discovered direct hub + relay).
 	BondRoute        string
 	bondClient       *bond.Client
 	bondDiscovery    *bondDiscovery

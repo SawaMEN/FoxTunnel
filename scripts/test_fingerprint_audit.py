@@ -38,8 +38,8 @@ class FingerprintAuditContract(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         args = argparse.Namespace(
             firefox=root / "docs/measurements/2026-10-18/firefox-158-linux.json",
-            foxtunnel=root / "docs/measurements/2026-10-19/nss-firefox158-page.json",
-            naive=None, firefox_quic=None, foxtunnel_quic=None, naive_quic=None)
+            vetroff=root / "docs/measurements/2026-10-19/nss-firefox158-page.json",
+            naive=None, firefox_quic=None, vetroff_quic=None, naive_quic=None)
         result = audit.report(args)
         self.assertFalse(result["subjects"]["naive"]["tls_h2_observed"])
         self.assertFalse(result["all_three_and_both_protocols_measured"])

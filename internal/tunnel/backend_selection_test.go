@@ -3,7 +3,7 @@ package tunnel
 import (
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
 )
 
 func TestAutoBackendFollowsTransportAndBuild(t *testing.T) {

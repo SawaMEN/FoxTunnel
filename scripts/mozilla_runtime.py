@@ -67,7 +67,7 @@ def prepare(arch, destination, archive=None):
     spec = lock['archives'][arch]
     out = Path(destination)
     out.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='foxtunnel-mozilla-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='vetroff-mozilla-') as tmp:
         tmp = Path(tmp)
         if archive:
             archive = Path(archive)

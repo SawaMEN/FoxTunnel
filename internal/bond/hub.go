@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const Path = "/.well-known/foxtunnel-bond-v1"
+const Path = "/.well-known/vetroff-bond-v1"
 const chunkSize = 32 << 10
 const window = 8
 const lifetime = 2 * time.Minute
@@ -226,7 +226,7 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "hub initialization failed", 503)
 		return
 	}
-	expected := r.Header.Get("X-FoxTunnel-Bond-Hub")
+	expected := r.Header.Get("X-Vetroff-Bond-Hub")
 	if expected != "" && expected != hex.EncodeToString(h.identity[:]) {
 		http.Error(w, "different hub", 409)
 		return
@@ -248,7 +248,7 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Hub) serveFrame(w http.ResponseWriter, r *http.Request, body []byte) {
-	expected := r.Header.Get("X-FoxTunnel-Bond-Hub")
+	expected := r.Header.Get("X-Vetroff-Bond-Hub")
 	op, token := body[0], body[1:33]
 	seq := binary.BigEndian.Uint64(body[33:41])
 	ack := binary.BigEndian.Uint64(body[41:49])
@@ -290,7 +290,7 @@ func (h *Hub) serveFrame(w http.ResponseWriter, r *http.Request, body []byte) {
 		return
 	}
 	wait := time.Second
-	if requested, err := time.ParseDuration(r.Header.Get("X-FoxTunnel-Bond-Wait")); err == nil {
+	if requested, err := time.ParseDuration(r.Header.Get("X-Vetroff-Bond-Wait")); err == nil {
 		wait = max(20*time.Millisecond, min(time.Second, requested))
 	}
 	switch op {

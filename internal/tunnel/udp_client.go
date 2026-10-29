@@ -11,8 +11,8 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // handleUDPAssociate is opt-in, single-client UDP ASSOCIATE (RFC 1928).

@@ -17,7 +17,7 @@
 +
 +  // Identity policies are immutable for the helper lifetime. Do not send any
 +  // application early data or resume a session before checking the new policy.
-+  if (infoObject->HasFoxTunnelPolicy()) {
++  if (infoObject->HasVetroffPolicy()) {
 +    if (SSL_OptionSet(fd, SSL_NO_CACHE, true) != SECSuccess ||
 +        SSL_OptionSet(fd, SSL_ENABLE_SESSION_TICKETS, false) != SECSuccess ||
 +        SSL_OptionSet(fd, SSL_ENABLE_0RTT_DATA, false) != SECSuccess) {
@@ -32,7 +32,7 @@
    }
  #endif
 +
-+  if (infoObject->FoxTunnelTLSProfile().EqualsLiteral("firefox-158")) {
++  if (infoObject->VetroffTLSProfile().EqualsLiteral("firefox-158")) {
 +    SSLVersionRange profileRange = {SSL_LIBRARY_VERSION_TLS_1_3, SSL_LIBRARY_VERSION_TLS_1_3};
 +    if (SSL_VersionRangeSet(fd, &profileRange) != SECSuccess) { return NS_ERROR_FAILURE; }
 +    infoObject->SetTLSVersionRange(profileRange);

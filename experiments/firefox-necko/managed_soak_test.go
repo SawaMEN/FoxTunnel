@@ -20,18 +20,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 // The CONNECT operational test measures a different lifetime: its socket handoff
 // has no repeated native HTTP IPC bodies. Exercise those bodies and persistent
 // UDP associations here, keeping one verified helper alive throughout each case.
 func TestGeckoManagedSoak(t *testing.T) {
-	bundle, raw := os.Getenv("FOXTUNNEL_NECKO_BUNDLE"), os.Getenv("FOXTUNNEL_MANAGED_SOAK_SECONDS")
+	bundle, raw := os.Getenv("VETROFF_NECKO_BUNDLE"), os.Getenv("VETROFF_MANAGED_SOAK_SECONDS")
 	if bundle == "" || raw == "" {
-		t.Skip("verified bundle and FOXTUNNEL_MANAGED_SOAK_SECONDS required")
+		t.Skip("verified bundle and VETROFF_MANAGED_SOAK_SECONDS required")
 	}
 	seconds, err := strconv.Atoi(raw)
 	if err != nil || seconds < 10 || seconds > 3600 {
@@ -61,7 +61,7 @@ func TestGeckoManagedSoak(t *testing.T) {
 					http.Error(w, "wrong native carrier protocol", 400)
 					return
 				}
-				if r.Header.Get("X-FoxTunnel-Bond-Lane") != "" {
+				if r.Header.Get("X-Vetroff-Bond-Lane") != "" {
 					laneRequests.Add(1)
 				}
 				server.ServeHTTP(w, r)
@@ -237,7 +237,7 @@ func TestGeckoManagedSoak(t *testing.T) {
 			if err != nil || rate <= 0 {
 				t.Fatal("invalid CPU clock rate")
 			}
-			if out := os.Getenv("FOXTUNNEL_MANAGED_SOAK_OUT"); out != "" {
+			if out := os.Getenv("VETROFF_MANAGED_SOAK_OUT"); out != "" {
 				if err = os.MkdirAll(out, 0700); err != nil {
 					t.Fatal(err)
 				}
@@ -257,7 +257,7 @@ func TestGeckoManagedSoak(t *testing.T) {
 
 func managedSoakPID(t *testing.T, tag string) int {
 	t.Helper()
-	if !strings.HasPrefix(tag, "foxtunnel-firefox-") || strings.ContainsAny(tag, "/\\") {
+	if !strings.HasPrefix(tag, "vetroff-firefox-") || strings.ContainsAny(tag, "/\\") {
 		t.Fatal("invalid native process tag")
 	}
 	entries, err := os.ReadDir("/proc")

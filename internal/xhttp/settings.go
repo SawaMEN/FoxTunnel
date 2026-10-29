@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 )
 
 // Settings are shared by a cluster. Host affects only the outer HTTP carrier,

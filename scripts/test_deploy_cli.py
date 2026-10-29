@@ -153,7 +153,7 @@ class LauncherLifecycle(unittest.TestCase):
         execute.assert_called_once_with('/reviewed/vetroff', ['/reviewed/vetroff', 'version', 'argument with spaces'])
 
 
-@unittest.skipUnless(os.environ.get('FOXTUNNEL_INSTALL_LAB_A') and os.environ.get('FOXTUNNEL_INSTALL_LAB_B'), 'native binaries supplied only by explicit installation lab')
+@unittest.skipUnless(os.environ.get('VETROFF_INSTALL_LAB_A') and os.environ.get('VETROFF_INSTALL_LAB_B'), 'native binaries supplied only by explicit installation lab')
 class NativeInstallationLab(unittest.TestCase):
     def test_install_update_failed_update_rollback_and_recovery(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -162,8 +162,8 @@ class NativeInstallationLab(unittest.TestCase):
             config = manager.config / 'operator-secret.txt'
             config.write_bytes(os.urandom(64))
             config_before = (config.read_bytes(), config.stat().st_mode)
-            binaries = [Path(os.environ[key]).resolve() for key in ('FOXTUNNEL_INSTALL_LAB_A', 'FOXTUNNEL_INSTALL_LAB_B')]
-            commit = os.environ['FOXTUNNEL_INSTALL_LAB_COMMIT']
+            binaries = [Path(os.environ[key]).resolve() for key in ('VETROFF_INSTALL_LAB_A', 'VETROFF_INSTALL_LAB_B')]
+            commit = os.environ['VETROFF_INSTALL_LAB_COMMIT']
             for i, binary in enumerate(binaries, 1):
                 manager.install(binary, deploy.digest(binary), f'v0.0.0-stage7.{i}', commit)
                 active, _ = manager.bundle(manager.state()['active'])

@@ -33,7 +33,7 @@ go build -tags nss,neqo -o vetroff ./cmd/vetroff
 
 ## Структура и контракты
 
-`cmd/vetroff` — CLI; `foxtunnel*.go` и `processhost` — SDK;
+`cmd/vetroff` — CLI; `vetroff*.go` и `processhost` — SDK;
 `internal` — ядро; `experiments` — native runtime и исследовательские стенды.
 Runtime не импортирует исследовательские инструменты; исключение — библиотека Necko.
 [Wire draft](reference/WIRE-DRAFT-0.md), [negotiation](reference/WIRE-NEGOTIATION.md),
@@ -43,8 +43,8 @@ Runtime не импортирует исследовательские инст�
 
 [Обязательный CI](../.github/workflows/stable-xhttp-bond.yml) проверяет Go/NSS,
 carriers/scheduling, сбои и ACK, half-close, TLS policy, backpressure и cleanup.
-Полная матрица: `FOXTUNNEL_STABLE_MATRIX=full`; длительные сессии:
-`FOXTUNNEL_STABLE_SECONDS=180`. Обычные короткие тесты не заменяют её.
+Полная матрица: `VETROFF_STABLE_MATRIX=full`; длительные сессии:
+`VETROFF_STABLE_SECONDS=180`. Обычные короткие тесты не заменяют её.
 Изменение framing требует новой версии endpoint/capability.
 
 ## Выпуски и измерения

@@ -4,14 +4,14 @@ This is the historical TCP integration baseline. The current xfd stage-1
 streaming qualification is recorded in [acceptance.json](../streaming/acceptance.json)
 and [INTEGRATION.md](../../INTEGRATION.md#stage-1-final-native-qualification).
 
-This record covers the Linux amd64 `necko` engine in the main FoxTunnel CLI and
+This record covers the Linux amd64 `necko` engine in the main Vetroff CLI and
 Go SDK, on branch `firefox`. The qualified code is
 `12414b0ae84f0afbfae43db3ae2a6584bcdb2abd`; production implementation entered in
 `043de8363fecdeff613c960d4a5a0b6f0812cbf3`. Later changes tightened the dependency
 allowlist and corrected a negative-test assumption without changing that runtime
 implementation.
 
-[Runtime CI 40021334528](https://github.com/SawaMEN/FoxTunnel/actions/runs/40021334528)
+[Runtime CI 40021334528](https://github.com/SawaMEN/VetroffProxy/actions/runs/40021334528)
 passed all gates; the complete [workflow log](workflow.txt) is retained. It
 checks the pinned native runtime from source build `39952039057`, artifact
 `12501945687`. [Runtime provenance](../stage4/runtime-provenance.json) identifies
@@ -45,7 +45,7 @@ transfers; H3 completed 13,056. Both ended with the baseline 45 descriptors.
 Warmed-to-final RSS was 122,552 → 241,660 KiB for H2 and 131,772 → 244,472 KiB
 for H3, within the unchanged 192 MiB growth bound.
 
-The [verified bundle](https://github.com/SawaMEN/FoxTunnel/actions/runs/40021334528/artifacts/12532075725)
+The [verified bundle](https://github.com/SawaMEN/VetroffProxy/actions/runs/40021334528/artifacts/12532075725)
 contains the main CLI, standalone launcher and native runtime. CI artifact
 retention ends on 2026-11-06; this is a branch build, not a tagged release.
 

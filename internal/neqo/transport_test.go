@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 )

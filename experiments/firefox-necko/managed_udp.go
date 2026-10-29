@@ -8,10 +8,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
-// ExchangeUDP sends a single RFC1928 UDP packet to the pinned FoxTunnel v1
+// ExchangeUDP sends a single RFC1928 UDP packet to the pinned Vetroff v1
 // endpoint using native Mozilla HTTP/2. The local loopback connection is
 // authenticated independently of the remote HTTPS Basic credentials.
 // No Go HTTP client, TLS fallback, destination URL or redirect is involved.
@@ -63,7 +63,7 @@ func (m *Managed) ExchangeUDP(ctx context.Context, wire []byte) ([]byte, error) 
 	if greeting != [2]byte{5, 2} {
 		return nil, errors.New("Necko UDP IPC greeting rejected")
 	}
-	auth := append([]byte{1, 9}, []byte("foxtunnel")...)
+	auth := append([]byte{1, 7}, []byte("vetroff")...)
 	auth = append(auth, byte(len(m.token)))
 	auth = append(auth, []byte(m.token)...)
 	if err = write(auth); err == nil {
@@ -197,7 +197,7 @@ func (m *Managed) OpenUDPStream(ctx context.Context) (io.ReadWriteCloser, error)
 	if greeting != [2]byte{5, 2} {
 		return nil, errors.New("Necko UDP IPC greeting rejected")
 	}
-	auth := append([]byte{1, 9}, []byte("foxtunnel")...)
+	auth := append([]byte{1, 7}, []byte("vetroff")...)
 	auth = append(auth, byte(len(m.token)))
 	auth = append(auth, []byte(m.token)...)
 	if err = write(auth); err == nil {

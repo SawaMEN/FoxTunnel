@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 func sendStreamTestPacket(t *testing.T, c *net.UDPConn, port int, text string) {

@@ -1,0 +1,842 @@
+{
+  "schema": 1,
+  "source_commit": "860f89e0b45fd81e0f38f3d941f26ed5ac6e5333",
+  "scope": "Derived historical fixtures: project names/paths normalized only; not new builds, observations, or release qualification.",
+  "files": [
+    {
+      "path": "docs/measurements/2026-10-18/vetroff-go-firefox158-receive.json",
+      "original_sha256": "cd133ffda40fbf207e6bfb2c3b849fe0f81cd390c27f442ebf5b2724b43201bf",
+      "normalized_sha256": "34fa2b6555ac857b0ac0253556a20793c325f509e3741d77fc512143f0aba670"
+    },
+    {
+      "path": "docs/measurements/2026-10-18/vetroff-go-xhttp.json",
+      "original_sha256": "c70f64fa1b8153f0813e283241623079ce2328adda39781bb615d1c48aaa794d",
+      "normalized_sha256": "8c9a1f14a03ab363683e81e8cc0a9d228cd27d28760ced671c39ad03f01b27d9"
+    },
+    {
+      "path": "docs/measurements/2026-10-18/vetroff-nss-3.130-xhttp.json",
+      "original_sha256": "cc31bcec03d615edae9a613e70d41376cfe9fed87415eeb50fc576eea5651460",
+      "normalized_sha256": "7ee4b770d364906a2608a5573211f18df0a0abe55e8ef1cdbd0c28d4c0ab424c"
+    },
+    {
+      "path": "docs/measurements/2026-10-18/vetroff-nss-3.98-xhttp.json",
+      "original_sha256": "56f8da0ab946e47323d47d910eaece761422a099f8d1ce4035e89a36e9fe34e7",
+      "normalized_sha256": "c63e3ecb4d9422e0224d790f0a632790b4bcd0ff6d863f4fc64b3f306617024e"
+    },
+    {
+      "path": "docs/measurements/2026-10-18/vetroff-nss-firefox158-receive.json",
+      "original_sha256": "a29f67ecdc18d6987737907df3ba085f2ad00e6260785ce971d52e3b206b0746",
+      "normalized_sha256": "0e66dbe4645e65a79cb46716b12eb34b3b1695826b32a29f78474c5e3bdd7ea7"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/data-path/nss-lanes-alloc.txt",
+      "original_sha256": "20e1f7a85215565d9149d580a7b50389037bcfd72276044492b3d6a1aa017444",
+      "normalized_sha256": "dfe137488598151a6aed4506eaaa262d5c9ca7d637998b0eb24491592ead2bb6"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/data-path/nss-rpc-alloc.txt",
+      "original_sha256": "22f397b3c8dfcd1aafce9939f3dcefec52f60878cfb650c8bef1cb57526406ac",
+      "normalized_sha256": "e90ee6186b6c515ae80b55c0915b1fd2b8ee75d75263c4babe98317f3cfb11f6"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/data-path/record-link.txt",
+      "original_sha256": "797d71378aa613abdc0b54bfc581212a9de1c3ca4b2423634af3a08dd9dfe446",
+      "normalized_sha256": "d99895390874815b333f350db7f2e95e5339e5d72e3a70f4c5ce35e58ee6dffe"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/data-path/relay-go-nss.txt",
+      "original_sha256": "4664710e7e2da32ad309893454bf3ce26abe4edadbadb8ae5714e1d045e2df9c",
+      "normalized_sha256": "dcbe25b34e9e5b8be99f1343aa433adfd8cecda43bcc20df3c475788bc8eb2ba"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/firefox158-comparison.json",
+      "original_sha256": "08a9932000e19dd8e3efe54733d182ca5e1c9068ad64b153b4c94c51213d8e0b",
+      "normalized_sha256": "46a1e926ef465b1cd94217d8d29590f133acd1f2b477d75633e1d3f04932ca20"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/neqo/interop.txt",
+      "original_sha256": "d21a45c82e965f35fffd0d60ae5778cd121f2649b9c73599429b3041bf088262",
+      "normalized_sha256": "bd8653f872c4ea39504d46c0fe953acb6aa7a81cefb5d81b6036a33e71eb2754"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/nss-default-page.json",
+      "original_sha256": "c1f5caa7fbec09cbec64890db752147ffd88527b451996ebfc224b8eb8f8728e",
+      "normalized_sha256": "ae40adba03a18f9afabc5020813e899924c56c57168684b9c9453fa4fad03eab"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/nss-firefox158-page.json",
+      "original_sha256": "33e3bc50ae8c214ac72908e481e2f7e72ebc9421f6b1a179ac8f0d8bbc953649",
+      "normalized_sha256": "a334f67899f05e8e299928fc0160794c34996df73a8ca83a0d54e87c3d91d0f6"
+    },
+    {
+      "path": "docs/measurements/2026-10-19/nss-firefox158-xhttp.json",
+      "original_sha256": "3f34d661bd0b1fec12cec058ccdf4f29c78983c3319dc1753658b8a82d59f9c6",
+      "normalized_sha256": "fc0fa95499e126097f4132ee240e2730b4993d40ed6b5ad42207f7cfae46aef2"
+    },
+    {
+      "path": "docs/measurements/2026-10-20/native-operations.json",
+      "original_sha256": "786862ca089dcc06c55d4978301d3a3df93893865e18d9f93e82b4043a3e7fba",
+      "normalized_sha256": "218545b674661b1977313563ba4cc8cc2e96d9984cef504e1fcf1e3d0997fbd1"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/native-backend-metrics.json",
+      "original_sha256": "eae784362acd899663fe2453e441a5e303e0df5e55c1a9a6e13a58550751f52c",
+      "normalized_sha256": "dff809c6a9b6b69229f89836d90a786bb3e1f446a83edb475d1cde8908162230"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/native-backend-provenance.json",
+      "original_sha256": "6c195dd5942b40f6a3b973d0dcf961cb5419418f4dd707a32d4591bb87503d61",
+      "normalized_sha256": "45b12d255a0eeb455a981b8ff233b4e05071edb0000c430234dfaf6a51935e5c"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/optimization/local-paired.json",
+      "original_sha256": "97f68d79742e15d63a2aeac68ca2d3b6410ccd3b43e948d402d8407f9c434489",
+      "normalized_sha256": "ac0b569a82db0c17d1661878cd3bf69537819408436a18885047b86039f51e4e"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/releases/amd64.json",
+      "original_sha256": "10921d12cdd1a9bc19bdfdebc0dceec55fb405894f6687868a918c244ae5473a",
+      "normalized_sha256": "2dbd87b1698b5d05df28b3a5d3be81cd782620e6681d0a2c82266b81f36b6a8a"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/releases/arm64.json",
+      "original_sha256": "df3db63562215a1f97bd5d4b5210224a7d0e72990fb4a83ed3c683c13c6f8a3d",
+      "normalized_sha256": "958c65fb1e1c6cafbb6ce3f3f03b22055b16274c8ac6fd59553017304555acf7"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/releases/candidate-identities.md",
+      "original_sha256": "d7f93b15dc0ae40d2e6a07ac493900e5e5b6d4b727b4a59ba85400c9c937f5b2",
+      "normalized_sha256": "4e105fb9209a7a1a35c2848863c33c8ba704da3c65f8b6260a4cef1991f3a759"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/releases/provenance.json",
+      "original_sha256": "a9faea2fb14175e51081c2d2e69166178c87e0568c6e6514db45dbf9d42aa262",
+      "normalized_sha256": "4cd52ca872d9a976f2d4184b4bf268397eec2d472bc39385c1413e2ba880f940"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/sdk/provenance.json",
+      "original_sha256": "39204f70608e29a57819ed659d9ab8fdcfae70c1a148e10d8dc106f8713647e9",
+      "normalized_sha256": "4b518b9f83d46dd402101b967ccc7a6835959a974370801d240d93365f859443"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/wire/comparison.json",
+      "original_sha256": "c7c8eeb0ea1edc681d61c4a58414fd353b807b9f6c32e35f15d5181a3f50f29d",
+      "normalized_sha256": "4909ed90db04f67281d347c0bf7f1b686b521df4f6197840d5821b706daae6a0"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/wire/manifest.json",
+      "original_sha256": "e32122b81e00b56c87b7226ea5ff29b592b0501a421edd79e560d6dfbbd03b2d",
+      "normalized_sha256": "678ba6cc3bc2885e79e97e88ebf6d46a6430f8cdcff6bbd515ce5c8ade743556"
+    },
+    {
+      "path": "docs/measurements/2026-10-21/wire/provenance.json",
+      "original_sha256": "ce0dfc355beace481e4641fb642f3ec559e8b1d48db9b1cbff40f27a95351c4c",
+      "normalized_sha256": "e7f9fc8920434e20a8b1b911548d8d01abf2e2b0a322ba9d709d5b75459b0ae1"
+    },
+    {
+      "path": "docs/measurements/UPDATE-H3.md",
+      "original_sha256": "be7281871ac0232dc24c249a0403c7562e4adc24c30ef196f7e9cddffc127c11",
+      "normalized_sha256": "f558b94d8614020a62f06c9e3549a2da724eee9881ddb42ced6af3906c5081c1"
+    },
+    {
+      "path": "docs/measurements/firefox-stage6/README.md",
+      "original_sha256": "d1195347c3a40acb9f0554175d6965f422232fdb84c7ef5d72277e3d933aca2f",
+      "normalized_sha256": "565d87bc268cc72824b7c24e2944c29a830037c417c8d7b8fa61089491f1908e"
+    },
+    {
+      "path": "docs/measurements/firefox-stage6/browser-behavior-comparison.json",
+      "original_sha256": "5303a8ce7939095d994dc5fb442e64da8e0332fda70d0ec583572f3618d7ca81",
+      "normalized_sha256": "404c15bac4eff9161f6da4d3ff8c68fd265e843aed93d40c589a74ba7c2d548f"
+    },
+    {
+      "path": "docs/measurements/firefox-stage6/comparison.json",
+      "original_sha256": "cc63713fbdf00669880bafddd6e358415945d246cbe79918b7517fe0760773a1",
+      "normalized_sha256": "13fddd47a3682ff933483547f15bc9cbfc51ab959aa801e3b3f2d7d35f0f2740"
+    },
+    {
+      "path": "docs/measurements/firefox-stage6/manifest.json",
+      "original_sha256": "aab39520df61f8cd927ac5377831439dff2ba8497ecfacfe9150307cca5c4b76",
+      "normalized_sha256": "97cfa197616641d0c68569d379ad5f5aa1758f9e4a54ee07040481394ffd1b8f"
+    },
+    {
+      "path": "docs/measurements/update-h3-baseline.json",
+      "original_sha256": "43d55167c217341e188cdfa084c240d0fe0d7fc34cd0ceb9156569c857eba0c9",
+      "normalized_sha256": "7a45d474844b01588a863b91cf590315314e36fa54ba733b37df976b089d1625"
+    },
+    {
+      "path": "docs/measurements/update-h3-candidate.json",
+      "original_sha256": "c2d7b214b13b1500c362aa6ae7f03b63c5803a81199cd08d9ce939521cbd0238",
+      "normalized_sha256": "e75f8ed491e422b712c15f7a86529518a31ec8da0dd8ff8e846d2191c95cf4fe"
+    },
+    {
+      "path": "docs/measurements/update-h3-comparison.json",
+      "original_sha256": "3ce35ea642ba37c446669fcb1cf0de1dab81bfea324b24295c8994532f65f1aa",
+      "normalized_sha256": "08c89ed19b4787e1481f8c18897571423ebec9d143dd24ed358752b0af394241"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/arm64/README.md",
+      "original_sha256": "feef17c429e8cef2be7d2191acdae4e92f7a44746a4e6b08d808ef3a54936264",
+      "normalized_sha256": "8a1253d35a8f2d45a43edfb0c1402f2502d6382b219b2028ad607270d5343dd6"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/arm64/checkpoint-2of4/README.md",
+      "original_sha256": "ec083e9b8890accceaa6aa664912e7c57552134f6f9c755a1c09abe00eb8b2bd",
+      "normalized_sha256": "8e16cf8933c4f5ee3ce194e32af9443753092ed0d1a8747025cbc088db85421c"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/arm64/checkpoint-2of4/wire-summary.json",
+      "original_sha256": "a672058a2dc7916d12f9c7e9bdaaaf70f0a73f35aa0b7c264fac68248121bc22",
+      "normalized_sha256": "183d8326be6ecd9a61a7cd39ad6e5ff2942f5af06e657bd0faa5d06182b5976b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/arm64/ci/amd64/managed-wire-summary.json",
+      "original_sha256": "db10527b6591361e3646e3e1767da25497a2c9061971ee244002d880c3c4b43a",
+      "normalized_sha256": "fe096f8762589834931028342117aa385b7b6d485fc0bb552bd79bec0135e5fc"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/arm64/ci/amd64/standalone-wire-summary.json",
+      "original_sha256": "5ed542e8e9f25232a1bc8fb2ed6b40832f898c3b348a460fec04d185172ff09c",
+      "normalized_sha256": "8c6d6b0cba9c7f7b8f7c94f7be152148a4ad7ebd872f180b18e5c3bb55214102"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/arm64/ci/arm64/managed-wire-summary.json",
+      "original_sha256": "88ad5a02469caadfe3c847f2ce809c05366df0d35400880d218ac0e198d5be11",
+      "normalized_sha256": "372a431b69a38cd968950a09d84e22e8a1504439cdc9c7512da760217bd7069e"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/arm64/ci/arm64/standalone-wire-summary.json",
+      "original_sha256": "a672058a2dc7916d12f9c7e9bdaaaf70f0a73f35aa0b7c264fac68248121bc22",
+      "normalized_sha256": "183d8326be6ecd9a61a7cd39ad6e5ff2942f5af06e657bd0faa5d06182b5976b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/arm64/qualified-artifacts.json",
+      "original_sha256": "4b513858a656d36300813b1bc289feee95e07c9167db30ffbdf328272aa3b72f",
+      "normalized_sha256": "65451d9b66c74a632b4aa7c0a59b44532840c1b0d5dae70ba730551efb6df59a"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/baseline/client.js",
+      "original_sha256": "92c5b3ac4763c2f3889a7eb678f24b381f903135951424dae4be175c6f8d7cd0",
+      "normalized_sha256": "e89a52ba6ba1834ab5f920732e4068265eb4102a389dc078e5f6ee28a93614dd"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/endurance/README.md",
+      "original_sha256": "1fa4178df475d934b073babd3dc3df424fb6123df7e1ea26f3ccf9a6da93ed18",
+      "normalized_sha256": "fd7dbacfcf37e37f1b34e5ea555fdf9cd70c0879d845ffc4dfed02512584f9ae"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/endurance/acceptance.json",
+      "original_sha256": "612d4c4eb5b1fc8753c6438e9dccb9ce24da86a55c49f725debb024b7da3c07a",
+      "normalized_sha256": "db7760f58027b507c27bca627d76fdafa70263f876319a36ad81152ba204b181"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/h3/README.md",
+      "original_sha256": "73d80221b7cc9b41719782726d14193751768f728a3fc7f9c2951a30dffc1208",
+      "normalized_sha256": "503974ea3cf8a07b9c86aa87500e5f22975ddecde09bfda4c5ea230e03613697"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/h3/artifacts.json",
+      "original_sha256": "09ba5411702b2e2a50e1d753b1481df8253ff78eb9768df33d5394d4cd62541c",
+      "normalized_sha256": "0e32883417b0661b4e1de002a10f915c46b275d70bd2fd481b8743e37a892e80"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/h3/wire-summary.json",
+      "original_sha256": "0e04033b6432ad47b0375eaa1b306803cf2b4b62307d5eea16edb4ba8faec731",
+      "normalized_sha256": "80d353ac2558cc0583a1e179f13be0d70a612b8aedb2bf54f09142341161747f"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/README.md",
+      "original_sha256": "d6e1c8ba9fc6a3b6d5711a86f5cfca4df3bbd35c2e0d326ba731c78f76980686",
+      "normalized_sha256": "2cf6eede1b608580ea7291ba3532d08ccf8283463f059fc3dd5f7aedd64042f1"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/checkpoint-2of4/README.md",
+      "original_sha256": "e885cf174155f45cd796f97514f6c475786b94e0a9730880d008b6f6e519c409",
+      "normalized_sha256": "f77812a5ba85ebcfafd24ed25565c905706b3500929d78d8792ba80688fb7e0f"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/checkpoint-2of4/arm64-comparison.json",
+      "original_sha256": "054d95fc153bb7a513333a6805e3a908a733bd5b55d8beb0090bc2259667f36d",
+      "normalized_sha256": "788824da7fb1ff9908a5ccbed790192554a4cafd0501a5ee2adf07380fac6ded"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/gates.txt",
+      "original_sha256": "274c50a271e2a1d09f5ba8c52fa38141ea93c3d2d46c5fd3060ca59f673d4e31",
+      "normalized_sha256": "852a46771dcb26ab5669a84ca3d77c18d922cbd28c45d58616c33ba6f29859b2"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/integrated-wire/comparison.json",
+      "original_sha256": "de956b3d1b38d67d575088ef73471aac35cc127a180be407dc77330b0a237dbc",
+      "normalized_sha256": "30ca449367697980f6ddfd676e4e27e88af6ea74ccf720aa769996e3199f9db7"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/integrated-wire/observations/h2-connect-1793018137955089095.json",
+      "original_sha256": "6d397a103c11280fc581c25a73ba07cba271b08dfa238e834a5015022eb9e90d",
+      "normalized_sha256": "5bed292bb1ef95ad214b9a21c3ee618674b91410dcf219867e9b94b4f0a7185c"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/integrated-wire/observations/h2-connect-1793018151200048383.json",
+      "original_sha256": "1bd3d2004639c5f4ccf8413635e971c96c6c9bce104732a81260426e37859f1c",
+      "normalized_sha256": "3e9b1608deb808c61aeea9d7e626a31280d6363ebd0626c52fae9ee4ac53cdb6"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/integrated-wire/observations/h2-connect-1793018164410781486.json",
+      "original_sha256": "781a8df22410140ae150071e47c345cee3e40612802fbfe70c02cc6c2a272ae2",
+      "normalized_sha256": "6472e76f33a6d1064f1973700c475104f349be8d45eb17790a9ec0e0aadab63d"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/integrated-wire/observations/h3-connect-1793018144459479387.json",
+      "original_sha256": "d1550009c56ebf26065e48df12716a1ba3761c3d0f520f05d652007a9ee972c0",
+      "normalized_sha256": "9eefefa925e17cab07deace6053b340f35be3cdedc491f644bb68ae5f4281767"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/integrated-wire/observations/h3-connect-1793018157710643522.json",
+      "original_sha256": "f3d81d923ae7afed90143a99ec9c6893cf15c01155c91720f3876869b883f914",
+      "normalized_sha256": "7d6826ce2e747aeb7be47478a1e1a1849f4ca6eced4a1753802c9a453395410f"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/integrated-wire/observations/h3-connect-1793018170860455628.json",
+      "original_sha256": "7f74de39d8c6b84cf63f2414f3dc6d1b0455947a84b52289dd56b064e243bd5d",
+      "normalized_sha256": "969710f863f9dab5fdecf2d6e9e4425cf166a7bde72311442c53bfcb8ca8c90c"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/comparison.json",
+      "original_sha256": "30e16d4980aa94ed51d9ba6566ccbb58c1f4fc357b14c7a76c6b5d0aebfa5eba",
+      "normalized_sha256": "de1989319b9f4daad4e3e127c3d13e013251043ebc922fb97653867f97cac5ea"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017254342934633.json",
+      "original_sha256": "1b8674b8508a50129aba61c29b0bed19b02bf7faa5e8ecadc2e515389c2390ec",
+      "normalized_sha256": "7fec6fa6b6d104c477c88aaf60055b1e7a08e687864b4c531adadadcb92d2a77"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017279788480797.json",
+      "original_sha256": "34be0ea7af59bbc1601bd71b1b416d25587e422310d237f424a8c8e0a0941632",
+      "normalized_sha256": "6c1ec2f64878b18c3bdfa608026cd37074a15d826e455fa7bb55530f8d90305e"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017305325256539.json",
+      "original_sha256": "48f7d5b78e4d16f0eba278ddc4c44960e9d93f8cc902443875c0d34fe67a2b7f",
+      "normalized_sha256": "b609f202e3c6fe7efb4c7986f213a590797541d0af6b3d915fa6fcfdad5877de"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017330602820611.json",
+      "original_sha256": "b3e0bbbfbb3c35951bdd91903b0be55dfaecd9be2ec1a95aff8350a2cf81ca13",
+      "normalized_sha256": "34ee1b5ace0c8eb458dd5c40bd62f2ae54923dd20c57caa50ee30f454fdf4c0f"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017355678779102.json",
+      "original_sha256": "ab660045ddeeaa20b3a0331de83a4d355abf37393352b1e252533beb67f24fae",
+      "normalized_sha256": "abdab85eedbca78245f6bab33a9a5a659c594754a39f8757cc9cc30a56f1beac"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017380877568386.json",
+      "original_sha256": "b8bcd382f2184626ec7dd4ccc495864ec5ae8973fa7ad5ba5dd98439c010a543",
+      "normalized_sha256": "0464175267ad059865c8917a774af7f106dcadc3d840b8cb7fab4f180bc84742"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017406215180441.json",
+      "original_sha256": "8979067efe5734a693e864e6acf2a6c48ef46eab79949d25721f90d9fac734f8",
+      "normalized_sha256": "f612b677a7155605f4d277ef128dd6853ce600e32024999da5ea098c26dab45a"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017431599723740.json",
+      "original_sha256": "7db2d19d0596273042da9b6bf588c291c7b3e49e1980fa770970d709bb71b584",
+      "normalized_sha256": "fb588bd9fb0ad26a218ae9c56650be022b26dff7abb88509de58d495db78f2a4"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h2-connect-1793017456881921384.json",
+      "original_sha256": "93a6895bb93c5d753fe1095448fa809d9760a766f226f00cdf2f82b1df8b78da",
+      "normalized_sha256": "d9c8fca92eb4f18191e9c044354156978e29657fb6a8dd72a5fdd2706a6556a7"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017259461145558.json",
+      "original_sha256": "71c3016f758ce0c68a34c688d64edf6e29c03b00867662fd44c57f292c5942a3",
+      "normalized_sha256": "096eb5af9161fa3e3a63b6f01c9301c035676d903981c26c59e178ec198fdfb8"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017285048930121.json",
+      "original_sha256": "788dc97e8b32d68bb82ef88c87427c6a6c35471fe3ef86d73e4ecc2d7af83bc4",
+      "normalized_sha256": "cf59870fbe777aa0496a986e40fcd04d6510872dd3debbedd192c63f12c88485"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017310513303427.json",
+      "original_sha256": "6951bd2ed58b1adcac64be5925d5bafe8e7b2d4e1577c15997885f223c4d488e",
+      "normalized_sha256": "d322da36fe8a560d7033bb41d942c592be7e66e4b39556172e99187c787c4946"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017335713079357.json",
+      "original_sha256": "cb5e040a9938d2dc8aec95ada7d6b4e1b10a81d9bdb6934082c3a7476b11eb50",
+      "normalized_sha256": "591417193791f75fae2eaf9d032c1569c48f0bc8afb8368e062245ff44121c14"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017360858423869.json",
+      "original_sha256": "70df7508e72c1048fef093ce44c022c52af858abd31b9419f0eefaa9d2bfd231",
+      "normalized_sha256": "281a6fd692c482f49ee21d27b81e3550ec6d080095e9c8d734f9a4bff309b4b4"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017386061975459.json",
+      "original_sha256": "aebd4d6124c142a27e98c1fe1c40b6b35b7fdb6f2dd5906b84213a60cb348678",
+      "normalized_sha256": "821ffd0bc2300901c4fb71025373802d8caeff62c295a1f4ecec511d1954370c"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017411369426470.json",
+      "original_sha256": "7ace0f2f2a9fae507be0e3ea21afaa6db8e28c8273bcd842a984528ae3c2fd15",
+      "normalized_sha256": "804c801fd61d84b21e0a26d8cfe2bfc0a3079d2f93d77d616aa9db587096779b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017436763265483.json",
+      "original_sha256": "9eb37b32686eba129d2895bda18223fad43748105f9a494ac6a8cb07fa7e0f11",
+      "normalized_sha256": "f85f4e6295cc9bfe134c959df567deb71880261ddccfb9148a17b2eb42df1023"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/wire/observations/h3-connect-1793017462037761182.json",
+      "original_sha256": "0b4f4ebb07052b4acdbab8ab0fb0be211cc4f817b2682a8bd8afd089b33a09bc",
+      "normalized_sha256": "cde5a98a9445b97408537235f2c0c11abd46518ad993de8bd0b57abf86ce8a7c"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/amd64/workflow-job.json",
+      "original_sha256": "43e130b6c4a6c0e3e37d5010eddc31d833aafecb462a417f1b7a67fa632a15c8",
+      "normalized_sha256": "6ed4561cc52b0d838e73ed0858260b34f21e49b6ce5632cae2e1b1900ef205c0"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/gates.txt",
+      "original_sha256": "96b5134f924a9a44a854ee5e6d452638f520a55cbd2496f37ebc583279efc74e",
+      "normalized_sha256": "cca3f056aeac79a5fa669baedc7ddf4d13ee3977eab5c2addfbcad825ffdb280"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/integrated-wire/comparison.json",
+      "original_sha256": "c31bba36de4c8c9f318fc73b8138048891a0f985ebed112961aca5cfc4ece915",
+      "normalized_sha256": "b98bfd22892dabff642f16adb5947cabc88f3d0664f799c190665d29c8b3911d"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/integrated-wire/observations/h2-connect-1793017917571714210.json",
+      "original_sha256": "7e544ecfcb90af36b6a8959936401981d32b95583279ec0465b0f1b5cf998eb4",
+      "normalized_sha256": "62ba760ed3f00fde034916aa79d0626a22c3604b487abc67963c2696ea321d5a"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/integrated-wire/observations/h2-connect-1793017929735925638.json",
+      "original_sha256": "2f19fff9f21198eca6326c444b4b0c5e8f6fac093762825057eccccccb0a8b5a",
+      "normalized_sha256": "efc172a92c3a2243cb175c95dbb605502956a9834c543349705a2fb9d9fe49b4"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/integrated-wire/observations/h2-connect-1793017941985400103.json",
+      "original_sha256": "32ec33070ef8c6c7d2442674d195c3fd1de5c003c1c882b7adbd1e4f9375f6bc",
+      "normalized_sha256": "1956b906ced5aed21e9836a86bf2fd4391aecc78b88b4644fdc56e3c60c0c26f"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/integrated-wire/observations/h3-connect-1793017923524202099.json",
+      "original_sha256": "e27540a622165b91029b36b251dad6cfd24e2f9afebb2612a0bac21b0a9f02fe",
+      "normalized_sha256": "0dccc2c2eb6eb5f717a49761b87c6ad5adaec35cc7bac22bab4cf82263e1d583"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/integrated-wire/observations/h3-connect-1793017935712930468.json",
+      "original_sha256": "abeb0da3e99ffb76dbf6d733496329433a3ced637f976bf28bca01e6b68ded83",
+      "normalized_sha256": "f5149327a41e9e6a37fb204450064aa97ff4fe658ecd37a547d38bccef02d4b4"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/integrated-wire/observations/h3-connect-1793017948006860170.json",
+      "original_sha256": "076c39a45571c94cc8636797bef564dbb98570509ece263b85772a5dac2fea2f",
+      "normalized_sha256": "ffe02c8c7723c8541d0bc5ad53373bd9fe6a68b4e3a28dfe25a9893e5ed0e25a"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/comparison.json",
+      "original_sha256": "9b0b393e5eb267cac66c09fb037379160af5eb24f6d10f3cec3f188449196c13",
+      "normalized_sha256": "38b7ca129fe8bbb36237ce43912205c0327def979e9045fd5dbaaf7a49c5edab"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017222212926572.json",
+      "original_sha256": "8fdadff5ad9cc97d72e388c6314da0416089f3245b7fd9674150682bd6110832",
+      "normalized_sha256": "6a91a820692e19637225d2c0e7cd98d944f275c900fa2b7cd5bbb475363511a2"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017246235892178.json",
+      "original_sha256": "7801c1f6d4e75a19b47bbd07f096090d08afdbcb7f96741ffd5194b2f25795de",
+      "normalized_sha256": "8d40cabccd5d2c4bf51f084a1d806ce36c9e6eeb73c1e8228bea5852e7eec907"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017270112329036.json",
+      "original_sha256": "16cef3f39ef9fb241e57ad4469ac0876eec00f85cf24e360a3b1dc95b7db8bfd",
+      "normalized_sha256": "e68c852a98a653854e63095d81b3740887aa0ea6e3361e04c613c021cf7847fe"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017294145267778.json",
+      "original_sha256": "5d1978691c43d3080b1c810ca585186685bce42a4209077d5946a9be28dc33bb",
+      "normalized_sha256": "ff0cc96fcd4116ba9199b1cdb6a7eef6f7b2f31773f3287e5b72d26f15cbb263"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017317919546996.json",
+      "original_sha256": "50cf3d74612a9d03343b94beb15210301a2ac6fee2a56c5005f4a10da4020d86",
+      "normalized_sha256": "0c319dcea11f15372a400a3d88fe1d8d79970a056f3296f5013119dbb0331ae7"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017341776842623.json",
+      "original_sha256": "deaf26ead1069725e7620d392ca24130d8a1049e8333b8e0c49d63e396035ed9",
+      "normalized_sha256": "537a84f099fcd76c9962025c80c64bace4d77289fba6efc7184c3b2bbcda5b40"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017365786559881.json",
+      "original_sha256": "e4423fa3df9f5e754d1ccff9091f2e71e5d8ccacc8f4bc0840f09249143677dc",
+      "normalized_sha256": "8ffa294d095b3ab2fb0fa468c5f9e2ee17de5a7c2a48ce6671d4133918c9b089"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017389451796822.json",
+      "original_sha256": "c76cd4a979e6220593f88a493a5dd00756b735993354ec3e0b8b8a0973eceeb5",
+      "normalized_sha256": "35885808f7b3b648a1deb027a802183d4de1fe764d3383781764e7df777fc212"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h2-connect-1793017413283110096.json",
+      "original_sha256": "0b79b525d2082ea22b55954a01613fbc4d4e6a1352abffaf651606a189e69e65",
+      "normalized_sha256": "669a74e67c2e367202c0cae01cf3ca157b874e1fc13f7c39a3d4f0655005c91a"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017227106673568.json",
+      "original_sha256": "fcaae4cbdba6fe420cd68ba8f802aa10c172dd14d417f57eac0895056365be25",
+      "normalized_sha256": "9f152acf40e863591c7bcb9fd9fbeac967bde8d6b5f481f1a273aaddae24a765"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017251228933458.json",
+      "original_sha256": "cc984373ec7f9c5aea29b3acfc9784252a7432af43b57362183f413bea3074ed",
+      "normalized_sha256": "50983d4fdecbcf2bc3a1d2946544ff4813c0a70b76536fbf72344b84969b8d4e"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017274998806318.json",
+      "original_sha256": "ec4703608a3508589cd1eeeb2ae3a7c0db04c3860832ff01361ea3f0b3914280",
+      "normalized_sha256": "07a1d873e46ae728e28994a3500bde33630f83af6f02215c352004a49ec6c139"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017298996180943.json",
+      "original_sha256": "2184260a4bfe29a7ae0a44bfa50f477690f204d89dbcc74e66cabfd92ac8d137",
+      "normalized_sha256": "7f797db1da4658bf79f29bf24158d6d90f72cac27672948ab25f6103a49f7404"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017322821216290.json",
+      "original_sha256": "a26f13ffbf17200a52f4b7c5019494ff174c27e9c92fadac49ca36b833bcae46",
+      "normalized_sha256": "46f725d6266f83d3caa66cf5180f39f0b88af5e73a7ec6e74720328234136898"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017346710673592.json",
+      "original_sha256": "e117d913c009f9ed8206bc91efae95c931e9da0013af87b12a148b8897f67b65",
+      "normalized_sha256": "8f403279bbb452bc1b3bd58ee82cecdcb212992012eeca35034282931cf11e8f"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017370652882745.json",
+      "original_sha256": "c071d6f3fac318467c95ba27180b95c06d493b05730e4508158515a3b2d3f314",
+      "normalized_sha256": "40973251ef85ed6d937df570777362c6f54383818a1aacea8de3a1803bf772b3"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017394289489919.json",
+      "original_sha256": "ec31767a2970b778e319705a9bb5854a613be36d517f0cd1d51e7e98326a3884",
+      "normalized_sha256": "420edcba6d6ae57ec1c9fbcac5b427cbc8f9dda4318a517e41f1e28dc98e9575"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/wire/observations/h3-connect-1793017418119504937.json",
+      "original_sha256": "d63a527f90f899cdc73135a3a5c552917ec4a72725690be83e541289682583a0",
+      "normalized_sha256": "d5472f0aea39a1d6219b93433496cd21179aab92fa8ca47bda42127b3dcb2f1e"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/arm64/workflow-job.json",
+      "original_sha256": "ed92a303565c082af4eede2f779cc366729b6c4b46ba0b757b9f196040562641",
+      "normalized_sha256": "a7b785adf6699d6e5577dd5da6ccbd4a9d60bcf1c5be1b3b0aec5604b370b0c7"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/identity/ci/artifacts.json",
+      "original_sha256": "6bc94bf5032f4892147372586fe7a5273e982c91722a73d6bff0e31a26d8f87c",
+      "normalized_sha256": "b067cb02c0efac0b018f6f947545dc495c7ba2b85ff399867b8d263421a04d5b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/README.md",
+      "original_sha256": "03a383e41a029fee3cb6b0081c241012713feaccff4f71db8901e67ab604aca9",
+      "normalized_sha256": "7b200c2f41753e1cc51a3c0b97c8d86f2dd390466304896c449e58f6cdb13d18"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/acceptance.json",
+      "original_sha256": "3713e3cb466b72d7a5f8b059ec45cee7221edc71ac56bdc3b7a984d2bb518d30",
+      "normalized_sha256": "62ec984eda96195b0716606ecbda649bc8e6f7715f75e3479122948328bd61f9"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/managed/h2-connect-1792788455139437927.json",
+      "original_sha256": "913f9aa82272dca4638e57a271b72bfc32bbb2d928d2b8739328e0ea3d774096",
+      "normalized_sha256": "bb6d134a6236cc45e06be212eaf6bb007f0bcaaad69b2b92af019a179c098309"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/managed/h2-connect-1792788466619168518.json",
+      "original_sha256": "f937ccfdf4ad013083b44b6f8da86c59b7ec1bb887fb0ca8afc52a93ccc85d6c",
+      "normalized_sha256": "bf0bcaa5c57cc8e67de1b5324936466295f6aa7e25d4a46886892b50f28239fe"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/managed/h2-connect-1792788478227675394.json",
+      "original_sha256": "af0a556d100763e60ed3ccc62792cb6ac94414772a3c380f82202812c7daba5d",
+      "normalized_sha256": "e0cb2a01e7d25e2560494b853a49c8d5eb2cbb8ea89ed021c34b61d1a9151ac8"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/managed/h3-connect-1792788460735568811.json",
+      "original_sha256": "37db358aa3e2c83134e8f327674c5bad6cf6b65a411867c788c3c06b51ae1952",
+      "normalized_sha256": "c714ed20948dc43f10224e208f574d1cdd0c723c4f92ec90362353536d3ef3f4"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/managed/h3-connect-1792788472299749000.json",
+      "original_sha256": "6a068286ddd810f1d24d77bba931fc4cdf1580ed7fbe13c1717617a68edc924d",
+      "normalized_sha256": "c8d716b56aef8b520048f9cf985f93901d1f4502d5fffd1a0a4f70ae11fb29aa"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/managed/h3-connect-1792788483798777299.json",
+      "original_sha256": "87386796b15034640def47d064c571a35568c1fd99e26e946bbc071c61c69dad",
+      "normalized_sha256": "4d395dc5ef46c17cea06fb691340eef9d842cd3ac11372515999b1ad57e01dcd"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/standalone/h2-connect-1792788292307521448.json",
+      "original_sha256": "fff87a025c43034b9d83d59b26672185f3b577b1b438da0b096af6e1fc2de170",
+      "normalized_sha256": "669852c5f2a9358209178a1d7893ce9f25ea4444388da3bff60ac2ad3e9d1755"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/standalone/h2-connect-1792788315513398440.json",
+      "original_sha256": "cea8891d627b46e8b51b222065087c16c29f2c0398c6a8da486b18f1705c0e04",
+      "normalized_sha256": "1ad2b3ba73cf65b6a9be739a48feeec4b8d041555e47ffcc34eeb1f902e888d8"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/standalone/h2-connect-1792788338091051237.json",
+      "original_sha256": "b2736433e2fc45d1e0e0ee6a54c666b47086dcbea6bdd00e1bd1ca933d353cae",
+      "normalized_sha256": "cb0c412307cc8c6ec5c3a3529b942d40e8bf520d4e384cf608412ad0c8272c9a"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/standalone/h3-connect-1792788297104164977.json",
+      "original_sha256": "3e87c40730c1b0a909726473d339da4ac81fc68557bd39aeabbf347f48487e48",
+      "normalized_sha256": "c109cb213682e40130c1dcefe8d7dc6bacebb13b8d00d78887d255fd15c1b270"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/standalone/h3-connect-1792788320270458502.json",
+      "original_sha256": "b0a6e83228bcea3a0e6a6c1a3f3ab6f6fb5296cb6113fd099435467ff9200429",
+      "normalized_sha256": "d42c32ba65e26e75b5d0c32907ce1505826ab03884abf54f8ef4b801e783fe82"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/standalone/h3-connect-1792788342892599167.json",
+      "original_sha256": "1c5c2537f98eab0ec4b2d41d207fed7b0c6768328f75b215f86fa2a0c18735a8",
+      "normalized_sha256": "b54c4e8699e131e972d9c1def05077cb8099d78640da03ba7f6e115f5b70f170"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/integration/workflow.txt",
+      "original_sha256": "be1491666baa136487e1da7c96f7d238f208dcb7798156325cf2cf8a5f080fac",
+      "normalized_sha256": "841f5720793b48940aebc287937d0e61b633cdb461ac0928e29c6e9789b8f4dc"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/native-0fc7192.json",
+      "original_sha256": "af7bde7a2dd0067b556a7507976c7517edf6c32aaf5b616d3abff882a1073220",
+      "normalized_sha256": "3cb019105e2360ba8d654a307f6c6aef0226b2eee4a6224aeba903f3022c829e"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/native-0fc7192.log",
+      "original_sha256": "382163a72bdaf0e2769036b9efe4649ef51535bb1016a9e0d00f4d96a35a2209",
+      "normalized_sha256": "78c232fc9c053035b15fdbb56068377cc69d34ed509d5668ef35a8b3fd8bcf82"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3-before-ua-comparison.json",
+      "original_sha256": "ac8ababcbd4356fcd441d830cbf94bd80053d12dc5e1ea339d7ad385e7d250d0",
+      "normalized_sha256": "efcc57875bb213a6c7fe481574a2e1522225861433f042c8ca3dd87b5a6fe7e0"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3-before-ua/h2-connect-1792754281394465888.json",
+      "original_sha256": "16113de41ebae10fb68d585368241df891dd0c65f0ceaa86cabbae204be1f42c",
+      "normalized_sha256": "caabccd23f3d77be12e1275fa5295749a4abe36972c8d55fbb9709539f9d230b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3-before-ua/h3-connect-1792754286027026968.json",
+      "original_sha256": "8ae3c13159d54a2ea8b36e4913e7ac09ee96b4e2a2bf291a385846c11b3f9659",
+      "normalized_sha256": "566fff5392e6212471d89debfd716e2c6efcc0dd7903aa98f7cca54c1022cf57"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/README.md",
+      "original_sha256": "93cf29cc0dd5f23d25df342dec7194522a717095ab38182dae6974b5811c7b04",
+      "normalized_sha256": "5225b4d3d618f33ec83f6bf85b6464c1bef4888297f987b29efb4a3f3cc3ffdc"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/acceptance.json",
+      "original_sha256": "5b05d2cf65ba34fee9ec33c8d025123cd6999b4c6768812a7996dbadd3ac24f8",
+      "normalized_sha256": "93d8307afbef3c4add228162a541d1b95aaf2fedc8936bf32167dafedb1f03be"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/comparison.json",
+      "original_sha256": "6491b1d48f591515ec4f0867c8547cbcce6837e7cf7f59b44a5344f765c39e93",
+      "normalized_sha256": "fb4ba942f4e139d4aaf0b6de1ccba9505d301005900007d8628b08cf6c060074"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/native-tests.txt",
+      "original_sha256": "92b8c7654874754e07c32d496f6f3ef8c53d2f428a5f12de29f0a3cc2f4c2dff",
+      "normalized_sha256": "2c9115444a3e54f9431db3610324ebc6bbf764530d3f2790c70f89f6bf63f6bd"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/observations/h2-run1.json",
+      "original_sha256": "b14e58586c9b1d6671a53c24e0e63d11159a95155ed6a2cda017b9194ffc1153",
+      "normalized_sha256": "4896b74d24688a2f16d80ae7cb17fc8e0a254debdbfe2c1d7cc392fc31d910bb"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/observations/h2-run2.json",
+      "original_sha256": "0d482a8b4d5125a544b7de8dbc3ab34d3b7957216831a40a17bdb2088b7378ff",
+      "normalized_sha256": "bd2858175e50e17df891b58150396ba33fc4161371452e581fb7b935ef011c5f"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/observations/h2-run3.json",
+      "original_sha256": "d0bb1d2d8931dfc304ac1e488b5e58d4d9ecee88611292a7b104473ca471529f",
+      "normalized_sha256": "6dc9f0be08ba339550b97238d354d7439bde349ac30749571893299d9e83217d"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/observations/h3-run1.json",
+      "original_sha256": "2bd6a88e178ee00991be2f4d62cd9f8ffe4b05333cb63ae640a6206fb2752a52",
+      "normalized_sha256": "bbb936da77aacd7289c0db5fb4606bb66d21e52f004a5bb276ea84e61c4ee595"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/observations/h3-run2.json",
+      "original_sha256": "ee6e99e2641b6c246583222470eca0d631ff82005fd4ef953b6933f1a06146ce",
+      "normalized_sha256": "6b6922e0c3cad24b887685a73f7957f757aa1c51d98879f3a90d026f7db19d0c"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage3/observations/h3-run3.json",
+      "original_sha256": "0714b5f1107610e0e3e8cafeb732eed18cdf89c0a23c235be89f137a6932b067",
+      "normalized_sha256": "d92d19a1aeb2c2c195a98e6d5c18a210585bff697c39d0820d55f52ae73112d9"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/README.md",
+      "original_sha256": "4805bf8b4e6cb962f8c4fcf8b95d95f368c235d67f1f3ece5d205f1eeedc3856",
+      "normalized_sha256": "c5df82fb7520b25a669582aa6f8423a4bc2f6061074d1f223d5e9f9a54bf6234"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/acceptance.json",
+      "original_sha256": "ba5d951e42b7262307238d5701f05a1397412dc9e88a7884b8d557fe7501d625",
+      "normalized_sha256": "5428f865ff170a9844f640ed401531d25917d8af6966f7c93675624851cbe813"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/ci-results.json",
+      "original_sha256": "e7e5f79c3bb5f5f33ea2653177b9b1eab981038965fc3415ba9e8b1952ce01f9",
+      "normalized_sha256": "5d4cd987b90d8e00b3ca95e1f048afda20307cf06c7f50a1b321ebdae90bb86c"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/fingerprint/comparison.json",
+      "original_sha256": "a74c54fd46d5df571fa2896b05f9c4d43b3a814b0969146a880744bc59f1fbac",
+      "normalized_sha256": "91015ef9faea7fff77548ee8fda15169f77c2f68235bbdcfcaaa5d28bbfccdac"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/fingerprint/observations/h2-connect-1792775235693710200.json",
+      "original_sha256": "486ed49eec5b5552ff02daa9e9466fb521b7cf43fca7ae7a50b70bea00804196",
+      "normalized_sha256": "ed946294f202fc0c47718963384168b5c1955829e2413e86bccb50f5655cac1a"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/fingerprint/observations/h2-connect-1792775244988081110.json",
+      "original_sha256": "aa4878551be57f75c4becafdc9d679ff46d6708722c6cd08872253ff5fcf8822",
+      "normalized_sha256": "adf57e73010971bebf9d53d606caa7fe12e5cb774787a5cca44d025b4f00f9de"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/fingerprint/observations/h2-connect-1792775254389592722.json",
+      "original_sha256": "50c109d6f83094a85b1155a7238edbc53bb84844fe531ad980a411bd766e6f84",
+      "normalized_sha256": "f2422935b9d8c8eaf93a382877ec4f96a9470c14ebd483cb722e37b8e367a984"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/fingerprint/observations/h3-connect-1792775240218922443.json",
+      "original_sha256": "e1f9aa2e3cecd73e1fcf3f26990ec549956db5ee3fb69a903420497b072ab97b",
+      "normalized_sha256": "9bd92259e4959ab5b01cda7191ff02dea3cf56afc6437f84865c8f72ea37719a"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/fingerprint/observations/h3-connect-1792775249564928026.json",
+      "original_sha256": "ff0e84332929fe84352a08fc8c46bf4099c77f935e0200c41438454882f65724",
+      "normalized_sha256": "70bfa79c070ab02746c3e920616189a721ca1905f4076bc82696bafcccb27685"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/fingerprint/observations/h3-connect-1792775258847821389.json",
+      "original_sha256": "6afefc7318ba7a0d86ecc18732875e18853eed4b32ccdb4f46a716e6c5af9bfb",
+      "normalized_sha256": "bfa20424dcc30149131b3404107e945452009c5e7448e0573e5539f79c6e4919"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-300s/workflow.txt",
+      "original_sha256": "5784b78535e1e3a4c2e17219152df53b3a799efde3903dd671ac3a06234f99ab",
+      "normalized_sha256": "bda1e070070331990d50f2aaf53491f73abdea0f00e9a2d72d6e98e8d05743ee"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/ci-60s/workflow.txt",
+      "original_sha256": "1807a39f25d6bb9f6e8e307d7af27cf9c573390ff92430a9637f2a4dd3d2d220",
+      "normalized_sha256": "131124962a25f7bd1cbde5434d3e3022c3c6a5f2f8147f7e22957f78f25d4ce6"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/local-300s/test.txt",
+      "original_sha256": "f04132b60ae512c96f9b3dbb0c9d77df938ada3c6b352668d656bfa01b8f353e",
+      "normalized_sha256": "94821a4065c98caae852534d3a37c8d73dbd8f505bec839a6f28ebfe5f335e22"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/regression-212c2ac/fingerprint/comparison.json",
+      "original_sha256": "af5580d38365967d548a1f4e94da466a443998b6f3b5fbc0c97265153c430fe1",
+      "normalized_sha256": "2c96b247c21da9a5172e9465527117966e3e886a3371080d96bad7d42c663fff"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/regression-212c2ac/fingerprint/observations/h2-connect-1792773707569985382.json",
+      "original_sha256": "f794590621392b86c7bd82be1c8376e9c33c62a8bbf5f34dd0624c3ca6e7520a",
+      "normalized_sha256": "e501a44f62eafb42716289ef1a6fb4aeafa4e32f52b53d45fb580212d7438fbb"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/regression-212c2ac/fingerprint/observations/h2-connect-1792773718104952560.json",
+      "original_sha256": "4af63aadaf46f735b6d35163cd84355dbd666724da3ceffd69e4e9fecb4539ad",
+      "normalized_sha256": "e7f92b216b129215e8e7cb75e32bf84f38ee79e264cf8738c74190b1e333352d"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/regression-212c2ac/fingerprint/observations/h2-connect-1792773728557525126.json",
+      "original_sha256": "7368c99bc4bec6025a25af99770f76a054fbfe64dee2c4b7c4358db3e3fd8b5a",
+      "normalized_sha256": "a3c3167a13fcd6ca0ab415268969090033c53b2091d7f1d7f504585259e47d69"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/regression-212c2ac/fingerprint/observations/h3-connect-1792773712690360159.json",
+      "original_sha256": "cda1f2cce9f9a34896fbc9db78541a12684c7eb36d1bf6687a6070c119656e16",
+      "normalized_sha256": "acdaf74609ab64421959552d4ffd72dbc014c7a518101cb107fc4a6d40fa8421"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/regression-212c2ac/fingerprint/observations/h3-connect-1792773723189336024.json",
+      "original_sha256": "9d00e8429311afba097201917808f7c7ab3c64077edda728947f688306143300",
+      "normalized_sha256": "2f10e465582f426c02381a9c853979724f488de0f1ae7889afbf8baab04d2a9e"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/regression-212c2ac/fingerprint/observations/h3-connect-1792773733566818348.json",
+      "original_sha256": "3f446b88d495f4d2b3df5146a06a9f31fb9358c671cad281e23e654ff57f473f",
+      "normalized_sha256": "6a359171ef7d99fc02a4fe60363fb9b08148525475525ba4fa55f6e7b537e12b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/stage4/regression-212c2ac/workflow.txt",
+      "original_sha256": "59a41ff7bc397c46b6934ca98468d97374d52c9ead2b2cb1d51c648c01d39cda",
+      "normalized_sha256": "97daee0611eebc938cfa4e7da33ae3fceac2f4e75a89960671e0684c6f1e684b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/unified/README.md",
+      "original_sha256": "73160626359f534bf5d1d50869a8d3b2b0dcc9a492a42bd227e8f1d45b71a27f",
+      "normalized_sha256": "b3196a637e1b65d2d2f7219cd1c890c871f772d1c9011fa5f51bd681b377c623"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/unified/acceptance.json",
+      "original_sha256": "152776d57c913350037bdf7587a3d1a75e0cdbe4956d730f6d47ee76e6a9420b",
+      "normalized_sha256": "73e2b43ca5df9548933594e980f4d74e24cffea6d2623923c19e3a72814415fe"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/unified/integration-ci.json",
+      "original_sha256": "14f30de387cf6d118f189977dd2b424588572f4b56d2c92c0407e89fc7e9296b",
+      "normalized_sha256": "06444db27fcf03a64f391132b8044723d5dda6bc3e1f745a72cbcd4a0a8f125b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/unified/linux-amd64-verification.json",
+      "original_sha256": "5bd97fa0189265404b9953131b5d462a548c241707e59bf356a28043a217a4c4",
+      "normalized_sha256": "d48cc73bf0d2bf14b7c828d300d1ac9b8654e753c18b529d10bfc6a0d1699973"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/unified/linux-arm64-verification.json",
+      "original_sha256": "38b3de055fa749cae26800ce0c5a7dbd762634301ba2d30e7ed77357adb39668",
+      "normalized_sha256": "dd39aeeca9a37cab3f8f951b0c5be82a649be1ecd216ceecf307529bdfa6e72c"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/unified/offline-audit.json",
+      "original_sha256": "e2f7a98976ed95c3ea8167778b02d584190d6c9c0dd70774da3359efbd12aa48",
+      "normalized_sha256": "40c146986acc46b8058963372fb8e401f4533ba575cb049e6ebc7e0ed2db9282"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/unified/qualified-assets.md",
+      "original_sha256": "b4e5261340d0a8684fffbe5cc2b063c1c04fb11143a3bbe59f5312644b99a700",
+      "normalized_sha256": "b1fc466983e2ba2b987b6fb71f09aa1117b4fdd0340dce6f69a01a316fddd14b"
+    },
+    {
+      "path": "experiments/firefox-necko/validation/unified/workflow-evidence.json",
+      "original_sha256": "4980dbd2658f8106450357b0617a0327ef721f139b6f7ee67af5fada3ae6203f",
+      "normalized_sha256": "e99d27541656a1ae22a40773d4216dbe6aa15903932dc580609047e698138c5a"
+    }
+  ]
+}

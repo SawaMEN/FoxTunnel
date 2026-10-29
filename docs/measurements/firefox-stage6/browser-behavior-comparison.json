@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "kind": "firefox-foxtunnel-controlled-behavior-comparison",
+  "kind": "firefox-vetroff-controlled-behavior-comparison",
   "cases": [
     {
       "protocol": "h2",
@@ -68,7 +68,7 @@
           ]
         }
       },
-      "foxtunnel": {
+      "vetroff": {
         "connections_used": 3,
         "connections_accepted": 3,
         "resumed_connections": 0,
@@ -199,7 +199,7 @@
           ]
         }
       },
-      "foxtunnel": {
+      "vetroff": {
         "connections_used": 3,
         "connections_accepted": 3,
         "resumed_connections": 0,
@@ -559,7 +559,7 @@
         ]
       }
     ],
-    "foxtunnel": [
+    "vetroff": [
       {
         "connection": 1,
         "requests": {

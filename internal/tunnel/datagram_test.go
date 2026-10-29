@@ -323,7 +323,7 @@ func TestStage4UDPRemoteDNS(t *testing.T) {
 	target := startUDPEcho(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	d := Datagram{Address: net.JoinHostPort("foxtunnel-test.invalid", strconv.Itoa(target.LocalAddr().(*net.UDPAddr).Port)), Payload: []byte("remote DNS")}
+	d := Datagram{Address: net.JoinHostPort("vetroff-test.invalid", strconv.Itoa(target.LocalAddr().(*net.UDPAddr).Port)), Payload: []byte("remote DNS")}
 	reply, err := c.ExchangeUDP(ctx, d)
 	if err != nil || !bytes.Equal(reply.Payload, d.Payload) || queries.Load() == 0 {
 		t.Fatal("remote DNS", err, queries.Load())

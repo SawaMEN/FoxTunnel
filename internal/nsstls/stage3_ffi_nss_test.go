@@ -68,7 +68,7 @@ func BenchmarkStage3NSSFaultState(b *testing.B) {
 		mu  sync.Mutex
 		err error
 	}
-	var legacy mutexState
+	var builtin mutexState
 	var fast atomic.Pointer[ioFailure]
 	failure := errors.New("expected I/O failure")
 	for _, testcase := range []struct {
@@ -76,15 +76,15 @@ func BenchmarkStage3NSSFaultState(b *testing.B) {
 		set  func()
 	}{
 		{"mutex-success", func() {
-			legacy.mu.Lock()
-			legacy.err = nil
-			legacy.mu.Unlock()
+			builtin.mu.Lock()
+			builtin.err = nil
+			builtin.mu.Unlock()
 		}},
 		{"atomic-success", func() { fast.Store(nil) }},
 		{"mutex-error", func() {
-			legacy.mu.Lock()
-			legacy.err = failure
-			legacy.mu.Unlock()
+			builtin.mu.Lock()
+			builtin.err = failure
+			builtin.mu.Unlock()
 		}},
 		{"atomic-error", func() { fast.Store(&ioFailure{err: failure}) }},
 	} {

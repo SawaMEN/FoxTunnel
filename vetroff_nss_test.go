@@ -1,10 +1,10 @@
 //go:build nss && cgo && linux
 
-package foxtunnel_test
+package vetroff_test
 
 import (
-	ft "github.com/SawaMEN/FoxTunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
+	ft "github.com/SawaMEN/VetroffProxy"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
 	"testing"
 )
 

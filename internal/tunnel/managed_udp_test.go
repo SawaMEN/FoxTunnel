@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 type udpManagedFixture struct {

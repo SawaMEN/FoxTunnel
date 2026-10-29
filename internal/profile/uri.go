@@ -13,12 +13,12 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 const Scheme = "vetroff"
@@ -53,8 +53,8 @@ func (c *Config) normalize() error {
 	if c.ProtocolPolicy.Validate() != nil || c.ProtocolPolicy == contract.ProtocolStrict && (c.Bond || c.Discover) {
 		return invalid()
 	}
-	// Legacy exports remain readable by old clients that reject unknown fields.
-	if c.ProtocolPolicy == contract.ProtocolLegacy {
+	// Direct profiles omit optional negotiation fields.
+	if c.ProtocolPolicy == contract.ProtocolDirect {
 		c.ProtocolPolicy = ""
 	}
 	if c.Version != 1 || len(c.Servers) < 1 || len(c.Servers) > 8 {

@@ -200,7 +200,7 @@ def run(args) -> tuple[dict, bool]:
     for item in (binary, cert, key):
         if not item.is_file():
             raise ValueError("missing local lab binary or certificate")
-    if not os.environ.get("FOXTUNNEL_USER") or not os.environ.get("FOXTUNNEL_PASSWORD"):
+    if not os.environ.get("VETROFF_USER") or not os.environ.get("VETROFF_PASSWORD"):
         raise ValueError("local lab credentials missing from environment")
     if args.out.exists() or not args.out.parent.is_dir():
         raise ValueError("private output already exists or parent absent")

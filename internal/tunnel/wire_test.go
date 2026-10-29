@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 type protocolUnreadBody struct{ reads int }
@@ -27,10 +27,10 @@ func (b *protocolUnreadBody) Close() error { return nil }
 func TestProtocolRejectsBeforeDestination(t *testing.T) {
 	cases := make(map[string]http.Header)
 	cases["missing"] = http.Header{}
-	cases["future"] = http.Header{protocolVersionHeader: {"foxtunnel-draft-999"}}
+	cases["future"] = http.Header{protocolVersionHeader: {"vetroff-draft-999"}}
 	cases["empty"] = http.Header{protocolVersionHeader: {""}}
 	cases["duplicate"] = http.Header{protocolVersionHeader: {buildinfo.ProtocolDraft, buildinfo.ProtocolDraft}}
-	cases["case-duplicate"] = http.Header{protocolVersionHeader: {buildinfo.ProtocolDraft}, "x-foxtunnel-version": {buildinfo.ProtocolDraft}}
+	cases["case-duplicate"] = http.Header{protocolVersionHeader: {buildinfo.ProtocolDraft}, "x-vetroff-version": {buildinfo.ProtocolDraft}}
 	cases["capability-without-version"] = http.Header{protocolRequireHeader: {"tcp"}}
 	cases["unknown-capability"] = http.Header{protocolVersionHeader: {buildinfo.ProtocolDraft}, protocolRequireHeader: {"future"}}
 	cases["disabled-udp"] = http.Header{protocolVersionHeader: {buildinfo.ProtocolDraft}, protocolRequireHeader: {"udp-v1"}}
@@ -66,7 +66,7 @@ func TestProtocolUnauthenticatedUsesCover(t *testing.T) {
 	server := &Server{Username: "alice", Password: "secret", RequireProtocolNegotiation: true, Cover: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		covered.Add(1)
 		for key := range r.Header {
-			if len(key) >= len("X-FoxTunnel-") && key[:len("X-FoxTunnel-")] == "X-FoxTunnel-" {
+			if len(key) >= len("X-Vetroff-") && key[:len("X-Vetroff-")] == "X-Vetroff-" {
 				t.Error("wire header reached cover")
 			}
 		}
@@ -74,7 +74,7 @@ func TestProtocolUnauthenticatedUsesCover(t *testing.T) {
 	})}
 	request := httptest.NewRequest(http.MethodPost, "https://example.org"+postPath, nil)
 	request.ProtoMajor = 2
-	request.Header.Set(protocolVersionHeader, "foxtunnel-draft-999")
+	request.Header.Set(protocolVersionHeader, "vetroff-draft-999")
 	response := httptest.NewRecorder()
 	server.ServeHTTP(response, request)
 	if response.Code != 404 || covered.Load() != 1 || response.Header().Get(protocolVersionHeader) != "" {
@@ -82,10 +82,10 @@ func TestProtocolUnauthenticatedUsesCover(t *testing.T) {
 	}
 }
 
-func TestProtocolStrictClientRejectsLegacyAndBadConfirmation(t *testing.T) {
+func TestProtocolStrictClientRejectsDirectAndBadConfirmation(t *testing.T) {
 	cases := make(map[string]http.Header)
-	cases["legacy"] = http.Header{}
-	cases["future"] = http.Header{protocolVersionHeader: {"foxtunnel-draft-999"}, protocolCapabilitiesHeader: {"tcp"}}
+	cases["builtin"] = http.Header{}
+	cases["future"] = http.Header{protocolVersionHeader: {"vetroff-draft-999"}, protocolCapabilitiesHeader: {"tcp"}}
 	cases["missing-capabilities"] = http.Header{protocolVersionHeader: {buildinfo.ProtocolDraft}}
 	cases["wrong-capability"] = http.Header{protocolVersionHeader: {buildinfo.ProtocolDraft}, protocolCapabilitiesHeader: {"udp-v1"}}
 	cases["duplicate-version"] = http.Header{protocolVersionHeader: {buildinfo.ProtocolDraft, buildinfo.ProtocolDraft}, protocolCapabilitiesHeader: {"tcp"}}
@@ -120,7 +120,7 @@ func TestProtocolStrictClientRejectsLegacyAndBadConfirmation(t *testing.T) {
 	}
 }
 
-func TestProtocolLegacyClientPolicy(t *testing.T) {
+func TestProtocolDirectClientPolicy(t *testing.T) {
 	for _, strictServer := range []bool{false, true} {
 		server := &Server{Username: "alice", Password: "secret", RequireProtocolNegotiation: strictServer, AllowPrivate: true}
 		client, _ := udpFixture(t, server)
@@ -131,7 +131,7 @@ func TestProtocolLegacyClientPolicy(t *testing.T) {
 		if strictServer {
 			if err == nil {
 				conn.Close()
-				t.Fatal("strict server accepted legacy request")
+				t.Fatal("strict server accepted builtin request")
 			}
 		} else {
 			if err != nil {

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // The HTTP/2 exit intentionally sends a well-formed reply from the wrong

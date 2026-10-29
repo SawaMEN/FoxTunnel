@@ -4,7 +4,7 @@
   "observations": [
     {
       "file": "h2-connect-1793018137955089095.json",
-      "sha256": "6d397a103c11280fc581c25a73ba07cba271b08dfa238e834a5015022eb9e90d",
+      "sha256": "5bed292bb1ef95ad214b9a21c3ee618674b91410dcf219867e9b94b4f0a7185c",
       "transport": "h2-connect",
       "checks": [
         {
@@ -1944,7 +1944,7 @@
     },
     {
       "file": "h2-connect-1793018151200048383.json",
-      "sha256": "1bd3d2004639c5f4ccf8413635e971c96c6c9bce104732a81260426e37859f1c",
+      "sha256": "3e9b1608deb808c61aeea9d7e626a31280d6363ebd0626c52fae9ee4ac53cdb6",
       "transport": "h2-connect",
       "checks": [
         {
@@ -3884,7 +3884,7 @@
     },
     {
       "file": "h2-connect-1793018164410781486.json",
-      "sha256": "781a8df22410140ae150071e47c345cee3e40612802fbfe70c02cc6c2a272ae2",
+      "sha256": "6472e76f33a6d1064f1973700c475104f349be8d45eb17790a9ec0e0aadab63d",
       "transport": "h2-connect",
       "checks": [
         {
@@ -5827,7 +5827,7 @@
     },
     {
       "file": "h3-connect-1793018144459479387.json",
-      "sha256": "d1550009c56ebf26065e48df12716a1ba3761c3d0f520f05d652007a9ee972c0",
+      "sha256": "9eefefa925e17cab07deace6053b340f35be3cdedc491f644bb68ae5f4281767",
       "transport": "h3-connect",
       "checks": [
         {
@@ -6834,7 +6834,7 @@
     },
     {
       "file": "h3-connect-1793018157710643522.json",
-      "sha256": "f3d81d923ae7afed90143a99ec9c6893cf15c01155c91720f3876869b883f914",
+      "sha256": "7d6826ce2e747aeb7be47478a1e1a1849f4ca6eced4a1753802c9a453395410f",
       "transport": "h3-connect",
       "checks": [
         {
@@ -7841,7 +7841,7 @@
     },
     {
       "file": "h3-connect-1793018170860455628.json",
-      "sha256": "7f74de39d8c6b84cf63f2414f3dc6d1b0455947a84b52289dd56b064e243bd5d",
+      "sha256": "969710f863f9dab5fdecf2d6e9e4425cf166a7bde72311442c53bfcb8ca8c90c",
       "transport": "h3-connect",
       "checks": [
         {
@@ -8859,7 +8859,7 @@
           "distinct_sets": 1
         }
       ],
-      "foxtunnel": [
+      "vetroff": [
         {
           "distinct_orders": 1,
           "distinct_sets": 1
@@ -8881,7 +8881,7 @@
           "distinct_sets": 1
         }
       ],
-      "foxtunnel": [
+      "vetroff": [
         {
           "distinct_orders": 3,
           "distinct_sets": 1
@@ -8901,15 +8901,15 @@
     "xpcshell": "17d176ab1416739645f353add27ac1a39201353805ac1f5a4e25a8614438d52b"
   },
   "source_sha256": {
-    "client.js": "637e8bf2d5b72790a150e4064f603ef8d78b214964287e83d667e569268de868",
-    "fingerprint/browser.js": "6a8bffd5d457c503ae95dcf962650e2e4bf506f14b331589197b3cbc3fe0e246",
-    "fingerprint/browser.py": "ed4926227bb4557d80b4d7c304f1423d1ac36769d9470a706436271ad7529eca",
+    "client.js": "dc31219a0f25ed2ae502f07f2bb6336a50fffdf95a408ed46139bdec2d4876d8",
+    "fingerprint/browser.js": "6734fe93d525f0460ab5c86f1682469287331321cbae331ffe59313730b006ae",
+    "fingerprint/browser.py": "7818c513c46de6269f1857f8d38ce9b7211305f2f526a70e9b85d4c449c9eedf",
     "fingerprint/rfc9001-initial.json": "640ab064e3406a264a5a2f53e51c14dd1c0d22fc5a5b4a33ad7a6efab94237a7",
-    "fingerprint_capture_test.go": "57b8533568add2a7892f71bf2548b4baa124931591c95e5bb668bcb6527634b0",
+    "fingerprint_capture_test.go": "7d2e828aac1c5a53d2b2b8a0b629fac39656fb57118e5720a5cfedbe89c8ee3a",
     "fingerprint_decoder_test.go": "8ec995361db0258314f999dfae2f2f17c86f2aad864ce64696366eb80c5d6296",
-    "fingerprint_quic_test.go": "594b484a9d3f87790cbc8e182e18ee6bcb50216d3f91f5eea6ed698a93c575d8",
-    "fingerprint_test.go": "366346d35a9127b1905c0eb0a6d73abb5c031b4c7e2012dc65739b0df5e0ed85",
-    "gecko.lock.json": "0e50df6a76eb0d490415f5fbda1a0d6faab2f06ed02c4e233098a60919feab43"
+    "fingerprint_quic_test.go": "004e2e849d32478c8da5447e4fc7a6cad916eac647c00cb1135fc5ea76252df1",
+    "fingerprint_test.go": "4f621c402208058aa389bbe82b00e873bb26bd09b518d629c11dd999973d924a",
+    "gecko.lock.json": "ab35b483d0b7bdef1ae8448414f09116a32e923316afc6dce0aea1e6032646a3"
   },
   "repetitions": {
     "h2-connect": 3,

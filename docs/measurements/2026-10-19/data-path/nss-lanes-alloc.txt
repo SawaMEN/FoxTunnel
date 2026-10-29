@@ -6,23 +6,23 @@ Showing nodes accounting for 287.81MB, 90.78% of 317.04MB total
 Dropped 173 nodes (cum <= 1.59MB)
 Showing top 20 nodes out of 93
       flat  flat%   sum%        cum   cum%
-  173.03MB 54.58% 54.58%   189.30MB 59.71%  github.com/SawaMEN/FoxTunnel/internal/bond.(*Hub).serveLane
+  173.03MB 54.58% 54.58%   189.30MB 59.71%  github.com/SawaMEN/VetroffProxy/internal/bond.(*Hub).serveLane
    22.15MB  6.99% 61.56%    22.15MB  6.99%  golang.org/x/net/http2.(*clientStream).writeRequestBody
-   19.75MB  6.23% 67.79%    19.75MB  6.23%  github.com/SawaMEN/FoxTunnel/internal/tunnel.copyBondLaneResponse
+   19.75MB  6.23% 67.79%    19.75MB  6.23%  github.com/SawaMEN/VetroffProxy/internal/tunnel.copyBondLaneResponse
     9.88MB  3.12% 70.91%     9.88MB  3.12%  bufio.NewWriterSize (inline)
     9.14MB  2.88% 73.79%     9.14MB  2.88%  net/http.init.func5
-    8.77MB  2.77% 76.56%     8.77MB  2.77%  github.com/SawaMEN/FoxTunnel/internal/bond.(*laneReply).Write
+    8.77MB  2.77% 76.56%     8.77MB  2.77%  github.com/SawaMEN/VetroffProxy/internal/bond.(*laneReply).Write
     8.13MB  2.56% 79.12%     8.13MB  2.56%  golang.org/x/net/http2.init.func5
        5MB  1.58% 80.70%        8MB  2.52%  net/http.NewRequestWithContext
     4.97MB  1.57% 82.27%     4.97MB  1.57%  internal/bytealg.MakeNoZero
     3.50MB  1.10% 83.37%     3.50MB  1.10%  net/textproto.MIMEHeader.Set (inline)
-    3.47MB  1.09% 84.46%     9.95MB  3.14%  github.com/SawaMEN/FoxTunnel/internal/tunnel.benchmarkBondedProfile
+    3.47MB  1.09% 84.46%     9.95MB  3.14%  github.com/SawaMEN/VetroffProxy/internal/tunnel.benchmarkBondedProfile
        3MB  0.95% 85.41%        3MB  0.95%  net/url.parse
        3MB  0.95% 86.36%        3MB  0.95%  time.newTimer
     2.50MB  0.79% 87.14%     2.50MB  0.79%  encoding/hex.EncodeToString (inline)
-    2.02MB  0.64% 87.78%     2.02MB  0.64%  github.com/SawaMEN/FoxTunnel/internal/bond.(*Stream).fetch
+    2.02MB  0.64% 87.78%     2.02MB  0.64%  github.com/SawaMEN/VetroffProxy/internal/bond.(*Stream).fetch
        2MB  0.63% 88.41%        2MB  0.63%  runtime.mallocgc
-       2MB  0.63% 89.04%    12.88MB  4.06%  github.com/SawaMEN/FoxTunnel/internal/bond.(*clientLane).exchange
+       2MB  0.63% 89.04%    12.88MB  4.06%  github.com/SawaMEN/VetroffProxy/internal/bond.(*clientLane).exchange
        2MB  0.63% 89.68%     3.50MB  1.10%  context.WithDeadlineCause
        2MB  0.63% 90.31%        2MB  0.63%  net/http.(*http2serverConn).startFrameWrite
     1.50MB  0.47% 90.78%        2MB  0.63%  golang.org/x/net/http2.(*ClientConn).internalRoundTrip

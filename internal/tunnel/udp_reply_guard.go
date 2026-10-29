@@ -4,7 +4,7 @@ import (
 	"net/netip"
 	"sync"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // UDP streaming may have multiple destinations, but must not forward an

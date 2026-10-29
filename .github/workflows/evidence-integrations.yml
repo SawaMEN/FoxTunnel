@@ -2,10 +2,10 @@ name: Evidence and external SDK integrations
 
 on:
   pull_request:
-    paths: ['cmd/vetroff/**', 'processhost/**', 'foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/DEVELOPMENT.md', '.github/workflows/evidence-integrations.yml']
+    paths: ['cmd/vetroff/**', 'processhost/**', 'vetroff*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/DEVELOPMENT.md', '.github/workflows/evidence-integrations.yml']
   push:
     branches: [main]
-    paths: ['cmd/vetroff/**', 'processhost/**', 'foxtunnel*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/DEVELOPMENT.md', '.github/workflows/evidence-integrations.yml']
+    paths: ['cmd/vetroff/**', 'processhost/**', 'vetroff*.go', 'internal/**', 'go.*', 'integration/external/**', 'scripts/evidence_bundle.py', 'scripts/test_evidence_bundle.py', 'scripts/sdk_evidence.py', 'scripts/test_sdk_evidence.py', 'scripts/fingerprint_audit.py', 'scripts/test_fingerprint_audit.py', 'scripts/private_files.py', 'scripts/*.lock.json', 'rust/neqo-bridge/Cargo.lock', 'experiments/neqo-ffi/Cargo.lock', 'docs/evidence/**', 'docs/measurements/**', 'docs/DEVELOPMENT.md', '.github/workflows/evidence-integrations.yml']
   workflow_dispatch:
 
 permissions:
@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           go build -race -o "$RUNNER_TEMP/vetroff-sdk-runtime.exe" ./cmd/vetroff
-          echo "FOX_SDK_PROCESS_BINARY=$RUNNER_TEMP/vetroff-sdk-runtime.exe" >> "$GITHUB_ENV"
+          echo "VETROFF_SDK_PROCESS_BINARY=$RUNNER_TEMP/vetroff-sdk-runtime.exe" >> "$GITHUB_ENV"
       - name: Run independent public SDK consumer with race detector
         working-directory: integration/external
         shell: bash

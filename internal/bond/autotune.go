@@ -15,7 +15,7 @@ type AutoTunePolicy struct {
 // Existing in-flight slots are never revoked.
 func (c *Client) pipelineTargetLocked(now time.Time) int {
 	if !c.AutoTune || !c.Adaptive {
-		return 0 // delegate to legacy pipelineDepth
+		return 0 // delegate to builtin pipelineDepth
 	}
 	const block = 32 << 10
 	ready := 0

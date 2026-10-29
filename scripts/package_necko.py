@@ -66,8 +66,8 @@ def package(runtime, provenance, launcher, out, cli=None):
                 raise ValueError('regular compiled CLI required')
             shutil.copyfile(cli, staging / 'vetroff')
             (staging / 'vetroff').chmod(0o755)
-        shutil.copyfile(launcher, staging / 'foxtunnel-necko')
-        (staging / 'foxtunnel-necko').chmod(0o755)
+        shutil.copyfile(launcher, staging / 'vetroff-necko')
+        (staging / 'vetroff-necko').chmod(0o755)
         shutil.copyfile(provenance, staging / 'provenance.json')
         shutil.copyfile(source, staging / 'source-lock.json')
         (staging / 'licenses').mkdir()
@@ -98,7 +98,7 @@ def archive(bundle, destination):
         with gzip.GzipFile(filename='', mode='wb', fileobj=output, mtime=0) as compressed:
             with tarfile.open(fileobj=compressed, mode='w|') as tar:
                 for path in [bundle, *sorted(bundle.rglob('*'))]:
-                    info = tar.gettarinfo(path, arcname='foxtunnel-necko' if path == bundle else 'foxtunnel-necko/' + path.relative_to(bundle).as_posix())
+                    info = tar.gettarinfo(path, arcname='vetroff-necko' if path == bundle else 'vetroff-necko/' + path.relative_to(bundle).as_posix())
                     info.uid = info.gid = info.mtime = 0
                     info.uname = info.gname = ''
                     if path.is_file():

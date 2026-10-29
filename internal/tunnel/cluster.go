@@ -14,10 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 )
 
 // ConfigureCluster must run before serving, on the common exit only. The file
@@ -105,7 +105,7 @@ func (c *Client) EnableBondDiscovery(ctx context.Context) error {
 	if err := validateBondTraffic(c.BondTraffic, c.BondAdaptive); err != nil {
 		return err
 	}
-	if (c.BondRoute != "" && c.BondRoute != "legacy" && c.BondRoute != "smart") || c.balance == "adaptive" || c.bondDiscovery != nil || c.bondClient != nil || len(c.fallbackServers) != 0 || c.Padding || (c.BondPipeline != 0 && c.BondPipeline != 4 && c.BondPipeline != 8) || (c.FallbackAttemptTimeout > 0 && c.FallbackAttemptTimeout < 100*time.Millisecond) {
+	if (c.BondRoute != "" && c.BondRoute != "builtin" && c.BondRoute != "smart") || c.balance == "adaptive" || c.bondDiscovery != nil || c.bondClient != nil || len(c.fallbackServers) != 0 || c.Padding || (c.BondPipeline != 0 && c.BondPipeline != 4 && c.BondPipeline != 8) || (c.FallbackAttemptTimeout > 0 && c.FallbackAttemptTimeout < 100*time.Millisecond) {
 		return i18n.Error("invalid cluster configuration")
 	}
 	c.bondDiscovery = &bondDiscovery{}

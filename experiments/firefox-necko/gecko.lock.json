@@ -79,7 +79,7 @@
     },
     {
       "path": "experiments/firefox-necko/patches/h3-identity-and-half-close.patch",
-      "sha256": "0e777d5711c0b157adb6243fbb444b2f3b9d0168ae075f9da1b5793fe0101671",
+      "sha256": "a88d0659bab0e0b8a1fcf4f0fda128deb0237a5912865453b6d7c8dbaff086e8",
       "source_path": "netwerk/protocol/http/Http3Session.cpp",
       "before_sha256": "f2666130c3e3d9b25ce513fa8b246cc2badfcfa320028fbd6f387eb200c77781",
       "after_sha256": "4772d077e912f6c0bb3bcc254e0944c477648e63c9274cd95df0548eff03c9bf"
@@ -162,46 +162,46 @@
       "after_sha256": "2a8ab0706d9bfb82f5a86d548f9456ba2713da3946920fb87a8d2a283316f83e"
     },
     {
-      "path": "experiments/firefox-necko/patches/foxtunnel-nsIX509CertDB-idl.patch",
-      "sha256": "ca7de7b5cf7fd2877ae1f61950b15c11dbfc954ce0195ed530e9cbaf2962ca5b",
+      "path": "experiments/firefox-necko/patches/vetroff-nsIX509CertDB-idl.patch",
+      "sha256": "49aa3cd3d28a9d433405ded8fd4e3ed54cb4698b667318200799e228ba1d57a0",
       "source_path": "security/manager/ssl/nsIX509CertDB.idl",
       "before_sha256": "066f10e3cc1e7420d5be17d3c1738cf93699e2d2af21f6b5bccb7a59ec8cc20a",
-      "after_sha256": "186d333c74fc3334a11666c9c157ff381972243b037dd445b96d76173f260978"
+      "after_sha256": "60581b03d2af54e9cffc9528549120c101045dc3565d5fcd0956fd0818b4b86a"
     },
     {
-      "path": "experiments/firefox-necko/patches/foxtunnel-nsNSSCertificateDB-cpp.patch",
-      "sha256": "df8baa1da580c02618589ff143c763b490b1c3e8a94da92999aa9bf668f9f3f8",
+      "path": "experiments/firefox-necko/patches/vetroff-nsNSSCertificateDB-cpp.patch",
+      "sha256": "cc427608b4d8e57e49ee396121b194c0c40527e016af670c88c94f3557f44bc6",
       "source_path": "security/manager/ssl/nsNSSCertificateDB.cpp",
       "before_sha256": "f689aadbd14260ac3d58fc89607da5223d86cf72396d98955d43e37fc880b1f1",
-      "after_sha256": "aeb04e53c46ee2919e0b8fa945c632adb9ebe0915abf95c0e99d407d532ac5cc"
+      "after_sha256": "29cf1475f10941fe6c8261bec6ef4e1ac7e1af7577bc82306d79dda50442afcd"
     },
     {
-      "path": "experiments/firefox-necko/patches/foxtunnel-CommonSocketControl-h.patch",
-      "sha256": "cba1f152c274136345e04ab4c97cf1e0f6bd70dd6801effc436b8e60892a752a",
+      "path": "experiments/firefox-necko/patches/vetroff-CommonSocketControl-h.patch",
+      "sha256": "060de29b1dfd008561beabf37bb276fa1dd42958735c8857e9445bd9268ed409",
       "source_path": "security/manager/ssl/CommonSocketControl.h",
       "before_sha256": "4a4353d01d8f1d61b625bc6d99d2e17c633d440e707ea0b423c58cc421d273f8",
-      "after_sha256": "af08f5ba2430c4bac64a0203ca5cdb0ee2f2d8514f1ba697e9885a1884c4e05f"
+      "after_sha256": "60e22d528d6ff590eb27367cadc637c6661c134e1ae96c13cb7a6f5322d80090"
     },
     {
-      "path": "experiments/firefox-necko/patches/foxtunnel-CommonSocketControl-cpp.patch",
-      "sha256": "37301ad39812069d6b94d71c88c240ddb9997534b7afdd759c2b2621c8759cbd",
+      "path": "experiments/firefox-necko/patches/vetroff-CommonSocketControl-cpp.patch",
+      "sha256": "252200431c67188e5ad4997112678e2a185e8f168552d10d0e450d8dfae5342a",
       "source_path": "security/manager/ssl/CommonSocketControl.cpp",
       "before_sha256": "2f4a585a44af0081a9e7aa453acd15f0ce7497e9d730dcf202e67199b099c2bb",
-      "after_sha256": "09426204310f593d3f14ce750fa14bb56b046d13290b813551f85b8b40964c78"
+      "after_sha256": "9402c865ffb43410a9289bb1c82327b68ce717ed7c62feb12f929120a1141ff4"
     },
     {
-      "path": "experiments/firefox-necko/patches/foxtunnel-SSLServerCertVerification-cpp.patch",
-      "sha256": "43fc3fa0f91da7b069d335fddf5abec05d374b9f5957505a59cc69f1f4207371",
+      "path": "experiments/firefox-necko/patches/vetroff-SSLServerCertVerification-cpp.patch",
+      "sha256": "498ad7257cb82bbbd418a92d3fc1f2f224d4303e1b67c52b7d631d669f0113cf",
       "source_path": "security/manager/ssl/SSLServerCertVerification.cpp",
       "before_sha256": "07e7f7dd3862188f70abf8e20cf9e5bf4285a8adea88a9b79d5e9b0d4e3161c7",
-      "after_sha256": "baec878d61b116dc1ee13a7160222066c8f4b4285b317fe59d141034e5ea2756"
+      "after_sha256": "a02bee3db60e8c38039d39edea257576d78b60057c890659849c572e9f5c9d24"
     },
     {
-      "path": "experiments/firefox-necko/patches/foxtunnel-nsNSSIOLayer-cpp.patch",
-      "sha256": "034e0734242b83ed0c4a17a9ad4723676ac690a4af1e8d0dcab3d0a8561b1b96",
+      "path": "experiments/firefox-necko/patches/vetroff-nsNSSIOLayer-cpp.patch",
+      "sha256": "f59ed0c5be36aff048408bb165c10879b04a26b88c34510769f612027233f7ce",
       "source_path": "security/manager/ssl/nsNSSIOLayer.cpp",
       "before_sha256": "8404b5698d42de48ce11367880d3076d7f9bcfbcf5d2f13985dafa46714d6b49",
-      "after_sha256": "739abfa4a17c5f408aee1aed9e8f56f0faeead38a73b047ad1b7fad4a62cbd0a"
+      "after_sha256": "eabd079cb0484f2da1d8726c09b57abd503a974c86c4eb71772e6642463f835d"
     }
   ]
 }

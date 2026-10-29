@@ -3,7 +3,7 @@ package firefox
 import (
 	"context"
 	"encoding/json"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 	"net"
 	"os"
 	"os/exec"
@@ -14,9 +14,9 @@ import (
 )
 
 func TestGeckoPackagedLauncher(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_BUNDLE")
+	bundle := os.Getenv("VETROFF_BUNDLE")
 	if bundle == "" {
-		t.Skip("set FOXTUNNEL_BUNDLE to the packaged launcher/runtime")
+		t.Skip("set VETROFF_BUNDLE to the packaged launcher/runtime")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestGeckoPackagedLauncher(t *testing.T) {
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
-			cmd := exec.CommandContext(ctx, filepath.Join(bundle, "foxtunnel-necko"), "--bundle", bundle, "--config", config)
+			cmd := exec.CommandContext(ctx, filepath.Join(bundle, "vetroff-necko"), "--bundle", bundle, "--config", config)
 			cmd.Dir = t.TempDir()
 			stderr := new(lockedBuffer)
 			cmd.Stderr = stderr

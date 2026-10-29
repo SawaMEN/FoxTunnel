@@ -6,20 +6,20 @@ import (
 )
 
 // ProtocolPolicy selects per-request TCP/UDP version/capability confirmation.
-// Its zero value preserves old configuration files and means legacy.
+// Its zero value selects direct requests without version negotiation.
 type ProtocolPolicy string
 
 const (
-	ProtocolLegacy ProtocolPolicy = "legacy"
+	ProtocolDirect ProtocolPolicy = "builtin"
 	ProtocolStrict ProtocolPolicy = "strict"
 )
 
-var ErrProtocolPolicy = errors.New("protocol policy must be legacy or strict")
+var ErrProtocolPolicy = errors.New("protocol policy must be builtin or strict")
 
 // ParseProtocolPolicy accepts only explicit CLI/JSON policy names, never an
 // empty value, unknown spelling or a peer-controlled error message.
 func ParseProtocolPolicy(value string) (ProtocolPolicy, error) {
-	if value != string(ProtocolLegacy) && value != string(ProtocolStrict) {
+	if value != string(ProtocolDirect) && value != string(ProtocolStrict) {
 		return "", ErrProtocolPolicy
 	}
 	return ProtocolPolicy(value), nil
@@ -35,12 +35,12 @@ func (p ProtocolPolicy) Validate() error {
 
 func (p ProtocolPolicy) Effective() ProtocolPolicy {
 	if p == "" {
-		return ProtocolLegacy
+		return ProtocolDirect
 	}
 	return p
 }
 
-// Omission is backward compatible; explicit null/empty/non-string values are
+// Omission selects direct requests; explicit null/empty/non-string values are
 // errors. Treating null as a string zero value could silently disable strict.
 func (p *ProtocolPolicy) UnmarshalJSON(data []byte) error {
 	var value *string

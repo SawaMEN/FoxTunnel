@@ -32,7 +32,7 @@ func TestTrafficClassAutoTransition(t *testing.T) {
 		up, down uint64
 		want     trafficClass
 	}{
-		{"legacy small", "legacy", opWrite, 128, 0, 0, trafficUnspecified},
+		{"builtin small", "builtin", opWrite, 128, 0, 0, trafficUnspecified},
 		{"latency always", "latency", opRead, 0, 10 * trafficBulkThreshold, 0, trafficLatency},
 		{"throughput always", "throughput", opWrite, 128, 0, 0, trafficThroughput},
 		{"auto cold download", "auto", opRead, 0, 0, 0, trafficLatency},
@@ -118,7 +118,7 @@ func TestTrafficModeValidation(t *testing.T) {
 		validMode bool
 	}{
 		{"", false, true},
-		{"legacy", false, true},
+		{"builtin", false, true},
 		{"auto", false, false},
 		{"throughput", false, false},
 		{"latency", true, true},

@@ -76,7 +76,7 @@ static SECStatus authenticate(void *arg,PRFileDesc *fd,PRBool checksig,PRBool se
 int ft_init(void){
  if(NSS_NoDB_Init(NULL)!=SECSuccess)return PR_GetError();
  if(NSS_SetDomesticPolicy()!=SECSuccess)return PR_GetError();
- identity=PR_GetUniqueIdentity("foxtunnel-go-io");
+ identity=PR_GetUniqueIdentity("vetroff-go-io");
  methods=*PR_GetDefaultIOMethods();methods.file_type=PR_DESC_SOCKET_TCP;
  methods.close=close_layer;methods.read=read_data;methods.write=write_data;
  methods.recv=receive;methods.send=send_data;
@@ -148,7 +148,7 @@ static SECStatus ticket(PRFileDesc *fd,const PRUint8 *data,unsigned int length,v
 int ft_sessions(PRFileDesc *fd,uintptr_t handle,const void *token,unsigned int length){
  /* External callback replaces NSS's process-wide client cache. Never use 0-RTT. */
  char peer[64];
- snprintf(peer,sizeof(peer),"foxtunnel-external-%" PRIuPTR,handle);
+ snprintf(peer,sizeof(peer),"vetroff-external-%" PRIuPTR,handle);
  if(SSL_SetSockPeerID(fd,peer)!=SECSuccess ||
     SSL_SetResumptionTokenCallback(fd,ticket,(void *)handle)!=SECSuccess ||
     SSL_OptionSet(fd,SSL_ENABLE_0RTT_DATA,PR_FALSE)!=SECSuccess ||

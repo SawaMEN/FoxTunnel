@@ -1,7 +1,7 @@
 # Native identity and profile acceptance: stage 5
 
 **4/4 complete; overall 5/6 stages.** Qualified for Linux AMD64 and ARM64 in
-[runtime run 40321468060](https://github.com/SawaMEN/FoxTunnel/actions/runs/40321468060),
+[runtime run 40321468060](https://github.com/SawaMEN/VetroffProxy/actions/runs/40321468060),
 using implementation `23c4eb6` and the exact 28-patch native lock. Both jobs
 completed successfully. Qualified work is promoted to `xfd`; `main` is untouched.
 

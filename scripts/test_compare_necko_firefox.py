@@ -17,7 +17,7 @@ def observation(mode):
                       completed=2, alpn=mode[:2], client_fin_streams=[0, 4],
                       resumed=False, client_reset_codes=[])
     connections = []
-    for subject in ('firefox', 'foxtunnel'):
+    for subject in ('firefox', 'vetroff'):
         for _ in range(2):
             c = copy.deepcopy(connection)
             c['subject'] = subject

@@ -2,6 +2,6 @@
 
 package main
 
-import "github.com/SawaMEN/FoxTunnel/internal/access"
+import "github.com/SawaMEN/VetroffProxy/internal/access"
 
 func watchAccess(*access.Controller, string, bool) func() { return func() {} }

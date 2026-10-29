@@ -7,18 +7,18 @@ Extract the whole directory; do not move the executable without `lib/` and `runt
 
 ```sh
 tar -xzf vetroff_VERSION_linux_amd64.tar.gz
-export FOXTUNNEL_USER='your-user'
-export FOXTUNNEL_PASSWORD='your-password'
-./foxtunnel-necko/vetroff client --engine auto --transport h3-connect \
+export VETROFF_USER='your-user'
+export VETROFF_PASSWORD='your-password'
+./vetroff-necko/vetroff client --engine auto --transport h3-connect \
   --server https://proxy.example.com --listen 127.0.0.1:1080
 ```
 
 The combined bundle selects full Necko for compatible H2/H3 CONNECT, and uses
 NSS/Go for modes Necko cannot implement. Force `--engine necko` to reject
 unsupported features instead of automatically selecting another engine.
-Run `./foxtunnel-necko/vetroff version --json` to inspect compiled backends.
+Run `./vetroff-necko/vetroff version --json` to inspect compiled backends.
 Go SDK consumers can use `Engine: "auto"` and `NeckoBundle` pointing to the
-extracted directory. Empty Engine in the SDK preserves legacy behavior.
+extracted directory. Empty Engine in the SDK preserves builtin behavior.
 
 Linux arm64: one `vetroff_VERSION_linux_arm64.tar.gz` archive with NSS and the
 complete Necko runtime, matching the AMD64 distribution. Both archives require signature/provenance verification

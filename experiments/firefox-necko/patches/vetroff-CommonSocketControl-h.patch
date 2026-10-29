@@ -5,13 +5,13 @@
    CommonSocketControl(const nsCString& aHostName, int32_t aPort,
                        uint32_t aProviderFlags);
 +
-+  static nsresult RegisterFoxTunnelPolicy(
++  static nsresult RegisterVetroffPolicy(
 +      const nsACString& aRouteHost, int32_t aRoutePort,
 +      const nsACString& aServerName, const nsACString& aPinSha256,
 +      const nsACString& aTlsProfile);
-+  bool CheckFoxTunnelPin(nsIX509Cert* aCert);
-+  bool HasFoxTunnelPolicy() const { return mFoxTunnelPolicy; }
-+  const nsCString& FoxTunnelTLSProfile() const { return mFoxTunnelTLSProfile; }
++  bool CheckVetroffPin(nsIX509Cert* aCert);
++  bool HasVetroffPolicy() const { return mVetroffPolicy; }
++  const nsCString& VetroffTLSProfile() const { return mVetroffTLSProfile; }
  
    // Use "errorCode" 0 to indicate success.
    virtual void SetCertVerificationResult(PRErrorCode errorCode) {
@@ -19,9 +19,9 @@
    virtual ~CommonSocketControl() = default;
  
    nsCString mHostName;
-+  nsCString mFoxTunnelPin;
-+  nsCString mFoxTunnelTLSProfile;
-+  bool mFoxTunnelPolicy = false;
++  nsCString mVetroffPin;
++  nsCString mVetroffTLSProfile;
++  bool mVetroffPolicy = false;
    int32_t mPort;
    mozilla::OriginAttributes mOriginAttributes;
  

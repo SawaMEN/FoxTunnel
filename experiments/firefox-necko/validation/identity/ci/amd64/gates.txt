@@ -85,7 +85,7 @@
 2026-10-26T12:24:57.9120942Z --- PASS: TestGeckoNetworkRecovery (4.27s)
 2026-10-26T12:24:58.0146330Z --- PASS: TestNetworkRelayPeers (0.10s)
 2026-10-26T12:25:00.9957133Z --- PASS: TestGeckoIdleAndDrainLimits (2.98s)
-2026-10-26T12:25:02.0172770Z [36;1msha256sum foxtunnel-necko-linux-amd64.tar.gz > SHA256SUMS[0m
+2026-10-26T12:25:02.0172770Z [36;1msha256sum vetroff-necko-linux-amd64.tar.gz > SHA256SUMS[0m
 2026-10-26T12:26:22.4593580Z ##[group]Run go test -race ./experiments/firefox-necko -run '^TestGeckoPackagedLauncher$' -v -count=1 -timeout=90s
 2026-10-26T12:26:24.8479831Z --- PASS: TestGeckoPackagedLauncher (1.82s)
 2026-10-26T12:26:25.8690505Z ##[group]Run go test -race . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManaged(IPC|UDP|HTTP|Bond|XHTTP))' -v -count=3 -timeout=900s

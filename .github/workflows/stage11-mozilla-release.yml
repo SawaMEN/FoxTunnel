@@ -38,7 +38,7 @@ jobs:
       - name: Go, documentation, offline release contracts and race tests
         run: |
           set -euo pipefail
-          test -z "$(gofmt -l cmd internal examples foxtunnel*.go integration/external)"
+          test -z "$(gofmt -l cmd internal examples vetroff*.go integration/external)"
           python3 scripts/check_docs_links.py
           python3 -m unittest discover -s scripts -p 'test_*.py'
           go vet ./...
@@ -101,9 +101,9 @@ jobs:
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
             -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' \
             -keyout "$work/key.pem" -out "$work/cert.pem" >/dev/null 2>&1
-          export FOXTUNNEL_USER=stage11-ci
-          export FOXTUNNEL_PASSWORD
-          FOXTUNNEL_PASSWORD="$(openssl rand -hex 32)"
+          export VETROFF_USER=stage11-ci
+          export VETROFF_PASSWORD
+          VETROFF_PASSWORD="$(openssl rand -hex 32)"
           python3 scripts/echo_server.py --host 127.0.0.1 --port 19000 \
             > "$work/echo.log" 2>&1 &
           echo_pid=$!

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
 	"log"
 	"net"
 	"net/http"
@@ -13,17 +13,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
-	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
-	"github.com/SawaMEN/FoxTunnel/internal/egress"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/bootstrap"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/egress"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/transportengine"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 func main() {
@@ -36,8 +36,8 @@ func main() {
 	if len(os.Args) < 2 {
 		usage()
 	}
-	user := os.Getenv("FOXTUNNEL_USER")
-	password := os.Getenv("FOXTUNNEL_PASSWORD")
+	user := os.Getenv("VETROFF_USER")
+	password := os.Getenv("VETROFF_PASSWORD")
 
 	switch os.Args[1] {
 	case "doctor":
@@ -72,7 +72,7 @@ func main() {
 
 	case "setup":
 		fs := i18n.NewFlagSet("vetroff setup")
-		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict (strict generates a direct single-node profile)")
+		protocolPolicy := fs.String("protocol-policy", "builtin", "protocol confirmation: builtin or strict (strict generates a direct single-node profile)")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (setup generates a random route by default)"))
 		xhttpHost := fs.String("xhttp-host", "", i18n.Text("outer XHTTP Host override (does not change TLS SNI)"))
 		server := fs.String("server", "", i18n.Text("remote HTTPS proxy URL"))
@@ -109,7 +109,7 @@ func main() {
 		return
 	case "server":
 		fs := i18n.NewFlagSet("vetroff server")
-		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict (TCP/UDP; incompatible with bond/discovery)")
+		protocolPolicy := fs.String("protocol-policy", "builtin", "protocol confirmation: builtin or strict (TCP/UDP; incompatible with bond/discovery)")
 		eventsJSON := fs.Bool("events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
 		stdinEOF := fs.Bool("shutdown-on-stdin-eof", false, "gracefully stop when the host closes stdin")
 		xhttpPath := fs.String("xhttp-path", "", i18n.Text("XHTTP path prefix (default: built-in route)"))
@@ -188,7 +188,7 @@ func main() {
 			}
 			defer controller.Close()
 		} else if !authheader.ValidCredentials(user, password) {
-			log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
+			log.Fatal(i18n.Text("set VETROFF_USER and VETROFF_PASSWORD (nonempty)"))
 		}
 
 		if *maxTunnels <= 0 {
@@ -301,7 +301,7 @@ func main() {
 
 	case "client", "share":
 		fs := i18n.NewFlagSet("vetroff " + os.Args[1])
-		protocolPolicy := fs.String("protocol-policy", "legacy", "protocol confirmation: legacy or strict; a connection profile owns this setting")
+		protocolPolicy := fs.String("protocol-policy", "builtin", "protocol confirmation: builtin or strict; a connection profile owns this setting")
 		eventsJSON, stdinEOF := new(bool), new(bool)
 		if os.Args[1] == "client" {
 			fs.BoolVar(eventsJSON, "events-json", false, "emit process lifecycle JSON lines on stdout (schema 1)")
@@ -334,13 +334,13 @@ func main() {
 		bondAdaptive := new(bool)
 		bondAutoTune := new(bool)
 		bondTraffic := new(string)
-		*bondTraffic = "legacy"
+		*bondTraffic = "builtin"
 		if os.Args[1] == "client" {
 			fs.BoolVar(bondLanes, "bond-lanes", false, i18n.Text("persistent bond channels and small-write batching (requires --bond)"))
-			fs.StringVar(bondRoute, "bond-route", "legacy", i18n.Text("bond path scheduling: legacy or smart (requires --bond --discover and direct hub entry)"))
+			fs.StringVar(bondRoute, "bond-route", "builtin", i18n.Text("bond path scheduling: builtin or smart (requires --bond --discover and direct hub entry)"))
 			fs.BoolVar(bondAdaptive, "bond-adaptive", false, i18n.Text("ACKed-data throughput and queue-aware bond scheduling (requires --bond)"))
 			fs.BoolVar(bondAutoTune, "bond-autotune", false, i18n.Text("conservative 4/8-slot tuning from ACKed throughput (requires --bond --bond-adaptive)"))
-			fs.StringVar(bondTraffic, "bond-traffic", "legacy", i18n.Text("opt-in Bond TCP traffic scheduling: legacy, auto, latency, throughput (requires --bond-adaptive)"))
+			fs.StringVar(bondTraffic, "bond-traffic", "builtin", i18n.Text("opt-in Bond TCP traffic scheduling: builtin, auto, latency, throughput (requires --bond-adaptive)"))
 		}
 		bonded := fs.Bool("bond", false, i18n.Text("multi-node stream bonding; nodes must share one hub"))
 		discover := fs.Bool("discover", false, i18n.Text("obtain trusted bond nodes and capacity weights from the main HTTPS node"))
@@ -350,11 +350,11 @@ func main() {
 		neckoBundle := fs.String("necko-bundle", "", "verified Necko bundle directory (with --engine necko)")
 		engine := new(string)
 		if os.Args[1] == "client" {
-			defaultEngine := "legacy"
+			defaultEngine := "builtin"
 			if transportengine.DefaultNeckoBundle() != "" {
 				defaultEngine = "auto"
 			}
-			fs.StringVar(engine, "engine", defaultEngine, i18n.Text("local transport engine: auto (Necko for compatible CONNECT, NSS/Neqo or Go otherwise), legacy, mozilla, necko"))
+			fs.StringVar(engine, "engine", defaultEngine, i18n.Text("local transport engine: auto (Necko for compatible CONNECT, NSS/Neqo or Go otherwise), builtin, mozilla, necko"))
 		}
 		nativeTransport := fs.String("transport", "h2-connect", i18n.Text("native transport: h2-connect, h2-post, h3-post, h3-connect, wss, xhttp-stream-one, xhttp-stream-up, xhttp-packet-up, or auto with --engine mozilla"))
 		tlsBackend := fs.String("tls-backend", "auto", i18n.Text("TLS backend: auto (NSS for TCP on tagged Linux, Go for H3), go, or nss"))
@@ -448,7 +448,7 @@ func main() {
 		}
 		if os.Args[1] == "share" {
 			if user == "" || password == "" {
-				log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
+				log.Fatal(i18n.Text("set VETROFF_USER and VETROFF_PASSWORD (nonempty)"))
 			}
 			exported, err := profile.Encode(profile.Config{ProtocolPolicy: wirePolicy, Version: 1, Servers: append([]string{*server}, fallbacks...), Username: user, Password: password, TLSBackend: *tlsBackend, Transport: *nativeTransport, XHTTPPath: *xhttpPath, XHTTPHost: *xhttpHost, SNI: *sni, PinSHA256: *pin, Encryption: *encryption, Balance: *balance, Bond: *bonded, Discover: *discover, Pipeline: *bondPipeline, Padding: *padding, ConnectTimeout: connectTimeout.String(), AttemptTimeout: attemptTimeout.String()})
 			if err != nil {
@@ -465,7 +465,7 @@ func main() {
 			return
 		}
 		if user == "" || password == "" {
-			log.Fatal(i18n.Text("set FOXTUNNEL_USER and FOXTUNNEL_PASSWORD (nonempty)"))
+			log.Fatal(i18n.Text("set VETROFF_USER and VETROFF_PASSWORD (nonempty)"))
 		}
 		if *encryption != "tls13" {
 			log.Fatal(i18n.Text("unsupported encryption (use tls13)"))
@@ -494,8 +494,8 @@ func main() {
 		if *nodeStatusInterval < 0 || (*nodeStatusInterval > 0 && *nodeStatusInterval < time.Second) {
 			log.Fatal("--node-status-interval must be 0 or at least 1s")
 		}
-		if *bondRoute != "" && *bondRoute != "legacy" && *bondRoute != "smart" {
-			log.Fatal("--bond-route must be legacy or smart")
+		if *bondRoute != "" && *bondRoute != "builtin" && *bondRoute != "smart" {
+			log.Fatal("--bond-route must be builtin or smart")
 		}
 		if *bondMetricsInterval < 0 || (*bondMetricsInterval > 0 && *bondMetricsInterval < time.Second) {
 			log.Fatal("--bond-metrics-interval must be 0 or at least 1s")
@@ -504,13 +504,13 @@ func main() {
 			log.Fatal("--bond-metrics-interval requires --bond")
 		}
 		switch *bondTraffic {
-		case "legacy":
+		case "builtin":
 		case "auto", "latency", "throughput":
 			if !*bonded || !*bondAdaptive {
 				log.Fatal("--bond-traffic requires --bond --bond-adaptive")
 			}
 		default:
-			log.Fatal("--bond-traffic must be legacy, auto, latency, or throughput")
+			log.Fatal("--bond-traffic must be builtin, auto, latency, or throughput")
 		}
 		if *bondAutoTune && (!*bonded || !*bondAdaptive) {
 			log.Fatal("--bond-autotune requires --bond --bond-adaptive")
@@ -586,8 +586,8 @@ func main() {
 			failClient(err)
 		}
 		client.MaxConnections = *maxConnections
-		client.SOCKSUsername = os.Getenv("FOXTUNNEL_SOCKS_USER")
-		client.SOCKSPassword = os.Getenv("FOXTUNNEL_SOCKS_PASSWORD")
+		client.SOCKSUsername = os.Getenv("VETROFF_SOCKS_USER")
+		client.SOCKSPassword = os.Getenv("VETROFF_SOCKS_PASSWORD")
 		if err := client.ValidateSOCKSAuth(); err != nil {
 			failClient(err)
 		}
@@ -702,7 +702,7 @@ func main() {
 		defer listener.Close()
 		if addr, ok := listener.Addr().(*net.TCPAddr); !ok || !addr.IP.IsLoopback() {
 			if !client.AllowPublicSOCKS || client.SOCKSUsername == "" {
-				failClient("non-loopback SOCKS5 requires explicit --socks-allow-lan plus FOXTUNNEL_SOCKS_USER/PASSWORD; SOCKS5 passwords are plaintext on the local network")
+				failClient("non-loopback SOCKS5 requires explicit --socks-allow-lan plus VETROFF_SOCKS_USER/PASSWORD; SOCKS5 passwords are plaintext on the local network")
 			}
 		}
 		log.Printf(i18n.Text("SOCKS5 listener: %s"), listener.Addr())

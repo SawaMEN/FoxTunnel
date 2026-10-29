@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
 )
 
 func readAccessPolicy(path string, relay bool) (access.Document, error) {

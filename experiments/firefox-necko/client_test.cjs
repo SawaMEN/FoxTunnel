@@ -54,10 +54,10 @@ test('xpcshell UA keeps native platform and reduced Gecko version', () => {
 test('private IPC requires password method and handles fragmented authentication', () => {
  const p = new SocksParser(); p.push([5, 1, 0]); assert.equal(p.greeting(2), false);
  const q = new SocksParser(); q.push([5, 1, 2]); assert.equal(q.greeting(2), true);
- const auth = [1, 9, ...Buffer.from('foxtunnel'), 3, ...Buffer.from('key')];
+ const auth = [1, 7, ...Buffer.from('vetroff'), 3, ...Buffer.from('key')];
  for (const b of auth.slice(0,-1)) {q.push([b]);assert.equal(q.authentication(),null);}
  q.push([auth.at(-1),5,1,0,1,127,0,0,1,0,80]);
- assert.deepEqual(q.authentication(),{user:'foxtunnel',password:'key'});
+ assert.deepEqual(q.authentication(),{user:'vetroff',password:'key'});
  assert.equal(q.request().authority,'127.0.0.1:80');
 });
 

@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
-	"github.com/SawaMEN/FoxTunnel/internal/webprofile"
+	"github.com/SawaMEN/VetroffProxy/internal/h2profile"
+	"github.com/SawaMEN/VetroffProxy/internal/webprofile"
 )
 
 // The fixture stops capture after verified application I/O, not on a one-second

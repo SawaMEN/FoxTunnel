@@ -80,7 +80,7 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 
 type virtualAddr string
 
-func (a virtualAddr) Network() string { return "foxtunnel" }
+func (a virtualAddr) Network() string { return "vetroff" }
 func (a virtualAddr) String() string  { return string(a) }
 
 type streamConn struct {

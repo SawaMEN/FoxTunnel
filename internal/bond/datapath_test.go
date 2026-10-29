@@ -86,7 +86,7 @@ func (l *recordLink) handler(h *Hub) http.Handler {
 				return
 			}
 			r.Body = io.NopCloser(bytes.NewReader(data))
-			// Buffer the legacy reply before simulating link delay. Sleeping
+			// Buffer the builtin reply before simulating link delay. Sleeping
 			// inside WriteHeader would hold the hub's session mutex and create
 			// artificial serialization absent from the buffered HTTP writer.
 			record := httptest.NewRecorder()

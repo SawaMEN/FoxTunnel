@@ -51,7 +51,7 @@ func TestOpenPinsCoordinatorHubBeforeDial(t *testing.T) {
 	a, _ := url.Parse("https://a.example")
 	expected := strings.Repeat("ab", 32)
 	c := &Client{Endpoints: []*url.URL{a}, Weights: []int{1}, ExpectedHub: expected, Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		if r.Header.Get("X-FoxTunnel-Bond-Hub") != expected {
+		if r.Header.Get("X-Vetroff-Bond-Hub") != expected {
 			t.Error("open did not carry pinned hub")
 		}
 		return &http.Response{StatusCode: 200, ProtoMajor: 2, ContentLength: 32, Body: io.NopCloser(bytes.NewReader(make([]byte, 32)))}, nil
@@ -180,7 +180,7 @@ func TestRetriedUploadClosesOldBodyBeforeBufferReuse(t *testing.T) {
 	var first atomic.Bool
 	oldBody := make(chan io.ReadCloser, 2)
 	c := &Client{Endpoints: []*url.URL{a, b}, Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		if r.ContentLength > headerSize && r.Header.Get("X-FoxTunnel-Bond-Hub") != "" && first.CompareAndSwap(false, true) {
+		if r.ContentLength > headerSize && r.Header.Get("X-Vetroff-Bond-Hub") != "" && first.CompareAndSwap(false, true) {
 			oldBody <- r.Body
 			rewind, err := r.GetBody()
 			if err != nil {

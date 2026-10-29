@@ -3,7 +3,7 @@ on:
   push:
     branches: [main, firefox, fx, xfd, xfd-h3, xfd-arm64, xfd-identity]
     paths:
-      - 'foxtunnel*.go'
+      - 'vetroff*.go'
       - 'necko_integration_test.go'
       - 'scripts/analyze_firefox_self.py'
       - 'scripts/evaluate_fx_fingerprint.py'
@@ -152,12 +152,12 @@ jobs:
           python3 -m unittest discover -s scripts -p 'test_report_fx_operations.py' -v
       - name: Native CONNECT, half-close and certificate trust gates
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          VETROFF_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=1 -timeout=180s
       - name: Full Firefox wire comparison on the verified runtime
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
-          FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
+          VETROFF_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          VETROFF_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
         run: |
           # Sample both subjects and self controls equally. Three trials can
           # miss Firefox's SETTINGS ACK / HPACK table-update scheduling race.
@@ -174,36 +174,36 @@ jobs:
           retention-days: 14
       - name: Operational bounds, path outage and QUIC NAT rebinding
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          VETROFF_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' -v -count=3 -timeout=180s
       - name: Package and verify native Linux ${{ matrix.arch }} launcher
         env:
           RELEASE_VERSION: ${{ inputs.release_version || 'v0.0.0-ci' }}
         run: |
           python3 -m unittest discover -s scripts -p test_package_necko.py -v
-          stamp="-s -w -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Version=$RELEASE_VERSION -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Commit=$GITHUB_SHA -X github.com/SawaMEN/FoxTunnel/internal/buildinfo.Dirty=false"
-          go build -trimpath -ldflags="$stamp" -o necko-launcher ./experiments/firefox-necko/cmd/foxtunnel-necko
+          stamp="-s -w -X github.com/SawaMEN/VetroffProxy/internal/buildinfo.Version=$RELEASE_VERSION -X github.com/SawaMEN/VetroffProxy/internal/buildinfo.Commit=$GITHUB_SHA -X github.com/SawaMEN/VetroffProxy/internal/buildinfo.Dirty=false"
+          go build -trimpath -ldflags="$stamp" -o necko-launcher ./experiments/firefox-necko/cmd/vetroff-necko
           go build -trimpath -ldflags="$stamp" -o necko-main-cli ./cmd/vetroff
           python3 scripts/collect_necko_licenses.py --out /tmp/necko-notices.txt
           cmp /tmp/necko-notices.txt experiments/firefox-necko/LICENSES.go.txt
           provenance=$(find runtime-provenance -name provenance.json -type f)
-          python3 scripts/package_necko.py --runtime runtime --provenance "$provenance" --launcher necko-launcher --cli necko-main-cli --out necko-bundle --archive foxtunnel-necko-linux-${{ matrix.arch }}.tar.gz
-          necko-bundle/foxtunnel-necko --bundle "$PWD/necko-bundle" --verify
-          sha256sum foxtunnel-necko-linux-${{ matrix.arch }}.tar.gz > SHA256SUMS
+          python3 scripts/package_necko.py --runtime runtime --provenance "$provenance" --launcher necko-launcher --cli necko-main-cli --out necko-bundle --archive vetroff-necko-linux-${{ matrix.arch }}.tar.gz
+          necko-bundle/vetroff-necko --bundle "$PWD/necko-bundle" --verify
+          sha256sum vetroff-necko-linux-${{ matrix.arch }}.tar.gz > SHA256SUMS
       - name: Real H2/H3 transfer and SIGTERM from packaged launcher
         env:
-          FOXTUNNEL_BUNDLE: ${{ github.workspace }}/necko-bundle
+          VETROFF_BUNDLE: ${{ github.workspace }}/necko-bundle
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoPackagedLauncher$' -v -count=1 -timeout=90s
       - name: Integrated main CLI and SDK native gates
         env:
-          FOXTUNNEL_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
+          VETROFF_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
           NECKO_INTEGRATION_REPEATS: ${{ github.event_name == 'push' && '1' || '3' }}
         run: go test -race . ./experiments/firefox-necko -run '^Test(IntegratedNecko|GeckoManaged(IPC|UDP|HTTP|Bond|XHTTP))' -v -count="$NECKO_INTEGRATION_REPEATS" -timeout=900s
       - name: Managed engine Firefox wire comparison
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
-          FOXTUNNEL_FINGERPRINT_BUNDLE: ${{ github.workspace }}/necko-bundle
-          FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-integrated-fingerprint/observations
+          VETROFF_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          VETROFF_FINGERPRINT_BUNDLE: ${{ github.workspace }}/necko-bundle
+          VETROFF_FINGERPRINT_OUT: ${{ github.workspace }}/necko-integrated-fingerprint/observations
         run: |
           go test -race ./experiments/firefox-necko -run '^TestGeckoBrowserFingerprint$' -v -count=3 -timeout=180s
           python3 scripts/compare_necko_firefox.py --observations necko-integrated-fingerprint/observations --out necko-integrated-fingerprint/comparison.json
@@ -211,9 +211,9 @@ jobs:
         # Full resource and paired benchmarking runs on release/manual verification.
         if: github.event_name != 'push'
         env:
-          FOXTUNNEL_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
-          FOXTUNNEL_MANAGED_SOAK_SECONDS: '60'
-          FOXTUNNEL_MANAGED_SOAK_OUT: ${{ github.workspace }}/necko-managed-operations
+          VETROFF_NECKO_BUNDLE: ${{ github.workspace }}/necko-bundle
+          VETROFF_MANAGED_SOAK_SECONDS: '60'
+          VETROFF_MANAGED_SOAK_OUT: ${{ github.workspace }}/necko-managed-operations
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoManagedSoak$' -v -count=1 -timeout=1200s
       - uses: actions/upload-artifact@v4
         if: always()
@@ -233,27 +233,27 @@ jobs:
         # Full resource and paired benchmarking runs on release/manual verification.
         if: github.event_name != 'push'
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
-          FOXTUNNEL_SOAK_SECONDS: '300'
-          FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
+          VETROFF_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          VETROFF_SOAK_SECONDS: '300'
+          VETROFF_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=720s
       - name: FX pinned pre-optimization paired control (60 seconds per protocol)
         # Full resource and paired benchmarking runs on release/manual verification.
         if: github.event_name != 'push'
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
-          FOXTUNNEL_SOAK_SECONDS: '60'
-          FOXTUNNEL_SOAK_VARIANT: baseline
-          FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations-paired-baseline
+          VETROFF_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          VETROFF_SOAK_SECONDS: '60'
+          VETROFF_SOAK_VARIANT: baseline
+          VETROFF_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations-paired-baseline
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=240s
       - name: FX current paired workload (60 seconds per protocol)
         # Full resource and paired benchmarking runs on release/manual verification.
         if: github.event_name != 'push'
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
-          FOXTUNNEL_SOAK_SECONDS: '60'
-          FOXTUNNEL_SOAK_VARIANT: current
-          FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations-paired-current
+          VETROFF_XPCSHELL: ${{ github.workspace }}/runtime/xpcshell
+          VETROFF_SOAK_SECONDS: '60'
+          VETROFF_SOAK_VARIANT: current
+          VETROFF_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations-paired-current
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -v -count=1 -timeout=240s
       - name: FX resource efficiency report
         # Full resource and paired benchmarking runs on release/manual verification.
@@ -276,9 +276,9 @@ jobs:
           retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
-          name: foxtunnel-necko-linux-${{ matrix.arch }}
+          name: vetroff-necko-linux-${{ matrix.arch }}
           path: |
-            foxtunnel-necko-linux-${{ matrix.arch }}.tar.gz
+            vetroff-necko-linux-${{ matrix.arch }}.tar.gz
             SHA256SUMS
           if-no-files-found: error
           compression-level: 0

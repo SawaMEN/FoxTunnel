@@ -2,7 +2,7 @@
  * No HTTP requests are generated; success means certificate auth was
  * REJECTED, never that the peer was authenticated. */
 #define _POSIX_C_SOURCE 200809L
-#include "foxtunnel_neqo.h"
+#include "vetroff_neqo.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <inttypes.h>

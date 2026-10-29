@@ -1,12 +1,12 @@
-package foxtunnel
+package vetroff
 
 import (
 	"context"
 	"net"
 	"sync"
 
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 )
 
 type Datagram = tunnel.Datagram

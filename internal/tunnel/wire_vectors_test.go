@@ -9,8 +9,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 type wireVector struct {
@@ -43,7 +43,7 @@ func TestWireDraftVectors(t *testing.T) {
 		Frames         []wireVector
 		Padding        []wireVector
 	}
-	if err = json.Unmarshal(data, &vectors); err != nil || vectors.Schema != 1 || vectors.Protocol != "foxtunnel-draft-0" {
+	if err = json.Unmarshal(data, &vectors); err != nil || vectors.Schema != 1 || vectors.Protocol != "vetroff-draft-0" {
 		t.Fatal("invalid vector manifest", err)
 	}
 	decode := func(value string) []byte {

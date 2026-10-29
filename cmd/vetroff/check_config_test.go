@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/bootstrap"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
 )
 
 func checkServerFixture(t *testing.T) (bootstrap.ServerConfig, string) {
@@ -270,7 +270,7 @@ func TestCheckConfigUnavailableNSS(t *testing.T) {
 }
 
 func TestCheckConfigArgumentsAndExitStatus(t *testing.T) {
-	for _, args := range [][]string{nil, {"--config", "a", "--link-file", "b"}, {"--link-file", "-"}, {"--config", "a", "--engine", "legacy"}, {"--config", "a", "extra"}, {"--json=private-password-marker"}} {
+	for _, args := range [][]string{nil, {"--config", "a", "--link-file", "b"}, {"--link-file", "-"}, {"--config", "a", "--engine", "builtin"}, {"--config", "a", "extra"}, {"--json=private-password-marker"}} {
 		var out bytes.Buffer
 		err := checkConfigCommand(args, &out)
 		if err == nil || strings.Contains(err.Error()+out.String(), "private-password-marker") {

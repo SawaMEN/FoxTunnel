@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
         if (errno != EINTR) return 2;
     }
     if (clock_gettime(CLOCK_MONOTONIC, &ended)) return 2;
-    fprintf(stderr, "\nFOXTUNNEL_RESOURCE {\"user\":%.9f,\"system\":%.9f,\"rss_kib\":%ld,\"wall\":%.9f}\n",
+    fprintf(stderr, "\nVETROFF_RESOURCE {\"user\":%.9f,\"system\":%.9f,\"rss_kib\":%ld,\"wall\":%.9f}\n",
             usage.ru_utime.tv_sec + usage.ru_utime.tv_usec / 1e6,
             usage.ru_stime.tv_sec + usage.ru_stime.tv_usec / 1e6,
             usage.ru_maxrss, ended.tv_sec - started.tv_sec +

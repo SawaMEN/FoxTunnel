@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 )
 
 func TestAuditPrimaryPinAppliesToDiscoveredOriginAlias(t *testing.T) {

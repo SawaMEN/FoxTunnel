@@ -40,7 +40,7 @@ type Recorder struct {
 
 func New() *Recorder {
 	return &Recorder{s: Snapshot{
-		Schema: 1, Engine: "legacy", Transport: "h2-connect",
+		Schema: 1, Engine: "builtin", Transport: "h2-connect",
 		TLSBackend: "auto", QUICBackend: "quic-go",
 		H3Fallback: "none", State: "configured",
 	}}
@@ -50,7 +50,7 @@ func (r *Recorder) Configure(engine, transport, tlsBackend, quicBackend, fallbac
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if engine == "" {
-		engine = "legacy"
+		engine = "builtin"
 	}
 	if transport == "" {
 		transport = "h2-connect"
@@ -64,7 +64,7 @@ func (r *Recorder) Configure(engine, transport, tlsBackend, quicBackend, fallbac
 	if fallback == "" {
 		fallback = "none"
 	}
-	r.s.Engine = fixedName(engine, "legacy", "mozilla", "necko")
+	r.s.Engine = fixedName(engine, "builtin", "mozilla", "necko")
 	r.s.Transport = fixedName(transport, "h2-connect", "h3-connect", "h2-post", "h3-post", "wss", "xhttp-stream-one", "xhttp-stream-up", "xhttp-packet-up")
 	r.s.TLSBackend = fixedName(tlsBackend, "auto", "go", "nss")
 	r.s.QUICBackend, r.s.H3Fallback = fixedName(quicBackend, "quic-go", "neqo", "necko"), fixedName(fallback, "none", "h2")

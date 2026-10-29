@@ -64,7 +64,7 @@ func TestStage5CoverHTTPSConditionalAndCache(t *testing.T) {
 					t.Fatal(err)
 				}
 				req.Header.Set("Proxy-Authorization", "Basic invalid-private-header")
-				req.Header.Set("X-FoxTunnel-Padding", "unsupported")
+				req.Header.Set("X-Vetroff-Padding", "unsupported")
 				if configure != nil {
 					configure(req)
 				}

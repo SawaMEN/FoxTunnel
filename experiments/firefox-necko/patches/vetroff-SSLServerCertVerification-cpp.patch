@@ -5,7 +5,7 @@
    const nsCString echPublicName(channelPreInfo.echPublicName);
    const nsACString& hostname =
 -      verifyToEchPublicName ? echPublicName : socketInfo->GetHostName();
-+      verifyToEchPublicName && !socketInfo->HasFoxTunnelPolicy()
++      verifyToEchPublicName && !socketInfo->HasVetroffPolicy()
 +          ? echPublicName : socketInfo->GetHostName();
    socketInfo->SetCertVerificationWaiting();
    rv = AuthCertificateHookInternal(socketInfo, static_cast<const void*>(fd),
@@ -16,7 +16,7 @@
    if (mSucceeded) {
 +    nsTArray<uint8_t> certBytes(mBuiltChain.ElementAt(0).Clone());
 +    nsCOMPtr<nsIX509Cert> leaf(new nsNSSCertificate(std::move(certBytes)));
-+    if (!mSocketControl->CheckFoxTunnelPin(leaf)) {
++    if (!mSocketControl->CheckVetroffPin(leaf)) {
 +      mSucceeded = false;
 +      mFinalError = mozilla::pkix::MOZILLA_PKIX_ERROR_KEY_PINNING_FAILURE;
 +      // A pin failure is terminal and cannot be certificate-overridden.

@@ -189,7 +189,7 @@ func TestLaneBindingFrameBoundsAndAdmission(t *testing.T) {
 			data = append(data, frame...)
 			req, _ := http.NewRequestWithContext(ctx, "POST", c.Endpoints[0].String()+Path, bytes.NewReader(data))
 			req.Header.Set(LaneHeader, LaneVersion)
-			req.Header.Set("X-FoxTunnel-Bond-Hub", s.hub)
+			req.Header.Set("X-Vetroff-Bond-Hub", s.hub)
 			resp, err := c.Transport.RoundTrip(req)
 			if err != nil {
 				t.Fatal(err)
@@ -224,7 +224,7 @@ func TestLaneAdmissionLimit(t *testing.T) {
 		held = append(held, writer)
 		req, _ := http.NewRequestWithContext(ctx, "POST", c.Endpoints[0].String()+Path, reader)
 		req.Header.Set(LaneHeader, LaneVersion)
-		req.Header.Set("X-FoxTunnel-Bond-Hub", s.hub)
+		req.Header.Set("X-Vetroff-Bond-Hub", s.hub)
 		go func() { _, _ = writer.Write(s.token[:]) }()
 		resp, err := c.Transport.RoundTrip(req)
 		if err != nil {
@@ -279,13 +279,13 @@ func TestMixedLegacyRelayNegotiatesPerEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(got, payload) {
-		t.Fatal("legacy fallback corrupted stream")
+		t.Fatal("builtin fallback corrupted stream")
 	}
 	s.lanes.mu.Lock()
-	legacy := s.lanes.legacy[c.Endpoints[0].String()+Path]
+	builtin := s.lanes.builtin[c.Endpoints[0].String()+Path]
 	s.lanes.mu.Unlock()
-	if !legacy {
-		t.Fatal("legacy relay was not exercised")
+	if !builtin {
+		t.Fatal("builtin relay was not exercised")
 	}
 }
 

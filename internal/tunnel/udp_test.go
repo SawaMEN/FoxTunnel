@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 func udpFixture(t *testing.T, server *Server) (*Client, string) {
@@ -126,7 +126,7 @@ func TestUDPAssociateH2RoundTrip(t *testing.T) {
 	}
 	defer udp.Close()
 	_ = udp.SetDeadline(time.Now().Add(4 * time.Second))
-	payload := []byte("FoxTunnel UDP query / response")
+	payload := []byte("Vetroff UDP query / response")
 	wire, err := udpproto.Encode(udpproto.Packet{Host: "127.0.0.1", Port: uint16(target.LocalAddr().(*net.UDPAddr).Port), Data: payload})
 	if err != nil {
 		t.Fatal(err)

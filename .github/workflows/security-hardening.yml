@@ -5,7 +5,7 @@ on:
     paths:
       - 'internal/access/**'
       - 'internal/authheader/**'
-      - 'foxtunnel*.go'
+      - 'vetroff*.go'
       - 'integration/external/**'
       - 'internal/profile/**'
       - 'internal/tunnel/**'
@@ -49,9 +49,9 @@ jobs:
           umask 077
           python3 scripts/fingerprint_audit.py \
             --firefox docs/measurements/2026-10-18/firefox-158-linux.json \
-            --foxtunnel docs/measurements/2026-10-19/nss-firefox158-page.json \
+            --vetroff docs/measurements/2026-10-19/nss-firefox158-page.json \
             --out /tmp/vetroff-security-fingerprint-${{ github.run_id }}.json
-          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert not d["comparisons_to_firefox"]["foxtunnel"]["metadata_equal"]; assert not d["all_three_and_both_protocols_measured"]' /tmp/vetroff-security-fingerprint-${{ github.run_id }}.json
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert not d["comparisons_to_firefox"]["vetroff"]["metadata_equal"]; assert not d["all_three_and_both_protocols_measured"]' /tmp/vetroff-security-fingerprint-${{ github.run_id }}.json
           rm -f /tmp/vetroff-security-fingerprint-${{ github.run_id }}.json
       - name: Limits
         run: |

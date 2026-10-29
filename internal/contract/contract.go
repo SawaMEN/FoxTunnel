@@ -3,4 +3,4 @@ package contract
 
 const SDKSchema = 1
 const ProcessSchema = 1
-const ProtocolDraft = "foxtunnel-draft-0"
+const ProtocolDraft = "vetroff-draft-0"

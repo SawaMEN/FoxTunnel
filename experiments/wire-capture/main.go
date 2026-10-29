@@ -18,8 +18,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/webprofile"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/webprofile"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 	h3log "github.com/quic-go/quic-go/http3/qlog"

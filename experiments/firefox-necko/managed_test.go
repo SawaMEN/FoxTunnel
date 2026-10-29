@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 	"io"
 	"net"
 	"net/http"
@@ -18,7 +18,7 @@ import (
 )
 
 func TestGeckoManagedIPC(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("verified integration bundle required")
 	}
@@ -37,7 +37,7 @@ func testGeckoManagedIPC(t *testing.T, bundle, mode string) {
 	server := &tunnel.Server{Username: "u", Password: "p", AllowPrivate: true, EnableUDP: true}
 	cfg := nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
-		if r.URL.Path == "/.well-known/foxtunnel-udp-v1" {
+		if r.URL.Path == "/.well-known/vetroff-udp-v1" {
 			nativePOST.Add(1)
 			if r.ProtoMajor == expectedProtocol {
 				nativeProtocol.Add(1)
@@ -169,7 +169,7 @@ func testGeckoManagedIPC(t *testing.T, bundle, mode string) {
 // The peer flushes response headers before reading upload bytes. This detects
 // Gecko buffering an unknown-length upload until EOF, as well as lost duplex.
 func TestGeckoManagedUDPStream(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("verified integration bundle required")
 	}
@@ -186,7 +186,7 @@ func testGeckoManagedUDPStream(t *testing.T, bundle, mode string) {
 		expectedProtocol = 3
 	}
 	cfg := nativeProxy(t, mode, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/.well-known/foxtunnel-udp-stream-v2" || r.Method != "POST" || r.ProtoMajor != expectedProtocol || r.Header.Get("Proxy-Authorization") == "" {
+		if r.URL.Path != "/.well-known/vetroff-udp-stream-v2" || r.Method != "POST" || r.ProtoMajor != expectedProtocol || r.Header.Get("Proxy-Authorization") == "" {
 			http.Error(w, "invalid stream", http.StatusBadRequest)
 			return
 		}

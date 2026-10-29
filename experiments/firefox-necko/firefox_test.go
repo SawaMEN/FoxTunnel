@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 )
 
 func TestConfigRejectsDroppedTrustAndDuplicateKeys(t *testing.T) {
@@ -77,9 +77,9 @@ func TestGeckoCONNECTHandoff(t *testing.T) {
 
 func testGeckoCONNECT(t *testing.T, halfClose bool) {
 	t.Helper()
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {
@@ -115,7 +115,7 @@ func testGeckoCONNECT(t *testing.T, halfClose bool) {
 					mu.Lock()
 					seen = append(seen, r.ProtoMajor)
 					mu.Unlock()
-					if r.Host != echo.Addr().String() || r.URL.Path != "" || r.Header.Get("X-FoxTunnel-Target") != "" {
+					if r.Host != echo.Addr().String() || r.URL.Path != "" || r.Header.Get("X-Vetroff-Target") != "" {
 						t.Error("not an authority-form CONNECT", r.Method, r.Host, r.URL.Path)
 					}
 				}
@@ -232,9 +232,9 @@ func startTestHelperContext(t *testing.T, parent context.Context, runtime string
 }
 
 func TestGeckoTrustBeforeCredentials(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		for _, fault := range []string{"untrusted-root", "wrong-hostname"} {
@@ -315,7 +315,7 @@ func testCertificate(t *testing.T, dnsName ...string) (tls.Certificate, []byte) 
 		t.Fatal(err)
 	}
 	serial.Add(serial, big.NewInt(1))
-	root := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: "FoxTunnel test CA " + serial.Text(16)}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature}
+	root := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: "Vetroff test CA " + serial.Text(16)}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature}
 	ca, err := x509.CreateCertificate(rand.Reader, root, root, &key.PublicKey, key)
 	if err != nil {
 		t.Fatal(err)

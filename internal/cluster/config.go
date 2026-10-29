@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/SawaMEN/FoxTunnel/internal/safejson"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/safejson"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 )
 
-const Path = "/.well-known/foxtunnel-cluster-v1"
+const Path = "/.well-known/vetroff-cluster-v1"
 const MaxBytes = 16 << 10
 
 type Node struct {

@@ -4,14 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
 	"io"
 	"net/http"
 	"sync"
 )
 
 const (
-	paddingHeader         = "X-FoxTunnel-Padding"
+	paddingHeader         = "X-Vetroff-Padding"
 	paddingVersion        = "initial-v1"
 	initialPaddingRecords = 8
 	maxPaddingPayload     = 16 << 10
@@ -19,7 +19,7 @@ const (
 	paddingBufferSize     = 3 + maxPaddingPayload + maxPaddingBytes
 )
 
-// Negotiation is inside authenticated HTTPS. This is FoxTunnel's own versioned
+// Negotiation is inside authenticated HTTPS. This is Vetroff's own versioned
 // experiment, not wire-level compatibility with NaiveProxy or a Firefox profile.
 func paddingRequested(header http.Header) (bool, error) {
 	values := header.Values(paddingHeader)

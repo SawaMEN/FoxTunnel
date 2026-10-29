@@ -6,8 +6,8 @@ import (
 	"io"
 	"net"
 
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
 )
 
 // RecordRejection lets SDK admission report local limits into the same bounded

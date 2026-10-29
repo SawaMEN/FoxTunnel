@@ -1,7 +1,7 @@
 package buildinfo
 
 import (
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
 	"testing"
 )
 

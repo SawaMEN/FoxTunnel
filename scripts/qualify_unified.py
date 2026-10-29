@@ -48,9 +48,9 @@ def qualify(a):
             info.get('goarch') != a.arch or info.get('dirty') is not False or
             info.get('build_flavor') != 'nss' or
             info.get('nss_version') != nss['runtime']['mozilla']['nss_version'] or
-            not {'necko', 'mozilla', 'legacy'} <= set(info.get('transport_engines', []))):
+            not {'necko', 'mozilla', 'builtin'} <= set(info.get('transport_engines', []))):
         raise ValueError('actual combined binary differs from source/version/backends')
-    subprocess.run([str(bundle/'foxtunnel-necko'), '--bundle', str(bundle), '--verify'],
+    subprocess.run([str(bundle/'vetroff-necko'), '--bundle', str(bundle), '--verify'],
                    timeout=60, check=True)
     result = dict(schema=1, status='verified-before-transfer-gates', platform='linux-'+a.arch,
                   version=a.version, commit=a.commit, archive=a.archive.name,

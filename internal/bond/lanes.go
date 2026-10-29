@@ -14,13 +14,13 @@ import (
 
 // LaneHeader advertises and requests bounded duplex record exchange.
 // Old hubs/relays omit the capability and retain per-record RPC.
-const LaneHeader = "X-FoxTunnel-Bond-Lane"
+const LaneHeader = "X-Vetroff-Bond-Lane"
 const LaneVersion = "records-v1"
 
 var errLaneUnsupported = errors.New("bond lane negotiation unavailable")
 
 func (h *Hub) serveLane(w http.ResponseWriter, r *http.Request) {
-	if r.ProtoMajor != 2 && r.ProtoMajor != 3 || r.Header.Get("X-FoxTunnel-Bond-Hub") == "" {
+	if r.ProtoMajor != 2 && r.ProtoMajor != 3 || r.Header.Get("X-Vetroff-Bond-Hub") == "" {
 		http.Error(w, "lane requires verified hub and h2/h3", 400)
 		return
 	}
@@ -76,7 +76,7 @@ func (h *Hub) serveLane(w http.ResponseWriter, r *http.Request) {
 		}
 		idle.Reset(lifetime)
 		wait := time.Duration(binary.BigEndian.Uint32(size[4:])) * time.Millisecond
-		r.Header.Set("X-FoxTunnel-Bond-Wait", max(20*time.Millisecond, min(time.Second, wait)).String())
+		r.Header.Set("X-Vetroff-Bond-Wait", max(20*time.Millisecond, min(time.Second, wait)).String())
 		reply.status = 0
 		reply.data = reply.data[:0]
 		clear(reply.header)
@@ -135,12 +135,12 @@ func writeFull(w io.Writer, p []byte) error {
 }
 
 type laneTransport struct {
-	base   http.RoundTripper
-	ctx    context.Context
-	mu     sync.Mutex
-	lanes  []*clientLane
-	closed bool
-	legacy map[string]bool
+	base    http.RoundTripper
+	ctx     context.Context
+	mu      sync.Mutex
+	lanes   []*clientLane
+	closed  bool
+	builtin map[string]bool
 }
 type clientLane struct {
 	endpoint   string
@@ -258,12 +258,12 @@ func (t *laneTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 func (t *laneTransport) roundTripInto(r *http.Request, buffer []byte) (*http.Response, error) {
 	t.mu.Lock()
-	legacy := t.legacy[r.URL.String()]
+	builtin := t.builtin[r.URL.String()]
 	t.mu.Unlock()
-	if legacy {
+	if builtin {
 		return t.base.RoundTrip(r)
 	}
-	// Session creation/close remain legacy operations, including tombstones.
+	// Session creation/close remain builtin operations, including tombstones.
 	if r.ContentLength < headerSize {
 		return nil, errors.New("invalid bond request")
 	}
@@ -291,13 +291,13 @@ func (t *laneTransport) roundTripInto(r *http.Request, buffer []byte) (*http.Res
 		result.err = errors.Join(io.ErrUnexpectedEOF, result.err)
 	}
 	if errors.Is(result.err, errLaneUnsupported) {
-		// No operation record has been sent: only the session binding. A legacy
+		// No operation record has been sent: only the session binding. A builtin
 		// relay can omit the capability even when a different entry advertised it.
 		t.mu.Lock()
-		if t.legacy == nil {
-			t.legacy = make(map[string]bool)
+		if t.builtin == nil {
+			t.builtin = make(map[string]bool)
 		}
-		t.legacy[r.URL.String()] = true
+		t.builtin[r.URL.String()] = true
 		t.mu.Unlock()
 		if r.GetBody == nil {
 			return nil, errLaneUnsupported
@@ -314,7 +314,7 @@ func (t *laneTransport) roundTripInto(r *http.Request, buffer []byte) (*http.Res
 }
 func (l *clientLane) exchange(r *http.Request, buffer []byte) (*http.Response, error) {
 	if l.reader == nil {
-		// Token is the first field after the operation in the legacy request body.
+		// Token is the first field after the operation in the builtin request body.
 		var first [headerSize]byte
 		if _, err := io.ReadFull(r.Body, first[:]); err != nil {
 			return nil, err
@@ -339,10 +339,10 @@ func (l *clientLane) exchange(r *http.Request, buffer []byte) (*http.Response, e
 			return &http.Response{StatusCode: ready.response.StatusCode, ProtoMajor: ready.response.ProtoMajor, Body: http.NoBody, ContentLength: 0}, nil
 		}
 		l.reader = ready.response.Body
-		if err := l.send(rbody, r.ContentLength, r.Header.Get("X-FoxTunnel-Bond-Wait")); err != nil {
+		if err := l.send(rbody, r.ContentLength, r.Header.Get("X-Vetroff-Bond-Wait")); err != nil {
 			return nil, err
 		}
-	} else if err := l.send(r.Body, r.ContentLength, r.Header.Get("X-FoxTunnel-Bond-Wait")); err != nil {
+	} else if err := l.send(r.Body, r.ContentLength, r.Header.Get("X-Vetroff-Bond-Wait")); err != nil {
 		return nil, err
 	}
 	var header [6]byte

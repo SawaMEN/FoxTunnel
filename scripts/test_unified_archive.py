@@ -74,7 +74,7 @@ class UnifiedDeploymentTests(unittest.TestCase):
             import tarfile
             with tarfile.open(archive) as tf:
                 tf.extractall(extracted, filter="data")
-            bundle = extracted / "foxtunnel-necko"
+            bundle = extracted / "vetroff-necko"
             (bundle / "vetroff").write_bytes(b"tampered")
             # Extracted manifest must never authorize modified files.
             manifest = json.loads((bundle / "manifest.json").read_text())

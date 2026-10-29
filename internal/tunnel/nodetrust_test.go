@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 )
 
 func TestExplicitNodePinsBoundToEveryOrigin(t *testing.T) {

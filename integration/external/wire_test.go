@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	ft "github.com/SawaMEN/FoxTunnel"
+	ft "github.com/SawaMEN/VetroffProxy"
 )
 
 // This peer uses only the documented HTTP contract and standard library.
-// It deliberately does not call the FoxTunnel client or import internal codecs.
+// It deliberately does not call the Vetroff client or import internal codecs.
 func TestRawHTTP2WireDraft(t *testing.T) {
 	handler, err := ft.NewServer(ft.ServerConfig{RequireProtocolNegotiation: true, Credentials: ft.Credentials{Username: "alice", Password: "secret"}, AllowPrivateDestinations: true})
 	if err != nil {
@@ -47,7 +47,7 @@ func TestRawHTTP2WireDraft(t *testing.T) {
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	for _, version := range []string{"foxtunnel-draft-999", "foxtunnel-draft-0"} {
+	for _, version := range []string{"vetroff-draft-999", "vetroff-draft-0"} {
 		reader, writer := io.Pipe()
 		request, err := http.NewRequestWithContext(ctx, http.MethodConnect, server.URL, reader)
 		if err != nil {
@@ -55,8 +55,8 @@ func TestRawHTTP2WireDraft(t *testing.T) {
 		}
 		request.Host = listener.Addr().String()
 		request.Header.Set("Proxy-Authorization", "Basic YWxpY2U6c2VjcmV0")
-		request.Header.Set("X-FoxTunnel-Version", version)
-		request.Header.Set("X-FoxTunnel-Require", "tcp")
+		request.Header.Set("X-Vetroff-Version", version)
+		request.Header.Set("X-Vetroff-Require", "tcp")
 		response, err := transport.RoundTrip(request)
 		if err != nil {
 			reader.Close()
@@ -66,7 +66,7 @@ func TestRawHTTP2WireDraft(t *testing.T) {
 		if response.ProtoMajor != 2 {
 			t.Fatal("test did not use real HTTP/2")
 		}
-		if version != "foxtunnel-draft-0" {
+		if version != "vetroff-draft-0" {
 			response.Body.Close()
 			reader.Close()
 			writer.Close()
@@ -75,7 +75,7 @@ func TestRawHTTP2WireDraft(t *testing.T) {
 			}
 			continue
 		}
-		if response.StatusCode != 200 || response.Header.Get("X-FoxTunnel-Version") != version || response.Header.Get("X-FoxTunnel-Capabilities") != "tcp" {
+		if response.StatusCode != 200 || response.Header.Get("X-Vetroff-Version") != version || response.Header.Get("X-Vetroff-Capabilities") != "tcp" {
 			response.Body.Close()
 			reader.Close()
 			writer.Close()

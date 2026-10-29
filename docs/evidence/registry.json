@@ -11,20 +11,20 @@
       "source_commit": null
     },
     {
-      "id": "foxtunnel-nss-h2",
+      "id": "vetroff-nss-h2",
       "path": "docs/measurements/2026-10-19/nss-firefox158-page.json",
-      "sha256": "33e3bc50ae8c214ac72908e481e2f7e72ebc9421f6b1a179ac8f0d8bbc953649",
+      "sha256": "a334f67899f05e8e299928fc0160794c34996df73a8ca83a0d54e87c3d91d0f6",
       "kind": "tls_h2",
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "scope": "historical-loopback",
       "source_commit": null
     },
     {
       "id": "native-operations-30m",
       "path": "docs/measurements/2026-10-20/native-operations.json",
-      "sha256": "786862ca089dcc06c55d4978301d3a3df93893865e18d9f93e82b4043a3e7fba",
+      "sha256": "218545b674661b1977313563ba4cc8cc2e96d9984cef504e1fcf1e3d0997fbd1",
       "kind": "native_operations",
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "scope": "native-loopback",
       "source_commit": "a3621705d7b1375df3457c7ce87483652e3c695e"
     },
@@ -65,20 +65,20 @@
       "source_commit": "0539676ac91d9607caa00869b709e66643b91ac5"
     },
     {
-      "id": "foxtunnel-controlled-h2-20261021",
-      "path": "docs/measurements/2026-10-21/wire/foxtunnel-h2.json",
+      "id": "vetroff-controlled-h2-20261021",
+      "path": "docs/measurements/2026-10-21/wire/vetroff-h2.json",
       "sha256": "f8dda06d2f90b2ee5b1f0e04b6d5bb7be29e6de7ca6b792abaaac66abc695700",
       "kind": "tls_h2",
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "scope": "controlled-loopback",
       "source_commit": "03e9c9eab0e84d66def2e38ff1df751bcb5a70fa"
     },
     {
-      "id": "foxtunnel-controlled-h3-20261021",
-      "path": "docs/measurements/2026-10-21/wire/foxtunnel-h3.json",
+      "id": "vetroff-controlled-h3-20261021",
+      "path": "docs/measurements/2026-10-21/wire/vetroff-h3.json",
       "sha256": "e64e99a8a187cb37c106e1ab2f522ac61eb02079e8f05f15aa06271128eae139",
       "kind": "quic_h3",
-      "subject": "foxtunnel",
+      "subject": "vetroff",
       "scope": "controlled-loopback",
       "source_commit": "03e9c9eab0e84d66def2e38ff1df751bcb5a70fa"
     }
@@ -86,8 +86,8 @@
   "comparison": {
     "firefox_tls_h2": "firefox-controlled-h2-20261021",
     "firefox_quic_h3": "firefox-controlled-h3-20261021",
-    "foxtunnel_tls_h2": "foxtunnel-controlled-h2-20261021",
-    "foxtunnel_quic_h3": "foxtunnel-controlled-h3-20261021",
+    "vetroff_tls_h2": "vetroff-controlled-h2-20261021",
+    "vetroff_quic_h3": "vetroff-controlled-h3-20261021",
     "naive_tls_h2": "naive-controlled-h2-20261021",
     "naive_quic_h3": "naive-controlled-h3-20261021"
   }

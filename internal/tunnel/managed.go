@@ -3,7 +3,7 @@ package tunnel
 import (
 	"context"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
 	"io"
 	"net"
 	"net/url"
@@ -144,7 +144,7 @@ func (c *Client) relayManaged(ctx context.Context, local net.Conn, target string
 
 // exchangeManagedUDP requires an authenticated Mozilla HTTP/2 IPC adapter.
 // Absence of the feature is an error; never send credentials or packets
-// through the legacy Go transport as an implicit fallback.
+// through the builtin Go transport as an implicit fallback.
 func (c *Client) exchangeManagedUDP(ctx context.Context, wire []byte) ([]byte, error) {
 	if err := c.Prepare(ctx); err != nil {
 		return nil, err

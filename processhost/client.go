@@ -1,4 +1,4 @@
-// Package processhost supervises a FoxTunnel client without linking the tunnel
+// Package processhost supervises a Vetroff client without linking the tunnel
 // engine or NSS into the host. The caller supplies a trusted executable bundle.
 package processhost
 
@@ -17,12 +17,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
 )
 
-var ErrContract = errors.New("incompatible FoxTunnel process contract")
-var ErrStart = errors.New("FoxTunnel process did not become ready")
-var ErrRuntime = errors.New("FoxTunnel process failed")
+var ErrContract = errors.New("incompatible Vetroff process contract")
+var ErrStart = errors.New("Vetroff process did not become ready")
+var ErrRuntime = errors.New("Vetroff process failed")
 
 type ClientOptions struct {
 	Executable string // Absolute path to a verified complete bundle.
@@ -68,7 +68,7 @@ func (b *boundedOutput) Write(p []byte) (int, error) {
 func cleanEnv() []string {
 	var env []string
 	for _, v := range os.Environ() {
-		if !strings.HasPrefix(strings.ToUpper(v), "FOXTUNNEL_") {
+		if !strings.HasPrefix(strings.ToUpper(v), "VETROFF_") {
 			env = append(env, v)
 		}
 	}

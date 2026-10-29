@@ -80,7 +80,7 @@ def measure(binary, variant, scenario, resource_runner=None):
 
 
 def parse_resources(log):
-    records = re.findall(r'^FOXTUNNEL_RESOURCE (.+)$', log, re.MULTILINE)
+    records = re.findall(r'^VETROFF_RESOURCE (.+)$', log, re.MULTILINE)
     if len(records) != 1:
         raise ValueError('missing or duplicate resource record')
     record = json.loads(records[0])

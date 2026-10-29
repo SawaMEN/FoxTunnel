@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
 )
 
 // BondMetrics returns a local snapshot of the current Bond ingress paths.
@@ -37,7 +37,7 @@ func (c *Client) BondMetrics() []bond.BondPathMetric {
 // EnableBond must be called after endpoint/TLS configuration, before Serve.
 func validateBondTraffic(mode string, adaptive bool) error {
 	switch mode {
-	case "", "legacy":
+	case "", "builtin":
 		return nil
 	case "auto", "latency", "throughput":
 		if adaptive {
@@ -59,7 +59,7 @@ func (c *Client) EnableBond() error {
 	if err := validateBondTraffic(c.BondTraffic, c.BondAdaptive); err != nil {
 		return err
 	}
-	if c.BondRoute != "" && c.BondRoute != "legacy" {
+	if c.BondRoute != "" && c.BondRoute != "builtin" {
 		return errors.New("smart bond route requires authenticated discovery")
 	}
 	if c.balance == "adaptive" {

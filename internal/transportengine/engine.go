@@ -1,26 +1,26 @@
-// Package transportengine resolves local FoxTunnel client transport intent.
+// Package transportengine resolves local Vetroff client transport intent.
 // It does not change the on-wire protocol or bypass certificate verification.
 package transportengine
 
 import (
 	"errors"
 	"fmt"
-	firefox "github.com/SawaMEN/FoxTunnel/experiments/firefox-necko"
+	firefox "github.com/SawaMEN/VetroffProxy/experiments/firefox-necko"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 // Config is local client policy. It is not serialized into connection links.
-// Engine is legacy (default), auto, mozilla (NSS/Neqo) or necko (owned runtime).
+// Engine is builtin (default), auto, mozilla (NSS/Neqo) or necko (owned runtime).
 type Config struct {
 	NeckoBundle string
 	// AutoNeckoExcluded prevents selecting Necko for features that its runtime cannot enforce.
@@ -40,7 +40,7 @@ type Config struct {
 // A Mozilla plan requires native NSS and uses Neqo only when compiled in.
 type Plan struct{ Config }
 
-// Resolve keeps the historical CLI/SDK defaults for legacy mode. Mozilla
+// Resolve keeps the historical CLI/SDK defaults for builtin mode. Mozilla
 // mode selects Neqo/H3 when available, otherwise NSS/H2 for an automatic
 // transport. It never substitutes Go TLS or quic-go for Mozilla explicitly.
 // DefaultNeckoBundle discovers a colocated runtime without trusting its contents.
@@ -66,8 +66,8 @@ func Resolve(cfg Config) (Plan, error) {
 		return Plan{}, errors.New("Necko bundle requires engine necko or auto")
 	}
 	switch cfg.Engine {
-	case "", "legacy":
-		cfg.Engine = "legacy"
+	case "", "builtin":
+		cfg.Engine = "builtin"
 		return Plan{Config: cfg}, nil
 	case "auto":
 		if cfg.NeckoBundle == "" {
@@ -95,7 +95,7 @@ func Resolve(cfg Config) (Plan, error) {
 			cfg.Engine = "mozilla"
 			return resolveMozilla(cfg)
 		}
-		cfg.Engine = "legacy"
+		cfg.Engine = "builtin"
 		return Plan{Config: cfg}, nil
 	case "necko":
 		if runtime.GOOS != "linux" || (runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64") {
@@ -117,7 +117,7 @@ func Resolve(cfg Config) (Plan, error) {
 	case "mozilla":
 		return resolveMozilla(cfg)
 	default:
-		return Plan{}, fmt.Errorf("unknown transport engine %q (choose legacy, auto, mozilla or necko)", cfg.Engine)
+		return Plan{}, fmt.Errorf("unknown transport engine %q (choose builtin, auto, mozilla or necko)", cfg.Engine)
 	}
 }
 

@@ -6,7 +6,7 @@ TCP and UDP at the SAME origin, plus a controlled TCP echo target reachable
 from its exit. This script provisions NEITHER server and does not claim that
 running on loopback proves an external network path.
 
-Credentials are read from FOXTUNNEL_USER / FOXTUNNEL_PASSWORD by the VetroffProxy
+Credentials are read from VETROFF_USER / VETROFF_PASSWORD by the VetroffProxy
 subprocesses, never accepted as command-line flags or written to reports.
 """
 from __future__ import annotations
@@ -171,8 +171,8 @@ def preflight(args: argparse.Namespace) -> None:
     if args.out.exists() or not args.out.parent.is_dir():
         raise ValueError("output path already exists or parent directory missing")
     bench.address(args.target)
-    if not os.environ.get("FOXTUNNEL_USER") or not os.environ.get("FOXTUNNEL_PASSWORD"):
-        raise ValueError("FOXTUNNEL_USER and FOXTUNNEL_PASSWORD must be provided in the environment")
+    if not os.environ.get("VETROFF_USER") or not os.environ.get("VETROFF_PASSWORD"):
+        raise ValueError("VETROFF_USER and VETROFF_PASSWORD must be provided in the environment")
 
 
 def launch(args: argparse.Namespace, mode: str, port: int, logfile):

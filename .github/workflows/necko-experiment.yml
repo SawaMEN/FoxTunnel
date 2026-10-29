@@ -93,38 +93,38 @@ jobs:
       - name: Native H2 and H3 cold handoff and binary transfer
         working-directory: vetroff
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+          VETROFF_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECTHandoff$' -v -count=1 -timeout=80s
       - name: Native H2 and H3 half-close gate
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: vetroff
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+          VETROFF_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoCONNECT$' -v -count=1 -timeout=80s
       - name: Reject invalid proxy certificates before credentials
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: vetroff
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+          VETROFF_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGeckoTrustBeforeCredentials$' -v -count=1 -timeout=60s
       - name: Local TCP FIN and reverse H2/H3 half-close gates
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: vetroff
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+          VETROFF_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^Test(GeckoLocalHalfClose|GeckoReverseHalfClose|ReverseHalfClosePeers)$' -v -count=3 -timeout=180s
       - name: Concurrent streams, cancellation and H3-only failure policy
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: vetroff
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+          VETROFF_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
         run: go test -race ./experiments/firefox-necko -run '^TestGecko(ConcurrentCONNECT|Cancellation|H3NoTCPFallback)$' -v -count=3 -timeout=120s
       - name: Full Firefox versus Necko helper wire measurements
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: vetroff
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
-          FOXTUNNEL_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
+          VETROFF_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+          VETROFF_FINGERPRINT_OUT: ${{ github.workspace }}/necko-fingerprint/observations
         run: |
           go test -race ./experiments/firefox-necko -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -v -count=3 -timeout=180s
           python3 scripts/compare_necko_firefox.py --observations ../necko-fingerprint/observations --out ../necko-fingerprint/comparison.json
@@ -140,9 +140,9 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: vetroff
         env:
-          FOXTUNNEL_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
-          FOXTUNNEL_SOAK_SECONDS: '60'
-          FOXTUNNEL_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
+          VETROFF_XPCSHELL: ${{ github.workspace }}/necko-build/obj/dist/bin/xpcshell
+          VETROFF_SOAK_SECONDS: '60'
+          VETROFF_OPERATIONS_OUT: ${{ github.workspace }}/necko-operations
         run: go test -race ./experiments/firefox-necko -run '^TestGecko(IdleAndDrainLimits|Soak)$' -v -count=1 -timeout=240s
       - name: Keep operational resource observations
         if: always()

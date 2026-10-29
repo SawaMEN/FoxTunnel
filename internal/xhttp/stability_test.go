@@ -34,7 +34,7 @@ func TestStableCancelledSetupDoesNotStartRequest(t *testing.T) {
 
 func TestStableXHTTPSustained(t *testing.T) {
 	duration := 2 * time.Second
-	if raw := os.Getenv("FOXTUNNEL_STABLE_SECONDS"); raw != "" {
+	if raw := os.Getenv("VETROFF_STABLE_SECONDS"); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil || n < 2 || n > 1800 {
 			t.Fatal("invalid stable duration")

@@ -52,7 +52,7 @@ class Marionette:
 def main():
     cfg = json.load(sys.stdin)
     runtime = Path(cfg.pop('runtime')).resolve()
-    with tempfile.TemporaryDirectory(prefix='foxtunnel-browser-reference-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='vetroff-browser-reference-') as tmp:
         profile = Path(tmp)
         with socket.socket() as reserve:
             reserve.bind(('127.0.0.1', 0))

@@ -12,7 +12,7 @@
 #include <string.h>
 
 static const char *text(const char *ru, const char *en) {
- const char *lang = getenv("FOXTUNNEL_LANG");
+ const char *lang = getenv("VETROFF_LANG");
  return lang && strcmp(lang, "en") == 0 ? en : ru;
 }
 

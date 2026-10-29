@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 func TestGeckoManagedXHTTP(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if runtime == "" && bundle == "" {
 		t.Skip("explicit native research runtime required")
 	}

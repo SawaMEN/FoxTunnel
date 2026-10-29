@@ -1,6 +1,6 @@
 goos: linux
 goarch: amd64
-pkg: github.com/SawaMEN/FoxTunnel/internal/tunnel
+pkg: github.com/SawaMEN/VetroffProxy/internal/tunnel
 cpu: INTEL(R) XEON(R) PLATINUM 8573C
 BenchmarkBondedDataPath/rpc/write137-8         	      16	  32387142 ns/op	  32.38 MB/s	       477.9 cgo/op	        62.05 p95-ms	 3928202 B/op	   19644 allocs/op
 BenchmarkBondedDataPath/rpc/write137-8         	      18	  32379165 ns/op	  32.38 MB/s	       496.1 cgo/op	        57.16 p95-ms	 3943562 B/op	   20558 allocs/op
@@ -28,4 +28,4 @@ BenchmarkNSSBondedDataPath/lanes/write32768-8  	      15	  58845602 ns/op	  17.8
 BenchmarkNSSBondedDataPath/lanes/write32768-8  	      21	  37940746 ns/op	  27.64 MB/s	       864.6 cgo/op	        58.57 p95-ms	 3346392 B/op	    8332 allocs/op
 BenchmarkNSSBondedDataPath/lanes/write32768-8  	       9	 116858389 ns/op	   8.97 MB/s	       913.0 cgo/op	       199.7 p95-ms	 4387016 B/op	    9602 allocs/op
 PASS
-ok  	github.com/SawaMEN/FoxTunnel/internal/tunnel	28.078s
+ok  	github.com/SawaMEN/VetroffProxy/internal/tunnel	28.078s

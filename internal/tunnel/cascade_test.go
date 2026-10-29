@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
 	"io"
 	"net"
 	"net/netip"
@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/egress"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/egress"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 	"golang.org/x/net/dns/dnsmessage"
 )
 
@@ -367,9 +367,9 @@ func TestCascadeBondRelayAndHub(t *testing.T) {
 	}
 }
 
-// Exercise two complete FoxTunnel servers, using the second client's real
+// Exercise two complete Vetroff servers, using the second client's real
 // SOCKS listener as the first server's exit rather than a protocol stub.
-func TestCascadeFoxTunnelToFoxTunnel(t *testing.T) {
+func TestCascadeVetroffToVetroff(t *testing.T) {
 	for _, stream := range []bool{false, true} {
 		t.Run(fmt.Sprint(stream), func(t *testing.T) {
 			second := &Server{Username: "alice", Password: "secret", EnableUDP: true, AllowPrivate: true}

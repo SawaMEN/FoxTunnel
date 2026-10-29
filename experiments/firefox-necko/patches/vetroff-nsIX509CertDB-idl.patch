@@ -9,7 +9,7 @@
  interface nsIX509CertDB : nsISupports {
 +  // Dedicated helper only. Register an immutable route policy before opening
 +  // any socket to that route. A pin supplements ordinary PKI verification.
-+  [must_use] void registerFoxTunnelPolicy(in ACString routeHost,
++  [must_use] void registerVetroffPolicy(in ACString routeHost,
 +                                         in long routePort,
 +                                         in ACString serverName,
 +                                         in ACString pinSha256,

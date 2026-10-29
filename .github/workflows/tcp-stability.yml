@@ -3,9 +3,9 @@ name: TCP core stability
 on:
   push:
     branches: [main]
-    paths: ['internal/**', 'foxtunnel*.go', 'go.*', '.github/workflows/tcp-stability.yml']
+    paths: ['internal/**', 'vetroff*.go', 'go.*', '.github/workflows/tcp-stability.yml']
   pull_request:
-    paths: ['internal/**', 'foxtunnel*.go', 'go.*', '.github/workflows/tcp-stability.yml']
+    paths: ['internal/**', 'vetroff*.go', 'go.*', '.github/workflows/tcp-stability.yml']
   workflow_dispatch:
 
 permissions:

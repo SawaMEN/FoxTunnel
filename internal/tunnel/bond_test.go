@@ -19,10 +19,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 func TestBondedSOCKSGo(t *testing.T) { testBondedSOCKS(t, "go") }
@@ -375,7 +375,7 @@ func benchmarkBondedProfile(b *testing.B, delay time.Duration, pipeline int, lan
 	b.ReportMetric(float64(runtime.NumCgoCall()-cgoStart)/float64(b.N), "cgo/op")
 }
 
-// Preserve legacy lost-ACK coverage while testing negotiated lanes separately.
+// Preserve builtin lost-ACK coverage while testing negotiated lanes separately.
 type hideBondCapability struct{ http.ResponseWriter }
 
 func (w hideBondCapability) WriteHeader(status int) {

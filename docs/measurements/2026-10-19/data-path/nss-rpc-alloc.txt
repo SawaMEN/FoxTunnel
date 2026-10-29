@@ -5,12 +5,12 @@ Time: 2026-10-18 17:07:08 PDT
 Showing nodes accounting for 55.64MB, 78.69% of 70.71MB total
 Showing top 20 nodes out of 220
       flat  flat%   sum%        cum   cum%
-   26.47MB 37.43% 37.43%    26.47MB 37.43%  github.com/SawaMEN/FoxTunnel/internal/bond.readBoundedInto
+   26.47MB 37.43% 37.43%    26.47MB 37.43%  github.com/SawaMEN/VetroffProxy/internal/bond.readBoundedInto
     3.50MB  4.95% 42.38%     3.50MB  4.95%  golang.org/x/net/http2.(*ClientConn).internalRoundTrip
        3MB  4.24% 46.63%        3MB  4.24%  net/http.(*http2Framer).readMetaFrame.func1
     2.50MB  3.54% 50.17%     2.50MB  3.54%  net/http.init.func1
     2.50MB  3.54% 53.70%     2.50MB  3.54%  golang.org/x/net/http2.(*clientConnReadLoop).handleResponse
-    2.31MB  3.27% 56.97%     8.23MB 11.64%  github.com/SawaMEN/FoxTunnel/internal/tunnel.benchmarkBondedProfile
+    2.31MB  3.27% 56.97%     8.23MB 11.64%  github.com/SawaMEN/VetroffProxy/internal/tunnel.benchmarkBondedProfile
     2.31MB  3.27% 60.25%     2.31MB  3.27%  internal/bytealg.MakeNoZero
        2MB  2.83% 63.08%        2MB  2.83%  runtime.mallocgc
     1.55MB  2.19% 65.27%     2.07MB  2.93%  golang.org/x/net/http2.(*clientStream).writeRequestBody
@@ -23,5 +23,5 @@ Showing top 20 nodes out of 220
     0.60MB  0.84% 75.74%     0.60MB  0.84%  os.readFileContents
     0.53MB  0.75% 76.50%     0.53MB  0.75%  compress/flate.newDeflateFast (inline)
     0.52MB  0.74% 77.23%     0.52MB  0.74%  golang.org/x/net/http2.(*Framer).startWriteDataPadded
-    0.52MB  0.73% 77.96%     0.52MB  0.73%  github.com/SawaMEN/FoxTunnel/internal/bond.(*Stream).writeBlocks
-    0.52MB  0.73% 78.69%     0.52MB  0.73%  github.com/SawaMEN/FoxTunnel/internal/bond.(*session).download
+    0.52MB  0.73% 77.96%     0.52MB  0.73%  github.com/SawaMEN/VetroffProxy/internal/bond.(*Stream).writeBlocks
+    0.52MB  0.73% 78.69%     0.52MB  0.73%  github.com/SawaMEN/VetroffProxy/internal/bond.(*session).download

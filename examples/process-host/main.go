@@ -8,11 +8,11 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/SawaMEN/FoxTunnel/processhost"
+	"github.com/SawaMEN/VetroffProxy/processhost"
 )
 
 func main() {
-	binary := flag.String("binary", "", "absolute verified FoxTunnel executable path")
+	binary := flag.String("binary", "", "absolute verified Vetroff executable path")
 	link := flag.String("link-file", "", "absolute private connection file path")
 	ca := flag.String("ca-cert", "", "optional extra trusted CA PEM")
 	flag.Parse()

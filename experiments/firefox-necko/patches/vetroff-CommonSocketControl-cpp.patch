@@ -25,23 +25,23 @@
  extern LazyLogModule gPIPNSSLog;
 +
 +namespace {
-+struct FoxTunnelPolicy {
++struct VetroffPolicy {
 +  nsCString mServerName;
 +  nsCString mPin;
 +  nsCString mTLSProfile;
 +};
-+StaticMutex sFoxTunnelMutex;
-+StaticAutoPtr<nsTHashMap<nsCStringHashKey, FoxTunnelPolicy>> sFoxTunnelPolicies;
-+StaticAutoPtr<nsTHashSet<nsCStringHashKey>> sFoxTunnelSeenRoutes;
++StaticMutex sVetroffMutex;
++StaticAutoPtr<nsTHashMap<nsCStringHashKey, VetroffPolicy>> sVetroffPolicies;
++StaticAutoPtr<nsTHashSet<nsCStringHashKey>> sVetroffSeenRoutes;
 +bool sAnySocketCreated = false;
-+nsCString FoxTunnelRoute(const nsACString& aHost, int32_t aPort) {
++nsCString VetroffRoute(const nsACString& aHost, int32_t aPort) {
 +  nsCString key(aHost);
 +  ToLowerCase(key);
 +  key.Append(':');
 +  key.AppendInt(aPort);
 +  return key;
 +}
-+bool ValidFoxTunnelName(const nsACString& aName) {
++bool ValidVetroffName(const nsACString& aName) {
 +  if (aName.IsEmpty()) { return true; }
 +  if (aName.Length() > 253) { return false; }
 +  PRNetAddr address;
@@ -65,16 +65,16 @@
 +}
 +}  // namespace
 +
-+nsresult CommonSocketControl::RegisterFoxTunnelPolicy(
++nsresult CommonSocketControl::RegisterVetroffPolicy(
 +    const nsACString& aRouteHost, int32_t aRoutePort,
 +    const nsACString& aServerName, const nsACString& aPinSha256,
 +    const nsACString& aTlsProfile) {
 +  NS_ENSURE_TRUE(NS_IsMainThread() && XRE_IsParentProcess() &&
-+                     PR_GetEnv("FOXTUNNEL_FIREFOX_ROOT"),
++                     PR_GetEnv("VETROFF_FIREVETROFF_ROOT"),
 +                 NS_ERROR_NOT_AVAILABLE);
 +  NS_ENSURE_TRUE(!aRouteHost.IsEmpty() && aRouteHost.Length() <= 253 &&
 +                     aRoutePort > 0 && aRoutePort <= 65535 &&
-+                     ValidFoxTunnelName(aServerName), NS_ERROR_INVALID_ARG);
++                     ValidVetroffName(aServerName), NS_ERROR_INVALID_ARG);
 +  NS_ENSURE_TRUE(aTlsProfile.IsEmpty() || aTlsProfile.EqualsLiteral("firefox-158"),
 +                 NS_ERROR_INVALID_ARG);
 +  if (!aPinSha256.IsEmpty()) {
@@ -93,41 +93,41 @@
 +  }
 +  NS_ENSURE_TRUE(!aServerName.IsEmpty() || !aPinSha256.IsEmpty() ||
 +                     !aTlsProfile.IsEmpty(), NS_ERROR_INVALID_ARG);
-+  StaticMutexAutoLock lock(sFoxTunnelMutex);
-+  if (!sFoxTunnelPolicies) {
++  StaticMutexAutoLock lock(sVetroffMutex);
++  if (!sVetroffPolicies) {
 +    // No prior connection may be reused under a newly installed policy.
 +    NS_ENSURE_TRUE(!sAnySocketCreated, NS_ERROR_ALREADY_INITIALIZED);
-+    sFoxTunnelPolicies = new nsTHashMap<nsCStringHashKey, FoxTunnelPolicy>();
-+    sFoxTunnelSeenRoutes = new nsTHashSet<nsCStringHashKey>();
-+    ClearOnShutdown(&sFoxTunnelPolicies);
-+    ClearOnShutdown(&sFoxTunnelSeenRoutes);
++    sVetroffPolicies = new nsTHashMap<nsCStringHashKey, VetroffPolicy>();
++    sVetroffSeenRoutes = new nsTHashSet<nsCStringHashKey>();
++    ClearOnShutdown(&sVetroffPolicies);
++    ClearOnShutdown(&sVetroffSeenRoutes);
 +  }
-+  nsCString key = FoxTunnelRoute(aRouteHost, aRoutePort);
-+  if (auto entry = sFoxTunnelPolicies->Lookup(key)) {
++  nsCString key = VetroffRoute(aRouteHost, aRoutePort);
++  if (auto entry = sVetroffPolicies->Lookup(key)) {
 +    const auto& p = entry.Data();
 +    return p.mServerName.Equals(aServerName) && p.mPin.Equals(aPinSha256) &&
 +                   p.mTLSProfile.Equals(aTlsProfile)
 +               ? NS_OK : NS_ERROR_ALREADY_INITIALIZED;
 +  }
-+  NS_ENSURE_TRUE(!sFoxTunnelSeenRoutes->Contains(key) &&
-+                     sFoxTunnelPolicies->Count() < 4096 &&
-+                     sFoxTunnelSeenRoutes->Count() < 16384,
++  NS_ENSURE_TRUE(!sVetroffSeenRoutes->Contains(key) &&
++                     sVetroffPolicies->Count() < 4096 &&
++                     sVetroffSeenRoutes->Count() < 16384,
 +                 NS_ERROR_ALREADY_INITIALIZED);
-+  sFoxTunnelPolicies->InsertOrUpdate(key, FoxTunnelPolicy{
++  sVetroffPolicies->InsertOrUpdate(key, VetroffPolicy{
 +      nsCString(aServerName), nsCString(aPinSha256), nsCString(aTlsProfile)});
 +  return NS_OK;
 +}
 +
-+bool CommonSocketControl::CheckFoxTunnelPin(nsIX509Cert* aCert) {
++bool CommonSocketControl::CheckVetroffPin(nsIX509Cert* aCert) {
 +  COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
-+  if (mFoxTunnelPin.IsEmpty()) { return true; }
++  if (mVetroffPin.IsEmpty()) { return true; }
 +  nsAutoCString digest;
 +  if (!aCert || NS_FAILED(aCert->GetSha256SubjectPublicKeyInfoDigest(digest))) {
 +    return false;
 +  }
 +  nsAutoCString expected("sha256/");
 +  expected.Append(digest);
-+  return expected.Equals(mFoxTunnelPin);
++  return expected.Equals(mVetroffPin);
 +}
  
  NS_IMPL_ISUPPORTS(CommonSocketControl, nsITLSSocketControl)
@@ -136,19 +136,19 @@
  #if defined(MOZ_DIAGNOSTIC_ASSERT_ENABLED)
    mOwningThread = PR_GetCurrentThread();
  #endif
-+  StaticMutexAutoLock lock(sFoxTunnelMutex);
++  StaticMutexAutoLock lock(sVetroffMutex);
 +  sAnySocketCreated = true;
-+  if (sFoxTunnelPolicies) {
-+    nsCString key = FoxTunnelRoute(aHostName, aPort);
-+    if (sFoxTunnelSeenRoutes->Count() < 16384) {
-+      sFoxTunnelSeenRoutes->Insert(key);
++  if (sVetroffPolicies) {
++    nsCString key = VetroffRoute(aHostName, aPort);
++    if (sVetroffSeenRoutes->Count() < 16384) {
++      sVetroffSeenRoutes->Insert(key);
 +    }
-+    if (auto entry = sFoxTunnelPolicies->Lookup(key)) {
++    if (auto entry = sVetroffPolicies->Lookup(key)) {
 +      const auto& policy = entry.Data();
-+      mFoxTunnelPolicy = true;
++      mVetroffPolicy = true;
 +      if (!policy.mServerName.IsEmpty()) { mHostName = policy.mServerName; }
-+      mFoxTunnelPin = policy.mPin;
-+      mFoxTunnelTLSProfile = policy.mTLSProfile;
++      mVetroffPin = policy.mPin;
++      mVetroffTLSProfile = policy.mTLSProfile;
 +    }
 +  }
  }
@@ -160,11 +160,11 @@
    *_retval = false;
 +
 +  // Never coalesce a socket into or out of a registered route policy.
-+  if (mFoxTunnelPolicy) { return NS_OK; }
++  if (mVetroffPolicy) { return NS_OK; }
 +  {
-+    StaticMutexAutoLock lock(sFoxTunnelMutex);
-+    if (sFoxTunnelPolicies &&
-+        sFoxTunnelPolicies->Contains(FoxTunnelRoute(hostname, port))) {
++    StaticMutexAutoLock lock(sVetroffMutex);
++    if (sVetroffPolicies &&
++        sVetroffPolicies->Contains(VetroffRoute(hostname, port))) {
 +      return NS_OK;
 +    }
 +  }

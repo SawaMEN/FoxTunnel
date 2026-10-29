@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/bootstrap"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/bootstrap"
 	"os"
 	"path/filepath"
 	"strings"
@@ -71,12 +71,12 @@ func TestManagedServerConfigAndRelayQuotaRejection(t *testing.T) {
 	if _, err := bootstrap.ReadServer(path); err != nil {
 		t.Fatal(err)
 	}
-	config.Username = "legacy"
-	config.Password = "legacy"
+	config.Username = "builtin"
+	config.Password = "builtin"
 	data, _ = json.Marshal(config)
 	os.WriteFile(path, data, 0600)
 	if _, err := bootstrap.ReadServer(path); err == nil {
-		t.Fatal("managed/legacy mixture accepted")
+		t.Fatal("managed/builtin mixture accepted")
 	}
 	if _, err := readAccessPolicy(file, true); err == nil {
 		t.Fatal("exit payload quota silently accepted on a relay")

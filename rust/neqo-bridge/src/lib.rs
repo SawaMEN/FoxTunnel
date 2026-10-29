@@ -310,7 +310,7 @@ pub unsafe extern "C" fn ftn_event(
                 }
                 // No HTTP request is created before Connected + Go verification.
                 // Neqo may send its own H3 control streams early; rejection
-                // therefore never requires replaying a FoxTunnel request.
+                // therefore never requires replaying a Vetroff request.
                 Http3ClientEvent::ZeroRttRejected if e.resumption => continue,
                 Http3ClientEvent::EchFallbackAuthenticationNeeded { .. }
                 | Http3ClientEvent::ZeroRttRejected => return Err(()),

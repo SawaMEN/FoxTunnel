@@ -1,6 +1,6 @@
 package nsstls
 
-import "github.com/SawaMEN/FoxTunnel/internal/i18n"
+import "github.com/SawaMEN/VetroffProxy/internal/i18n"
 
 // Firefox158 selects measured NSS groups, key shares and signature preferences.
 // It is deliberately not a claim of full Firefox/Necko fingerprint parity.

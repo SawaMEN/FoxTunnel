@@ -3,7 +3,7 @@
 package tunnel
 
 import (
-	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
+	"github.com/SawaMEN/VetroffProxy/internal/h2profile"
 	"testing"
 )
 

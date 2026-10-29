@@ -26,9 +26,9 @@ import (
 // Use independent protocol peers: net/http handlers normally finish both
 // halves on return, so an ordinary echo handler cannot test this contract.
 func TestGeckoReverseHalfClose(t *testing.T) {
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if runtime == "" {
-		t.Skip("set FOXTUNNEL_XPCSHELL to a real Gecko runtime")
+		t.Skip("set VETROFF_XPCSHELL to a real Gecko runtime")
 	}
 	for _, mode := range []string{"h2-connect", "h3-connect"} {
 		t.Run(mode, func(t *testing.T) {

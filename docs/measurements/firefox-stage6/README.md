@@ -8,7 +8,7 @@ TLS/H2/H3 параметрах. В общем loopback GET-сценарии вс
 ## Источник и повторение
 
 Код: `09b80a430ae893c6610cd650024cbf6f2efd9143`, чистый checkout.
-[Успешный Neqo CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39732360445),
+[Успешный Neqo CI](https://github.com/SawaMEN/VetroffProxy/actions/runs/39732360445),
 artifact `native-wire-observations` ID `12406046986`.
 SHA-256 ZIP: `e13f36ab3c43e1c7680811898bcfa060c6be899d0198cffa8c7b6528f9c8ed0f`.
 
@@ -66,9 +66,9 @@ HTTP headers и payload не сохраняются в артефакт.
 
 Исходные отчёты:
 [Firefox H2](firefox-h2-behavior.json),
-[NSS H2](foxtunnel-h2-behavior.json),
+[NSS H2](vetroff-h2-behavior.json),
 [Firefox H3](firefox-h3-behavior.json),
-[Neqo H3](foxtunnel-h3-behavior.json).
+[Neqo H3](vetroff-h3-behavior.json).
 [Сводное сравнение](browser-behavior-comparison.json) сохраняет phase counters,
 использованные connection IDs и отдельные resumption flags.
 
@@ -93,7 +93,7 @@ supported versions, signature algorithms и key-share groups. Их полные
 ClientHello не используется как доказательство одинакового fingerprint.
 
 Cold H3 metadata получены отдельным одинаковым для обоих клиентов endpoint:
-[Firefox H3](firefox-h3.json), [Neqo H3](foxtunnel-h3.json).
+[Firefox H3](firefox-h3.json), [Neqo H3](vetroff-h3.json).
 Версия QUIC, ALPN и первый Initial datagram size совпали; выбранные
 эффективные transport parameters и H3 SETTINGS различаются. Например:
 
@@ -111,21 +111,21 @@ H3 decoder возвращает выбранные эффективные зна
 
 Прежний cold audit с NaiveProxy сохранён отдельно:
 [сравнение cold metadata](comparison.json),
-[Firefox H2](firefox-h2.json), [NSS H2](foxtunnel-h2.json),
+[Firefox H2](firefox-h2.json), [NSS H2](vetroff-h2.json),
 [Naive H2](naive-h2.json), [Naive H3](naive-h3.json).
 Он использует GET/CONNECT/POST и не считается общим payload benchmark.
 
 ## Проверки и исправление стенда
 
-Прошли [Go CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39732360453),
-[NSS CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39732360596),
-[build audit](https://github.com/SawaMEN/FoxTunnel/actions/runs/39732360458),
-[Neqo CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39732360445),
+Прошли [Go CI](https://github.com/SawaMEN/VetroffProxy/actions/runs/39732360453),
+[NSS CI](https://github.com/SawaMEN/VetroffProxy/actions/runs/39732360596),
+[build audit](https://github.com/SawaMEN/VetroffProxy/actions/runs/39732360458),
+[Neqo CI](https://github.com/SawaMEN/VetroffProxy/actions/runs/39732360445),
 root/external native race-тесты, строгий cgocheck2 и новый positive-control
 GET/resumption тест. Python проверяет полноту матрицы, workload counts,
 отмены, новые использованные соединения и различие presence/order.
 
-[Первый CI](https://github.com/SawaMEN/FoxTunnel/actions/runs/39731042557)
+[Первый CI](https://github.com/SawaMEN/VetroffProxy/actions/runs/39731042557)
 остановился в Firefox/H3: fixture закрывал QUIC application error code 0.
 Локальный повтор с тем же Firefox подтвердил завершение нагрузки/отмен,
 но отсутствие первого reconnect после такой ротации. Исправленный стенд

@@ -65,7 +65,7 @@ class LocalUDPSOCKS:
         self.worker.join(timeout=3)
 
 
-def document(mode="tcp", day=1, label="legacy", value=10.0, rate=100.0,
+def document(mode="tcp", day=1, label="builtin", value=10.0, rate=100.0,
              count=6, ok=True, scenario="small"):
     rows = []
     for i in range(count):
@@ -116,7 +116,7 @@ class Stage4Tests(unittest.TestCase):
     def test_preflight_rejects_unattested_wan_and_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory) / "report.json"
-            args = field.parser().parse_args(["--mode", "tcp", "--proxy", "legacy=127.0.0.1:11080",
+            args = field.parser().parse_args(["--mode", "tcp", "--proxy", "builtin=127.0.0.1:11080",
                 "--target", "127.0.0.1:9000", "--scenario", "small",
                 "--environment", "wan", "--out", str(out)])
             with self.assertRaisesRegex(ValueError, "independent-VDS"):
@@ -135,53 +135,53 @@ class Stage4Tests(unittest.TestCase):
         self.assertEqual(out["rtt_p95_ms"], 6.3)
 
     def test_gate_pass_three_days_equal_scenarios(self):
-        baseline = [document(day=d, label="legacy", value=10.0) for d in (1, 2, 3)]
+        baseline = [document(day=d, label="builtin", value=10.0) for d in (1, 2, 3)]
         candidate = [document(day=d, label="adaptive", value=10.5) for d in (1, 2, 3)]
-        verdict = gate.gate_report_set(baseline, candidate, "legacy", "adaptive")
+        verdict = gate.gate_report_set(baseline, candidate, "builtin", "adaptive")
         self.assertTrue(verdict["passed"], verdict["issues"])
         self.assertTrue(verdict["ready_for_release_gate"])
         self.assertFalse(verdict["wan_verified_by_tool"])
 
     def test_gate_rejects_regressions_and_missing_days(self):
-        base = [document(day=d, label="legacy", value=10, rate=100) for d in (1, 2, 3)]
+        base = [document(day=d, label="builtin", value=10, rate=100) for d in (1, 2, 3)]
         slow = [document(day=d, label="adaptive", value=14, rate=100) for d in (1, 2, 3)]
-        bad = gate.gate_report_set(base, slow, "legacy", "adaptive")
+        bad = gate.gate_report_set(base, slow, "builtin", "adaptive")
         self.assertFalse(bad["passed"])
         self.assertIn("p95 completion latency regressed >10%", bad["issues"])
-        missing = gate.gate_report_set(base[:1], slow[:1], "legacy", "adaptive")
+        missing = gate.gate_report_set(base[:1], slow[:1], "builtin", "adaptive")
         self.assertFalse(missing["passed"])
         self.assertTrue(any("3 separate" in s for s in missing["issues"]))
 
     def test_gate_bulk_speed_and_udp_loss(self):
-        base = [document(day=d, label="legacy", value=10, rate=100, scenario="bulk") for d in (1, 2, 3)]
+        base = [document(day=d, label="builtin", value=10, rate=100, scenario="bulk") for d in (1, 2, 3)]
         slow = [document(day=d, label="adaptive", value=10, rate=80, scenario="bulk") for d in (1, 2, 3)]
         self.assertIn("median TCP goodput regressed >10%",
-                      gate.gate_report_set(base, slow, "legacy", "adaptive")["issues"])
-        udp_base = [document("udp", d, "legacy", value=10) for d in (1, 2, 3)]
+                      gate.gate_report_set(base, slow, "builtin", "adaptive")["issues"])
+        udp_base = [document("udp", d, "builtin", value=10) for d in (1, 2, 3)]
         udp_bad = [document("udp", d, "adaptive", value=14) for d in (1, 2, 3)]
         self.assertIn("UDP p95 RTT regressed >10%",
-                      gate.gate_report_set(udp_base, udp_bad, "legacy", "adaptive")["issues"])
+                      gate.gate_report_set(udp_base, udp_bad, "builtin", "adaptive")["issues"])
 
     def test_gate_rejects_integrity_error_and_mixed_environment(self):
-        base = [document(day=d, label="legacy") for d in (1, 2, 3)]
+        base = [document(day=d, label="builtin") for d in (1, 2, 3)]
         alt = [document(day=d, label="adaptive") for d in (1, 2, 3)]
         alt[0]["samples"][0].update(ok=False, completion_ms=None,
                                      payload_mbps=None, error_category="ValueError")
         self.assertIn("possible payload integrity failure",
-                      " ".join(gate.gate_report_set(base, alt, "legacy", "adaptive")["issues"]))
+                      " ".join(gate.gate_report_set(base, alt, "builtin", "adaptive")["issues"]))
         alt[0]["environment"] = "lab"
         with self.assertRaisesRegex(ValueError, "mix lab and WAN"):
-            gate.gate_report_set(base, alt, "legacy", "adaptive")
+            gate.gate_report_set(base, alt, "builtin", "adaptive")
 
     def test_wan_gate_refuses_lab_even_if_lab_passes(self):
-        baseline = [document(day=d, label="legacy") for d in (1, 2, 3)]
+        baseline = [document(day=d, label="builtin") for d in (1, 2, 3)]
         adaptive = [document(day=d, label="adaptive") for d in (1, 2, 3)]
         for r in baseline + adaptive:
             r["environment"] = "lab"
             r["external_topology"] = "lab"
         with self.assertRaisesRegex(ValueError, "needs user-attested WAN"):
-            gate.gate_report_set(baseline, adaptive, "legacy", "adaptive")
-        checked = gate.gate_report_set(baseline, adaptive, "legacy", "adaptive", require_wan=False)
+            gate.gate_report_set(baseline, adaptive, "builtin", "adaptive")
+        checked = gate.gate_report_set(baseline, adaptive, "builtin", "adaptive", require_wan=False)
         self.assertTrue(checked["passed"])
         self.assertFalse(checked["ready_for_release_gate"])
 

@@ -2,11 +2,11 @@
 
 Target: the separate Linux amd64 Necko launcher on Ubuntu 24.04. This record
 qualifies the controlled fixtures below; it does not qualify every deployment
-network or merge Necko into the ordinary FoxTunnel CLI/SDK.
+network or merge Necko into the ordinary Vetroff CLI/SDK.
 
 ## Runtime identity
 
-The native source build [39952039057](https://github.com/SawaMEN/FoxTunnel/actions/runs/39952039057)
+The native source build [39952039057](https://github.com/SawaMEN/VetroffProxy/actions/runs/39952039057)
 passed on `cb5c2f08d99005377efd2fcdedd4f4a2faaaa777`. Its runtime artifact is
 `12501945687`. [runtime-provenance.json](runtime-provenance.json) records the
 exact source lock and four binary SHA-256 hashes. Each consuming CI run compares
@@ -15,7 +15,7 @@ that lock and those hashes before running tests. The build provenance status
 the separate test results, not that build status.
 
 The initial packaged-runtime run
-[39952847618](https://github.com/SawaMEN/FoxTunnel/actions/runs/39952847618)
+[39952847618](https://github.com/SawaMEN/VetroffProxy/actions/runs/39952847618)
 passed at `7e00f47b19378b00cbdc1b5caeeec4657e3d2154`, with the same native lock.
 Its complete [workflow log](ci-60s/workflow.txt) and minute-long resource samples
 are retained under `ci-60s/`.
@@ -59,7 +59,7 @@ The first 60-second run passed:
 | H3 | 1744 | 138392 → 122016 | 45 → 45 | 75.22 |
 
 The first 300-second-per-protocol run
-[39988655835](https://github.com/SawaMEN/FoxTunnel/actions/runs/39988655835)
+[39988655835](https://github.com/SawaMEN/VetroffProxy/actions/runs/39988655835)
 failed the unchanged RSS-growth gate: H2 grew from 129000 to 489792 KiB,
 H3 from 136628 to 395464 KiB. All bytes, tunnel counters and descriptor
 counts passed. Samples and logs are preserved under `regression-212c2ac/`.
@@ -81,7 +81,7 @@ in total; process CPU was 33.26 and 59.12 seconds, respectively. Full measuremen
 are retained in `local-60s/`. This is evidence of the fix, not a throughput ranking.
 
 The final repeated qualification passed in
-[39991403260](https://github.com/SawaMEN/FoxTunnel/actions/runs/39991403260)
+[39991403260](https://github.com/SawaMEN/VetroffProxy/actions/runs/39991403260)
 on helper `eb92e13637a49a38013d97098209acfe59de99f5`, including native gates,
 network recovery and the actual packaged launcher after the load.
 
@@ -99,7 +99,7 @@ SIGTERM, listener and profile cleanup tests also passed. An earlier local copy
 was correctly rejected for extra temporary files next to libxul; the accepted
 local package was assembled from a fresh source archive in a separate directory.
 
-Download the [qualified Linux amd64 bundle](https://github.com/SawaMEN/FoxTunnel/actions/runs/39991403260/artifacts/12519391254).
+Download the [qualified Linux amd64 bundle](https://github.com/SawaMEN/VetroffProxy/actions/runs/39991403260/artifacts/12519391254).
 Its `.tar.gz` SHA-256 is:
 
 ```text
@@ -171,7 +171,7 @@ force-closes them at JS completion, which previously truncated tails.
 
 See [OPERATIONS.md](../../OPERATIONS.md) for configuration, immutable version
 directories, checksum verification, update/rollback and test reproduction.
-The CI `foxtunnel-necko-linux-amd64` artifact includes the full runtime, launcher,
+The CI `vetroff-necko-linux-amd64` artifact includes the full runtime, launcher,
 source lock/provenance, native patches, license notices and `SHA256SUMS`.
 Artifacts expire; retain a verified archive for deployment and rollback.
 

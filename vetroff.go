@@ -1,27 +1,27 @@
-// Package foxtunnel embeds FoxTunnel independently of its CLI or any panel.
+// Package vetroff embeds Vetroff independently of its CLI or any panel.
 // This is an experimental API; pin a reviewed commit until a versioned release.
-package foxtunnel
+package vetroff
 
 import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/access"
-	"github.com/SawaMEN/FoxTunnel/internal/egress"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/egress"
 	"net"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/authheader"
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/enginestatus"
-	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
-	"github.com/SawaMEN/FoxTunnel/internal/nodeperf"
-	"github.com/SawaMEN/FoxTunnel/internal/nsstls"
-	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/authheader"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/enginestatus"
+	"github.com/SawaMEN/VetroffProxy/internal/h2profile"
+	"github.com/SawaMEN/VetroffProxy/internal/nodeperf"
+	"github.com/SawaMEN/VetroffProxy/internal/nsstls"
+	"github.com/SawaMEN/VetroffProxy/internal/transportengine"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 )
 
 const ProtocolDraft = buildinfo.ProtocolDraft
@@ -33,7 +33,7 @@ const TLSClientFirefox158 = nsstls.Firefox158
 // ErrProtocolNegotiation identifies missing or incompatible wire confirmation.
 var ErrProtocolNegotiation = tunnel.ErrProtocolNegotiation
 
-var ErrCapacity = errors.New("foxtunnel client connection limit reached")
+var ErrCapacity = errors.New("vetroff client connection limit reached")
 
 // TransportStatus contains only local aggregate transport counters and fixed codes.
 type TransportStatus = enginestatus.Snapshot
@@ -46,13 +46,13 @@ type Credentials struct{ Username, Password string }
 type ClientConfig struct {
 	NeckoBundle string // Verified Necko distribution; Engine may be necko or auto.
 	// RequireProtocolNegotiation opts into strict draft/capability confirmation.
-	// False preserves legacy interoperability. Configure both ends explicitly.
+	// False preserves builtin interoperability. Configure both ends explicitly.
 	RequireProtocolNegotiation bool
 
 	ServerURL            string
 	Credentials          Credentials
 	CACertFile           string
-	Engine               string // Empty/legacy preserves old selection; auto uses Necko when compatible, otherwise NSS/Neqo or Go; mozilla and necko force a backend.
+	Engine               string // Empty/builtin preserves old selection; auto uses Necko when compatible, otherwise NSS/Neqo or Go; mozilla and necko force a backend.
 	TLSBackend           string // Empty selects auto (NSS for TCP if available, Go for default H3); Neqo uses NSS.
 	Transport            string // Empty selects h2-connect.
 	QUICBackend          string // Empty/quic-go preserves the default; neqo is an opt-in build.
@@ -346,7 +346,7 @@ func NewAccessController(policy AccessPolicy, stateFile string) (*AccessControll
 type ServerConfig struct {
 	EgressProxy string // socks5://[user:password@]numeric-IP:port; empty keeps direct mode.
 	EgressDNS   string // Numeric DNS IP:port via SOCKS TCP; defaults to 1.1.1.1:53.
-	// RequireProtocolNegotiation rejects authenticated legacy TCP/UDP requests.
+	// RequireProtocolNegotiation rejects authenticated builtin TCP/UDP requests.
 	RequireProtocolNegotiation bool
 
 	Access                   *AccessController // Alternative to Credentials; shared by all server transports.

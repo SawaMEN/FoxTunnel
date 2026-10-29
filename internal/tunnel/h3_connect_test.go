@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/xhttp"
+	"github.com/SawaMEN/VetroffProxy/internal/xhttp"
 	"github.com/quic-go/quic-go/http3"
 )
 

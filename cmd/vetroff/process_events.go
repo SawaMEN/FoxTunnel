@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
 )
 
 // Two bounded records per run. Errors go to stderr, never into JSON fields.

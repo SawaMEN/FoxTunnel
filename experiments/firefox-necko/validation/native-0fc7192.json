@@ -16,7 +16,7 @@
   "source_lock_sha256": "7602076d144ed425c4cdf7e0ad721be847d18cab4aa76f174ce3669665a95622",
   "client_js_sha256": "edac47d686ecc4392768aa9cb0173a33b56653c6ac3b5eae1ccbf72e47b729b8",
   "local_native_checks": {
-    "command": "FOXTUNNEL_XPCSHELL=$RUNTIME/xpcshell go test -race ./experiments/firefox-necko -run '^TestGecko' -count=3 -v -timeout=180s",
+    "command": "VETROFF_XPCSHELL=$RUNTIME/xpcshell go test -race ./experiments/firefox-necko -run '^TestGecko' -count=3 -v -timeout=180s",
     "result": "passed",
     "duration_seconds": 73.113,
     "top_level_passes": {

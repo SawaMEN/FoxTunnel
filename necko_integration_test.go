@@ -1,4 +1,4 @@
-package foxtunnel_test
+package vetroff_test
 
 import (
 	"bytes"
@@ -24,16 +24,16 @@ import (
 	"testing"
 	"time"
 
-	ft "github.com/SawaMEN/FoxTunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	ft "github.com/SawaMEN/VetroffProxy"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 	"github.com/quic-go/quic-go/http3"
 )
 
 func TestIntegratedNecko(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
-		t.Skip("set FOXTUNNEL_NECKO_BUNDLE to a verified bundle with the main CLI")
+		t.Skip("set VETROFF_NECKO_BUNDLE to a verified bundle with the main CLI")
 	}
 	cli := filepath.Join(bundle, "vetroff")
 	info, err := os.Stat(cli)
@@ -207,7 +207,7 @@ func TestIntegratedNecko(t *testing.T) {
 					t.Run(name, func(t *testing.T) {
 						// End-to-end: local SOCKS UDP -> shared Go packet limits ->
 						// authenticated Necko IPC -> native Gecko HTTP/2 POST ->
-						// FoxTunnel server UDP relay -> destination echo.
+						// Vetroff server UDP relay -> destination echo.
 						target, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
 						if err != nil {
 							t.Fatal(err)
@@ -329,7 +329,7 @@ func TestIntegratedNecko(t *testing.T) {
 						cmd.Args = append(cmd.Args, "--node-pins-file", nodePinsPath)
 					}
 					cmd.Dir = t.TempDir()
-					cmd.Env = append(os.Environ(), "FOXTUNNEL_USER=u", "FOXTUNNEL_PASSWORD=p")
+					cmd.Env = append(os.Environ(), "VETROFF_USER=u", "VETROFF_PASSWORD=p")
 					stdin, e := cmd.StdinPipe()
 					if e != nil {
 						t.Fatal(e)

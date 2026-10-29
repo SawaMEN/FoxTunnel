@@ -3,9 +3,9 @@
 Progress: **2/4 qualification steps**, **3/6 stages overall**. This is a
 checkpoint, not final ARM64 qualification or release approval.
 
-[Source run](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186586)
+[Source run](https://github.com/SawaMEN/VetroffProxy/actions/runs/40264186586)
 completed the native ARM64 C++ build and all source-workflow networking gates.
-[Runtime run](https://github.com/SawaMEN/FoxTunnel/actions/runs/40264186589)
+[Runtime run](https://github.com/SawaMEN/VetroffProxy/actions/runs/40264186589)
 verified architecture and hashes, packaged and executed the native ARM64 launcher
 and main CLI/SDK, and passed native integration/wire checks. Its full sustained
 resource suite and the amd64 regression job are still pending at this checkpoint.

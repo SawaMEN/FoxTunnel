@@ -2,13 +2,13 @@
 
 VetroffProxy provides a Go API and a supervised process interface. It is a protocol
 core; the host owns device networking and application UI. Pin a tested tag/commit.
-API schema 1, process schema 1 and wire `foxtunnel-draft-0` are separate versions.
+API schema 1, process schema 1 and wire `vetroff-draft-0` are separate versions.
 
 ## Distribution
 
 The release workflow builds one archive per Linux architecture (AMD64 and ARM64),
 with an NSS-enabled `vetroff` CLI and the complete Necko runtime. Keep the
-extracted bundle intact and use the executable inside `foxtunnel-necko/`. Runtime baseline: Ubuntu 24.04
+extracted bundle intact and use the executable inside `vetroff-necko/`. Runtime baseline: Ubuntu 24.04
 glibc/libgcc. Automatic engine selection is available with `Engine: "auto"`
 (Go SDK opt-in); empty Engine preserves prior SDK semantics.
 
@@ -24,12 +24,12 @@ Do not load this NSS runtime into a process using an incompatible NSS version.
 
 ## Go client
 
-Import `github.com/SawaMEN/FoxTunnel` at a pinned revision.
+Import `github.com/SawaMEN/VetroffProxy` at a pinned revision.
 
 ```go
-client, err := foxtunnel.NewClient(foxtunnel.ClientConfig{
+client, err := vetroff.NewClient(vetroff.ClientConfig{
     ServerURL: "https://vpn.example.com",
-    Credentials: foxtunnel.Credentials{
+    Credentials: vetroff.Credentials{
         Username: "user",
         Password: secret, // load from private host storage
     },
@@ -44,7 +44,7 @@ defer conn.Close()
 ```
 
 See repository `examples/embed/main.go` and the public definitions in
-`foxtunnel.go`, `foxtunnel_sdk.go` and `foxtunnel_udp.go`.
+`vetroff.go`, `vetroff_sdk.go` and `vetroff_udp.go`.
 
 | API | Ownership |
 |---|---|
@@ -111,7 +111,7 @@ Use a verified executable with a private connection file:
   --listen 127.0.0.1:1080 --events-json --shutdown-on-stdin-eof
 ```
 
-The Go supervisor `github.com/SawaMEN/FoxTunnel/processhost` avoids linking native
+The Go supervisor `github.com/SawaMEN/VetroffProxy/processhost` avoids linking native
 libraries into the host. See repository `examples/process-host/main.go`.
 
 ```go
@@ -126,7 +126,7 @@ defer child.Close()
 
 The context owns the child lifetime. Paths must be absolute and the profile a
 private regular file (0600 on Unix; owner-only ACL on Windows).
-The supervisor removes ambient `FOXTUNNEL_*` variables, checks bounded
+The supervisor removes ambient `VETROFF_*` variables, checks bounded
 `version --json` output, then starts a client on `127.0.0.1:0`.
 Version timeout is 5s; startup timeout is 10s after that check.
 EOF requests shutdown; after 5s an unresponsive child is killed and reaped.
@@ -174,7 +174,7 @@ The VPN client owns TUN/TCP-IP adaptation, VpnService/NetworkExtension, outer-so
 bypass, routing, DNS, IPv6, kill switch and reconnect. Avoid routing the outer
 VetroffProxy socket back into its own TUN. SOCKS5 alone does not capture device traffic;
 its default listener has no authentication. Independent local credentials can be
-set through `FOXTUNNEL_SOCKS_USER` and `FOXTUNNEL_SOCKS_PASSWORD`.
+set through `VETROFF_SOCKS_USER` and `VETROFF_SOCKS_PASSWORD`.
 
 Integrations with Hiddify/3x-ui are host-side work; no completed integration is
 implied. The API and wire extensions remain experimental.

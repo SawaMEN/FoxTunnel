@@ -5,7 +5,7 @@ package h2profile
 import (
 	"net/http"
 
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
 )
 
 const Firefox158 = "firefox-158"

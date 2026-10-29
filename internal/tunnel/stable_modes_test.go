@@ -12,7 +12,7 @@ func testStableNativeBondModes(t *testing.T, backend string) {
 			continue
 		}
 		trafficModes := []string{"auto"}
-		if os.Getenv("FOXTUNNEL_STABLE_MATRIX") == "full" {
+		if os.Getenv("VETROFF_STABLE_MATRIX") == "full" {
 			trafficModes = []string{"auto", "latency", "throughput"}
 		}
 		for _, traffic := range trafficModes {

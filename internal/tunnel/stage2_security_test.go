@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SawaMEN/FoxTunnel/internal/access"
+	"github.com/SawaMEN/VetroffProxy/internal/access"
 )
 
 func stage2Basic(name, password string) string {
@@ -78,13 +78,13 @@ func TestStage2ManagedAccessMatchesLegacyHeaderPolicy(t *testing.T) {
 }
 
 func TestStage2CoverStripsAllProxyMetadataForBothModes(t *testing.T) {
-	legacy := &Server{Username: "alice", Password: "secret"}
+	builtin := &Server{Username: "alice", Password: "secret"}
 	managed := &Server{Access: accessController(t)}
-	for _, s := range []*Server{legacy, managed} {
+	for _, s := range []*Server{builtin, managed} {
 		s.Cover = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			for key := range r.Header {
 				if strings.EqualFold(key, "Proxy-Authorization") ||
-					strings.HasPrefix(strings.ToLower(key), "x-foxtunnel-") {
+					strings.HasPrefix(strings.ToLower(key), "x-vetroff-") {
 					t.Errorf("private header leaked to public cover: %q", key)
 				}
 			}
@@ -94,11 +94,11 @@ func TestStage2CoverStripsAllProxyMetadataForBothModes(t *testing.T) {
 			r := httptest.NewRequest(method, "https://proxy.example/", nil)
 			r.ProtoMajor = 2
 			r.Header = http.Header{
-				"Proxy-Authorization":      {"Basic private"},
-				"X-FoxTunnel-Padding":      {"initial-v1"},
-				"X-FoxTunnel-Target":       {"sensitive.example:443"},
-				"X-Foxtunnel-New-Metadata": {"hidden"},
-				"x-foxtunnel-lower":        {"hidden"},
+				"Proxy-Authorization":    {"Basic private"},
+				"X-Vetroff-Padding":      {"initial-v1"},
+				"X-Vetroff-Target":       {"sensitive.example:443"},
+				"X-Vetroff-New-Metadata": {"hidden"},
+				"x-vetroff-lower":        {"hidden"},
 			}
 			result := httptest.NewRecorder()
 			s.ServeHTTP(result, r)

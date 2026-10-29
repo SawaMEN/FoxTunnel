@@ -7,7 +7,7 @@ TLS-сертификат. Для HTTP/3 также откройте UDP-порт
 
 Скачайте полный архив своей архитектуры из [Releases](https://github.com/SawaMEN/VetroffProxy/releases).
 Linux AMD64/ARM64 архивы сохраняйте целиком: `vetroff`, `lib/`, `runtime/`, helper и метаданные.
-Запускайте CLI из распакованного каталога `foxtunnel-necko/`.
+Запускайте CLI из распакованного каталога `vetroff-necko/`.
 [Проверка происхождения и обновление](OPERATIONS.md).
 
 Обычная Go-сборка без нативного Mozilla runtime (Go 1.26.10+):

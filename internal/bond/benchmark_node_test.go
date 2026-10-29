@@ -1,7 +1,7 @@
 package bond
 
 import (
-	"github.com/SawaMEN/FoxTunnel/internal/multihop"
+	"github.com/SawaMEN/VetroffProxy/internal/multihop"
 	"net/url"
 	"testing"
 	"time"
@@ -15,7 +15,7 @@ func BenchmarkBondPathSelection(b *testing.B) {
 		adaptive bool
 		smart    bool
 	}{
-		{"legacy", false, false}, {"adaptive", true, false},
+		{"builtin", false, false}, {"adaptive", true, false},
 		{"smart_adaptive", true, true},
 	} {
 		b.Run(mode.name, func(b *testing.B) {

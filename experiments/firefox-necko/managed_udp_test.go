@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
 )
 
 // The private IPC test runs without Gecko. The native Gecko HTTPS relay is
@@ -52,7 +52,7 @@ func TestManagedUDPPrivateIPC(t *testing.T) {
 			return
 		}
 		name, err := read(int(auth[1]))
-		if err != nil || string(name) != "foxtunnel" {
+		if err != nil || string(name) != "vetroff" {
 			done <- io.ErrUnexpectedEOF
 			return
 		}
@@ -136,7 +136,7 @@ func TestManagedUDPStreamPrivateIPC(t *testing.T) {
 			return
 		}
 		_, _ = c.Write([]byte{5, 2})
-		if err := expect(append([]byte{1, 9}, []byte("foxtunnel\x03key")...)); err != nil {
+		if err := expect(append([]byte{1, 7}, []byte("vetroff\x03key")...)); err != nil {
 			done <- err
 			return
 		}

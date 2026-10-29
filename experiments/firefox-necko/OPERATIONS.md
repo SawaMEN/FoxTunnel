@@ -65,12 +65,12 @@ special files and output paths inside the source runtime are rejected.
 
 ```sh
 go build -trimpath -ldflags='-s -w' -o necko-launcher \
-  ./experiments/firefox-necko/cmd/foxtunnel-necko
+  ./experiments/firefox-necko/cmd/vetroff-necko
 python3 scripts/package_necko.py \
   --runtime /path/to/dereferenced-runtime \
   --provenance /path/to/provenance.json --launcher ./necko-launcher \
-  --out ./necko-version-1 --archive ./foxtunnel-necko-linux-amd64.tar.gz
-./necko-version-1/foxtunnel-necko --bundle "$PWD/necko-version-1" --verify
+  --out ./necko-version-1 --archive ./vetroff-necko-linux-amd64.tar.gz
+./necko-version-1/vetroff-necko --bundle "$PWD/necko-version-1" --verify
 ```
 
 The bundle includes the launcher, full compiled runtime, source lock/provenance,
@@ -82,7 +82,7 @@ versions. Keep configuration and logs **outside** this immutable directory.
 Checksums detect corruption; obtain the archive digest from trusted CI or your
 own build. They do not authenticate an untrusted publisher.
 
-The CI artifact `foxtunnel-necko-linux-amd64` contains the `.tar.gz` bundle and
+The CI artifact `vetroff-necko-linux-amd64` contains the `.tar.gz` bundle and
 `SHA256SUMS`. The runtime workflow rechecks the source lock and binary hashes,
 performs native and operational gates, then tests real H2/H3 transfer and SIGTERM
 through the packaged executable from an unrelated working directory.
@@ -112,7 +112,7 @@ Create a private configuration beside the extracted bundle, not inside it:
 
 ```sh
 chmod 600 client.json
-./foxtunnel-necko/foxtunnel-necko --config "$PWD/client.json"
+./vetroff-necko/vetroff-necko --config "$PWD/client.json"
 ```
 
 Use `h2-connect` explicitly for H2. Explicit H3 has no TCP fallback. Additional
@@ -140,14 +140,14 @@ repackaging and a corresponding helper; mixed versions are rejected.
 ## Operational tests
 
 ```sh
-FOXTUNNEL_XPCSHELL=/absolute/path/runtime/xpcshell \
+VETROFF_XPCSHELL=/absolute/path/runtime/xpcshell \
   go test -race ./experiments/firefox-necko \
     -run '^Test(GeckoIdleAndDrainLimits|GeckoNetworkRecovery|NetworkRelayPeers|Bundle|Lifetime)' \
     -count=3 -v -timeout=180s
-FOXTUNNEL_XPCSHELL=/absolute/path/runtime/xpcshell \
-FOXTUNNEL_SOAK_SECONDS=300 FOXTUNNEL_OPERATIONS_OUT=/absolute/path/observations \
+VETROFF_XPCSHELL=/absolute/path/runtime/xpcshell \
+VETROFF_SOAK_SECONDS=300 VETROFF_OPERATIONS_OUT=/absolute/path/observations \
   go test -race ./experiments/firefox-necko -run '^TestGeckoSoak$' -count=1 -v -timeout=720s
-FOXTUNNEL_BUNDLE=/absolute/path/bundle \
+VETROFF_BUNDLE=/absolute/path/bundle \
   go test -race ./experiments/firefox-necko -run '^TestGeckoPackagedLauncher$' -v -count=1
 ```
 

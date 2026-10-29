@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 	"golang.org/x/net/netutil"
 )
 

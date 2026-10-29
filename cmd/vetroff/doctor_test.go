@@ -18,11 +18,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
-	"github.com/SawaMEN/FoxTunnel/internal/neqo"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/neqo"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 )
 
 type doctorFixture struct {
@@ -196,7 +196,7 @@ func TestDoctorNativeBackends(t *testing.T) {
 			if !buildinfo.NSSAvailable || mode == "h3-post" && !neqo.Available {
 				t.Skip("native backend is not compiled in")
 			}
-			backend, engine := "nss", "legacy"
+			backend, engine := "nss", "builtin"
 			if mode == "h3-post" {
 				backend, engine = "auto", "mozilla"
 			}
@@ -364,7 +364,7 @@ func TestDoctorDNSFailureAndCancellation(t *testing.T) {
 	f := newDoctorFixture(t, "h2-connect", "go", nil)
 	f.config.Servers = []string{"https://unresolvable.invalid"}
 	f.save(t)
-	o := doctorOptions{linkFile: f.path, ca: f.ca, engine: "legacy", target: "remote-echo.invalid:1234", network: "tcp"}
+	o := doctorOptions{linkFile: f.path, ca: f.ca, engine: "builtin", target: "remote-echo.invalid:1234", network: "tcp"}
 	var lookups int
 	r := runDoctor(context.Background(), o, func(_ context.Context, host string) ([]net.IPAddr, error) {
 		lookups++

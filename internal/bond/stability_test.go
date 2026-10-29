@@ -42,13 +42,13 @@ func TestStableAdaptiveExplorationSurvivesDuplexInterleaving(t *testing.T) {
 func TestStableBondCombinations(t *testing.T) {
 	for _, lanes := range []bool{false, true} {
 		for _, depth := range []int{0, 4, 8} {
-			for _, mode := range []string{"legacy", "adaptive", "auto", "latency", "throughput"} {
+			for _, mode := range []string{"builtin", "adaptive", "auto", "latency", "throughput"} {
 				t.Run(fmt.Sprintf("lanes=%t/pipeline=%d/%s", lanes, depth, mode), func(t *testing.T) {
 					dial, dials := echoDial(t)
 					c, _, _ := laneFixture(t, dial)
 					c.PersistentLanes = lanes
 					c.Pipeline = depth
-					c.Adaptive = mode != "legacy"
+					c.Adaptive = mode != "builtin"
 					c.AutoTune = c.Adaptive && depth == 0
 					if mode != "adaptive" {
 						c.TrafficMode = mode

@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SawaMEN/FoxTunnel/internal/buildinfo"
+	"github.com/SawaMEN/VetroffProxy/internal/buildinfo"
 )
 
-const protocolVersionHeader = "X-FoxTunnel-Version"
-const protocolRequireHeader = "X-FoxTunnel-Require"
-const protocolCapabilitiesHeader = "X-FoxTunnel-Capabilities"
+const protocolVersionHeader = "X-Vetroff-Version"
+const protocolRequireHeader = "X-Vetroff-Require"
+const protocolCapabilitiesHeader = "X-Vetroff-Capabilities"
 
 // ErrProtocolNegotiation is terminal: never retry without version/capabilities.
-var ErrProtocolNegotiation = errors.New("FoxTunnel protocol negotiation failed")
+var ErrProtocolNegotiation = errors.New("Vetroff protocol negotiation failed")
 
 // protocolValue checks actual keys as SDK hosts may use noncanonical maps.
 func protocolValue(h http.Header, name string) (string, bool, bool) {
@@ -76,7 +76,7 @@ func (s *Server) acceptProtocol(w http.ResponseWriter, r *http.Request) bool {
 			http.Error(w, "protocol negotiation required", http.StatusUpgradeRequired)
 			return false
 		}
-		return true // Explicit legacy deployment policy; no negotiated guarantee.
+		return true // Explicit builtin deployment policy; no negotiated guarantee.
 	}
 	if version != buildinfo.ProtocolDraft {
 		http.Error(w, "unsupported protocol version", http.StatusUpgradeRequired)

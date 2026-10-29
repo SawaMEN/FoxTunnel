@@ -2,7 +2,7 @@
 
 package buildinfo
 
-import "github.com/SawaMEN/FoxTunnel/internal/nsstls"
+import "github.com/SawaMEN/VetroffProxy/internal/nsstls"
 
 // Mozilla is a dedicated Linux/amd64 distribution flavor that links both
 // pinned NSS/NSPR and the pinned Neqo Rust static bridge. Ordinary NSS builds

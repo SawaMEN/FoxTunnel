@@ -42,7 +42,7 @@
     "kernel": "Linux 6.18.55 x86_64",
     "go_version": "go1.26.10",
     "code_commit": "eb92e13637a49a38013d97098209acfe59de99f5",
-    "command": "FOXTUNNEL_XPCSHELL=<verified-runtime>/xpcshell FOXTUNNEL_SOAK_SECONDS=300 FOXTUNNEL_OPERATIONS_OUT=<observations> go test -race ./experiments/firefox-necko -run ^TestGeckoSoak$ -v -count=1 -timeout=720s",
+    "command": "VETROFF_XPCSHELL=<verified-runtime>/xpcshell VETROFF_SOAK_SECONDS=300 VETROFF_OPERATIONS_OUT=<observations> go test -race ./experiments/firefox-necko -run ^TestGeckoSoak$ -v -count=1 -timeout=720s",
     "measurements": {
       "h2-connect": {
         "rounds": 11896,
@@ -105,7 +105,7 @@
     "artifact_zip_sha256": "sha256:da221145ebad4892f7d66e544f0dca6f2b6c64d6d607bf6f005cb57ccce25f6e",
     "archive_sha256": "808a968d76758fc595da5ff758617e12aba2f84398855071f0434bf92a85e024",
     "expires_at": "2026-11-06T17:19:01Z",
-    "url": "https://github.com/SawaMEN/FoxTunnel/actions/runs/39991403260/artifacts/12519391254"
+    "url": "https://github.com/SawaMEN/VetroffProxy/actions/runs/39991403260/artifacts/12519391254"
   },
   "local_packaged_launcher": {
     "result": "success",

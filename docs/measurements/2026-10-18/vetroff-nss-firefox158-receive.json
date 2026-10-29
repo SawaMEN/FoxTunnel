@@ -1,552 +1,513 @@
 {
   "schema": 1,
-  "source": "FoxTunnel pipeline Go 1.26.9 linux amd64; xhttp-packet-up; 64KiB echo",
+  "source": "Vetroff NSS 3.98; firefox-158 receive profile; xhttp-packet-up; local 64KiB echo",
   "hello": {
     "record_version": 769,
     "legacy_version": 771,
     "cipher_suites": [
       4865,
-      4866,
-      4867
+      4867,
+      4866
     ],
     "extensions": [
       0,
-      11,
-      35,
-      65281,
       23,
-      18,
-      5,
+      65281,
       10,
-      13,
-      50,
       16,
-      43,
       51,
-      45
+      43,
+      13,
+      28
     ],
     "supported_groups": [
-      4588,
-      4587,
-      4589,
       29,
       23,
       24,
-      25
-    ],
-    "ec_point_formats": [
-      0
+      25,
+      256,
+      257,
+      258,
+      259,
+      260
     ],
     "supported_versions": [
       772
     ],
     "signature_algorithms": [
-      2052,
       1027,
-      2055,
+      1283,
+      1539,
+      515,
+      2052,
       2053,
       2054,
-      1283,
-      1539
+      1025,
+      1281,
+      1537,
+      513
     ],
     "key_share_groups": [
-      4588,
       29
     ],
     "alpn": [
       "h2"
     ],
     "sni_present": true,
-    "ja3": "771,4865-4866-4867,0-11-35-65281-23-18-5-10-13-50-16-43-51-45,4588-4587-4589-29-23-24-25,0",
-    "ja3_md5": "b4a35246c20f41a78064aa01b4b66b79"
+    "ja3": "771,4865-4867-4866,0-23-65281-10-16-51-43-13-28,29-23-24-25-256-257-258-259-260,",
+    "ja3_md5": "4d2155a25c28364709d8478ad0d0e1eb"
   },
   "negotiated_alpn": "h2",
   "tls_records": [
     {
       "direction": "client",
       "type": 22,
-      "length": 1487,
-      "microseconds": 245
+      "length": 194,
+      "microseconds": 453
     },
     {
       "direction": "server",
       "type": 22,
-      "length": 1210,
-      "microseconds": 2131
+      "length": 90,
+      "microseconds": 2299
     },
     {
       "direction": "server",
       "type": 20,
       "length": 1,
-      "microseconds": 2132
+      "microseconds": 2301
     },
     {
       "direction": "server",
       "type": 23,
       "length": 36,
-      "microseconds": 2133
+      "microseconds": 2301
     },
     {
       "direction": "server",
       "type": 23,
-      "length": 933,
-      "microseconds": 2133
+      "length": 438,
+      "microseconds": 2301
     },
     {
       "direction": "server",
       "type": 23,
-      "length": 96,
-      "microseconds": 2133
+      "length": 97,
+      "microseconds": 2302
     },
     {
       "direction": "server",
       "type": 23,
       "length": 53,
-      "microseconds": 2133
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 139,
-      "microseconds": 2133
-    },
-    {
-      "direction": "client",
-      "type": 20,
-      "length": 1,
-      "microseconds": 2548
+      "microseconds": 2302
     },
     {
       "direction": "client",
       "type": 23,
       "length": 53,
-      "microseconds": 2549
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 87,
-      "microseconds": 2706
+      "microseconds": 3200
     },
     {
       "direction": "server",
       "type": 23,
       "length": 62,
-      "microseconds": 2761
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 39,
-      "microseconds": 2774
+      "microseconds": 3436
     },
     {
       "direction": "client",
       "type": 23,
-      "length": 618,
-      "microseconds": 2778
+      "length": 93,
+      "microseconds": 3464
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 310,
+      "microseconds": 3464
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 30,
+      "microseconds": 3537
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 26,
+      "microseconds": 3590
     },
     {
       "direction": "client",
       "type": 23,
       "length": 26,
-      "microseconds": 2917
+      "microseconds": 3757
     },
     {
       "direction": "server",
       "type": 23,
-      "length": 302,
-      "microseconds": 3038
+      "length": 957,
+      "microseconds": 3901
     },
     {
       "direction": "server",
       "type": 23,
       "length": 71,
-      "microseconds": 3186
+      "microseconds": 4009
     },
     {
       "direction": "client",
       "type": 23,
-      "length": 750,
-      "microseconds": 3387
+      "length": 494,
+      "microseconds": 4203
     },
     {
       "direction": "client",
       "type": 23,
       "length": 96,
-      "microseconds": 3390
+      "microseconds": 4204
     },
     {
       "direction": "client",
       "type": 23,
-      "length": 399,
-      "microseconds": 3456
+      "length": 242,
+      "microseconds": 4243
     },
     {
       "direction": "client",
       "type": 23,
       "length": 98,
-      "microseconds": 3456
+      "microseconds": 4263
     },
     {
       "direction": "client",
       "type": 23,
-      "length": 724,
-      "microseconds": 3481
+      "length": 917,
+      "microseconds": 4344
     },
     {
       "direction": "client",
       "type": 23,
       "length": 35,
-      "microseconds": 3481
+      "microseconds": 4344
     },
     {
       "direction": "server",
       "type": 23,
       "length": 39,
-      "microseconds": 3672
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 941,
-      "microseconds": 3699
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 567,
-      "microseconds": 3711
+      "microseconds": 4358
     },
     {
       "direction": "server",
       "type": 23,
       "length": 35,
-      "microseconds": 3727
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 78,
-      "microseconds": 4255
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 1025,
-      "microseconds": 4539
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 13063,
-      "microseconds": 4539
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 3373,
-      "microseconds": 4631
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 1120,
-      "microseconds": 4646
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 16401,
-      "microseconds": 4646
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 35,
-      "microseconds": 4727
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 656,
-      "microseconds": 4727
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 16401,
-      "microseconds": 4727
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 30,
-      "microseconds": 4733
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 30,
-      "microseconds": 4792
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 35,
-      "microseconds": 4800
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 616,
-      "microseconds": 4800
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 16401,
-      "microseconds": 4800
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 35,
-      "microseconds": 4800
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 374,
-      "microseconds": 4828
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 52,
-      "microseconds": 4841
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 30,
-      "microseconds": 4907
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 1050,
-      "microseconds": 4972
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 325,
-      "microseconds": 5333
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 39,
-      "microseconds": 5366
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 16401,
-      "microseconds": 5433
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 26,
-      "microseconds": 5439
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 43,
-      "microseconds": 5528
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 35,
-      "microseconds": 5564
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 4122,
-      "microseconds": 5623
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 43,
-      "microseconds": 5715
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 12336,
-      "microseconds": 5796
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 43,
-      "microseconds": 5876
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 899,
-      "microseconds": 5923
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 39,
-      "microseconds": 6021
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 16401,
-      "microseconds": 6636
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 26,
-      "microseconds": 6640
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 35,
-      "microseconds": 6652
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 16401,
-      "microseconds": 6691
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 26,
-      "microseconds": 6693
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 35,
-      "microseconds": 6698
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 52,
-      "microseconds": 6774
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 986,
-      "microseconds": 6774
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 52,
-      "microseconds": 6774
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 43,
-      "microseconds": 6863
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 167,
-      "microseconds": 6884
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 1040,
-      "microseconds": 6929
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 622,
-      "microseconds": 6934
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 52,
-      "microseconds": 6951
-    },
-    {
-      "direction": "server",
-      "type": 23,
-      "length": 561,
-      "microseconds": 7007
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 1098,
-      "microseconds": 7076
-    },
-    {
-      "direction": "client",
-      "type": 23,
-      "length": 52,
-      "microseconds": 7076
+      "microseconds": 4391
     },
     {
       "direction": "server",
       "type": 23,
       "length": 1020,
-      "microseconds": 7180
+      "microseconds": 4442
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 1806,
+      "microseconds": 4469
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 78,
+      "microseconds": 4672
     },
     {
       "direction": "client",
       "type": 23,
-      "length": 761,
-      "microseconds": 7189
+      "length": 438,
+      "microseconds": 5220
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 16401,
+      "microseconds": 5260
     },
     {
       "direction": "client",
       "type": 23,
       "length": 35,
-      "microseconds": 7199
+      "microseconds": 5274
     },
     {
       "direction": "server",
       "type": 23,
-      "length": 765,
-      "microseconds": 7284
+      "length": 30,
+      "microseconds": 5355
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 755,
+      "microseconds": 5419
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 16401,
+      "microseconds": 5470
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 35,
+      "microseconds": 5470
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 858,
+      "microseconds": 5518
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 891,
+      "microseconds": 5542
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 961,
+      "microseconds": 5564
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 39,
+      "microseconds": 5576
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 16401,
+      "microseconds": 5609
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 35,
+      "microseconds": 5610
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 4122,
+      "microseconds": 5668
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 1075,
+      "microseconds": 5679
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 16401,
+      "microseconds": 5680
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 35,
+      "microseconds": 5680
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 221,
+      "microseconds": 5708
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 12336,
+      "microseconds": 5764
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 43,
+      "microseconds": 5791
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 30,
+      "microseconds": 5810
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 65,
+      "microseconds": 5825
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 43,
+      "microseconds": 5839
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 477,
+      "microseconds": 5886
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 52,
+      "microseconds": 5886
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 380,
+      "microseconds": 6032
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 4113,
+      "microseconds": 6758
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 13164,
+      "microseconds": 6875
     },
     {
       "direction": "server",
       "type": 23,
       "length": 35,
-      "microseconds": 7730
+      "microseconds": 6887
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 4122,
+      "microseconds": 6947
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 12336,
+      "microseconds": 7045
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 39,
+      "microseconds": 7197
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 16401,
+      "microseconds": 7223
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 26,
+      "microseconds": 7226
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 35,
+      "microseconds": 7232
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 43,
+      "microseconds": 7861
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 758,
+      "microseconds": 8050
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 43,
+      "microseconds": 8293
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 52,
+      "microseconds": 8322
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 262,
+      "microseconds": 8445
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 605,
+      "microseconds": 8702
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 52,
+      "microseconds": 8702
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 550,
+      "microseconds": 8836
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 387,
+      "microseconds": 9157
+    },
+    {
+      "direction": "client",
+      "type": 23,
+      "length": 35,
+      "microseconds": 9198
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 769,
+      "microseconds": 9271
+    },
+    {
+      "direction": "server",
+      "type": 23,
+      "length": 35,
+      "microseconds": 9589
     },
     {
       "direction": "client",
       "type": 23,
       "length": 30,
-      "microseconds": 7822
+      "microseconds": 9763
     }
   ],
   "dropped_records": 0,
@@ -554,7 +515,7 @@
     {
       "type": 4,
       "flags": 0,
-      "length": 24,
+      "length": 30,
       "stream": 0
     },
     {
@@ -566,7 +527,7 @@
     {
       "type": 1,
       "flags": 5,
-      "length": 592,
+      "length": 284,
       "stream": 1
     },
     {
@@ -578,7 +539,7 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 724,
+      "length": 468,
       "stream": 3
     },
     {
@@ -590,7 +551,7 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 373,
+      "length": 216,
       "stream": 5
     },
     {
@@ -602,7 +563,7 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 698,
+      "length": 891,
       "stream": 7
     },
     {
@@ -614,7 +575,7 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 999,
+      "length": 412,
       "stream": 9
     },
     {
@@ -626,7 +587,7 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 1094,
+      "length": 729,
       "stream": 11
     },
     {
@@ -638,7 +599,7 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 630,
+      "length": 865,
       "stream": 13
     },
     {
@@ -650,7 +611,7 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 590,
+      "length": 1049,
       "stream": 15
     },
     {
@@ -684,21 +645,9 @@
       "stream": 1
     },
     {
-      "type": 8,
-      "flags": 0,
-      "length": 4,
-      "stream": 0
-    },
-    {
-      "type": 8,
-      "flags": 0,
-      "length": 4,
-      "stream": 1
-    },
-    {
       "type": 1,
       "flags": 4,
-      "length": 873,
+      "length": 451,
       "stream": 17
     },
     {
@@ -706,18 +655,6 @@
       "flags": 1,
       "length": 26,
       "stream": 17
-    },
-    {
-      "type": 1,
-      "flags": 4,
-      "length": 960,
-      "stream": 19
-    },
-    {
-      "type": 0,
-      "flags": 1,
-      "length": 26,
-      "stream": 19
     },
     {
       "type": 8,
@@ -734,7 +671,31 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 596,
+      "length": 732,
+      "stream": 19
+    },
+    {
+      "type": 8,
+      "flags": 0,
+      "length": 4,
+      "stream": 0
+    },
+    {
+      "type": 8,
+      "flags": 0,
+      "length": 4,
+      "stream": 1
+    },
+    {
+      "type": 0,
+      "flags": 1,
+      "length": 26,
+      "stream": 19
+    },
+    {
+      "type": 1,
+      "flags": 4,
+      "length": 579,
       "stream": 21
     },
     {
@@ -746,26 +707,14 @@
     {
       "type": 1,
       "flags": 4,
-      "length": 1072,
+      "length": 361,
       "stream": 23
-    },
-    {
-      "type": 0,
-      "flags": 1,
-      "length": 26,
-      "stream": 23
-    },
-    {
-      "type": 1,
-      "flags": 4,
-      "length": 735,
-      "stream": 25
     },
     {
       "type": 0,
       "flags": 1,
       "length": 9,
-      "stream": 25
+      "stream": 23
     },
     {
       "type": 3,
@@ -782,7 +731,7 @@
     },
     {
       "id": 4,
-      "value": 4194304
+      "value": 131072
     },
     {
       "id": 5,
@@ -791,9 +740,13 @@
     {
       "id": 6,
       "value": 10485760
+    },
+    {
+      "id": 1,
+      "value": 65536
     }
   ],
   "initial_connection_window_updates": [
-    1073741824
+    12517377
   ]
 }

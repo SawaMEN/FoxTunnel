@@ -49,7 +49,7 @@ source lock were verified before recording the result. No native group skipped.
 artifact, hashes, source lock, helper revision and pass counts.
 [The complete native log](validation/native-0fc7192.log) records all three runs.
 The fresh source build and all native CI gates passed in
-[39912988779](https://github.com/SawaMEN/FoxTunnel/actions/runs/39912988779),
+[39912988779](https://github.com/SawaMEN/VetroffProxy/actions/runs/39912988779),
 including three repetitions of the reverse-EOF and lifecycle gates.
 
 ## Implementation
@@ -103,7 +103,7 @@ Bootstrap a clean checkout of the locked Gecko revision first:
 # Run inside the Gecko checkout:
 python3 mach --no-interactive bootstrap --application-choice=browser --no-agentic-tools
 
-# Then run from FoxTunnel:
+# Then run from Vetroff:
 python3 scripts/build_necko.py --source /path/to/gecko --out /path/to/necko-build --jobs 2
 ```
 
@@ -142,11 +142,11 @@ node --test experiments/firefox-necko/client_test.cjs
 python3 -m unittest discover -s scripts -p test_build_necko.py
 go test -race ./experiments/firefox-necko
 
-FOXTUNNEL_XPCSHELL=/path/to/necko-build/obj/dist/bin/xpcshell \
+VETROFF_XPCSHELL=/path/to/necko-build/obj/dist/bin/xpcshell \
   go test -race ./experiments/firefox-necko -run '^TestGecko' -v -count=3 -timeout=180s
 ```
 
-Without `FOXTUNNEL_XPCSHELL`, native tests skip; they do not count as passed.
+Without `VETROFF_XPCSHELL`, native tests skip; they do not count as passed.
 A stock Gecko binary lacks the required C++ changes. Raw Gecko logging can
 include destinations and headers, so the diagnostic runs use isolated fixtures.
 
@@ -163,9 +163,9 @@ and runtime compatibility are qualified in [stage 4](validation/stage4/README.md
 Proxy-IP changes, IPv4/IPv6 switching, mobile handoff and multi-day reliability
 remain deployment-specific pilot work. The integrated engine stays opt-in.
 
-Earlier source run [39869936393](https://github.com/SawaMEN/FoxTunnel/actions/runs/39869936393)
+Earlier source run [39869936393](https://github.com/SawaMEN/VetroffProxy/actions/runs/39869936393)
 compiled but exposed the 65,535-byte H2 and intermittent H3 stalls. Run
-[39910478555](https://github.com/SawaMEN/FoxTunnel/actions/runs/39910478555)
+[39910478555](https://github.com/SawaMEN/VetroffProxy/actions/runs/39910478555)
 supplied the corrected native runtime; restricted-window tests then identified
 the JS cleanup race fixed in helper `0fc7192`. The acceptance record explicitly
 identifies that runtime/helper combination rather than crediting an older binary.
@@ -176,6 +176,6 @@ identifies that runtime/helper combination rather than crediting an older binary
 The first extension to the native Necko engine is an authenticated, bounded
 single-datagram IPC operation that posts the existing `udp-v1` wire packet
 through Gecko's own H2/TLS stack. The local UDP ASSOCIATE socket and reply
-source checks remain owned by FoxTunnel Go. It is deliberately not QUIC
+source checks remain owned by Vetroff Go. It is deliberately not QUIC
 DATAGRAM or UDP stream-v2. Necko H3 UDP, streaming, Bond, balancing and XHTTP
 remain unimplemented. Do not enable those options with forced Necko.

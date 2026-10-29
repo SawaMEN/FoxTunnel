@@ -14,15 +14,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/bond"
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/bond"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 	"github.com/quic-go/quic-go"
 )
 
 func TestGeckoManagedBond(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
-	runtime := os.Getenv("FOXTUNNEL_XPCSHELL")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
+	runtime := os.Getenv("VETROFF_XPCSHELL")
 	if bundle == "" && runtime == "" {
 		t.Skip("verified native bundle required")
 	}

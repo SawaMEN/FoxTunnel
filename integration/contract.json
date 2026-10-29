@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "product": "protocol-core",
-  "protocol_draft": "foxtunnel-draft-0",
+  "protocol_draft": "vetroff-draft-0",
   "interfaces": {
     "process": {
       "executable": "vetroff",
@@ -24,7 +24,7 @@
       "readiness": "local listeners bound; no remote trust/authentication claim"
     },
     "go": {
-      "module": "github.com/SawaMEN/FoxTunnel",
+      "module": "github.com/SawaMEN/VetroffProxy",
       "api": "experimental; pin a release or commit",
       "sdk_schema": 1
     }

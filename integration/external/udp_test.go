@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	ft "github.com/SawaMEN/FoxTunnel"
+	ft "github.com/SawaMEN/VetroffProxy"
 )
 
 func TestPublicUDPAPIAndOwnership(t *testing.T) {

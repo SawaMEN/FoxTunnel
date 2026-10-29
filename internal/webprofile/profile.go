@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/fingerprint"
+	"github.com/SawaMEN/VetroffProxy/internal/fingerprint"
 	"golang.org/x/net/http2"
 )
 

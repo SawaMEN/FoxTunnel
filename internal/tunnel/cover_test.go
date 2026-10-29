@@ -43,7 +43,7 @@ func TestCoverSiteAndProbeResponses(t *testing.T) {
 			if got.Code != tc.code || !strings.Contains(got.Body.String(), tc.body) {
 				t.Fatalf("got %d %q", got.Code, got.Body.String())
 			}
-			if strings.Contains(got.Body.String(), "FoxTunnel") || strings.Contains(got.Body.String(), "secret") {
+			if strings.Contains(got.Body.String(), "Vetroff") || strings.Contains(got.Body.String(), "secret") {
 				t.Fatal("exposed identifying/private content")
 			}
 			expected := httptest.NewRecorder()

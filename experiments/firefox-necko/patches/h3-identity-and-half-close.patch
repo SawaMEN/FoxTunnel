@@ -6,7 +6,7 @@
    // context to ensure the certificate hash is checked.
 -  if (StaticPrefs::network_http_http3_enable_0rtt() && !hasServCertHashes()) {
 +  if (StaticPrefs::network_http_http3_enable_0rtt() && !hasServCertHashes() &&
-+      !mSocketControl->HasFoxTunnelPolicy()) {
++      !mSocketControl->HasVetroffPolicy()) {
      uint32_t maxAttempts =
          StaticPrefs::network_ssl_tokens_cache_records_per_entry();
      bool tokenFound = false;
@@ -30,7 +30,7 @@
          LOG(("Http3Session::ProcessEvents - ResumptionToken"));
 -        if (StaticPrefs::network_http_http3_enable_0rtt() && !data.IsEmpty()) {
 +        if (StaticPrefs::network_http_http3_enable_0rtt() && !data.IsEmpty() &&
-+            !mSocketControl->HasFoxTunnelPolicy()) {
++            !mSocketControl->HasVetroffPolicy()) {
            LOG(("Got a resumption token"));
            nsAutoCString peerId;
            mSocketControl->GetPeerId(peerId);

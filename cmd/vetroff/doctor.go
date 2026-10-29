@@ -16,11 +16,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/cluster"
-	"github.com/SawaMEN/FoxTunnel/internal/contract"
-	"github.com/SawaMEN/FoxTunnel/internal/profile"
-	"github.com/SawaMEN/FoxTunnel/internal/transportengine"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/cluster"
+	"github.com/SawaMEN/VetroffProxy/internal/contract"
+	"github.com/SawaMEN/VetroffProxy/internal/profile"
+	"github.com/SawaMEN/VetroffProxy/internal/transportengine"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
 )
 
 const doctorPayloadBytes = 32
@@ -67,7 +67,7 @@ func doctorCommand(parent context.Context, args []string, out io.Writer) error {
 	o := doctorOptions{}
 	fs.StringVar(&o.linkFile, "link-file", "", "private client profile file")
 	fs.StringVar(&o.ca, "ca-cert", "", "additional trusted certificate PEM")
-	fs.StringVar(&o.engine, "engine", "legacy", "client engine: legacy or mozilla")
+	fs.StringVar(&o.engine, "engine", "builtin", "client engine: builtin or mozilla")
 	fs.StringVar(&o.target, "target", "", "operator-controlled echo service host:port; receives 32 random bytes")
 	fs.StringVar(&o.network, "network", "tcp", "echo service protocol: tcp or udp")
 	fs.IntVar(&o.serverIndex, "server-index", 0, "zero-based profile server index; probes this node without balancing or bonding")

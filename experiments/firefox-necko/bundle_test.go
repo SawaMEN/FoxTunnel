@@ -17,12 +17,12 @@ func testBundlePlatform(t *testing.T, platform string) string {
 	t.Helper()
 	root := t.TempDir()
 	m := bundleManifest{Schema: 1, HelperProtocol: BundleProtocol, Platform: platform, SourceLockSHA256: digestBytes(sourceLock), ClientJSSHA256: digestBytes(clientScript), Files: map[string]string{}}
-	for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "runtime/platform.ini", "provenance.json", "source-lock.json", "foxtunnel-necko"} {
+	for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "runtime/platform.ini", "provenance.json", "source-lock.json", "vetroff-necko"} {
 		data := []byte("fixture " + name)
 		if name == "source-lock.json" {
 			data = sourceLock
 		}
-		if name == "runtime/xpcshell" || name == "runtime/libxul.so" || name == "runtime/libnss3.so" || name == "foxtunnel-necko" {
+		if name == "runtime/xpcshell" || name == "runtime/libxul.so" || name == "runtime/libnss3.so" || name == "vetroff-necko" {
 			data = make([]byte, 64)
 			copy(data, []byte{127, 'E', 'L', 'F', 2, 1, 1})
 			binary.LittleEndian.PutUint16(data[16:18], 3)
@@ -157,13 +157,13 @@ func TestBundleArchitectureCannotBeRelabeledOrMixed(t *testing.T) {
 			if _, err := verifyBundlePlatform(root, other); err == nil {
 				t.Fatal("accepted other architecture")
 			}
-			for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "foxtunnel-necko", "foxtunnel", "vetroff", "lib/libnss3.so", "runtime/other-library.so"} {
+			for _, name := range []string{"runtime/xpcshell", "runtime/libxul.so", "runtime/libnss3.so", "vetroff-necko", "vetroff", "lib/libnss3.so", "runtime/other-library.so"} {
 				t.Run(name, func(t *testing.T) {
 					mixed := testBundlePlatform(t, platform)
 					donor := testBundlePlatform(t, other)
 					donorName := name
-					if name == "foxtunnel" || name == "vetroff" || name == "lib/libnss3.so" || name == "runtime/other-library.so" {
-						donorName = "foxtunnel-necko"
+					if name == "vetroff" || name == "lib/libnss3.so" || name == "runtime/other-library.so" {
+						donorName = "vetroff-necko"
 					}
 					data, err := os.ReadFile(filepath.Join(donor, donorName))
 					if err != nil {
@@ -270,7 +270,7 @@ func TestBundleRejectsRehashedProvenanceAndPrivilegedModes(t *testing.T) {
 				if runtime.GOOS == "windows" {
 					t.Skip("POSIX modes")
 				}
-				name := "foxtunnel-necko"
+				name := "vetroff-necko"
 				mode := os.FileMode(0700) | os.ModeSetuid
 				if kind == "directory-mode" {
 					name, mode = "runtime", 0700|os.ModeSetgid

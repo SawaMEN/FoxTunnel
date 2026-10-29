@@ -135,7 +135,7 @@ def validate_bundle(archive: Path, metadata: Path, tag: str, commit: str) -> dic
         "product": "protocol-core", "integration_schema": 1,
         "schema": 1, "version": tag, "commit": commit,
         "target": "linux/amd64/mozilla", "engine": "mozilla",
-        "build_flavor": "mozilla", "protocol_draft": "foxtunnel-draft-0",
+        "build_flavor": "mozilla", "protocol_draft": "vetroff-draft-0",
         "nss_version": "3.130", "neqo_version": "0.33.0",
         "rust_toolchain": "1.99.1",
         "experimental": True, "native_compiled": True,

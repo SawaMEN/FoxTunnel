@@ -39,10 +39,6 @@ def extract_regular(archive_path, dest, prefix=""):
     with tarfile.open(archive_path, "r:gz") as archive:
         for m in archive:
             raw = m.name.rstrip("/")
-            # Historical package_necko emitted this exact root-directory alias.
-            # No dot component elsewhere is accepted.
-            if prefix and raw == prefix + "/." and m.isdir():
-                raw = prefix
             if m.mode & 0o7000:
                 raise ValueError("privileged archive member")
             parts = PurePosixPath(raw).parts
@@ -99,7 +95,7 @@ def merge_files(necko, nss):
     verify_elf(nss / "vetroff", platform)
     if metadata.get("runtime", {}).get("mozilla", {}).get("libraries") is None:
         raise ValueError("NSS runtime provenance missing")
-    if not (necko / "foxtunnel-necko").is_file() or not (necko / "runtime/xpcshell").is_file():
+    if not (necko / "vetroff-necko").is_file() or not (necko / "runtime/xpcshell").is_file():
         raise ValueError("Necko helper/runtime missing")
     required = {
         "lib": nss / "lib",
@@ -158,7 +154,7 @@ def make_archive(bundle, archive_path):
                 with tarfile.open(fileobj=gz, mode="w|") as tar:
                     for p in (bundle, *sorted(bundle.rglob("*"))):
                         rel = p.relative_to(bundle)
-                        name = "foxtunnel-necko" if p == bundle else "foxtunnel-necko/" + rel.as_posix()
+                        name = "vetroff-necko" if p == bundle else "vetroff-necko/" + rel.as_posix()
                         info = tar.gettarinfo(str(p), arcname=name)
                         info.uid = info.gid = info.mtime = 0
                         info.uname = info.gname = ""
@@ -195,7 +191,7 @@ def merge(necko_archive, nss_archive, output, version, commit, arch="amd64"):
         necko, nss = tmp / "necko", tmp / "nss"
         necko.mkdir()
         nss.mkdir()
-        extract_regular(necko_archive, necko, prefix="foxtunnel-necko")
+        extract_regular(necko_archive, necko, prefix="vetroff-necko")
         extract_regular(nss_archive, nss)
         necko_bundle.verify(necko, "linux-" + arch,
                             ROOT / "experiments/firefox-necko/gecko.lock.json",

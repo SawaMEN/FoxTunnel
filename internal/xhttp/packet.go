@@ -219,7 +219,7 @@ func sendRequestAt(ctx context.Context, rt http.RoundTripper, u *url.URL, method
 }
 
 // readPacket allocates once for the known-size POSTs emitted by our client.
-// Unknown-size bodies retain bounded legacy handling. Always check EOF, since
+// Unknown-size bodies retain bounded builtin handling. Always check EOF, since
 // custom transports and tests may not enforce the declared Content-Length.
 func readPacket(r *http.Request) ([]byte, error) {
 	if r.ContentLength < 0 {

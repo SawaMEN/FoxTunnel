@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/SawaMEN/FoxTunnel/internal/safejson"
+	"github.com/SawaMEN/VetroffProxy/internal/safejson"
 )
 
 type ledger struct {
@@ -87,7 +87,7 @@ func (c *Controller) persist() error {
 }
 func atomicWrite(path string, data []byte) error {
 	dir := filepath.Dir(path)
-	f, err := os.CreateTemp(dir, ".foxtunnel-usage-*")
+	f, err := os.CreateTemp(dir, ".vetroff-usage-*")
 	if err != nil {
 		return err
 	}

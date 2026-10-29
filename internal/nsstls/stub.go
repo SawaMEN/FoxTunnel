@@ -6,8 +6,8 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"github.com/SawaMEN/FoxTunnel/internal/h2profile"
-	"github.com/SawaMEN/FoxTunnel/internal/i18n"
+	"github.com/SawaMEN/VetroffProxy/internal/h2profile"
+	"github.com/SawaMEN/VetroffProxy/internal/i18n"
 	"net"
 	"net/http"
 )

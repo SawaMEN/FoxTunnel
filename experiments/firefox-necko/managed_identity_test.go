@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SawaMEN/FoxTunnel/internal/tlsidentity"
-	"github.com/SawaMEN/FoxTunnel/internal/tunnel"
-	"github.com/SawaMEN/FoxTunnel/internal/udpproto"
-	"github.com/SawaMEN/FoxTunnel/internal/webprofile"
+	"github.com/SawaMEN/VetroffProxy/internal/tlsidentity"
+	"github.com/SawaMEN/VetroffProxy/internal/tunnel"
+	"github.com/SawaMEN/VetroffProxy/internal/udpproto"
+	"github.com/SawaMEN/VetroffProxy/internal/webprofile"
 )
 
 func TestNativeIdentityConfiguration(t *testing.T) {
@@ -42,7 +42,7 @@ func TestNativeIdentityConfiguration(t *testing.T) {
 // All positive and negative identity gates use the rebuilt verified bundle.
 // The leaf has a DNS SAN only; dialing its numeric IP must require real SNI.
 func TestGeckoManagedHTTPIdentity(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("rebuilt verified identity bundle required")
 	}
@@ -200,7 +200,7 @@ func TestGeckoManagedHTTPIdentity(t *testing.T) {
 }
 
 func TestGeckoManagedHTTPNativeProfiles(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("rebuilt verified profile bundle required")
 	}
@@ -291,7 +291,7 @@ func u16ProfileBytes(values []uint16) []byte {
 }
 
 func TestGeckoManagedHTTPIdentityOriginScope(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("rebuilt identity bundle required")
 	}
@@ -363,7 +363,7 @@ func TestNativeNodeIdentityNormalization(t *testing.T) {
 }
 
 func TestGeckoManagedHTTPNodePins(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("rebuilt per-node identity bundle required")
 	}
@@ -430,7 +430,7 @@ func TestGeckoManagedHTTPNodePins(t *testing.T) {
 // Call the native API directly so Go validation cannot hide errors in native
 // DNS validation, bounds or immutable-policy checks.
 func TestGeckoManagedHTTPIdentityPolicyAPI(t *testing.T) {
-	bundle := os.Getenv("FOXTUNNEL_NECKO_BUNDLE")
+	bundle := os.Getenv("VETROFF_NECKO_BUNDLE")
 	if bundle == "" {
 		t.Skip("rebuilt verified identity API bundle required")
 	}
@@ -438,7 +438,7 @@ func TestGeckoManagedHTTPIdentityPolicyAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("FOXTUNNEL_XPCSHELL", runtime)
+	t.Setenv("VETROFF_XPCSHELL", runtime)
 	marker := "  registerEndpoint(cfg.proxy_host, cfg.proxy_port);"
 	if strings.Count(string(clientScript), marker) != 1 {
 		t.Fatal("native policy injection point changed")
@@ -447,7 +447,7 @@ func TestGeckoManagedHTTPIdentityPolicyAPI(t *testing.T) {
   {
     const mustReject = args => {
       let rejected = false;
-      try {nativeCertDB.registerFoxTunnelPolicy(...args);} catch {rejected = true;}
+      try {nativeCertDB.registerVetroffPolicy(...args);} catch {rejected = true;}
       if (!rejected) throw new Error("native identity API accepted invalid policy");
     };
     const pin = "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
@@ -462,8 +462,8 @@ func TestGeckoManagedHTTPIdentityPolicyAPI(t *testing.T) {
     }
     mustReject(["policy.invalid",443,"identity.invalid",pin,"unknown-profile"]);
     mustReject(["policy.invalid",443,"","",""]);
-    nativeCertDB.registerFoxTunnelPolicy("policy.invalid",443,"identity.invalid",pin,"");
-    nativeCertDB.registerFoxTunnelPolicy("POLICY.INVALID",443,"identity.invalid",pin,"");
+    nativeCertDB.registerVetroffPolicy("policy.invalid",443,"identity.invalid",pin,"");
+    nativeCertDB.registerVetroffPolicy("POLICY.INVALID",443,"identity.invalid",pin,"");
     mustReject(["policy.invalid",443,"other.invalid",pin,""]);
     mustReject(["policy.invalid",443,"identity.invalid","sha256/AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",""]);
     mustReject(["policy.invalid",443,"identity.invalid",pin,"firefox-158"]);

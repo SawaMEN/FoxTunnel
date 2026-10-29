@@ -70,15 +70,15 @@ No C++ patch or protocol framing was changed to obtain the post-fix result.
 From the repository root, with the matching compiled runtime:
 
 ```sh
-FOXTUNNEL_XPCSHELL=/absolute/path/to/runtime/xpcshell \
-FOXTUNNEL_FINGERPRINT_OUT=/absolute/path/to/new-observations \
+VETROFF_XPCSHELL=/absolute/path/to/runtime/xpcshell \
+VETROFF_FINGERPRINT_OUT=/absolute/path/to/new-observations \
   go test -race ./experiments/firefox-necko \
     -run '^Test(Fingerprint|GeckoBrowserFingerprint)' -count=3 -v -timeout=180s
 python3 scripts/compare_necko_firefox.py \
   --observations /absolute/path/to/new-observations --out /absolute/path/to/new-report.json
 ```
 
-The [runtime CI verification](https://github.com/SawaMEN/FoxTunnel/actions/runs/39946382981)
+The [runtime CI verification](https://github.com/SawaMEN/VetroffProxy/actions/runs/39946382981)
 passed on `607ed70`. It verified the source lock and runtime hashes, passed the
 complete native gates, then repeated the Firefox comparison three times for each
 protocol. Its retained-field differences match the local results above. The

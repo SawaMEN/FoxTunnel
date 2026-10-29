@@ -1,11 +1,11 @@
-// Separate opt-in launcher. Does not change the ordinary FoxTunnel CLI or SDK.
+// Separate opt-in launcher. Does not change the ordinary Vetroff CLI or SDK.
 package main
 
 import (
 	"context"
 	"flag"
 	"fmt"
-	firefox "github.com/SawaMEN/FoxTunnel/experiments/firefox-necko"
+	firefox "github.com/SawaMEN/VetroffProxy/experiments/firefox-necko"
 	"os"
 	"os/signal"
 	"path/filepath"

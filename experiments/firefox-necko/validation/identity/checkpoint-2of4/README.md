@@ -1,13 +1,13 @@
 # Stage 5: failed qualification checkpoint (2/4)
 
 This is preserved failure evidence, not acceptance. Native source run
-[40317262284](https://github.com/SawaMEN/FoxTunnel/actions/runs/40317262284)
+[40317262284](https://github.com/SawaMEN/VetroffProxy/actions/runs/40317262284)
 compiled the same 28-patch lock on AMD64 and ARM64. ARM64's 60-second resource
 gate failed with H2 RSS 141672 -> 359048 KiB and H3 148420 -> 364592 KiB,
 against the unchanged 192 MiB growth bound. Completed tunnel and byte counters
 matched; file descriptors stayed at 46. These observations do not prove a leak.
 
-Runtime run [40317917970](https://github.com/SawaMEN/FoxTunnel/actions/runs/40317917970)
+Runtime run [40317917970](https://github.com/SawaMEN/VetroffProxy/actions/runs/40317917970)
 failed ARM64's strict wire audit. The three candidate trials had H2 SETTINGS ACK
 and HPACK table-size update timing differences in two observations, which the
 three self-control observations did not capture. The full raw comparison and

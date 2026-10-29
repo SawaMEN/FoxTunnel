@@ -117,7 +117,7 @@ func (c *Client) pickAdaptive(tried []bool, op byte, bytes int, now time.Time) i
 
 	// Bond has at most eight trusted ingress endpoints. Keep selection on the
 	// hot path allocation-free: a data block must not build candidate slices.
-	// These two passes preserve the legacy tie, cooldown and exploration rules.
+	// These two passes preserve the builtin tie, cooldown and exploration rules.
 	earliestCooldown, readyFallback := -1, -1
 	fastest := float64(0)
 	for i := range tried {
