@@ -20,6 +20,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Test native source cache selection without GitHub API access
+        run: python3 -m unittest discover -s scripts -p test_find_cached_necko.py -v
       - name: Resolve reviewed version request
         id: resolve
         env:
@@ -137,18 +139,35 @@ jobs:
     if: needs.request.outputs.publish == 'true'
     needs: [request]
     uses: ./.github/workflows/neqo-experiment.yml
-  native-source:
+  native-cache:
+    # A completed, trusted main-branch run with identical C++ build inputs
+    # can supply Gecko for both architectures; packaging and runtime tests
+    # still run against the exact current release commit.
     if: needs.request.outputs.publish == 'true'
     needs: [request]
+    runs-on: ubuntu-24.04
+    outputs:
+      run_id: ${{ steps.lookup.outputs.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Locate verified native runtime for unchanged Gecko inputs
+        id: lookup
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/find_cached_necko.py --output "$GITHUB_OUTPUT"
+  native-source:
+    # Cold build is necessary only if no complete matching run was found.
+    if: needs.native-cache.outputs.run_id == '0'
+    needs: [request, native-cache]
     uses: ./.github/workflows/necko-experiment.yml
   necko:
-    # Verify the runtime compiled from this exact release source.
-    if: needs.request.outputs.publish == 'true'
-    needs: [request, native-source]
+    # Always package and validate for this release, even with reused Gecko.
+    if: ${{ always() && needs.request.outputs.publish == 'true' && needs.native-cache.result == 'success' && (needs.native-source.result == 'success' || (needs.native-source.result == 'skipped' && needs.native-cache.outputs.run_id != '0')) }}
+    needs: [request, native-cache, native-source]
     uses: ./.github/workflows/necko-runtime-test.yml
     with:
       release_version: ${{ needs.request.outputs.version }}
-      source_run: ${{ github.run_id }}
+      source_run: ${{ needs.native-cache.outputs.run_id != '0' && needs.native-cache.outputs.run_id || github.run_id }}
   index:
     needs: [request, quality, nss, necko]
     strategy:

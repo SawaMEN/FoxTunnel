@@ -167,7 +167,7 @@ jobs:
           name: necko-linux-${{ matrix.arch }}-runtime
           path: necko-build/runtime.tar.zst
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
       - name: Keep source and runtime provenance
         if: always()
         uses: actions/upload-artifact@v4
@@ -179,7 +179,7 @@ jobs:
             necko-build/provenance.json
             necko-build/mozconfig
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
       - name: Preserve compiled cache even when native compilation or gates fail
         if: ${{ !cancelled() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure') }}
         uses: actions/cache/save@v4
