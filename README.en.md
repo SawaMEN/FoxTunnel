@@ -7,7 +7,8 @@ Use the `vetroff` CLI or Go library, without sing-box or Xray.
 
 ## Quick start
 
-These instructions target main; its new namespace is incompatible with published v0.1.0.
+Use matching client and server builds. The original v0.1.0 archives from before
+the namespace cleanup are incompatible with main; check the source commit in the release notes.
 
 You need a server, domain and TLS certificate. Download the full Linux bundle from
 [Releases](https://github.com/SawaMEN/VetroffProxy/releases) or build with Go 1.26.10+:

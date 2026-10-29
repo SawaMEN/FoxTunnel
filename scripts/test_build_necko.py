@@ -48,6 +48,11 @@ class NeckoSourceTests(unittest.TestCase):
         build.prepare(self.source, lock, self.root)
         self.assertEqual((self.source / "input.cpp").read_bytes(), self.changed)
 
+    def test_changed_output_digest_identifies_the_source_file(self):
+        self.lock['patches'][0]['after_sha256'] = 'f' * 64
+        with self.assertRaisesRegex(ValueError, 'patched Gecko source digest mismatch: input.cpp'):
+            build.prepare(self.source, self.lock, self.root)
+
     def test_revision_mismatch_does_not_mutate_source(self):
         self.lock["revision"] = "a" * 40
         with self.assertRaisesRegex(ValueError, "revision"):

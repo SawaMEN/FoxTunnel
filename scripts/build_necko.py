@@ -86,7 +86,7 @@ def prepare(source, lock, root=ROOT):
         run(["git", "apply", *pending], source)
     for patch in lock["patches"]:
         if sha256(checked_path(source, patch["source_path"])) != patch["after_sha256"]:
-            raise ValueError("patched Gecko source digest mismatch")
+            raise ValueError("patched Gecko source digest mismatch: " + patch["source_path"])
 
 
 def mozconfig(objdir, jobs, compiler_cache="sccache", no_bootstrap_update=False):

@@ -68,6 +68,9 @@ jobs:
           ref: ${{ steps.lock.outputs.revision }}
           path: gecko
           fetch-depth: 1
+      - name: Verify pinned patches before downloading build toolchains
+        working-directory: vetroff
+        run: python3 scripts/build_necko.py --source ../gecko --out ../necko-build --jobs 3 --prepare-only
       - uses: actions/cache@v4
         with:
           path: ${{ env.MOZBUILD_STATE_PATH }}
