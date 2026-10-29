@@ -10,6 +10,7 @@ on:
       - 'scripts/build_necko.py'
       - 'scripts/test_build_necko.py'
       - '.github/workflows/necko-experiment.yml'
+  workflow_call:
   workflow_dispatch:
 permissions:
   contents: read
@@ -132,7 +133,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: necko-firefox-fingerprint${{ matrix.suffix }}
+          name: necko-source-firefox-fingerprint${{ matrix.suffix }}
           path: necko-fingerprint/
           if-no-files-found: ignore
           retention-days: 14
@@ -148,7 +149,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: necko-operations${{ matrix.suffix }}
+          name: necko-source-operations${{ matrix.suffix }}
           path: necko-operations/
           if-no-files-found: ignore
           retention-days: 14

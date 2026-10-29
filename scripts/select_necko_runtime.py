@@ -62,7 +62,11 @@ def main():
     # workflow time to register before deciding no matching build exists.
     discovery_deadline = min(deadline, time.monotonic() + 120)
     while True:
-        runs = api('actions/workflows/necko-experiment.yml/runs?per_page=100')['workflow_runs']
+        # Release workflows can compile the runtime through workflow_call too.
+        runs = []
+        for workflow in ('necko-experiment.yml', 'release.yml'):
+            runs.extend(api(f'actions/workflows/{workflow}/runs?per_page=100')['workflow_runs'])
+        runs.sort(key=lambda run: run['id'], reverse=True)
         run, waiting = matching_run(runs, expected, source,
                                    lambda run_id: api(f'actions/runs/{run_id}/artifacts')['artifacts'], args.arch)
         if run is not None:

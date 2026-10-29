@@ -11,10 +11,17 @@ REQUEST = '.github/release-request.json'
 def resolve(root, event, ref, before, commit):
     request = root / REQUEST
     requested = None
+    replacement = None
     if request.exists():
         data = read_json(request)
-        if set(data) != {'schema', 'version'} or type(data['schema']) is not int or data['schema'] != 1:
+        schema = data.get('schema')
+        fields = {'schema', 'version'} if schema == 1 else {'schema', 'version', 'replace_commit'}
+        if set(data) != fields or type(schema) is not int or schema not in (1, 2):
             raise ValueError('invalid release request schema')
+        if schema == 2:
+            replacement = data['replace_commit']
+            if not isinstance(replacement, str) or not re.fullmatch(r'[0-9a-f]{40}', replacement):
+                raise ValueError('replacement requires the exact previous commit')
         requested = data['version']
         validate_version(requested)
         if requested == 'v0.0.0-ci':
@@ -30,7 +37,10 @@ def resolve(root, event, ref, before, commit):
             raise ValueError('release requests require a known before/source commit')
         result = subprocess.run(['git', 'diff', '--quiet', before, commit, '--', REQUEST], cwd=root, capture_output=True)
         if result.returncode == 1:
-            return dict(version=requested, publish='true', source='request')
+            result = dict(version=requested, publish='true', source='request')
+            if replacement:
+                result.update(source='replacement', replace_commit=replacement)
+            return result
         if result.returncode != 0:
             raise ValueError('cannot establish release-request change')
     return dict(version='v0.0.0-ci', publish='false', source='ci')

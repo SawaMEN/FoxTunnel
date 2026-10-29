@@ -15,6 +15,7 @@ jobs:
       version: ${{ steps.resolve.outputs.version }}
       publish: ${{ steps.resolve.outputs.publish }}
       source: ${{ steps.resolve.outputs.source }}
+      replace_commit: ${{ steps.resolve.outputs.replace_commit }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,11 +25,6 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: python3 scripts/release_request.py
-  builtin-wire:
-    # Full native/release verification runs only for an explicit publish request.
-    if: needs.request.outputs.publish == 'true'
-    needs: [request]
-    uses: ./.github/workflows/wire-compatibility.yml
   quality:
     # Full native/release verification runs only for an explicit publish request.
     if: needs.request.outputs.publish == 'true'
@@ -141,13 +137,18 @@ jobs:
     if: needs.request.outputs.publish == 'true'
     needs: [request]
     uses: ./.github/workflows/neqo-experiment.yml
-  necko:
-    # Full native/release verification runs only for an explicit publish request.
+  native-source:
     if: needs.request.outputs.publish == 'true'
     needs: [request]
+    uses: ./.github/workflows/necko-experiment.yml
+  necko:
+    # Verify the runtime compiled from this exact release source.
+    if: needs.request.outputs.publish == 'true'
+    needs: [request, native-source]
     uses: ./.github/workflows/necko-runtime-test.yml
     with:
       release_version: ${{ needs.request.outputs.version }}
+      source_run: ${{ github.run_id }}
   index:
     needs: [request, quality, nss, necko]
     strategy:
@@ -220,6 +221,9 @@ jobs:
           if-no-files-found: error
           retention-days: 30
   publish:
+    concurrency:
+      group: publish-${{ needs.request.outputs.version }}
+      cancel-in-progress: false
     if: github.event_name == 'push' && needs.request.outputs.publish == 'true'
     needs: [request, index, neqo]
     runs-on: ubuntu-24.04
@@ -261,34 +265,21 @@ jobs:
               --source-digest "$GITHUB_SHA" --source-ref "$GITHUB_REF" \
               --deny-self-hosted-runners
           done
-      - name: Publish immutable experimental release
+      - name: Publish verified experimental release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.request.outputs.version }}
           RELEASE_SOURCE: ${{ needs.request.outputs.source }}
+          REPLACE_COMMIT: ${{ needs.request.outputs.replace_commit }}
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            echo 'Refusing to overwrite an existing release.' >&2
-            exit 1
-          fi
-          tag_flags=(--verify-tag)
-          if [ "$RELEASE_SOURCE" = request ]; then
-            if gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-              echo 'Refusing to replace an existing tag for a release request.' >&2
-              exit 1
-            fi
-            tag_flags=(--target "$GITHUB_SHA")
-          fi
           python3 scripts/unified_release_notes.py --input dist --version "$RELEASE_TAG" --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/verified-release-notes.md"
           if [ -f "docs/releases/$RELEASE_TAG.md" ]; then
             cat "docs/releases/$RELEASE_TAG.md" >> "$RUNNER_TEMP/verified-release-notes.md"
           fi
           cat docs/releases/necko-usage.md >> "$RUNNER_TEMP/verified-release-notes.md"
-          release_flags=(--latest)
-          if [[ "$RELEASE_TAG" == *-* ]]; then
-            release_flags=(--prerelease)
-          fi
-          gh release create "$RELEASE_TAG" dist/*.tar.gz "${tag_flags[@]}" "${release_flags[@]}" --title "VetroffProxy $RELEASE_TAG" --notes-file "$RUNNER_TEMP/verified-release-notes.md"
+          python3 scripts/publish_release.py --version "$RELEASE_TAG" --commit "$GITHUB_SHA" \
+            --source "$RELEASE_SOURCE" --replace-commit "$REPLACE_COMMIT" \
+            --notes "$RUNNER_TEMP/verified-release-notes.md" --input dist

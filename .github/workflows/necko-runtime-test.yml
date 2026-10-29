@@ -35,6 +35,9 @@ on:
       - '.github/workflows/necko-runtime-test.yml'
   workflow_call:
     inputs:
+      source_run:
+        type: string
+        default: ''
       release_version:
         type: string
         default: v0.0.0-ci

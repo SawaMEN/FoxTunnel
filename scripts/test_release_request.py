@@ -52,6 +52,12 @@ class ReleaseRequest(unittest.TestCase):
         after = self.put_request(dict(schema=1, version='v0.1.0-alpha.2'))
         self.assertEqual('v0.1.0-alpha.2', self.resolve(after, before=before)['version'])
 
+    def test_explicit_replacement_requires_exact_previous_commit(self):
+        after = self.put_request(dict(schema=2, version='v0.1.0', replace_commit='a' * 40))
+        self.assertEqual(dict(version='v0.1.0', publish='true', source='replacement',
+                              replace_commit='a' * 40), self.resolve(after))
+        self.assertEqual('false', self.resolve(after, event='pull_request')['publish'])
+
     def test_existing_tag_flow_and_absent_request(self):
         self.assertEqual('false', self.resolve(self.before)['publish'])
         self.assertEqual(dict(version='v0.2.0-rc.1', publish='true', source='tag'),
@@ -64,7 +70,8 @@ class ReleaseRequest(unittest.TestCase):
     def test_malformed_request_fails_even_in_pr(self):
         for data in [dict(schema=True, version='v1.0.0'), dict(schema=2, version='v1.0.0'),
                      dict(schema=1, version='v0.0.0-ci'), dict(schema=1, version='v1.0.0\npublish=true'),
-                     dict(schema=1, version='v1.0.0', publish=True)]:
+                     dict(schema=1, version='v1.0.0', publish=True),
+                     dict(schema=2, version='v1.0.0', replace_commit='bad')]:
             with self.subTest(data=data):
                 after = self.put_request(data)
                 with self.assertRaises(ValueError):
