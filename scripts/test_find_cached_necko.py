@@ -1,7 +1,8 @@
 """Offline cache eligibility tests (no GitHub credentials required)."""
 import unittest
 
-from find_cached_necko import BUILD_INPUTS, REQUIRED_ARTIFACTS, matching_compiled_run
+from find_cached_necko import (BUILD_INPUTS, REQUIRED_ARTIFACTS, REQUIRED_NATIVE_JOBS,
+                              matching_compiled_run, normalize_build_input)
 
 
 class NativeCacheTests(unittest.TestCase):
@@ -45,7 +46,7 @@ class NativeCacheTests(unittest.TestCase):
                 a['size_in_bytes'] = 123
 
     def test_rejects_untrusted_or_incomplete_workflow(self):
-        for field, bad in [('status', 'in_progress'), ('conclusion', 'failure'),
+        for field, bad in [('status', 'in_progress'), ('conclusion', 'cancelled'),
                            ('head_branch', 'feature'), ('event', 'pull_request')]:
             with self.subTest(field=field):
                 old = self.runs[0][field]
@@ -60,6 +61,32 @@ class NativeCacheTests(unittest.TestCase):
         for name, value in self.expected.items():
             self.sources[('newer', name)] = value
         self.assertEqual(self.find(), 20)
+
+    def test_failed_publish_reuses_verified_native_results(self):
+        self.runs[0]['conclusion'] = 'failure'
+        self.assertIsNone(self.find())  # No job evidence, fail closed.
+        ok_jobs = [dict(name=name, conclusion='success') for name in REQUIRED_NATIVE_JOBS]
+        result = matching_compiled_run(
+            self.runs, self.expected,
+            lambda sha, name: self.sources.get((sha, name)),
+            lambda run_id: self.artifacts[run_id],
+            lambda run_id: ok_jobs)
+        self.assertEqual(result, 20)
+        ok_jobs[0]['conclusion'] = 'failure'
+        self.assertIsNone(matching_compiled_run(
+            self.runs, self.expected,
+            lambda sha, name: self.sources.get((sha, name)),
+            lambda run_id: self.artifacts[run_id],
+            lambda run_id: ok_jobs))
+
+    def test_retention_change_does_not_invalidate_compiler(self):
+        path = '.github/workflows/necko-experiment.yml'
+        before = b'name: source\n          retention-days: 7\nrun: build\n'
+        after = b'name: source\n          retention-days: 30\nrun: build\n'
+        self.assertEqual(normalize_build_input(path, before),
+                         normalize_build_input(path, after))
+        self.assertNotEqual(normalize_build_input(path, before),
+                            normalize_build_input(path, after.replace(b'run: build', b'run: other')))
 
     def test_absent_source_or_architecture_falls_back_to_compilation(self):
         self.sources.pop(('candidate', BUILD_INPUTS[0]))

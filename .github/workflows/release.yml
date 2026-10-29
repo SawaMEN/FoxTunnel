@@ -27,6 +27,17 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: python3 scripts/release_request.py
+      - name: Verify replacement target exists before full Gecko compilation
+        if: steps.resolve.outputs.publish == 'true' && steps.resolve.outputs.source == 'replacement'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_TAG: ${{ steps.resolve.outputs.version }}
+          EXPECTED_SHA: ${{ steps.resolve.outputs.replace_commit }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TARGET_TAG" --jq '.id' >/dev/null
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TARGET_TAG" --jq '.object.sha')
+          test "$current" = "$EXPECTED_SHA" || { echo 'Release replacement tag mismatch' >&2; exit 1; }
   quality:
     # Full native/release verification runs only for an explicit publish request.
     if: needs.request.outputs.publish == 'true'

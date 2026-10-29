@@ -27,11 +27,31 @@ REQUIRED_ARTIFACTS = {
     'necko-linux-arm64-runtime', 'necko-source-provenance-arm64',
 }
 
+# Even a failed overall release is reusable if native compilation AND native
+# runtime gates passed; publication errors must not force another C++ build.
+REQUIRED_NATIVE_JOBS = {
+    'native-source / native (amd64)',
+    'native-source / native (arm64)',
+    'necko / runtime (amd64)',
+    'necko / runtime (arm64)',
+}
 
-def matching_compiled_run(runs, expected, source_file, artifacts_for_run):
+
+def normalize_build_input(path, content):
+    # Artifact retention is storage policy, not a C++ build input.
+    # All remaining workflow bytes, including toolchain/flags, must match.
+    if path == '.github/workflows/necko-experiment.yml':
+        return b'\n'.join(
+            line for line in content.splitlines()
+            if not line.lstrip().startswith(b'retention-days:')
+        ) + b'\n'
+    return content
+
+
+def matching_compiled_run(runs, expected, source_file, artifacts_for_run, jobs_for_run=None):
     """Return a fully uploaded native build from a successful main release."""
     for run in sorted(runs, key=lambda r: r['id'], reverse=True):
-        if (run.get('status') != 'completed' or run.get('conclusion') != 'success'
+        if (run.get('status') != 'completed' or run.get('conclusion') not in ('success', 'failure')
                 or run.get('head_branch') != 'main' or run.get('event') != 'push'):
             continue
         sha = run.get('head_sha')
@@ -39,7 +59,9 @@ def matching_compiled_run(runs, expected, source_file, artifacts_for_run):
             continue
         # Compare bytes, not just the pinned revision: a change in patches,
         # mozconfig or workflow toolchains must force a cold build.
-        if any(source_file(sha, path) != content for path, content in expected.items()):
+        if any(normalize_build_input(path, source_file(sha, path) or b'')
+               != normalize_build_input(path, content)
+               for path, content in expected.items()):
             continue
         artifacts = artifacts_for_run(run['id'])
         names = {
@@ -47,6 +69,15 @@ def matching_compiled_run(runs, expected, source_file, artifacts_for_run):
             if not artifact.get('expired') and artifact.get('size_in_bytes', 0) > 0
         }
         if REQUIRED_ARTIFACTS <= names:
+            if run['conclusion'] == 'failure':
+                if jobs_for_run is None:
+                    continue
+                native_ok = {
+                    job['name'] for job in jobs_for_run(run['id'])
+                    if job.get('conclusion') == 'success'
+                }
+                if not REQUIRED_NATIVE_JOBS <= native_ok:
+                    continue
             return run['id']
     return None
 
@@ -85,7 +116,8 @@ def main():
     runs = api('actions/workflows/release.yml/runs?per_page=30&branch=main&status=completed')['workflow_runs']
     run_id = matching_compiled_run(
         runs, expected, source_file,
-        lambda run: api(f'actions/runs/{run}/artifacts?per_page=100')['artifacts'])
+        lambda run: api(f'actions/runs/{run}/artifacts?per_page=100')['artifacts'],
+        lambda run: api(f'actions/runs/{run}/jobs?per_page=100')['jobs'])
     with args.output.open('a', encoding='utf-8') as out:
         out.write(f'run_id={run_id or 0}\n')
     print('Reusing completed trusted Gecko build from run ' + str(run_id)
