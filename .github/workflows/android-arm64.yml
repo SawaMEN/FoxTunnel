@@ -1,0 +1,149 @@
+name: Android ARM64-v8a AAR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'vetroff*.go'
+      - 'internal/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/android-arm64.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'vetroff*.go'
+      - 'internal/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/android-arm64.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK platform and NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install "platforms;android-28" "ndk;27.2.12479018"
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$SDK/ndk/27.2.12479018" >> "$GITHUB_ENV"
+      - name: Unit-test Android API
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(gofmt -l android/sdk)"
+          go test ./android/sdk -count=1
+          go vet ./android/sdk
+          python3 -m unittest discover -s scripts -p test_check_android_aar.py -v
+      - name: Install pinned gomobile toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          REV=19777044486779222400e9ca16c4306f9c6dbfa9
+          # Current gomobile requires the gobind module in the build graph.
+          go get -tool "golang.org/x/mobile/cmd/gobind@$REV"
+          go install "golang.org/x/mobile/cmd/gomobile@$REV"
+          go install "golang.org/x/mobile/cmd/gobind@$REV"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          "$(go env GOPATH)/bin/gomobile" init
+      - name: Build Android arm64-v8a library
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="0.0.0-${GITHUB_SHA:0:12}"
+          fi
+          NAME="vetroff_${VERSION}_android_arm64-v8a"
+          "$(go env GOPATH)/bin/gomobile" bind \
+            -target=android/arm64 -androidapi 24 -javapkg com.vetroff \
+            -trimpath -o "dist/$NAME.aar" ./android/sdk
+          python3 scripts/check_android_aar.py "dist/$NAME.aar"
+          (cd dist && sha256sum "$NAME.aar" > SHA256SUMS-android-arm64-v8a)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vetroff-android-arm64-v8a
+          path: |
+            dist/*.aar
+            dist/*-sources.jar
+            dist/SHA256SUMS-android-arm64-v8a
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vetroff-android-arm64-v8a
+          path: dist
+      - name: Verify checksum and tagged commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/tags/$TAG_NAME"
+          test "$(find dist -maxdepth 1 -name '*.aar' -type f | wc -l)" -eq 1
+          (cd dist && sha256sum --check SHA256SUMS-android-arm64-v8a)
+          test "$(gh api "repos/$GH_REPO/git/ref/tags/$TAG_NAME" --jq '.object.sha')" = "$GITHUB_SHA"
+      - name: Attest Android AAR
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: dist/*.aar
+          create-storage-record: false
+      - name: Verify signed AAR provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for aar in dist/*.aar; do
+            gh attestation verify "$aar" --repo "$GH_REPO" \
+              --signer-workflow "$GH_REPO/.github/workflows/android-arm64.yml" \
+              --source-digest "$GITHUB_SHA" --source-ref "$GITHUB_REF" \
+              --deny-self-hosted-runners
+          done
+      - name: Attach Android library to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          # Never overwrite already published release assets.
+          gh release upload "$TAG_NAME" dist/*.aar dist/*-sources.jar \
+            dist/SHA256SUMS-android-arm64-v8a --repo "$GH_REPO"

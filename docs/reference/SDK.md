@@ -18,8 +18,10 @@ schemas. It checks metadata, not provenance by itself.
 The additive `feature_stability` map identifies supported XHTTP/TCP Bond modes;
 `experimental` still describes the overall SDK/release policy. See [mode guarantees](../FEATURES.md#стабильность-xhttp-и-tcp-bond).
 
-There are no APK, DMG, AAR, XCFramework, Swift/JNI/Dart bindings or public C ABI
-packages. Go builds support their Go targets; NSS/Neqo have separate restrictions.
+Android ARM64-v8a AAR builds and Java/JNI bindings are documented in
+[Android distribution](../ANDROID_ARM64.md). There are no APK, DMG, XCFramework,
+Swift/Dart bindings or public C ABI packages. Go builds support their Go targets;
+NSS/Neqo have separate restrictions.
 Do not load this NSS runtime into a process using an incompatible NSS version.
 
 ## Go client
