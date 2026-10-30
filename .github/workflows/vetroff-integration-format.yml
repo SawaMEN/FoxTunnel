@@ -1,0 +1,29 @@
+name: Format VetroffProxy embedded SDK
+
+on:
+  push:
+    branches: [feat/vetroffproxy-client]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.repository == 'SawaMEN/VetroffProxy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/vetroffproxy-client
+          persist-credentials: true
+      - name: Format native integration
+        run: gofmt -w vetroff.go vetroff_profile.go vetroff_profile_test.go internal/tunnel/conn.go internal/tunnel/conn_bond.go
+      - name: Commit formatted sources
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add vetroff.go vetroff_profile.go vetroff_profile_test.go internal/tunnel/conn.go internal/tunnel/conn_bond.go
+            git commit -m "style: gofmt native VetroffProxy integration"
+            git push origin HEAD:feat/vetroffproxy-client
+          fi
