@@ -70,7 +70,11 @@ type ClientConfig struct {
 	ConnectTimeout       time.Duration
 	MaxConnections       int // Combined TCP/UDP connections and pending operations; 0 uses 256.
 	FallbackServers      []string
+	FallbackAttemptTimeout time.Duration
 	Balance              string // Empty preserves failover; adaptive enables passive-metric route selection.
+	Bond                 bool   // Bond lanes across explicitly trusted servers.
+	BondDiscover         bool   // Discover lanes from the primary server.
+	BondPipeline         int    // 0 (auto), 4 or 8.
 }
 
 // Client is configured at construction and may be shared by concurrent callers.
@@ -88,8 +92,12 @@ type Client struct {
 }
 
 func NewClient(config ClientConfig) (*Client, error) {
-	if config.MaxConnections < 0 || config.ConnectTimeout < 0 {
+	if config.MaxConnections < 0 || config.ConnectTimeout < 0 || config.FallbackAttemptTimeout < 0 {
 		return nil, errors.New("negative client limit or timeout")
+	}
+	if config.BondDiscover && !config.Bond || config.Bond && config.EnableUDP ||
+		(config.BondPipeline != 0 && config.BondPipeline != 4 && config.BondPipeline != 8) {
+		return nil, errors.New("invalid bond or UDP combination")
 	}
 	if config.UDPMultiNode && (!config.UDPStreaming || !config.EnableUDP || len(config.FallbackServers) == 0) {
 		return nil, errors.New("UDP multi-node requires streaming UDP and fallback servers")
@@ -146,10 +154,20 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 	core.MaxConnections = limit
 	core.ConnectTimeout = config.ConnectTimeout
+	core.FallbackAttemptTimeout = config.FallbackAttemptTimeout
+	core.BondPipeline = config.BondPipeline
 	core.Padding = config.Padding
 	core.EnableUDP = config.EnableUDP
 	core.UDPStreaming = config.UDPStreaming
 	core.UDPMultiNode = config.UDPMultiNode
+	if config.Bond {
+		if config.BondDiscover {
+			err = core.EnableBondDiscovery(context.Background())
+		} else {
+			err = core.EnableBond()
+		}
+		if err != nil { return nil, err }
+	}
 	if err := core.Prepare(context.Background()); err != nil {
 		return nil, err
 	}
