@@ -55,6 +55,7 @@ jobs:
           test -z "$(gofmt -l android/sdk)"
           go test ./android/sdk -count=1
           go vet ./android/sdk
+          python3 -m unittest discover -s scripts -p test_check_android_aar.py -v
       - name: Install pinned gomobile toolchain
         shell: bash
         run: |
